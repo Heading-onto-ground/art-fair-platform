@@ -1,0 +1,336 @@
+"use client";
+
+import React, { useEffect, useMemo, useState } from "react";
+import { useParams, useRouter } from "next/navigation";
+import TopBar from "@/app/components/TopBar";
+
+type GalleryProfile = {
+  id: string;
+  userId: string;
+  role: "gallery";
+  email: string;
+  name: string;
+  country: string;
+  city: string;
+  website?: string;
+  bio?: string;
+  createdAt: number;
+  updatedAt: number;
+};
+
+type PublicResp =
+  | { ok: true; profile: GalleryProfile; exhibitions?: Exhibition[] }
+  | { ok: false; error: string };
+
+type Exhibition = {
+  id: string;
+  title: string;
+  country: string;
+  city: string;
+  year: number;
+  summary?: string;
+};
+
+function Chip({
+  children,
+  tone = "gray",
+}: {
+  children: React.ReactNode;
+  tone?: "gray" | "dark" | "soft";
+}) {
+  const styles =
+    tone === "dark"
+      ? { background: "#111", color: "#fff", border: "1px solid #111" }
+      : tone === "soft"
+      ? { background: "#f5f5f5", color: "#111", border: "1px solid #eee" }
+      : { background: "#fff", color: "#111", border: "1px solid #ddd" };
+
+  return (
+    <span
+      style={{
+        display: "inline-flex",
+        alignItems: "center",
+        gap: 6,
+        padding: "6px 10px",
+        borderRadius: 999,
+        fontSize: 12,
+        lineHeight: 1,
+        ...styles,
+      }}
+    >
+      {children}
+    </span>
+  );
+}
+
+export default function GalleryPublicPage() {
+  const router = useRouter();
+  const params = useParams<{ id: string }>();
+  const id = params?.id ? decodeURIComponent(params.id) : "";
+
+  const [loading, setLoading] = useState(true);
+  const [data, setData] = useState<PublicResp | null>(null);
+
+  useEffect(() => {
+    if (!id) return;
+
+    setLoading(true);
+    fetch(`/api/public/gallery/${encodeURIComponent(id)}`, { cache: "no-store" })
+      .then((res) => res.json())
+      .then((json) => setData(json))
+      .finally(() => setLoading(false));
+  }, [id]);
+
+  const profile = data && (data as any).ok ? (data as any).profile : null;
+  const exhibitions =
+    data && (data as any).ok
+      ? ((data as any).exhibitions as Exhibition[] | undefined)
+      : undefined;
+
+  const [query, setQuery] = useState("");
+  const [yearFilter, setYearFilter] = useState<string>("ALL");
+  const [countryFilter, setCountryFilter] = useState<string>("ALL");
+
+  const years = useMemo(() => {
+    const list = (exhibitions ?? []).map((e) => e.year);
+    return ["ALL", ...Array.from(new Set(list)).sort((a, b) => b - a).map(String)];
+  }, [exhibitions]);
+
+  const countries = useMemo(() => {
+    const list = (exhibitions ?? [])
+      .map((e) => (e.country ?? "").trim())
+      .filter(Boolean);
+    return ["ALL", ...Array.from(new Set(list)).sort((a, b) => a.localeCompare(b))];
+  }, [exhibitions]);
+
+  const filtered = useMemo(() => {
+    const q = query.trim().toLowerCase();
+    return (exhibitions ?? []).filter((e) => {
+      if (yearFilter !== "ALL" && String(e.year) !== yearFilter) return false;
+      if (countryFilter !== "ALL" && e.country !== countryFilter) return false;
+      if (!q) return true;
+      return (
+        e.title.toLowerCase().includes(q) ||
+        e.city.toLowerCase().includes(q) ||
+        (e.summary ?? "").toLowerCase().includes(q)
+      );
+    });
+  }, [exhibitions, query, yearFilter, countryFilter]);
+
+  return (
+    <>
+      <TopBar />
+
+      <main style={{ maxWidth: 860, margin: "40px auto", padding: "0 12px" }}>
+        {loading ? (
+          <div style={{ padding: 14, opacity: 0.7 }}>Loading…</div>
+        ) : !profile ? (
+          <div
+            style={{
+              border: "1px solid #eee",
+              borderRadius: 18,
+              padding: 16,
+              background: "#fff",
+            }}
+          >
+            <div style={{ fontWeight: 900, fontSize: 18 }}>😵 Not found</div>
+            <div style={{ marginTop: 8, opacity: 0.75 }}>
+              공개된 갤러리 프로필을 찾을 수 없어요.
+            </div>
+            <button
+              onClick={() => router.back()}
+              style={{
+                marginTop: 12,
+                padding: "10px 12px",
+                borderRadius: 12,
+                border: "1px solid #ddd",
+                background: "#fff",
+                fontWeight: 800,
+                cursor: "pointer",
+              }}
+            >
+              ← Back
+            </button>
+          </div>
+        ) : (
+          <>
+            <div
+              style={{
+                display: "flex",
+                alignItems: "baseline",
+                justifyContent: "space-between",
+                gap: 12,
+              }}
+            >
+              <h1 style={{ margin: 0, fontSize: 26, fontWeight: 950 }}>
+                {profile.name || "Unnamed Gallery"}
+              </h1>
+              <Chip tone="dark">GALLERY</Chip>
+            </div>
+
+            <div style={{ fontSize: 12, opacity: 0.75, marginTop: 8 }}>
+              📍 {profile.city || "-"}, {profile.country || "-"} • ID:{" "}
+              <b>{profile.userId}</b>
+            </div>
+
+            <div
+              style={{
+                marginTop: 14,
+                border: "1px solid #e6e6e6",
+                borderRadius: 18,
+                background: "#fff",
+                padding: 16,
+              }}
+            >
+              <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                {profile.website ? (
+                  <a
+                    href={profile.website}
+                    target="_blank"
+                    rel="noreferrer"
+                    style={{ textDecoration: "none" }}
+                  >
+                    <Chip>🔗 Website</Chip>
+                  </a>
+                ) : (
+                  <Chip tone="soft">🔗 Website 없음</Chip>
+                )}
+              </div>
+
+              <div style={{ marginTop: 14 }}>
+                <div style={{ fontSize: 12, fontWeight: 900, opacity: 0.75 }}>
+                  Bio
+                </div>
+                <div
+                  style={{
+                    marginTop: 8,
+                    padding: 12,
+                    borderRadius: 14,
+                    background: "#fafafa",
+                    border: "1px solid #eee",
+                    whiteSpace: "pre-wrap",
+                  }}
+                >
+                  {profile.bio?.trim() ? profile.bio : "Bio가 아직 없어요."}
+                </div>
+              </div>
+
+              <div style={{ marginTop: 14, fontSize: 12, opacity: 0.7 }}>
+                Updated:{" "}
+                {profile.updatedAt
+                  ? new Date(profile.updatedAt).toLocaleString()
+                  : "-"}
+              </div>
+            </div>
+
+            <div
+              style={{
+                marginTop: 14,
+                border: "1px solid #e6e6e6",
+                borderRadius: 18,
+                background: "#fff",
+                padding: 16,
+              }}
+            >
+              <div style={{ fontSize: 14, fontWeight: 900 }}>
+                🗓️ Exhibition History
+              </div>
+              <div style={{ marginTop: 10, display: "grid", gap: 8 }}>
+                <input
+                  value={query}
+                  onChange={(e) => setQuery(e.target.value)}
+                  placeholder="Search title/city/summary..."
+                  style={{
+                    padding: 10,
+                    borderRadius: 10,
+                    border: "1px solid #ddd",
+                  }}
+                />
+                <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                  <select
+                    value={yearFilter}
+                    onChange={(e) => setYearFilter(e.target.value)}
+                    style={{
+                      padding: 8,
+                      borderRadius: 10,
+                      border: "1px solid #ddd",
+                      background: "#fff",
+                    }}
+                  >
+                    {years.map((y) => (
+                      <option key={y} value={y}>
+                        {y === "ALL" ? "All years" : y}
+                      </option>
+                    ))}
+                  </select>
+                  <select
+                    value={countryFilter}
+                    onChange={(e) => setCountryFilter(e.target.value)}
+                    style={{
+                      padding: 8,
+                      borderRadius: 10,
+                      border: "1px solid #ddd",
+                      background: "#fff",
+                    }}
+                  >
+                    {countries.map((c) => (
+                      <option key={c} value={c}>
+                        {c === "ALL" ? "All countries" : c}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+
+              {filtered.length > 0 ? (
+                <div style={{ marginTop: 10, display: "grid", gap: 10 }}>
+                  {filtered.map((ex) => (
+                    <div
+                      key={ex.id}
+                      style={{
+                        border: "1px solid #eee",
+                        borderRadius: 12,
+                        padding: 12,
+                        background: "#fafafa",
+                      }}
+                    >
+                      <div style={{ fontWeight: 900 }}>{ex.title}</div>
+                      <div style={{ marginTop: 4, fontSize: 12, opacity: 0.8 }}>
+                        {ex.city}, {ex.country} · {ex.year}
+                      </div>
+                      {ex.summary ? (
+                        <div style={{ marginTop: 6, fontSize: 12, opacity: 0.85 }}>
+                          {ex.summary}
+                        </div>
+                      ) : null}
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div style={{ marginTop: 8, fontSize: 12, opacity: 0.7 }}>
+                  No exhibitions found.
+                </div>
+              )}
+            </div>
+
+            <div style={{ marginTop: 14 }}>
+              <button
+                onClick={() => router.back()}
+                style={{
+                  padding: "10px 12px",
+                  borderRadius: 12,
+                  border: "1px solid #ddd",
+                  background: "#fff",
+                  fontWeight: 900,
+                  cursor: "pointer",
+                }}
+              >
+                ← Back
+              </button>
+            </div>
+          </>
+        )}
+      </main>
+    </>
+  );
+}

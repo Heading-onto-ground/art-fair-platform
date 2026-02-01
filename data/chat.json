@@ -1,0 +1,18 @@
+{
+  "rooms": {
+    "room_1769520127211": {
+      "id": "room_1769520127211",
+      "participants": [
+        {
+          "userId": "gallery_dmx69@naver.com",
+          "role": "gallery"
+        }
+      ],
+      "createdAt": 1769520130669,
+      "updatedAt": 1769520130669
+    }
+  },
+  "messagesByRoom": {
+    "room_1769520127211": []
+  }
+}

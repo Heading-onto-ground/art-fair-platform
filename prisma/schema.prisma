@@ -1,0 +1,58 @@
+generator client {
+  provider = "prisma-client-js"
+  engineType = "library"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum Role {
+  artist
+  gallery
+}
+
+model User {
+  id           String          @id @default(cuid())
+  email        String          @unique
+  role         Role
+  passwordHash String
+  createdAt    DateTime        @default(now())
+  artistProfile ArtistProfile?
+  galleryProfile GalleryProfile?
+}
+
+model ArtistProfile {
+  id          String   @id @default(cuid())
+  userId      String   @unique
+  user        User     @relation(fields: [userId], references: [id])
+  artistId    String   @unique
+  name        String
+  startedYear Int
+  genre       String
+  instagram   String?
+  country     String?
+  city        String?
+  website     String?
+  bio         String?
+  portfolioUrl String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model GalleryProfile {
+  id          String   @id @default(cuid())
+  userId      String   @unique
+  user        User     @relation(fields: [userId], references: [id])
+  galleryId   String   @unique
+  name        String
+  address     String
+  foundedYear Int
+  instagram   String?
+  country     String?
+  city        String?
+  website     String?
+  bio         String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
