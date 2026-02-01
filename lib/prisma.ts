@@ -6,8 +6,8 @@ const { Pool } = require("pg");
 
 const globalForPrisma = globalThis as unknown as {
   prisma?: PrismaClientType;
-  pool?: import("pg").Pool;
-  adapter?: import("@prisma/adapter-pg").PrismaPg;
+  pool?: any;
+  adapter?: any;
 };
 
 const pool =

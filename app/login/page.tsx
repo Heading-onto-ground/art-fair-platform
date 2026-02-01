@@ -377,9 +377,7 @@ export default function LoginPage() {
               : "Create account"}
           </button>
 
-          <div style={{ marginTop: 10, fontSize: 12, opacity: 0.7 }}>
-            (MVP) 계정은 DB에 저장됩니다.
-          </div>
+          <div style={{ marginTop: 10, fontSize: 12, opacity: 0.7 }} />
         </div>
       </main>
     </>
