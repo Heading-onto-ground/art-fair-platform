@@ -103,8 +103,6 @@ export async function PATCH(
     }
 
     return NextResponse.json({ error: "unauthorized" }, { status: 401 });
-
-    return NextResponse.json({ application: updated }, { status: 200 });
   } catch (e) {
     console.error("PATCH /api/applications/[id] failed:", e);
     return NextResponse.json({ error: "server error" }, { status: 500 });
