@@ -4,6 +4,21 @@ import React, { useEffect, useMemo, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import TopBar from "@/app/components/TopBar";
 
+type Role = "artist" | "gallery";
+type MeResponse = {
+  session: { userId: string; role: Role; email?: string } | null;
+  profile: any | null;
+};
+
+async function fetchMe(): Promise<MeResponse | null> {
+  try {
+    const res = await fetch("/api/auth/me", { cache: "no-store" });
+    return (await res.json().catch(() => null)) as MeResponse | null;
+  } catch {
+    return null;
+  }
+}
+
 type GalleryProfile = {
   id: string;
   userId: string;
@@ -70,6 +85,16 @@ export default function GalleryPublicPage() {
 
   const [loading, setLoading] = useState(true);
   const [data, setData] = useState<PublicResp | null>(null);
+  const [me, setMe] = useState<MeResponse | null>(null);
+  const [contacting, setContacting] = useState(false);
+  const [contactError, setContactError] = useState<string | null>(null);
+
+  useEffect(() => {
+    (async () => {
+      const m = await fetchMe();
+      setMe(m);
+    })();
+  }, []);
 
   useEffect(() => {
     if (!id) return;
@@ -117,6 +142,37 @@ export default function GalleryPublicPage() {
     });
   }, [exhibitions, query, yearFilter, countryFilter]);
 
+  async function contactGalleryByName() {
+    if (!profile?.userId) return;
+    setContactError(null);
+    setContacting(true);
+    try {
+      const ocRes = await fetch("/api/open-calls", { cache: "no-store" });
+      const ocData = (await ocRes.json().catch(() => null)) as {
+        openCalls?: { id: string; galleryId: string }[];
+      } | null;
+      const openCall = ocData?.openCalls?.find((o) => o.galleryId === profile.userId);
+      if (!openCall) {
+        throw new Error("이 갤러리의 오픈콜이 아직 없어요.");
+      }
+      const res = await fetch("/api/chat", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ openCallId: openCall.id, galleryId: profile.userId }),
+      });
+      const data = await res.json().catch(() => null);
+      if (!res.ok || !data?.roomId) {
+        throw new Error(data?.error ?? `Failed to create chat (${res.status})`);
+      }
+      router.push(`/chat/${String(data.roomId)}`);
+    } catch (e: any) {
+      setContactError(e?.message ?? "Failed to contact gallery");
+    } finally {
+      setContacting(false);
+    }
+  }
+
   return (
     <>
       <TopBar />
@@ -162,7 +218,26 @@ export default function GalleryPublicPage() {
                 gap: 12,
               }}
             >
-              <h1 style={{ margin: 0, fontSize: 26, fontWeight: 950 }}>
+              <h1
+                style={{
+                  margin: 0,
+                  fontSize: 26,
+                  fontWeight: 950,
+                  textDecoration: me?.session?.role === "artist" ? "underline" : "none",
+                  cursor: me?.session?.role === "artist" ? "pointer" : "default",
+                  opacity: contacting ? 0.6 : 1,
+                }}
+                onClick={() => {
+                  if (me?.session?.role === "artist" && !contacting) {
+                    contactGalleryByName();
+                  }
+                }}
+                title={
+                  me?.session?.role === "artist"
+                    ? "클릭해서 갤러리에 메시지 보내기"
+                    : undefined
+                }
+              >
                 {profile.name || "Unnamed Gallery"}
               </h1>
               <Chip tone="dark">GALLERY</Chip>
@@ -222,6 +297,11 @@ export default function GalleryPublicPage() {
                   : "-"}
               </div>
             </div>
+          {contactError && (
+            <div style={{ marginTop: 10, color: "#c00", fontSize: 12 }}>
+              {contactError}
+            </div>
+          )}
 
             <div
               style={{

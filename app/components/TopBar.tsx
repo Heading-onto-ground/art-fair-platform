@@ -119,7 +119,7 @@ export default function TopBar() {
       }}
     >
       <div style={{ fontWeight: 900, cursor: "pointer" }} onClick={() => router.push("/")}>
-        AFP {country ? `· ${country}` : ""}
+        ROB : role of bridge {country ? `· ${country}` : ""}
       </div>
 
       <div style={{ display: "flex", gap: 12, alignItems: "center" }}>
@@ -223,8 +223,23 @@ export default function TopBar() {
                 </button>
               </>
             )}
-            <div style={{ fontSize: 13, opacity: 0.8 }}>
-              {session.role} · {session.userId}
+            <div style={{ fontSize: 13, opacity: 0.8, display: "flex", alignItems: "center", gap: 6 }}>
+              <span
+                title="online"
+                style={{
+                  width: 8,
+                  height: 8,
+                  borderRadius: "50%",
+                  background: "#22c55e",
+                  display: "inline-block",
+                }}
+              />
+              <span>
+                {session.role} ·{" "}
+                {session.role === "artist" && me?.profile?.genre
+                  ? `${me.profile.genre} · ${session.userId}`
+                  : session.userId}
+              </span>
             </div>
             <button
               onClick={logout}

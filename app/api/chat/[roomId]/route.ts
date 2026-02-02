@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
 import { canAccessRoom, getMessages, getRoom } from "@/lib/chat";
 
+export const dynamic = "force-dynamic";
+
 type Role = "artist" | "gallery";
 type MeResponse = {
   session: { userId: string; role: Role; email?: string } | null;

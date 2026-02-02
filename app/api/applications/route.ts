@@ -8,6 +8,8 @@ import {
   listApplicationsByOpenCall,
 } from "@/app/data/applications";
 
+export const dynamic = "force-dynamic";
+
 export async function GET(req: Request) {
   try {
     const session = getServerSession();
