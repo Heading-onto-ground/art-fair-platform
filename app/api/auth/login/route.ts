@@ -4,6 +4,7 @@ import { findUserByEmailRole, verifyPassword } from "@/lib/auth";
 type Role = "artist" | "gallery";
 
 export const runtime = "nodejs";
+export const dynamic = "force-dynamic";
 
 export async function GET() {
   return NextResponse.json(
@@ -65,6 +66,8 @@ export async function POST(req: Request) {
   } catch (e) {
     console.error("POST /api/auth/login failed:", e);
     const details = e instanceof Error ? e.message : String(e);
-    return json500(details);
+    const res = json500(details);
+    res.headers.set("X-Login-Error", details.slice(0, 200));
+    return res;
   }
 }
