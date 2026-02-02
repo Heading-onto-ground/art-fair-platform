@@ -3,8 +3,28 @@ import { findUserByEmailRole, verifyPassword } from "@/lib/auth";
 
 type Role = "artist" | "gallery";
 
+export const runtime = "nodejs";
+
+export async function GET() {
+  return NextResponse.json(
+    { ok: false, error: "Method Not Allowed. Use POST to log in." },
+    { status: 405, headers: { Allow: "POST" } }
+  );
+}
+
+function json500(details: string) {
+  return NextResponse.json(
+    { ok: false, error: "server error", details },
+    { status: 500 }
+  );
+}
+
 export async function POST(req: Request) {
   try {
+    if (!process.env.DATABASE_URL) {
+      console.error("POST /api/auth/login: DATABASE_URL is not set");
+      return json500("DATABASE_URL is not set");
+    }
     const body = await req.json().catch(() => null);
 
     const role = String(body?.role ?? "") as Role;
@@ -26,7 +46,6 @@ export async function POST(req: Request) {
       return NextResponse.json({ ok: false, error: "wrong password" }, { status: 401 });
     }
 
-    // userId 만들기 (MVP)
     const userId = user.id;
 
     const res = NextResponse.json(
@@ -34,7 +53,6 @@ export async function POST(req: Request) {
       { status: 200 }
     );
 
-    // ✅ 쿠키 저장
     res.cookies.set("afp_session", JSON.stringify({ userId, role, email }), {
       httpOnly: true,
       sameSite: "lax",
@@ -46,6 +64,7 @@ export async function POST(req: Request) {
     return res;
   } catch (e) {
     console.error("POST /api/auth/login failed:", e);
-    return NextResponse.json({ ok: false, error: "server error" }, { status: 500 });
+    const details = e instanceof Error ? e.message : String(e);
+    return json500(details);
   }
 }
