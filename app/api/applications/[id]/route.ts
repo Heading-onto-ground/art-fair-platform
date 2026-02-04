@@ -8,6 +8,8 @@ import {
 import { getOpenCallById } from "@/app/data/openCalls";
 import { createChatRoom, sendMessage } from "@/lib/chat";
 
+export const dynamic = "force-dynamic";
+
 export async function PATCH(
   req: Request,
   { params }: { params: { id: string } }
@@ -84,7 +86,7 @@ export async function PATCH(
       }
 
       if (status === "accepted" && app.status !== "accepted") {
-        const roomId = createChatRoom(app.openCallId, app.artistId, session.userId);
+        const roomId = await createChatRoom(app.openCallId, app.artistId, session.userId);
         const country = openCall.country;
         const msg =
           country === "한국"
@@ -92,11 +94,7 @@ export async function PATCH(
             : country === "일본"
             ? `✅ オープンコールに合格しました。配送情報をご確認ください。`
             : `✅ Your application was accepted. Please confirm shipping details.`;
-        sendMessage(
-          roomId,
-          session.userId,
-          msg
-        );
+        await sendMessage(roomId, session.userId, "gallery", msg);
       }
 
       return NextResponse.json({ application: updated }, { status: 200 });
