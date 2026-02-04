@@ -4,9 +4,17 @@ import { createUser, upsertArtistProfile, upsertGalleryProfile } from "@/lib/aut
 type Role = "artist" | "gallery";
 
 export const runtime = "nodejs";
+export const dynamic = "force-dynamic";
 
 export async function POST(req: Request) {
   try {
+    if (!process.env.DATABASE_URL) {
+      console.error("POST /api/auth/signup: DATABASE_URL is not set");
+      return NextResponse.json(
+        { ok: false, error: "server error", details: "DATABASE_URL is not set" },
+        { status: 500 }
+      );
+    }
     const body = await req.json().catch(() => null);
     const role = String(body?.role ?? "") as Role;
     const email = String(body?.email ?? "").trim().toLowerCase();
@@ -91,12 +99,7 @@ export async function POST(req: Request) {
       return NextResponse.json({ ok: false, error: "user exists" }, { status: 409 });
     }
     console.error("POST /api/auth/signup failed:", e);
-    const details =
-      process.env.NODE_ENV !== "production"
-        ? e instanceof Error
-          ? e.message
-          : String(e)
-        : undefined;
+    const details = e instanceof Error ? e.message : String(e) || "unknown error";
     return NextResponse.json(
       { ok: false, error: "server error", details },
       { status: 500 }

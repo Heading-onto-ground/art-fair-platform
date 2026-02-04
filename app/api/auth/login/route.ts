@@ -7,8 +7,13 @@ export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 export async function GET() {
+  const hasDb = !!process.env.DATABASE_URL;
   return NextResponse.json(
-    { ok: false, error: "Method Not Allowed. Use POST to log in." },
+    {
+      ok: false,
+      error: "Method Not Allowed. Use POST to log in.",
+      debug: { hasDatabaseUrl: hasDb },
+    },
     { status: 405, headers: { Allow: "POST" } }
   );
 }
@@ -65,9 +70,7 @@ export async function POST(req: Request) {
     return res;
   } catch (e) {
     console.error("POST /api/auth/login failed:", e);
-    const details = e instanceof Error ? e.message : String(e);
-    const res = json500(details);
-    res.headers.set("X-Login-Error", details.slice(0, 200));
-    return res;
+    const details = e instanceof Error ? e.message : String(e) || "unknown error";
+    return json500(details);
   }
 }
