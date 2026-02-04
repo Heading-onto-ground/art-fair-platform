@@ -59,10 +59,11 @@ export async function POST(req: Request) {
       { status: 200 }
     );
 
+    const isProduction = process.env.NODE_ENV === "production";
     res.cookies.set("afp_session", JSON.stringify({ userId, role, email }), {
       httpOnly: true,
       sameSite: "lax",
-      secure: false,
+      secure: isProduction,
       path: "/",
       maxAge: 60 * 60 * 24 * 7,
     });
