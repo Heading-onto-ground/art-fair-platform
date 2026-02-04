@@ -1,9 +1,9 @@
 import { NextResponse } from "next/server";
 import { sendMessage, getRoom, canAccessRoom } from "@/lib/chat";
+import type { Role } from "@prisma/client";
 
 export const dynamic = "force-dynamic";
 
-type Role = "artist" | "gallery";
 type MeResponse = {
   session: { userId: string; role: Role; email?: string } | null;
   profile: any | null;
@@ -43,18 +43,18 @@ export async function POST(req: Request) {
     }
 
     // ✅ room 존재 체크
-    const room = getRoom(roomId);
+    const room = await getRoom(roomId);
     if (!room) {
       return NextResponse.json({ error: "room not found" }, { status: 404 });
     }
 
     // ✅ 접근권한 체크 (전송도 룸 접근 가능해야)
-    const ok = canAccessRoom(roomId, session.userId, session.role);
+    const ok = await canAccessRoom(roomId, session.userId, session.role);
     if (!ok) {
       return NextResponse.json({ error: "forbidden" }, { status: 403 });
     }
 
-    sendMessage(roomId, session.userId, text.trim());
+    await sendMessage(roomId, session.userId, session.role as Role, text.trim());
 
     return NextResponse.json({ ok: true });
   } catch (e) {

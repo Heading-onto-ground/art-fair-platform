@@ -56,3 +56,27 @@ model GalleryProfile {
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 }
+
+model ChatRoom {
+  id          String    @id @default(cuid())
+  artistId    String
+  galleryId   String
+  openCallId  String?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  messages    Message[]
+
+  @@unique([artistId, galleryId, openCallId])
+}
+
+model Message {
+  id         String   @id @default(cuid())
+  roomId     String
+  room       ChatRoom @relation(fields: [roomId], references: [id], onDelete: Cascade)
+  senderId   String
+  senderRole Role
+  text       String
+  createdAt  DateTime @default(now())
+
+  @@index([roomId])
+}

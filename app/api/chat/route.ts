@@ -1,9 +1,11 @@
 import { NextResponse } from "next/server";
-import { createChatRoom, listRoomsByArtist, listRoomsByGallery } from "@/lib/chat";
+import { createChatRoom, listRoomsByArtist, listRoomsByGallery, getMessages } from "@/lib/chat";
 import { getOpenCallById } from "@/app/data/openCalls";
 import { getServerSession } from "@/lib/auth";
 
-export async function GET(req: Request) {
+export const dynamic = "force-dynamic";
+
+export async function GET() {
   try {
     const session = getServerSession();
     if (!session) {
@@ -12,29 +14,35 @@ export async function GET(req: Request) {
 
     const rooms =
       session.role === "artist"
-        ? listRoomsByArtist(session.userId)
-        : listRoomsByGallery(session.userId);
+        ? await listRoomsByArtist(session.userId)
+        : await listRoomsByGallery(session.userId);
 
-    // ✅ 최소한의 정보만 내려주기 (messages 전체는 무거우니까)
-    const items = rooms.map((r) => ({
-      id: r.id,
-      openCallId: r.openCallId,
-      artistId: r.artistId,
-      galleryId: r.galleryId,
-      lastMessageAt: r.messages.length
-        ? r.messages[r.messages.length - 1].createdAt
-        : null,
-      lastMessageText: r.messages.length
-        ? r.messages[r.messages.length - 1].text
-        : null,
-    }));
+    // 각 방의 마지막 메시지 정보 추가
+    const items = await Promise.all(
+      rooms.map(async (r) => {
+        const messages = await getMessages(r.id);
+        const lastMsg = messages[messages.length - 1];
+        return {
+          id: r.id,
+          openCallId: r.openCallId,
+          artistId: r.artistId,
+          galleryId: r.galleryId,
+          lastMessageAt: lastMsg?.createdAt ?? null,
+          lastMessageText: lastMsg?.text ?? null,
+        };
+      })
+    );
 
     // 최신 대화가 위로 오게 정렬
-    items.sort((a, b) => (b.lastMessageAt ?? 0) - (a.lastMessageAt ?? 0));
+    items.sort((a, b) => {
+      const aTime = a.lastMessageAt ? new Date(a.lastMessageAt).getTime() : 0;
+      const bTime = b.lastMessageAt ? new Date(b.lastMessageAt).getTime() : 0;
+      return bTime - aTime;
+    });
 
     return NextResponse.json({ rooms: items });
   } catch (e) {
-    console.error("GET /api/chats failed:", e);
+    console.error("GET /api/chat failed:", e);
     return NextResponse.json({ error: "server error" }, { status: 500 });
   }
 }
@@ -67,7 +75,7 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "gallery mismatch" }, { status: 400 });
     }
 
-    const roomId = createChatRoom(openCallId, session.userId, galleryId);
+    const roomId = await createChatRoom(openCallId, session.userId, galleryId);
     return NextResponse.json({ roomId }, { status: 200 });
   } catch (e) {
     console.error("POST /api/chat failed:", e);

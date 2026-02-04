@@ -38,17 +38,17 @@ export async function GET(
       return NextResponse.json({ error: "unauthorized" }, { status: 401 });
     }
 
-    const room = getRoom(roomId);
+    const room = await getRoom(roomId);
     if (!room) {
       return NextResponse.json({ error: "room not found" }, { status: 404 });
     }
 
-    const ok = canAccessRoom(roomId, session.userId, session.role);
+    const ok = await canAccessRoom(roomId, session.userId, session.role);
     if (!ok) {
       return NextResponse.json({ error: "forbidden" }, { status: 403 });
     }
 
-    const messages = getMessages(roomId);
+    const messages = await getMessages(roomId);
     return NextResponse.json({
       messages,
       room: {

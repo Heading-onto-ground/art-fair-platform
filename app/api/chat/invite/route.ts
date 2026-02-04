@@ -6,6 +6,8 @@ import { addInvite } from "@/app/data/invites";
 import { getTemplates } from "@/app/data/inviteTemplates";
 import { getProfileByUserId } from "@/lib/auth";
 
+export const dynamic = "force-dynamic";
+
 export async function POST(req: Request) {
   try {
     const session = getServerSession();
@@ -33,7 +35,7 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "forbidden" }, { status: 403 });
     }
 
-    const roomId = createChatRoom(openCallId, artistId, session.userId);
+    const roomId = await createChatRoom(openCallId, artistId, session.userId);
     const tpl = getTemplates(session.userId);
     const base =
       openCall.country === "한국"
@@ -55,7 +57,8 @@ export async function POST(req: Request) {
         .replaceAll("{{deadline}}", openCall.deadline)
         .replaceAll("{{city}}", openCall.city)
         .replaceAll("{{country}}", openCall.country);
-    sendMessage(roomId, session.userId, message);
+
+    await sendMessage(roomId, session.userId, "gallery", message);
     addInvite({
       galleryId: session.userId,
       artistId,

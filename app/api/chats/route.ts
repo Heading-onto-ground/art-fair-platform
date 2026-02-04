@@ -2,7 +2,9 @@ import { NextResponse } from "next/server";
 import { listRoomsByArtist, listRoomsByGallery } from "@/lib/chat";
 import { getServerSession } from "@/lib/auth";
 
-export async function GET(req: Request) {
+export const dynamic = "force-dynamic";
+
+export async function GET() {
   try {
     const session = getServerSession();
     if (!session) {
@@ -11,8 +13,8 @@ export async function GET(req: Request) {
 
     const rooms =
       session.role === "artist"
-        ? listRoomsByArtist(session.userId)
-        : listRoomsByGallery(session.userId);
+        ? await listRoomsByArtist(session.userId)
+        : await listRoomsByGallery(session.userId);
 
     return NextResponse.json({ rooms });
   } catch (e) {
