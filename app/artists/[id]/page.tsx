@@ -89,6 +89,8 @@ export default function PublicArtistPage() {
   const [inviteMessage, setInviteMessage] = useState("");
   const [inviting, setInviting] = useState(false);
   const [inviteError, setInviteError] = useState<string | null>(null);
+  const [startingChat, setStartingChat] = useState(false);
+  const [chatError, setChatError] = useState<string | null>(null);
 
   // 번역 관련 상태
   const [translatedBio, setTranslatedBio] = useState<string | null>(null);
@@ -201,6 +203,36 @@ export default function PublicArtistPage() {
       setInviteError(e?.message ?? "Failed to invite");
     } finally {
       setInviting(false);
+    }
+  }
+
+  // 대화 보내기 (오픈콜 선택 후 채팅 시작)
+  async function startChat() {
+    if (!profile || !selectedOpenCallId) {
+      setChatError("오픈콜을 선택해주세요.");
+      return;
+    }
+    setStartingChat(true);
+    setChatError(null);
+    try {
+      const res = await fetch("/api/chat", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({
+          openCallId: selectedOpenCallId,
+          artistId: profile.userId,
+        }),
+      });
+      const data = await res.json().catch(() => null);
+      if (!res.ok || !data?.roomId) {
+        throw new Error(data?.error ?? `Failed to start chat (${res.status})`);
+      }
+      router.push(`/chat/${String(data.roomId)}`);
+    } catch (e: any) {
+      setChatError(e?.message ?? "Failed to start chat");
+    } finally {
+      setStartingChat(false);
     }
   }
 
@@ -490,25 +522,41 @@ export default function PublicArtistPage() {
                         resize: "vertical",
                       }}
                     />
-                    <button
-                      onClick={inviteArtist}
-                      disabled={inviting}
-                      style={{
-                        marginTop: 8,
-                        padding: "8px 10px",
-                        borderRadius: 10,
-                        border: "1px solid #111",
-                        background: "#111",
-                        color: "#fff",
-                        fontWeight: 900,
-                        cursor: "pointer",
-                      }}
-                    >
-                      {inviting ? "Sending..." : "Send Invite"}
-                    </button>
-                    {inviteError ? (
+                    <div style={{ marginTop: 8, display: "flex", gap: 8, flexWrap: "wrap" }}>
+                      <button
+                        onClick={inviteArtist}
+                        disabled={inviting}
+                        style={{
+                          padding: "8px 14px",
+                          borderRadius: 10,
+                          border: "1px solid #111",
+                          background: "#111",
+                          color: "#fff",
+                          fontWeight: 900,
+                          cursor: "pointer",
+                        }}
+                      >
+                        {inviting ? "Sending..." : "📨 Send Invite"}
+                      </button>
+                      <button
+                        onClick={startChat}
+                        disabled={startingChat}
+                        style={{
+                          padding: "8px 14px",
+                          borderRadius: 10,
+                          border: "1px solid #6366f1",
+                          background: "#6366f1",
+                          color: "#fff",
+                          fontWeight: 900,
+                          cursor: "pointer",
+                        }}
+                      >
+                        {startingChat ? "..." : "💬 대화 보내기"}
+                      </button>
+                    </div>
+                    {(inviteError || chatError) ? (
                       <div style={{ marginTop: 8, fontSize: 12, color: "#b00" }}>
-                        {inviteError}
+                        {inviteError || chatError}
                       </div>
                     ) : null}
                   </>
