@@ -33,7 +33,7 @@ export async function GET(req: Request) {
     });
 
     // 추적 URL 추가
-    const shipmentsWithUrls = shipments.map((s) => ({
+    const shipmentsWithUrls = shipments.map((s: typeof shipments[number]) => ({
       ...s,
       trackingUrl: s.trackingNumber ? getTrackingUrl(s.carrier, s.trackingNumber) : null,
     }));
