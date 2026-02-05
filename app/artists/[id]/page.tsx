@@ -4,6 +4,8 @@ import React, { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import TopBar from "@/app/components/TopBar";
+import { useLanguage } from "@/lib/useLanguage";
+import { LANGUAGE_NAMES, type SupportedLang } from "@/lib/translateApi";
 
 type ArtistProfile = {
   id: string;
@@ -76,6 +78,7 @@ export default function PublicArtistPage() {
   const router = useRouter();
   const params = useParams<{ id: string }>();
   const id = params?.id;
+  const { lang } = useLanguage();
 
   const [loading, setLoading] = useState(true);
   const [profile, setProfile] = useState<ArtistProfile | null>(null);
@@ -86,6 +89,37 @@ export default function PublicArtistPage() {
   const [inviteMessage, setInviteMessage] = useState("");
   const [inviting, setInviting] = useState(false);
   const [inviteError, setInviteError] = useState<string | null>(null);
+
+  // 번역 관련 상태
+  const [translatedBio, setTranslatedBio] = useState<string | null>(null);
+  const [showBioTranslation, setShowBioTranslation] = useState(false);
+  const [translatingBio, setTranslatingBio] = useState(false);
+
+  async function translateBio() {
+    if (!profile?.bio) return;
+    if (translatedBio) {
+      setShowBioTranslation(!showBioTranslation);
+      return;
+    }
+
+    setTranslatingBio(true);
+    try {
+      const res = await fetch("/api/translate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ text: profile.bio, targetLang: lang }),
+      });
+      const data = await res.json();
+      if (data.ok && data.translated) {
+        setTranslatedBio(data.translated);
+        setShowBioTranslation(true);
+      }
+    } catch (e) {
+      console.error("Translation failed:", e);
+    } finally {
+      setTranslatingBio(false);
+    }
+  }
 
   const load = async () => {
     if (!id) return;
@@ -279,8 +313,27 @@ export default function PublicArtistPage() {
 
             {/* Bio */}
             <div style={{ marginTop: 16 }}>
-              <div style={{ fontSize: 12, fontWeight: 900, opacity: 0.75 }}>
-                Bio
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                <div style={{ fontSize: 12, fontWeight: 900, opacity: 0.75 }}>
+                  Bio
+                </div>
+                {profile?.bio?.trim() && (
+                  <button
+                    onClick={translateBio}
+                    disabled={translatingBio}
+                    style={{
+                      padding: "4px 10px",
+                      borderRadius: 12,
+                      border: "1px solid #ddd",
+                      background: showBioTranslation ? "#e8e8ff" : "#f5f5f5",
+                      fontSize: 11,
+                      color: "#666",
+                      cursor: translatingBio ? "wait" : "pointer",
+                    }}
+                  >
+                    {translatingBio ? "..." : showBioTranslation ? "원문" : `🌐 ${LANGUAGE_NAMES[lang as SupportedLang] || lang}`}
+                  </button>
+                )}
               </div>
               <div
                 style={{
@@ -292,7 +345,16 @@ export default function PublicArtistPage() {
                   whiteSpace: "pre-wrap",
                 }}
               >
-                {profile?.bio?.trim() ? profile.bio : "No bio yet."}
+                {showBioTranslation && translatedBio ? (
+                  <>
+                    <div style={{ color: "#6366f1" }}>{translatedBio}</div>
+                    <div style={{ marginTop: 8, fontSize: 12, color: "#999", fontStyle: "italic", borderTop: "1px dashed #ddd", paddingTop: 8 }}>
+                      원문: {profile?.bio}
+                    </div>
+                  </>
+                ) : (
+                  profile?.bio?.trim() ? profile.bio : "No bio yet."
+                )}
               </div>
             </div>
 

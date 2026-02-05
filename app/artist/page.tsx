@@ -42,23 +42,58 @@ export default function ArtistPage() {
   const [contactingId, setContactingId] = useState<string | null>(null);
   const [contactError, setContactError] = useState<string | null>(null);
   const [countryFilter, setCountryFilter] = useState<string>("한국");
+  const [applyingId, setApplyingId] = useState<string | null>(null);
+  const [appliedIds, setAppliedIds] = useState<Set<string>>(new Set());
 
   async function load() {
     try {
       setError(null);
       setLoading(true);
 
-      const res = await fetch("/api/open-calls", { cache: "no-store" });
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const [ocRes, appRes] = await Promise.all([
+        fetch("/api/open-calls", { cache: "no-store" }),
+        fetch("/api/applications", { cache: "no-store", credentials: "include" }),
+      ]);
 
-      // ✅ 중요: API 응답은 { openCalls: [...] }
-      const data = (await res.json()) as { openCalls: OpenCall[] };
-      setOpenCalls(Array.isArray(data.openCalls) ? data.openCalls : []);
+      if (!ocRes.ok) throw new Error(`HTTP ${ocRes.status}`);
+
+      const ocData = (await ocRes.json()) as { openCalls: OpenCall[] };
+      setOpenCalls(Array.isArray(ocData.openCalls) ? ocData.openCalls : []);
+
+      // 이미 지원한 오픈콜 ID 목록
+      const appData = await appRes.json().catch(() => null);
+      if (appData?.applications) {
+        const ids = new Set<string>(appData.applications.map((a: any) => a.openCallId));
+        setAppliedIds(ids);
+      }
     } catch (e: any) {
       setError(e?.message ?? "Failed to load open calls");
       setOpenCalls([]);
     } finally {
       setLoading(false);
+    }
+  }
+
+  async function applyToOpenCall(openCallId: string, galleryId: string) {
+    setApplyingId(openCallId);
+    try {
+      const res = await fetch("/api/applications", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ openCallId, galleryId }),
+      });
+      const data = await res.json().catch(() => null);
+      if (!res.ok || !data?.application) {
+        alert(data?.error || "지원 실패");
+        return;
+      }
+      setAppliedIds((prev) => new Set([...prev, openCallId]));
+      alert("지원 완료! 갤러리의 검토를 기다려주세요.");
+    } catch {
+      alert("서버 오류");
+    } finally {
+      setApplyingId(null);
     }
   }
 
@@ -216,6 +251,41 @@ export default function ArtistPage() {
                 Theme: <b>{o.theme}</b>
               </div>
               <div style={{ marginTop: 10, display: "flex", gap: 8 }}>
+                {appliedIds.has(o.id) ? (
+                  <span
+                    style={{
+                      padding: "6px 12px",
+                      borderRadius: 10,
+                      background: "#10b981",
+                      color: "#fff",
+                      fontWeight: 700,
+                      fontSize: 12,
+                    }}
+                  >
+                    ✓ 지원완료
+                  </span>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      applyToOpenCall(o.id, o.galleryId);
+                    }}
+                    disabled={applyingId === o.id}
+                    style={{
+                      padding: "6px 12px",
+                      borderRadius: 10,
+                      border: "none",
+                      background: "#6366f1",
+                      color: "#fff",
+                      fontWeight: 700,
+                      fontSize: 12,
+                      cursor: "pointer",
+                    }}
+                  >
+                    {applyingId === o.id ? "지원중..." : "지원하기"}
+                  </button>
+                )}
                 <button
                   type="button"
                   onClick={(e) => {
@@ -229,12 +299,12 @@ export default function ArtistPage() {
                     border: "1px solid #111",
                     background: "#111",
                     color: "#fff",
-                    fontWeight: 800,
+                    fontWeight: 700,
                     fontSize: 12,
                     cursor: "pointer",
                   }}
                 >
-                  {contactingId === o.id ? "Creating chat…" : "Message gallery"}
+                  {contactingId === o.id ? "..." : "메시지"}
                 </button>
                 <button
                   type="button"
@@ -247,12 +317,12 @@ export default function ArtistPage() {
                     borderRadius: 10,
                     border: "1px solid rgba(0,0,0,0.2)",
                     background: "#fff",
-                    fontWeight: 800,
+                    fontWeight: 700,
                     fontSize: 12,
                     cursor: "pointer",
                   }}
                 >
-                  View details
+                  상세보기
                 </button>
               </div>
             </div>

@@ -90,166 +90,132 @@ export default function TopBar() {
   }, [me?.session, me?.profile, country]);
 
   async function logout() {
-  await fetch("/api/auth/logout", {
-    method: "POST",
-    credentials: "include",
-  });
+    await fetch("/api/auth/logout", {
+      method: "POST",
+      credentials: "include",
+    });
 
-  const m = await fetchMe(); // ✅ 다시 확인
-  setMe(m);
+    const m = await fetchMe();
+    setMe(m);
 
-  router.push("/login");
-  router.refresh();
-}
+    router.push("/login");
+    router.refresh();
+  }
 
   const session = me?.session;
 
   return (
-    <div
+    <header
       style={{
         position: "sticky",
         top: 0,
         zIndex: 50,
         background: "white",
-        borderBottom: "1px solid #eee",
-        padding: "12px 18px",
+        borderBottom: "1px solid #e5e5e5",
+        padding: "12px 24px",
         display: "flex",
         alignItems: "center",
         justifyContent: "space-between",
       }}
     >
-      <div style={{ fontWeight: 900, cursor: "pointer" }} onClick={() => router.push("/")}>
-        ROB : role of bridge {country ? `· ${country}` : ""}
+      {/* Logo */}
+      <div
+        onClick={() => router.push("/")}
+        style={{
+          fontWeight: 800,
+          fontSize: 18,
+          cursor: "pointer",
+          display: "flex",
+          alignItems: "center",
+          gap: 8,
+          color: "#111",
+        }}
+      >
+        <span style={{ color: "#6366f1" }}>ROB</span>
+        <span style={{ color: "#888", fontWeight: 400, fontSize: 14 }}>
+          role of bridge
+        </span>
+        {country && (
+          <span style={{ fontSize: 12, color: "#aaa", marginLeft: 4 }}>
+            · {country}
+          </span>
+        )}
       </div>
 
-      <div style={{ display: "flex", gap: 12, alignItems: "center" }}>
+      {/* Navigation */}
+      <nav style={{ display: "flex", gap: 6, alignItems: "center" }}>
         {session ? (
           <>
             {session.role === "artist" ? (
               <>
-                <button
-                  onClick={() => router.push("/artist/me")}
-                  style={{
-                    padding: "8px 10px",
-                    borderRadius: 10,
-                    border: "1px solid rgba(0,0,0,0.12)",
-                    background: "#fff",
-                    cursor: "pointer",
-                    fontWeight: 800,
-                  }}
-                >
+                <NavButton onClick={() => router.push("/artist/me")}>
                   {t("my_profile", lang)}
-                </button>
-                <button
-                  onClick={() => router.push("/open-calls")}
-                  style={{
-                    padding: "8px 10px",
-                    borderRadius: 10,
-                    border: "1px solid rgba(0,0,0,0.12)",
-                    background: "#fff",
-                    cursor: "pointer",
-                    fontWeight: 800,
-                  }}
-                >
+                </NavButton>
+                <NavButton onClick={() => router.push("/open-calls")}>
                   {t("open_calls", lang)}
-                </button>
-                <button
-                  onClick={() => router.push("/galleries")}
-                  style={{
-                    padding: "8px 10px",
-                    borderRadius: 10,
-                    border: "1px solid rgba(0,0,0,0.12)",
-                    background: "#fff",
-                    cursor: "pointer",
-                    fontWeight: 800,
-                  }}
-                >
+                </NavButton>
+                <NavButton onClick={() => router.push("/galleries")}>
                   {t("galleries", lang)}
-                </button>
+                </NavButton>
+                <NavButton onClick={() => router.push("/shipments")}>Shipments</NavButton>
+                <NavButton onClick={() => router.push("/chat")}>Chat</NavButton>
               </>
             ) : (
               <>
-                <button
-                  onClick={() => router.push("/gallery/me")}
-                  style={{
-                    padding: "8px 10px",
-                    borderRadius: 10,
-                    border: "1px solid rgba(0,0,0,0.12)",
-                    background: "#fff",
-                    cursor: "pointer",
-                    fontWeight: 800,
-                  }}
-                >
+                <NavButton onClick={() => router.push("/gallery/me")}>
                   {t("my_profile", lang)}
-                </button>
-                <button
-                  onClick={() => router.push("/artists")}
-                  style={{
-                    padding: "8px 10px",
-                    borderRadius: 10,
-                    border: "1px solid rgba(0,0,0,0.12)",
-                    background: "#fff",
-                    cursor: "pointer",
-                    fontWeight: 800,
-                  }}
-                >
+                </NavButton>
+                <NavButton onClick={() => router.push("/artists")}>
                   {t("artists", lang)}
-                </button>
-                <button
-                  onClick={() => router.push("/galleries")}
-                  style={{
-                    padding: "8px 10px",
-                    borderRadius: 10,
-                    border: "1px solid rgba(0,0,0,0.12)",
-                    background: "#fff",
-                    cursor: "pointer",
-                    fontWeight: 800,
-                  }}
-                >
+                </NavButton>
+                <NavButton onClick={() => router.push("/galleries")}>
                   {t("galleries", lang)}
-                </button>
-                <button
-                  onClick={() => router.push("/gallery")}
-                  style={{
-                    padding: "8px 10px",
-                    borderRadius: 10,
-                    border: "1px solid rgba(0,0,0,0.12)",
-                    background: "#fff",
-                    cursor: "pointer",
-                    fontWeight: 800,
-                  }}
-                >
+                </NavButton>
+                <NavButton onClick={() => router.push("/gallery")}>
                   {t("my_open_calls", lang)}
-                </button>
+                </NavButton>
+                <NavButton onClick={() => router.push("/shipments")}>Shipments</NavButton>
+                <NavButton onClick={() => router.push("/chat")}>Chat</NavButton>
               </>
             )}
-            <div style={{ fontSize: 13, opacity: 0.8, display: "flex", alignItems: "center", gap: 6 }}>
+
+            {/* User Info */}
+            <div
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: 8,
+                marginLeft: 8,
+                padding: "6px 12px",
+                background: "#f5f5f5",
+                borderRadius: 999,
+              }}
+            >
               <span
-                title="online"
                 style={{
                   width: 8,
                   height: 8,
                   borderRadius: "50%",
-                  background: "#22c55e",
-                  display: "inline-block",
+                  background: "#10b981",
                 }}
               />
-              <span>
-                {session.role} ·{" "}
-                {session.role === "artist" && me?.profile?.genre
-                  ? `${me.profile.genre} · ${session.userId}`
-                  : session.userId}
+              <span style={{ fontSize: 12, color: "#555" }}>
+                {session.role === "artist" ? "🎨" : "🏛️"}{" "}
+                {me?.profile?.name || session.userId.slice(0, 8)}
               </span>
             </div>
+
             <button
               onClick={logout}
               style={{
-                padding: "8px 10px",
-                borderRadius: 10,
-                border: "1px solid rgba(0,0,0,0.12)",
-                background: "#fff",
+                padding: "8px 12px",
+                borderRadius: 8,
+                border: "1px solid #e5e5e5",
+                background: "white",
+                color: "#888",
+                fontWeight: 600,
+                fontSize: 13,
                 cursor: "pointer",
-                fontWeight: 800,
               }}
             >
               {t("logout", lang)}
@@ -259,18 +225,46 @@ export default function TopBar() {
           <button
             onClick={() => router.push("/login")}
             style={{
-              padding: "8px 10px",
-              borderRadius: 10,
-              border: "1px solid rgba(0,0,0,0.12)",
-              background: "#fff",
+              padding: "10px 20px",
+              borderRadius: 8,
+              border: "none",
+              background: "#6366f1",
+              color: "white",
+              fontWeight: 600,
+              fontSize: 14,
               cursor: "pointer",
-              fontWeight: 800,
             }}
           >
             {t("login", lang)}
           </button>
         )}
-      </div>
-    </div>
+      </nav>
+    </header>
+  );
+}
+
+function NavButton({
+  onClick,
+  children,
+}: {
+  onClick: () => void;
+  children: React.ReactNode;
+}) {
+  return (
+    <button
+      onClick={onClick}
+      style={{
+        padding: "8px 12px",
+        borderRadius: 8,
+        border: "none",
+        background: "transparent",
+        color: "#555",
+        fontWeight: 600,
+        fontSize: 13,
+        cursor: "pointer",
+      }}
+    >
+      {children}
+    </button>
   );
 }

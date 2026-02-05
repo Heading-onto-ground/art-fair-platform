@@ -80,3 +80,117 @@ model Message {
 
   @@index([roomId])
 }
+
+// ========== 지원 시스템 ==========
+
+enum ApplicationStatus {
+  submitted    // 지원 완료
+  reviewing    // 검토 중
+  accepted     // 승인됨
+  rejected     // 거절됨
+}
+
+model Application {
+  id              String            @id @default(cuid())
+  openCallId      String
+  artistId        String            // User.id
+  galleryId       String            // User.id
+  message         String?
+  portfolioUrl    String?
+  status          ApplicationStatus @default(submitted)
+  createdAt       DateTime          @default(now())
+  updatedAt       DateTime          @updatedAt
+  shipment        Shipment?
+
+  @@unique([openCallId, artistId])
+  @@index([artistId])
+  @@index([galleryId])
+}
+
+// ========== 물류 시스템 ==========
+
+enum ShipmentStatus {
+  pending           // 배송 예약 전
+  scheduled         // 픽업 예약됨
+  pickup_requested  // 픽업 요청됨
+  picked_up         // 픽업 완료
+  in_transit        // 배송 중
+  customs           // 통관 중 (국제배송)
+  out_for_delivery  // 배송 출발
+  delivered         // 배송 완료
+  returned          // 반송됨
+}
+
+enum ShipmentType {
+  local        // 국내 배송
+  international // 국제 배송
+}
+
+model Shipment {
+  id              String          @id @default(cuid())
+  applicationId   String          @unique
+  application     Application     @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+  
+  // 배송 타입
+  type            ShipmentType    @default(local)
+  
+  // 배송 업체 정보
+  carrier         String          // 배송 업체 코드 (dhl, fedex, cj, yamato 등)
+  carrierName     String          // 배송 업체 이름
+  
+  // 배송 상태
+  status          ShipmentStatus  @default(pending)
+  
+  // 추적 정보
+  trackingNumber  String?
+  trackingUrl     String?
+  
+  // 픽업 정보
+  pickupDate      DateTime?
+  pickupTime      String?         // "09:00-12:00" 형식
+  pickupAddress   String
+  pickupContact   String          // 연락처
+  pickupNote      String?         // 픽업 시 참고사항
+  
+  // 배송지 정보 (갤러리)
+  deliveryAddress String
+  deliveryContact String
+  
+  // 작품 정보
+  artworkTitle    String?
+  artworkSize     String?         // "100x80x5cm"
+  artworkWeight   String?         // "5kg"
+  packageCount    Int             @default(1)
+  
+  // 보험
+  insured         Boolean         @default(false)
+  insuranceValue  Float?          // 보험 금액 (USD)
+  
+  // 비용
+  estimatedCost   Float?
+  actualCost      Float?
+  currency        String          @default("KRW")
+  
+  // 타임스탬프
+  createdAt       DateTime        @default(now())
+  updatedAt       DateTime        @updatedAt
+  pickedUpAt      DateTime?
+  deliveredAt     DateTime?
+  
+  // 배송 기록
+  events          ShipmentEvent[]
+
+  @@index([status])
+}
+
+model ShipmentEvent {
+  id          String         @id @default(cuid())
+  shipmentId  String
+  shipment    Shipment       @relation(fields: [shipmentId], references: [id], onDelete: Cascade)
+  status      ShipmentStatus
+  location    String?
+  description String
+  createdAt   DateTime       @default(now())
+
+  @@index([shipmentId])
+}

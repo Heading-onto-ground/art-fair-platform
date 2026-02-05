@@ -4,6 +4,8 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import TopBar from "@/app/components/TopBar";
+import { useLanguage } from "@/lib/useLanguage";
+import { LANGUAGE_NAMES, type SupportedLang } from "@/lib/translateApi";
 
 type Role = "artist" | "gallery";
 
@@ -57,6 +59,7 @@ async function fetchMe(): Promise<MeResponse | null> {
 
 export default function OpenCallDetailPage({ params }: { params: { id: string } }) {
   const router = useRouter();
+  const { lang } = useLanguage();
 
   const [me, setMe] = useState<MeResponse | null>(null);
 
@@ -77,6 +80,38 @@ export default function OpenCallDetailPage({ params }: { params: { id: string } 
   const [shipTrackingUrl, setShipTrackingUrl] = useState("");
   const [shipSaving, setShipSaving] = useState(false);
   const [statusUpdatingId, setStatusUpdatingId] = useState<string | null>(null);
+
+  // 번역 관련 상태
+  const [translatedTheme, setTranslatedTheme] = useState<string | null>(null);
+  const [showTranslation, setShowTranslation] = useState(false);
+  const [translating, setTranslating] = useState(false);
+
+  // 테마 번역
+  async function translateTheme() {
+    if (!openCall?.theme) return;
+    if (translatedTheme) {
+      setShowTranslation(!showTranslation);
+      return;
+    }
+
+    setTranslating(true);
+    try {
+      const res = await fetch("/api/translate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ text: openCall.theme, targetLang: lang }),
+      });
+      const data = await res.json();
+      if (data.ok && data.translated) {
+        setTranslatedTheme(data.translated);
+        setShowTranslation(true);
+      }
+    } catch (e) {
+      console.error("Translation failed:", e);
+    } finally {
+      setTranslating(false);
+    }
+  }
 
   // 1) 세션 미리 로드 (버튼 활성/비활성 및 role 체크용)
   useEffect(() => {
@@ -361,8 +396,36 @@ export default function OpenCallDetailPage({ params }: { params: { id: string } 
           </p>
 
           <div style={{ marginTop: 12, display: "grid", gap: 6 }}>
-            <div>
-              Theme: <b>{openCall.theme}</b>
+            <div style={{ display: "flex", alignItems: "flex-start", gap: 8 }}>
+              <div style={{ flex: 1 }}>
+                <span>Theme: </span>
+                {showTranslation && translatedTheme ? (
+                  <>
+                    <b style={{ color: "#6366f1" }}>{translatedTheme}</b>
+                    <div style={{ fontSize: 12, color: "#999", fontStyle: "italic", marginTop: 2 }}>
+                      원문: {openCall.theme}
+                    </div>
+                  </>
+                ) : (
+                  <b>{openCall.theme}</b>
+                )}
+              </div>
+              <button
+                onClick={translateTheme}
+                disabled={translating}
+                style={{
+                  padding: "4px 10px",
+                  borderRadius: 12,
+                  border: "1px solid #ddd",
+                  background: showTranslation ? "#e8e8ff" : "#f5f5f5",
+                  fontSize: 11,
+                  color: "#666",
+                  cursor: translating ? "wait" : "pointer",
+                  whiteSpace: "nowrap",
+                }}
+              >
+                {translating ? "..." : showTranslation ? "원문" : `🌐 ${LANGUAGE_NAMES[lang as SupportedLang] || lang}`}
+              </button>
             </div>
             <div>Deadline: {openCall.deadline}</div>
             <div style={{ opacity: 0.7 }}>OpenCall ID: {openCall.id}</div>

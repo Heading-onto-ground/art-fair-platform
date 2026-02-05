@@ -4,28 +4,70 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import TopBar from "@/app/components/TopBar";
 
-type Artist = {
-  userId: string;
-  name: string;
-  email: string;
-  country: string;
-  city: string;
-  portfolioUrl?: string;
-  updatedAt?: number;
+type Artist = { userId: string; name: string; email: string; country: string; city: string; portfolioUrl?: string; updatedAt?: number };
+
+// 나라 이름 → 이모지 매핑
+const COUNTRY_FLAGS: Record<string, string> = {
+  "한국": "🇰🇷",
+  "Korea": "🇰🇷",
+  "South Korea": "🇰🇷",
+  "일본": "🇯🇵",
+  "Japan": "🇯🇵",
+  "영국": "🇬🇧",
+  "UK": "🇬🇧",
+  "United Kingdom": "🇬🇧",
+  "미국": "🇺🇸",
+  "USA": "🇺🇸",
+  "United States": "🇺🇸",
+  "중국": "🇨🇳",
+  "China": "🇨🇳",
+  "프랑스": "🇫🇷",
+  "France": "🇫🇷",
+  "독일": "🇩🇪",
+  "Germany": "🇩🇪",
+  "이탈리아": "🇮🇹",
+  "Italy": "🇮🇹",
+  "스페인": "🇪🇸",
+  "Spain": "🇪🇸",
+  "캐나다": "🇨🇦",
+  "Canada": "🇨🇦",
+  "호주": "🇦🇺",
+  "Australia": "🇦🇺",
+  "네덜란드": "🇳🇱",
+  "Netherlands": "🇳🇱",
+  "스위스": "🇨🇭",
+  "Switzerland": "🇨🇭",
+  "싱가포르": "🇸🇬",
+  "Singapore": "🇸🇬",
+  "홍콩": "🇭🇰",
+  "Hong Kong": "🇭🇰",
+  "대만": "🇹🇼",
+  "Taiwan": "🇹🇼",
+  "브라질": "🇧🇷",
+  "Brazil": "🇧🇷",
+  "멕시코": "🇲🇽",
+  "Mexico": "🇲🇽",
+  "인도": "🇮🇳",
+  "India": "🇮🇳",
+  "러시아": "🇷🇺",
+  "Russia": "🇷🇺",
+  "태국": "🇹🇭",
+  "Thailand": "🇹🇭",
+  "베트남": "🇻🇳",
+  "Vietnam": "🇻🇳",
+  "인도네시아": "🇮🇩",
+  "Indonesia": "🇮🇩",
+  "말레이시아": "🇲🇾",
+  "Malaysia": "🇲🇾",
+  "필리핀": "🇵🇭",
+  "Philippines": "🇵🇭",
+  "아랍에미리트": "🇦🇪",
+  "UAE": "🇦🇪",
 };
 
-const COUNTRY_TABS = [
-  "한국",
-  "일본",
-  "영국",
-  "미국",
-  "프랑스",
-  "독일",
-  "이탈리아",
-  "스페인",
-  "캐나다",
-  "호주",
-];
+function getCountryFlag(country: string): string {
+  return COUNTRY_FLAGS[country] || "🌍";
+}
 
 export default function ArtistsPage() {
   const router = useRouter();
@@ -34,341 +76,162 @@ export default function ArtistsPage() {
   const [artists, setArtists] = useState<Artist[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [country, setCountry] = useState<string>(COUNTRY_TABS[0]);
+  const [country, setCountry] = useState<string>("ALL");
   const [query, setQuery] = useState("");
-  const [cityFilter, setCityFilter] = useState<string>("ALL");
-  const [isGalleryView, setIsGalleryView] = useState<boolean>(false);
-  const [sort1, setSort1] = useState<string>("portfolio");
-  const [sort2, setSort2] = useState<string>("updated");
   const [favorites, setFavorites] = useState<Record<string, boolean>>({});
 
   async function load() {
     try {
       setError(null);
       setLoading(true);
-      const [artistsRes, meRes] = await Promise.all([
-        fetch("/api/public/artists", { cache: "no-store" }),
-        fetch("/api/auth/me", { cache: "no-store", credentials: "include" }),
-      ]);
-      const artistsData = await artistsRes.json().catch(() => null);
-      const meData = await meRes.json().catch(() => null);
-      if (!artistsRes.ok) throw new Error(artistsData?.error ?? `HTTP ${artistsRes.status}`);
-      setArtists(Array.isArray(artistsData?.artists) ? artistsData.artists : []);
-      setIsGalleryView(meData?.session?.role === "gallery");
+      const res = await fetch("/api/public/artists", { cache: "no-store" });
+      const data = await res.json().catch(() => null);
+      if (!res.ok) throw new Error(data?.error ?? `HTTP ${res.status}`);
+      setArtists(Array.isArray(data?.artists) ? data.artists : []);
     } catch (e: any) {
-      setError(e?.message ?? "Failed to load artists");
+      setError(e?.message ?? "Failed to load");
       setArtists([]);
     } finally {
       setLoading(false);
     }
   }
 
+  useEffect(() => { load(); }, []);
+
   useEffect(() => {
-    load();
+    try { setFavorites(JSON.parse(localStorage.getItem("favorite_artists") || "{}")); } catch { setFavorites({}); }
   }, []);
 
-  useEffect(() => {
-    if (initializedRef.current) return;
-    const q = searchParams.get("q") ?? "";
-    const c = searchParams.get("country") ?? COUNTRY_TABS[0];
-    const city = searchParams.get("city") ?? "ALL";
-    const sortA = searchParams.get("sort1") ?? "portfolio";
-    const sortB = searchParams.get("sort2") ?? "updated";
-    if (COUNTRY_TABS.includes(c)) setCountry(c);
-    setQuery(q);
-    setCityFilter(city);
-    setSort1(sortA);
-    setSort2(sortB);
-    initializedRef.current = true;
-  }, [searchParams]);
+  useEffect(() => { localStorage.setItem("favorite_artists", JSON.stringify(favorites)); }, [favorites]);
 
-  useEffect(() => {
-    if (!initializedRef.current) return;
-    const params = new URLSearchParams();
-    if (query) params.set("q", query);
-    if (country) params.set("country", country);
-    if (cityFilter && cityFilter !== "ALL") params.set("city", cityFilter);
-    if (sort1 && sort1 !== "portfolio") params.set("sort1", sort1);
-    if (sort2 && sort2 !== "updated") params.set("sort2", sort2);
-    const qs = params.toString();
-    router.replace(`/artists${qs ? `?${qs}` : ""}`);
-  }, [query, country, cityFilter, sort1, sort2, router]);
-
-  useEffect(() => {
-    try {
-      const raw = localStorage.getItem("favorite_artists") || "{}";
-      setFavorites(JSON.parse(raw));
-    } catch {
-      setFavorites({});
-    }
-  }, []);
-
-  useEffect(() => {
-    localStorage.setItem("favorite_artists", JSON.stringify(favorites));
-  }, [favorites]);
-
-  const filtered = useMemo(
-    () => {
-      const q = query.trim().toLowerCase();
-      const list = artists.filter((a) => {
-        if ((a.country ?? "").trim() !== country) return false;
-        if (cityFilter !== "ALL" && (a.city ?? "").trim() !== cityFilter) return false;
-        if (!q) return true;
-        return (
-          a.name.toLowerCase().includes(q) ||
-          a.email.toLowerCase().includes(q) ||
-          a.city.toLowerCase().includes(q)
-        );
-      });
-      const order = [sort1, sort2];
-      const cmpBy = (key: string, a: Artist, b: Artist) => {
-        if (key === "favorites") {
-          const af = favorites[a.userId] ? 1 : 0;
-          const bf = favorites[b.userId] ? 1 : 0;
-          return bf - af;
-        }
-        if (key === "updated") return (b.updatedAt ?? 0) - (a.updatedAt ?? 0);
-        if (key === "portfolio") {
-          const ap = a.portfolioUrl ? 1 : 0;
-          const bp = b.portfolioUrl ? 1 : 0;
-          return bp - ap;
-        }
-        if (key === "city") return a.city.localeCompare(b.city);
-        if (key === "country") return a.country.localeCompare(b.country);
-        return a.name.localeCompare(b.name);
-      };
-      return list.sort((a, b) => {
-        for (const key of order) {
-          const c = cmpBy(key, a, b);
-          if (c !== 0) return c;
-        }
-        return a.name.localeCompare(b.name);
-      });
-    },
-    [artists, country, query, cityFilter, sort1, sort2, favorites]
-  );
-
-  const cityOptions = useMemo(() => {
-    const list = artists
-      .filter((a) => (a.country ?? "").trim() === country)
-      .map((a) => (a.city ?? "").trim())
+  // 아티스트 데이터에서 동적으로 나라 목록 생성
+  const countryTabs = useMemo(() => {
+    const countries = artists
+      .map((a) => (a.country ?? "").trim())
       .filter(Boolean);
-    return ["ALL", ...Array.from(new Set(list)).sort((a, b) => a.localeCompare(b))];
-  }, [artists, country]);
+    const uniqueCountries = Array.from(new Set(countries)).sort((a, b) => {
+      // 아티스트 수가 많은 나라가 앞에 오도록 정렬
+      const countA = artists.filter((x) => x.country === a).length;
+      const countB = artists.filter((x) => x.country === b).length;
+      return countB - countA;
+    });
+    return ["ALL", ...uniqueCountries];
+  }, [artists]);
+
+  // 각 나라별 아티스트 수
+  const countryCounts = useMemo(() => {
+    const counts: Record<string, number> = { ALL: artists.length };
+    artists.forEach((a) => {
+      const c = (a.country ?? "").trim();
+      if (c) counts[c] = (counts[c] || 0) + 1;
+    });
+    return counts;
+  }, [artists]);
+
+  const filtered = useMemo(() => {
+    const q = query.trim().toLowerCase();
+    return artists.filter((a) => {
+      // "ALL"이면 모든 나라 표시
+      if (country !== "ALL" && (a.country ?? "").trim() !== country) return false;
+      if (!q) return true;
+      return a.name.toLowerCase().includes(q) || a.email.toLowerCase().includes(q) || a.city.toLowerCase().includes(q);
+    });
+  }, [artists, country, query]);
 
   return (
     <>
       <TopBar />
-      <main style={{ padding: 24, maxWidth: 980, margin: "0 auto" }}>
-        <div style={{ display: "flex", justifyContent: "space-between", gap: 12 }}>
+      <main style={{ padding: "28px 24px", maxWidth: 900, margin: "0 auto" }}>
+        <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 24 }}>
           <div>
-            <h1 style={{ fontSize: 28, fontWeight: 900 }}>Artists 🌏</h1>
-            <p style={{ opacity: 0.8, marginTop: 6 }}>
-              Browse artists by country.
-            </p>
+            <h1 style={{ fontSize: 28, fontWeight: 800, color: "#111" }}>Artists</h1>
+            <p style={{ color: "#888", fontSize: 14, marginTop: 4 }}>Browse artists by country</p>
           </div>
-          <button onClick={load}>Refresh</button>
+          <button onClick={load} style={{ padding: "6px 12px", borderRadius: 6, border: "1px solid #e5e5e5", background: "white", color: "#888", fontWeight: 500, fontSize: 12, cursor: "pointer" }}>
+            Refresh
+          </button>
         </div>
 
-        <div style={{ marginTop: 14, display: "flex", gap: 8, flexWrap: "wrap" }}>
-          {COUNTRY_TABS.map((c) => {
-            const active = c === country;
-            return (
-              <button
-                key={c}
-                onClick={() => setCountry(c)}
-                style={{
-                  padding: "8px 10px",
-                  borderRadius: 999,
-                  border: "1px solid rgba(0,0,0,0.12)",
-                  background: active ? "rgba(0,0,0,0.06)" : "#fff",
-                  cursor: "pointer",
-                  fontWeight: 700,
-                }}
-              >
-                {c}
-              </button>
-            );
-          })}
+        {/* Country Tabs - 동적 생성 */}
+        <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginBottom: 16 }}>
+          {countryTabs.map((c) => (
+            <button
+              key={c}
+              onClick={() => setCountry(c)}
+              style={{
+                padding: "6px 12px",
+                borderRadius: 999,
+                border: c === country ? "1px solid #6366f1" : "1px solid #e5e5e5",
+                background: c === country ? "rgba(99,102,241,0.1)" : "white",
+                color: c === country ? "#6366f1" : "#666",
+                fontWeight: 600,
+                fontSize: 12,
+                cursor: "pointer",
+                display: "flex",
+                alignItems: "center",
+                gap: 4,
+              }}
+            >
+              {c === "ALL" ? "🌐" : getCountryFlag(c)} {c}
+              <span style={{ 
+                fontSize: 10, 
+                opacity: 0.7,
+                background: c === country ? "rgba(99,102,241,0.2)" : "#f5f5f5",
+                padding: "2px 6px",
+                borderRadius: 999,
+              }}>
+                {countryCounts[c] || 0}
+              </span>
+            </button>
+          ))}
         </div>
 
-        <div style={{ marginTop: 10, display: "flex", gap: 10, flexWrap: "wrap" }}>
-          <input
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-            placeholder="Search name/email/city..."
-            style={{
-              padding: "8px 10px",
-              borderRadius: 10,
-              border: "1px solid rgba(0,0,0,0.12)",
-              minWidth: 220,
-            }}
-          />
-          <select
-            value={cityFilter}
-            onChange={(e) => setCityFilter(e.target.value)}
-            style={{
-              padding: "8px 10px",
-              borderRadius: 10,
-              border: "1px solid rgba(0,0,0,0.12)",
-              background: "#fff",
-            }}
-          >
-            {cityOptions.map((c) => (
-              <option key={c} value={c}>
-                {c === "ALL" ? "All cities" : c}
-              </option>
-            ))}
-          </select>
-          <select
-            value={sort1}
-            onChange={(e) => setSort1(e.target.value)}
-            style={{
-              padding: "8px 10px",
-              borderRadius: 10,
-              border: "1px solid rgba(0,0,0,0.12)",
-              background: "#fff",
-            }}
-          >
-            <option value="portfolio">Sort1: Portfolio</option>
-            <option value="updated">Sort1: Recent update</option>
-            <option value="favorites">Sort1: Favorites</option>
-            <option value="name">Sort1: Name</option>
-            <option value="city">Sort1: City</option>
-            <option value="country">Sort1: Country</option>
-          </select>
-          <select
-            value={sort2}
-            onChange={(e) => setSort2(e.target.value)}
-            style={{
-              padding: "8px 10px",
-              borderRadius: 10,
-              border: "1px solid rgba(0,0,0,0.12)",
-              background: "#fff",
-            }}
-          >
-            <option value="updated">Sort2: Recent update</option>
-            <option value="portfolio">Sort2: Portfolio</option>
-            <option value="favorites">Sort2: Favorites</option>
-            <option value="name">Sort2: Name</option>
-            <option value="city">Sort2: City</option>
-            <option value="country">Sort2: Country</option>
-          </select>
-          <span style={{ fontSize: 12, opacity: 0.7, alignSelf: "center" }}>
-            {isGalleryView ? "Gallery view" : "Public view"}
-          </span>
-        </div>
+        {/* Search */}
+        <input
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+          placeholder="Search name/email/city..."
+          style={{ width: "100%", maxWidth: 300, marginBottom: 20 }}
+        />
 
+        {/* Content */}
         {loading ? (
-          <p style={{ marginTop: 14 }}>Loading…</p>
+          <p style={{ color: "#888", padding: 20 }}>Loading...</p>
         ) : error ? (
-          <div
-            style={{
-              marginTop: 12,
-              border: "1px solid rgba(255,80,80,0.5)",
-              borderRadius: 12,
-              padding: 12,
-            }}
-          >
-            <b>Error:</b> {error}
-          </div>
+          <div style={{ padding: 16, borderRadius: 10, background: "#fef2f2", border: "1px solid #fecaca", color: "#dc2626" }}>{error}</div>
         ) : (
-          <div style={{ marginTop: 16, display: "grid", gap: 12 }}>
+          <div style={{ display: "grid", gap: 10 }}>
             {filtered.map((a) => (
               <div
                 key={a.userId}
-                style={{
-                  border: "1px solid rgba(0,0,0,0.12)",
-                  borderRadius: 14,
-                  padding: 14,
-                  background: "#fff",
-                  cursor: "pointer",
-                }}
                 onClick={() => router.push(`/artists/${encodeURIComponent(a.userId)}`)}
+                style={{ background: "white", border: "1px solid #e5e5e5", borderRadius: 12, padding: 16, cursor: "pointer", transition: "all 0.15s" }}
+                onMouseEnter={(e) => { e.currentTarget.style.borderColor = "#6366f1"; }}
+                onMouseLeave={(e) => { e.currentTarget.style.borderColor = "#e5e5e5"; }}
               >
-                <div style={{ fontWeight: 900 }}>
-                  {a.name} · {a.city}, {a.country}
-                </div>
-                <div style={{ marginTop: 6, fontSize: 12, opacity: 0.8 }}>
-                  {a.email}
-                </div>
-                <div style={{ marginTop: 6, display: "flex", gap: 8, flexWrap: "wrap" }}>
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      setFavorites((p) => ({
-                        ...p,
-                        [a.userId]: !p[a.userId],
-                      }));
-                    }}
-                    style={{
-                      padding: "6px 10px",
-                      borderRadius: 10,
-                      border: "1px solid rgba(0,0,0,0.12)",
-                      background: favorites[a.userId] ? "#111" : "#fff",
-                      color: favorites[a.userId] ? "#fff" : "#111",
-                      fontWeight: 800,
-                      fontSize: 12,
-                      cursor: "pointer",
-                    }}
-                  >
-                    {favorites[a.userId] ? "★ Favorite" : "☆ Favorite"}
-                  </button>
-                </div>
-                {isGalleryView ? (
-                  <div style={{ marginTop: 6, display: "flex", gap: 8, flexWrap: "wrap" }}>
-                    {a.portfolioUrl ? (
-                      <a
-                        href={a.portfolioUrl}
-                        target="_blank"
-                        rel="noreferrer"
-                        onClick={(e) => e.stopPropagation()}
-                        style={{
-                          padding: "6px 10px",
-                          borderRadius: 10,
-                          border: "1px solid #111",
-                          background: "#111",
-                          color: "#fff",
-                          fontWeight: 800,
-                          textDecoration: "none",
-                          fontSize: 12,
-                        }}
-                      >
-                        View Portfolio
-                      </a>
-                    ) : (
-                      <span style={{ fontSize: 12, opacity: 0.7 }}>
-                        No portfolio
-                      </span>
-                    )}
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
+                  <div>
+                    <div style={{ fontWeight: 700, color: "#111" }}>🎨 {a.name}</div>
+                    <div style={{ fontSize: 13, color: "#666", marginTop: 2 }}>{a.city}, {a.country}</div>
+                    <div style={{ fontSize: 12, color: "#aaa", marginTop: 2 }}>{a.email}</div>
+                  </div>
+                  <div style={{ display: "flex", gap: 6 }}>
                     <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        router.push(`/artists/${encodeURIComponent(a.userId)}`);
-                      }}
-                      style={{
-                        padding: "6px 10px",
-                        borderRadius: 10,
-                        border: "1px solid rgba(0,0,0,0.12)",
-                        background: "#fff",
-                        fontWeight: 800,
-                        fontSize: 12,
-                        cursor: "pointer",
-                      }}
+                      onClick={(e) => { e.stopPropagation(); setFavorites((p) => ({ ...p, [a.userId]: !p[a.userId] })); }}
+                      style={{ padding: "6px 10px", borderRadius: 6, border: "1px solid #e5e5e5", background: favorites[a.userId] ? "#6366f1" : "white", color: favorites[a.userId] ? "white" : "#888", fontWeight: 600, fontSize: 12, cursor: "pointer" }}
                     >
-                      View Profile
+                      {favorites[a.userId] ? "★" : "☆"}
                     </button>
+                    {a.portfolioUrl && (
+                      <a href={a.portfolioUrl} target="_blank" rel="noreferrer" onClick={(e) => e.stopPropagation()} style={{ padding: "6px 10px", borderRadius: 6, background: "#6366f1", color: "white", fontWeight: 600, fontSize: 12, textDecoration: "none" }}>
+                        Portfolio
+                      </a>
+                    )}
                   </div>
-                ) : (
-                  <div style={{ marginTop: 6, fontSize: 12, opacity: 0.8 }}>
-                    Portfolio: {a.portfolioUrl ? "✅" : "—"}
-                  </div>
-                )}
+                </div>
               </div>
             ))}
-            {filtered.length === 0 && (
-              <p style={{ opacity: 0.8 }}>No artists in this country yet.</p>
-            )}
+            {filtered.length === 0 && <p style={{ color: "#888", padding: 20, textAlign: "center", background: "white", borderRadius: 12, border: "1px solid #e5e5e5" }}>No artists in this country yet.</p>}
           </div>
         )}
       </main>

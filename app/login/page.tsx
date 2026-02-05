@@ -34,7 +34,6 @@ export default function LoginPage() {
   const [loading, setLoading] = useState(false);
   const [err, setErr] = useState<string | null>(null);
 
-  // ✅ URL ?role=artist|gallery 로 초기 role 선택
   useEffect(() => {
     const roleParam = searchParams.get("role");
     if (roleParam === "artist" || roleParam === "gallery") {
@@ -42,12 +41,9 @@ export default function LoginPage() {
     }
   }, [searchParams]);
 
-  // ✅ 자동 리다이렉트 없음: 사용자가 직접 로그인/로그아웃 선택
-
   const gotoByServerSession = async () => {
     const meRes = await fetch("/api/auth/me", { cache: "no-store" });
     const me = (await meRes.json().catch(() => null)) as MeResponse | null;
-
     const realRole = me?.session?.role;
     if (realRole === "artist") router.push("/artist");
     else if (realRole === "gallery") router.push("/gallery");
@@ -56,7 +52,6 @@ export default function LoginPage() {
 
   const onLogin = async () => {
     setErr(null);
-
     const e = email.trim();
     const p = password.trim();
     if (!e) return setErr("이메일을 입력해주세요.");
@@ -67,18 +62,13 @@ export default function LoginPage() {
       const res = await fetch("/api/auth/login", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        // ✅ role은 보내되, 최종 라우팅은 /api/auth/me 로 확인
         body: JSON.stringify({ role, email: e, password: p }),
       });
-
       const data = await res.json().catch(() => null);
-
       if (!res.ok || !data?.ok) {
         setErr(data?.error ?? `로그인 실패 (${res.status})`);
         return;
       }
-
-      // ✅ 중요: 서버 쿠키 기준으로 role 재확인 후 이동
       await gotoByServerSession();
     } catch {
       setErr("서버 오류");
@@ -93,15 +83,11 @@ export default function LoginPage() {
     const p = password.trim();
     if (!e) return setErr("이메일을 입력해주세요.");
     if (!p || p.length < 6) return setErr("비밀번호는 6자 이상이어야 해요.");
-    if (role === "artist") {
-      if (!artistId || !name || !startedYear || !genre) {
-        return setErr("작가 필수 정보를 모두 입력해주세요.");
-      }
+    if (role === "artist" && (!artistId || !name || !startedYear || !genre)) {
+      return setErr("작가 필수 정보를 모두 입력해주세요.");
     }
-    if (role === "gallery") {
-      if (!galleryId || !name || !address || !foundedYear || !instagram) {
-        return setErr("갤러리 필수 정보를 모두 입력해주세요.");
-      }
+    if (role === "gallery" && (!galleryId || !name || !address || !foundedYear || !instagram)) {
+      return setErr("갤러리 필수 정보를 모두 입력해주세요.");
     }
 
     setLoading(true);
@@ -137,249 +123,233 @@ export default function LoginPage() {
     }
   };
 
+  const accentColor = role === "artist" ? "#6366f1" : "#ec4899";
+
   return (
     <>
       <TopBar />
-      <main style={{ maxWidth: 520, margin: "30px auto", padding: "0 12px" }}>
-        <h1 style={{ fontSize: 22, fontWeight: 900 }}>🔐 {t("login_title", lang)}</h1>
+      <main style={{ maxWidth: 440, margin: "40px auto", padding: "0 20px" }}>
+        {/* Header */}
+        <div style={{ textAlign: "center", marginBottom: 28 }}>
+          <h1 style={{ fontSize: 28, fontWeight: 800, color: "#111" }}>
+            {mode === "login" ? t("login_title", lang) : t("signup_title", lang)}
+          </h1>
+          <p style={{ color: "#888", fontSize: 14, marginTop: 6 }}>
+            {mode === "login" ? "Welcome back!" : "Create your account"}
+          </p>
+        </div>
 
+        {/* Form Card */}
         <div
           style={{
-            marginTop: 14,
-            border: "1px solid #eee",
-            borderRadius: 14,
-            padding: 14,
-            background: "#fff",
+            background: "white",
+            border: "1px solid #e5e5e5",
+            borderRadius: 16,
+            padding: 24,
+            boxShadow: "0 2px 8px rgba(0,0,0,0.04)",
           }}
         >
-          {/* Role toggle */}
-          <div style={{ display: "flex", gap: 8, marginBottom: 12 }}>
-            <button
-              type="button"
-              onClick={() => {
-                setRole("artist");
-                setErr(null);
-              }}
-              style={{
-                padding: "10px 12px",
-                borderRadius: 999,
-                border: "1px solid #ddd",
-                background: role === "artist" ? "#111" : "#fff",
-                color: role === "artist" ? "#fff" : "#111",
-                fontWeight: 900,
-                cursor: "pointer",
-              }}
+          {/* Role Toggle */}
+          <div
+            style={{
+              display: "flex",
+              gap: 8,
+              marginBottom: 20,
+              background: "#f5f5f5",
+              padding: 4,
+              borderRadius: 10,
+            }}
+          >
+            <ToggleBtn
+              active={role === "artist"}
+              onClick={() => { setRole("artist"); setErr(null); }}
+              color="#6366f1"
             >
               🎨 Artist
-            </button>
-
-            <button
-              type="button"
-              onClick={() => {
-                setRole("gallery");
-                setErr(null);
-              }}
-              style={{
-                padding: "10px 12px",
-                borderRadius: 999,
-                border: "1px solid #ddd",
-                background: role === "gallery" ? "#111" : "#fff",
-                color: role === "gallery" ? "#fff" : "#111",
-                fontWeight: 900,
-                cursor: "pointer",
-              }}
+            </ToggleBtn>
+            <ToggleBtn
+              active={role === "gallery"}
+              onClick={() => { setRole("gallery"); setErr(null); }}
+              color="#ec4899"
             >
               🏛️ Gallery
-            </button>
+            </ToggleBtn>
           </div>
 
-          <div style={{ display: "flex", gap: 8, marginBottom: 12 }}>
-            <button
-              type="button"
-              onClick={() => setMode("login")}
-              style={{
-                padding: "8px 10px",
-                borderRadius: 999,
-                border: "1px solid #ddd",
-                background: mode === "login" ? "#111" : "#fff",
-                color: mode === "login" ? "#fff" : "#111",
-                fontWeight: 900,
-                cursor: "pointer",
-              }}
-            >
+          {/* Mode Toggle */}
+          <div style={{ display: "flex", gap: 8, marginBottom: 20 }}>
+            <ModeBtn active={mode === "login"} onClick={() => setMode("login")}>
               {t("login_title", lang)}
-            </button>
-            <button
-              type="button"
-              onClick={() => setMode("signup")}
+            </ModeBtn>
+            <ModeBtn active={mode === "signup"} onClick={() => setMode("signup")}>
+              {t("signup_title", lang)}
+            </ModeBtn>
+          </div>
+
+          {/* Form */}
+          <div style={{ display: "grid", gap: 14 }}>
+            <Field label="Email">
+              <input
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="you@example.com"
+                autoComplete="email"
+                style={{ width: "100%" }}
+              />
+            </Field>
+            <Field label="Password">
+              <input
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                placeholder="Enter password"
+                type="password"
+                autoComplete="current-password"
+                style={{ width: "100%" }}
+                onKeyDown={(e) => { if (e.key === "Enter" && mode === "login") onLogin(); }}
+              />
+            </Field>
+
+            {mode === "signup" && (
+              <>
+                {role === "artist" ? (
+                  <>
+                    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+                      <Field label="Artist ID *">
+                        <input value={artistId} onChange={(e) => setArtistId(e.target.value)} placeholder="ART-0001" style={{ width: "100%" }} />
+                      </Field>
+                      <Field label="Name *">
+                        <input value={name} onChange={(e) => setName(e.target.value)} placeholder="Min Kim" style={{ width: "100%" }} />
+                      </Field>
+                    </div>
+                    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+                      <Field label="Start Year *">
+                        <input value={startedYear} onChange={(e) => setStartedYear(e.target.value)} placeholder="2018" style={{ width: "100%" }} />
+                      </Field>
+                      <Field label="Genre *">
+                        <input value={genre} onChange={(e) => setGenre(e.target.value)} placeholder="Painting" style={{ width: "100%" }} />
+                      </Field>
+                    </div>
+                    <Field label="Instagram (optional)">
+                      <input value={instagram} onChange={(e) => setInstagram(e.target.value)} placeholder="https://instagram.com/..." style={{ width: "100%" }} />
+                    </Field>
+                  </>
+                ) : (
+                  <>
+                    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+                      <Field label="Gallery ID *">
+                        <input value={galleryId} onChange={(e) => setGalleryId(e.target.value)} placeholder="GAL-0001" style={{ width: "100%" }} />
+                      </Field>
+                      <Field label="Name *">
+                        <input value={name} onChange={(e) => setName(e.target.value)} placeholder="Aurora Gallery" style={{ width: "100%" }} />
+                      </Field>
+                    </div>
+                    <Field label="Address *">
+                      <input value={address} onChange={(e) => setAddress(e.target.value)} placeholder="Seoul, South Korea" style={{ width: "100%" }} />
+                    </Field>
+                    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+                      <Field label="Founded Year *">
+                        <input value={foundedYear} onChange={(e) => setFoundedYear(e.target.value)} placeholder="2010" style={{ width: "100%" }} />
+                      </Field>
+                      <Field label="Instagram *">
+                        <input value={instagram} onChange={(e) => setInstagram(e.target.value)} placeholder="@gallery" style={{ width: "100%" }} />
+                      </Field>
+                    </div>
+                  </>
+                )}
+              </>
+            )}
+          </div>
+
+          {/* Error */}
+          {err && (
+            <div
               style={{
-                padding: "8px 10px",
-                borderRadius: 999,
-                border: "1px solid #ddd",
-                background: mode === "signup" ? "#111" : "#fff",
-                color: mode === "signup" ? "#fff" : "#111",
-                fontWeight: 900,
-                cursor: "pointer",
+                marginTop: 14,
+                padding: "10px 14px",
+                borderRadius: 8,
+                background: "#fef2f2",
+                border: "1px solid #fecaca",
+                color: "#dc2626",
+                fontSize: 13,
               }}
             >
-              {t("signup_title", lang)}
-            </button>
-          </div>
-
-          {/* Email */}
-          <div style={{ display: "grid", gap: 8 }}>
-            <label style={{ fontSize: 12, opacity: 0.75 }}>Email</label>
-            <input
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              placeholder="you@example.com"
-              autoComplete="email"
-              style={{
-                padding: 12,
-                borderRadius: 12,
-                border: "1px solid #ddd",
-              }}
-            />
-
-            <label style={{ fontSize: 12, opacity: 0.75, marginTop: 6 }}>
-              Password
-            </label>
-            <input
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              placeholder="Enter password"
-              type="password"
-              autoComplete="current-password"
-              style={{
-                padding: 12,
-                borderRadius: 12,
-                border: "1px solid #ddd",
-              }}
-              onKeyDown={(e) => {
-                if (e.key === "Enter") onLogin();
-              }}
-            />
-          </div>
-
-          {mode === "signup" ? (
-            <div style={{ marginTop: 12, display: "grid", gap: 8 }}>
-              {role === "artist" ? (
-                <>
-                  <label style={{ fontSize: 12, opacity: 0.75 }}>Artist ID</label>
-                  <input
-                    value={artistId}
-                    onChange={(e) => setArtistId(e.target.value)}
-                    placeholder="e.g., ART-0001"
-                    style={{ padding: 12, borderRadius: 12, border: "1px solid #ddd" }}
-                  />
-                  <label style={{ fontSize: 12, opacity: 0.75 }}>Artist Name</label>
-                  <input
-                    value={name}
-                    onChange={(e) => setName(e.target.value)}
-                    placeholder="e.g., Min Kim"
-                    style={{ padding: 12, borderRadius: 12, border: "1px solid #ddd" }}
-                  />
-                  <label style={{ fontSize: 12, opacity: 0.75 }}>Start Year</label>
-                  <input
-                    value={startedYear}
-                    onChange={(e) => setStartedYear(e.target.value)}
-                    placeholder="e.g., 2018"
-                    style={{ padding: 12, borderRadius: 12, border: "1px solid #ddd" }}
-                  />
-                  <label style={{ fontSize: 12, opacity: 0.75 }}>Genre</label>
-                  <input
-                    value={genre}
-                    onChange={(e) => setGenre(e.target.value)}
-                    placeholder="e.g., Painting"
-                    style={{ padding: 12, borderRadius: 12, border: "1px solid #ddd" }}
-                  />
-                  <label style={{ fontSize: 12, opacity: 0.75 }}>Instagram (optional)</label>
-                  <input
-                    value={instagram}
-                    onChange={(e) => setInstagram(e.target.value)}
-                    placeholder="https://instagram.com/..."
-                    style={{ padding: 12, borderRadius: 12, border: "1px solid #ddd" }}
-                  />
-                  <label style={{ fontSize: 12, opacity: 0.75 }}>Portfolio URL (optional)</label>
-                  <input
-                    value={portfolioUrl}
-                    onChange={(e) => setPortfolioUrl(e.target.value)}
-                    placeholder="https://... (PDF or website)"
-                    style={{ padding: 12, borderRadius: 12, border: "1px solid #ddd" }}
-                  />
-                </>
-              ) : (
-                <>
-                  <label style={{ fontSize: 12, opacity: 0.75 }}>Gallery ID</label>
-                  <input
-                    value={galleryId}
-                    onChange={(e) => setGalleryId(e.target.value)}
-                    placeholder="e.g., GAL-0001"
-                    style={{ padding: 12, borderRadius: 12, border: "1px solid #ddd" }}
-                  />
-                  <label style={{ fontSize: 12, opacity: 0.75 }}>Gallery Name</label>
-                  <input
-                    value={name}
-                    onChange={(e) => setName(e.target.value)}
-                    placeholder="e.g., Aurora Gallery"
-                    style={{ padding: 12, borderRadius: 12, border: "1px solid #ddd" }}
-                  />
-                  <label style={{ fontSize: 12, opacity: 0.75 }}>Gallery Address</label>
-                  <input
-                    value={address}
-                    onChange={(e) => setAddress(e.target.value)}
-                    placeholder="Address"
-                    style={{ padding: 12, borderRadius: 12, border: "1px solid #ddd" }}
-                  />
-                  <label style={{ fontSize: 12, opacity: 0.75 }}>Founded Year</label>
-                  <input
-                    value={foundedYear}
-                    onChange={(e) => setFoundedYear(e.target.value)}
-                    placeholder="e.g., 2010"
-                    style={{ padding: 12, borderRadius: 12, border: "1px solid #ddd" }}
-                  />
-                  <label style={{ fontSize: 12, opacity: 0.75 }}>Instagram</label>
-                  <input
-                    value={instagram}
-                    onChange={(e) => setInstagram(e.target.value)}
-                    placeholder="https://instagram.com/..."
-                    style={{ padding: 12, borderRadius: 12, border: "1px solid #ddd" }}
-                  />
-                </>
-              )}
+              {err}
             </div>
-          ) : null}
+          )}
 
-          {err && <div style={{ marginTop: 10, color: "#c00" }}>{err}</div>}
-
+          {/* Submit */}
           <button
-            type="button"
             onClick={mode === "login" ? onLogin : onSignup}
             disabled={loading}
             style={{
-              marginTop: 14,
+              marginTop: 20,
               width: "100%",
-              padding: "12px 14px",
-              borderRadius: 12,
-              border: "1px solid #111",
-              background: "#111",
-              color: "#fff",
-              fontWeight: 900,
-              cursor: "pointer",
+              padding: "14px",
+              borderRadius: 10,
+              border: "none",
+              background: loading ? "#ccc" : accentColor,
+              color: "white",
+              fontWeight: 700,
+              fontSize: 15,
+              cursor: loading ? "not-allowed" : "pointer",
             }}
           >
-            {loading
-              ? mode === "login"
-                ? "Signing in..."
-                : "Creating account..."
-              : mode === "login"
-              ? "Sign in"
-              : "Create account"}
+            {loading ? "..." : mode === "login" ? "Sign in" : "Create account"}
           </button>
-
-          <div style={{ marginTop: 10, fontSize: 12, opacity: 0.7 }} />
         </div>
       </main>
     </>
+  );
+}
+
+function ToggleBtn({ active, onClick, color, children }: { active: boolean; onClick: () => void; color: string; children: React.ReactNode }) {
+  return (
+    <button
+      onClick={onClick}
+      style={{
+        flex: 1,
+        padding: "10px 14px",
+        borderRadius: 8,
+        border: "none",
+        background: active ? color : "transparent",
+        color: active ? "white" : "#888",
+        fontWeight: 700,
+        fontSize: 13,
+        cursor: "pointer",
+      }}
+    >
+      {children}
+    </button>
+  );
+}
+
+function ModeBtn({ active, onClick, children }: { active: boolean; onClick: () => void; children: React.ReactNode }) {
+  return (
+    <button
+      onClick={onClick}
+      style={{
+        padding: "6px 14px",
+        borderRadius: 6,
+        border: active ? "1px solid #6366f1" : "1px solid transparent",
+        background: active ? "rgba(99,102,241,0.1)" : "transparent",
+        color: active ? "#6366f1" : "#aaa",
+        fontWeight: 600,
+        fontSize: 13,
+        cursor: "pointer",
+      }}
+    >
+      {children}
+    </button>
+  );
+}
+
+function Field({ label, children }: { label: string; children: React.ReactNode }) {
+  return (
+    <div>
+      <label style={{ display: "block", fontSize: 12, fontWeight: 600, color: "#555", marginBottom: 6 }}>
+        {label}
+      </label>
+      {children}
+    </div>
   );
 }

@@ -3,6 +3,8 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import TopBar from "@/app/components/TopBar";
+import { useLanguage } from "@/lib/useLanguage";
+import { LANGUAGE_NAMES, type SupportedLang } from "@/lib/translateApi";
 
 type Role = "artist" | "gallery";
 
@@ -16,6 +18,8 @@ type Message = {
   senderId: string;
   text: string;
   createdAt: number;
+  translated?: string; // 번역된 텍스트
+  showTranslation?: boolean; // 번역 표시 여부
 };
 
 type RoomInfo = {
@@ -52,6 +56,7 @@ async function fetchMe(): Promise<MeResponse | null> {
 
 export default function ChatRoomPage({ params }: { params: { roomId: string } }) {
   const router = useRouter();
+  const { lang } = useLanguage();
 
   const [me, setMe] = useState<MeResponse | null>(null);
   const session = me?.session;
@@ -66,6 +71,63 @@ export default function ChatRoomPage({ params }: { params: { roomId: string } })
   const [loading, setLoading] = useState(true);
   const [sending, setSending] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [autoTranslate, setAutoTranslate] = useState(false);
+  const [translating, setTranslating] = useState<Set<string>>(new Set());
+
+  // 단일 메시지 번역
+  async function translateMessage(msgId: string, msgText: string) {
+    if (translating.has(msgId)) return;
+
+    setTranslating((prev) => new Set(prev).add(msgId));
+
+    try {
+      const res = await fetch("/api/translate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ text: msgText, targetLang: lang }),
+      });
+      const data = await res.json();
+
+      if (data.ok && data.translated) {
+        setMessages((prev) =>
+          prev.map((m) =>
+            m.id === msgId
+              ? { ...m, translated: data.translated, showTranslation: true }
+              : m
+          )
+        );
+      }
+    } catch (e) {
+      console.error("Translation failed:", e);
+    } finally {
+      setTranslating((prev) => {
+        const next = new Set(prev);
+        next.delete(msgId);
+        return next;
+      });
+    }
+  }
+
+  // 번역 토글
+  function toggleTranslation(msgId: string) {
+    setMessages((prev) =>
+      prev.map((m) =>
+        m.id === msgId ? { ...m, showTranslation: !m.showTranslation } : m
+      )
+    );
+  }
+
+  // 자동 번역 모드일 때 새 메시지 번역
+  useEffect(() => {
+    if (autoTranslate && messages.length > 0) {
+      messages.forEach((m) => {
+        if (!m.translated && m.senderId !== userId) {
+          translateMessage(m.id, m.text);
+        }
+      });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [autoTranslate, messages.length]);
 
   async function load() {
     try {
@@ -166,16 +228,45 @@ export default function ChatRoomPage({ params }: { params: { roomId: string } })
           ← Back
         </button>
 
-        <h1 style={{ fontSize: 26, fontWeight: 900 }}>Chat 💬</h1>
-        <p style={{ opacity: 0.7, marginTop: 6 }}>
-          room: <b>{params.roomId}</b>
-          {session && (
-            <>
-              {" "}
-              · you: <b>{userId}</b> ({role})
-            </>
-          )}
-        </p>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 12 }}>
+          <div>
+            <h1 style={{ fontSize: 26, fontWeight: 900, margin: 0 }}>Chat 💬</h1>
+            <p style={{ opacity: 0.7, marginTop: 6 }}>
+              room: <b>{params.roomId}</b>
+              {session && (
+                <>
+                  {" "}
+                  · you: <b>{userId}</b> ({role})
+                </>
+              )}
+            </p>
+          </div>
+
+          {/* 자동 번역 토글 */}
+          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+            <span style={{ fontSize: 13, color: "#666" }}>🌐 자동번역</span>
+            <button
+              onClick={() => setAutoTranslate(!autoTranslate)}
+              style={{
+                padding: "6px 12px",
+                borderRadius: 20,
+                border: "1px solid",
+                borderColor: autoTranslate ? "#6366f1" : "#ddd",
+                background: autoTranslate ? "#6366f1" : "white",
+                color: autoTranslate ? "white" : "#666",
+                fontSize: 12,
+                fontWeight: 600,
+                cursor: "pointer",
+                transition: "all 0.2s",
+              }}
+            >
+              {autoTranslate ? "ON" : "OFF"}
+            </button>
+            <span style={{ fontSize: 11, color: "#999" }}>
+              → {LANGUAGE_NAMES[lang as SupportedLang] || lang}
+            </span>
+          </div>
+        </div>
 
         {role === "gallery" && artistProfile ? (
           <div
@@ -275,25 +366,69 @@ export default function ChatRoomPage({ params }: { params: { roomId: string } })
             <p style={{ opacity: 0.7 }}>No messages yet. Say hello 👋</p>
           ) : (
             <div style={{ display: "grid", gap: 10 }}>
-              {messages.map((m) => (
-                <div
-                  key={m.id}
-                  style={{
-                    padding: 10,
-                    borderRadius: 12,
-                    border: "1px solid rgba(0,0,0,0.10)",
-                    opacity: 0.95,
-                  }}
-                >
-                  <div style={{ fontWeight: 800 }}>
-                    {m.senderId === userId ? "You" : m.senderId}
+              {messages.map((m) => {
+                const isMine = m.senderId === userId;
+                const isTranslating = translating.has(m.id);
+
+                return (
+                  <div
+                    key={m.id}
+                    style={{
+                      padding: 10,
+                      borderRadius: 12,
+                      border: "1px solid rgba(0,0,0,0.10)",
+                      opacity: 0.95,
+                      background: isMine ? "#f8f8ff" : "white",
+                    }}
+                  >
+                    <div style={{ fontWeight: 800, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                      <span>{isMine ? "You" : m.senderId}</span>
+                      {/* 번역 버튼 (자기 메시지 제외) */}
+                      {!isMine && (
+                        <button
+                          onClick={() => {
+                            if (m.translated) {
+                              toggleTranslation(m.id);
+                            } else {
+                              translateMessage(m.id, m.text);
+                            }
+                          }}
+                          disabled={isTranslating}
+                          style={{
+                            padding: "2px 8px",
+                            borderRadius: 12,
+                            border: "1px solid #ddd",
+                            background: m.showTranslation ? "#e8e8ff" : "#f5f5f5",
+                            fontSize: 11,
+                            color: "#666",
+                            cursor: isTranslating ? "wait" : "pointer",
+                          }}
+                        >
+                          {isTranslating ? "..." : m.showTranslation ? "원문" : "🌐 번역"}
+                        </button>
+                      )}
+                    </div>
+
+                    {/* 원문 또는 번역문 */}
+                    <div style={{ marginTop: 4 }}>
+                      {m.showTranslation && m.translated ? (
+                        <>
+                          <div style={{ color: "#6366f1" }}>{m.translated}</div>
+                          <div style={{ marginTop: 4, fontSize: 12, color: "#999", fontStyle: "italic" }}>
+                            원문: {m.text}
+                          </div>
+                        </>
+                      ) : (
+                        m.text
+                      )}
+                    </div>
+
+                    <div style={{ marginTop: 6, opacity: 0.6, fontSize: 12 }}>
+                      {new Date(m.createdAt).toLocaleString()}
+                    </div>
                   </div>
-                  <div style={{ marginTop: 4 }}>{m.text}</div>
-                  <div style={{ marginTop: 6, opacity: 0.6, fontSize: 12 }}>
-                    {new Date(m.createdAt).toLocaleString()}
-                  </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           )}
         </div>
