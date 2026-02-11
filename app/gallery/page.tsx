@@ -3,8 +3,10 @@
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import TopBar from "@/app/components/TopBar";
+import { CardSkeleton } from "@/app/components/Skeleton";
 import { useLanguage } from "@/lib/useLanguage";
 import { t } from "@/lib/translate";
+import { F, S } from "@/lib/design";
 
 type Role = "artist" | "gallery";
 
@@ -29,6 +31,7 @@ type OpenCall = {
   country: string;
   theme: string;
   deadline: string;
+  posterImage?: string | null;
   createdAt: number;
 };
 
@@ -79,8 +82,11 @@ export default function GalleryPage() {
     theme: "",
     deadline: "",
   });
+  const [ocPosterPreview, setOcPosterPreview] = useState<string | null>(null);
+  const [ocPosterData, setOcPosterData] = useState<string | null>(null);
   const [savingOC, setSavingOC] = useState(false);
   const [ocMsg, setOcMsg] = useState<string | null>(null);
+  const [uploadingPosterId, setUploadingPosterId] = useState<string | null>(null);
 
   const session = me?.session;
 
@@ -224,7 +230,7 @@ export default function GalleryPage() {
         return;
       }
       setTemplates(data.templates as InviteTemplates);
-      setTplMsg("Saved ✅");
+      setTplMsg("Saved successfully");
     } catch {
       setTplMsg("Server error");
     } finally {
@@ -237,16 +243,18 @@ export default function GalleryPage() {
     setOcMsg(null);
     setSavingOC(true);
     try {
+      const payload: any = {
+        gallery: ocForm.gallery.trim(),
+        city: ocForm.city.trim(),
+        country: ocForm.country.trim(),
+        theme: ocForm.theme.trim(),
+        deadline: ocForm.deadline.trim(),
+      };
+      if (ocPosterData) payload.posterImage = ocPosterData;
       const res = await fetch("/api/open-calls", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          gallery: ocForm.gallery.trim(),
-          city: ocForm.city.trim(),
-          country: ocForm.country.trim(),
-          theme: ocForm.theme.trim(),
-          deadline: ocForm.deadline.trim(),
-        }),
+        body: JSON.stringify(payload),
       });
       const data = await res.json().catch(() => null);
       if (!res.ok || !data?.openCall) {
@@ -254,11 +262,54 @@ export default function GalleryPage() {
       }
       setOpenCalls((p) => [data.openCall as OpenCall, ...p]);
       setOcForm((p) => ({ ...p, city: "", country: "", theme: "", deadline: "" }));
-      setOcMsg("오픈콜 등록 완료 ✅");
+      setOcPosterPreview(null);
+      setOcPosterData(null);
+      setOcMsg("Open call published successfully");
     } catch (e: any) {
-      setOcMsg(e?.message ?? "오픈콜 등록 실패");
+      setOcMsg(e?.message ?? "Failed to publish open call");
     } finally {
       setSavingOC(false);
+    }
+  }
+
+  function handlePosterSelect(e: React.ChangeEvent<HTMLInputElement>, mode: "create" | string) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (!file.type.startsWith("image/")) return;
+    if (file.size > 2 * 1024 * 1024) { alert("Image too large (max 2MB)"); return; }
+
+    resizeImage(file, 600, 600, 0.85).then((dataUri) => {
+      if (mode === "create") {
+        setOcPosterPreview(dataUri);
+        setOcPosterData(dataUri);
+      } else {
+        // Upload to existing open call
+        uploadPosterToExisting(mode, dataUri);
+      }
+    });
+  }
+
+  async function uploadPosterToExisting(openCallId: string, dataUri: string) {
+    setUploadingPosterId(openCallId);
+    try {
+      const res = await fetch(`/api/open-calls/${openCallId}/poster`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ image: dataUri }),
+      });
+      const data = await res.json().catch(() => null);
+      if (!res.ok || !data?.ok) {
+        alert(data?.error || "Upload failed");
+        return;
+      }
+      setOpenCalls((prev) =>
+        prev.map((o) => (o.id === openCallId ? { ...o, posterImage: dataUri } : o))
+      );
+    } catch {
+      alert("Upload failed");
+    } finally {
+      setUploadingPosterId(null);
     }
   }
 
@@ -266,8 +317,10 @@ export default function GalleryPage() {
     return (
       <>
         <TopBar />
-        <main style={{ maxWidth: 900, margin: "30px auto", padding: "0 12px" }}>
-          <p>Loading…</p>
+        <main style={{ maxWidth: 1000, margin: "48px auto", padding: "0 40px" }}>
+          <div style={{ padding: "clamp(20px, 3vw, 48px)" }}>
+            <CardSkeleton count={4} />
+          </div>
         </main>
       </>
     );
@@ -276,345 +329,506 @@ export default function GalleryPage() {
   return (
     <>
       <TopBar />
-      <main style={{ maxWidth: 900, margin: "30px auto", padding: "0 12px" }}>
-        <div style={{ display: "flex", justifyContent: "space-between" }}>
-          <h1 style={{ fontSize: 26, fontWeight: 900 }}>🏛️ {t("gallery_page_title", lang)}</h1>
-          <button onClick={refresh}>{t("refresh", lang)}</button>
+      <main style={{ maxWidth: 1000, margin: "0 auto", padding: "48px 40px" }}>
+        {/* Header - Margiela Style */}
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 48 }}>
+          <div>
+            <span
+              style={{
+                fontFamily: F,
+                fontSize: 10,
+                letterSpacing: "0.2em",
+                textTransform: "uppercase",
+                color: "#8A8A8A",
+              }}
+            >
+              {t("gallery_dashboard", lang)}
+            </span>
+            <h1
+              style={{
+                fontFamily: S,
+                fontSize: 42,
+                fontWeight: 300,
+                color: "#1A1A1A",
+                marginTop: 8,
+                letterSpacing: "-0.01em",
+              }}
+            >
+              {t("gallery_page_title", lang)}
+            </h1>
+            <p
+              style={{
+                fontFamily: F,
+                fontSize: 12,
+                color: "#8A8A8A",
+                marginTop: 8,
+                letterSpacing: "0.02em",
+              }}
+            >
+              Signed in: {session?.userId}
+            </p>
+          </div>
+          <button
+            onClick={refresh}
+            style={{
+              padding: "10px 20px",
+              border: "1px solid #E5E0DB",
+              background: "transparent",
+              color: "#4A4A4A",
+              fontFamily: F,
+              fontSize: 10,
+              letterSpacing: "0.1em",
+              textTransform: "uppercase",
+              cursor: "pointer",
+            }}
+          >
+            {t("refresh", lang)}
+          </button>
         </div>
-
-        <p style={{ opacity: 0.7, marginTop: 6 }}>
-          Signed in: <b>{session?.userId}</b> ({session?.role})
-        </p>
 
         {err && (
           <div
             style={{
-              marginTop: 12,
-              border: "1px solid rgba(255,80,80,0.5)",
-              borderRadius: 12,
-              padding: 12,
+              marginBottom: 32,
+              padding: 20,
+              border: "1px solid #D4B0B0",
+              background: "#FDF8F8",
+              color: "#8B3A3A",
+              fontFamily: F,
+              fontSize: 12,
             }}
           >
-            <b>Error:</b> {err}
+            Error: {err}
           </div>
         )}
 
-        <div style={{ marginTop: 16 }}>
-          <h2 style={{ fontSize: 18, fontWeight: 900 }}>Create Open Call</h2>
-          <div
-            style={{
-              marginTop: 10,
-              border: "1px solid rgba(0,0,0,0.12)",
-              borderRadius: 14,
-              padding: 14,
-              background: "#fff",
-            }}
-          >
-            <div style={{ display: "grid", gap: 10 }}>
-              <input
-                value={ocForm.gallery}
-                onChange={(e) => setOcForm((p) => ({ ...p, gallery: e.target.value }))}
-                placeholder="Gallery name"
-                style={{
-                  padding: 10,
-                  borderRadius: 10,
-                  border: "1px solid rgba(0,0,0,0.16)",
-                }}
-              />
-              <div style={{ display: "grid", gap: 10, gridTemplateColumns: "1fr 1fr" }}>
-                <select
-                  value={ocForm.country}
-                  onChange={(e) => setOcForm((p) => ({ ...p, country: e.target.value }))}
-                  style={{
-                    padding: 10,
-                    borderRadius: 10,
-                    border: "1px solid rgba(0,0,0,0.16)",
-                    background: "#fff",
-                  }}
-                >
-                  <option value="한국">한국</option>
-                  <option value="일본">일본</option>
-                  <option value="영국">영국</option>
-                </select>
-                <input
-                  value={ocForm.city}
-                  onChange={(e) => setOcForm((p) => ({ ...p, city: e.target.value }))}
-                  placeholder="City"
-                  style={{
-                    padding: 10,
-                    borderRadius: 10,
-                    border: "1px solid rgba(0,0,0,0.16)",
-                  }}
-                />
+        {/* Create Open Call Section */}
+        <Section number="01" title={t("gallery_create_oc", lang)}>
+          <div style={{ display: "grid", gap: 16 }}>
+            {/* Poster Image Upload */}
+            <div>
+              <label style={{ fontFamily: F, fontSize: 10, fontWeight: 500, letterSpacing: "0.1em", textTransform: "uppercase", color: "#8A8A8A", marginBottom: 8, display: "block" }}>
+                Poster Image (optional)
+              </label>
+              <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
+                {ocPosterPreview ? (
+                  <div style={{ width: 120, height: 80, border: "1px solid #E5E0DB", overflow: "hidden", flexShrink: 0 }}>
+                    <img src={ocPosterPreview} alt="Poster" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                  </div>
+                ) : (
+                  <div style={{ width: 120, height: 80, border: "1px dashed #E5E0DB", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, background: "#FAF8F5" }}>
+                    <span style={{ fontFamily: F, fontSize: 9, color: "#C8C0B4", letterSpacing: "0.08em", textTransform: "uppercase" }}>No image</span>
+                  </div>
+                )}
+                <div style={{ display: "flex", gap: 8 }}>
+                  <label style={{ padding: "10px 16px", border: "1px solid #E5E0DB", background: "transparent", color: "#4A4A4A", fontFamily: F, fontSize: 10, letterSpacing: "0.1em", textTransform: "uppercase", cursor: "pointer" }}>
+                    {ocPosterPreview ? "Change" : "Upload"}
+                    <input type="file" accept="image/jpeg,image/png,image/webp" onChange={(e) => handlePosterSelect(e, "create")} style={{ display: "none" }} />
+                  </label>
+                  {ocPosterPreview && (
+                    <button onClick={() => { setOcPosterPreview(null); setOcPosterData(null); }} style={{ padding: "10px 16px", border: "1px solid #D4B0B0", background: "transparent", color: "#8B3A3A", fontFamily: F, fontSize: 10, letterSpacing: "0.1em", textTransform: "uppercase", cursor: "pointer" }}>
+                      Remove
+                    </button>
+                  )}
+                </div>
               </div>
+            </div>
+
+            <input
+              value={ocForm.gallery}
+              onChange={(e) => setOcForm((p) => ({ ...p, gallery: e.target.value }))}
+              placeholder="Gallery name"
+              style={inputStyle}
+            />
+            <div style={{ display: "grid", gap: 16, gridTemplateColumns: "1fr 1fr" }}>
+              <select
+                value={ocForm.country}
+                onChange={(e) => setOcForm((p) => ({ ...p, country: e.target.value }))}
+                style={inputStyle}
+              >
+                <option value="한국">Korea</option>
+                <option value="일본">Japan</option>
+                <option value="영국">UK</option>
+              </select>
               <input
-                value={ocForm.theme}
-                onChange={(e) => setOcForm((p) => ({ ...p, theme: e.target.value }))}
-                placeholder="Theme"
-                style={{
-                  padding: 10,
-                  borderRadius: 10,
-                  border: "1px solid rgba(0,0,0,0.16)",
-                }}
-              />
-              <input
-                value={ocForm.deadline}
-                onChange={(e) => setOcForm((p) => ({ ...p, deadline: e.target.value }))}
-                placeholder="Deadline (YYYY-MM-DD)"
-                style={{
-                  padding: 10,
-                  borderRadius: 10,
-                  border: "1px solid rgba(0,0,0,0.16)",
-                }}
+                value={ocForm.city}
+                onChange={(e) => setOcForm((p) => ({ ...p, city: e.target.value }))}
+                placeholder="City"
+                style={inputStyle}
               />
             </div>
+            <input
+              value={ocForm.theme}
+              onChange={(e) => setOcForm((p) => ({ ...p, theme: e.target.value }))}
+              placeholder="Theme"
+              style={inputStyle}
+            />
+            <input
+              value={ocForm.deadline}
+              onChange={(e) => setOcForm((p) => ({ ...p, deadline: e.target.value }))}
+              placeholder="Deadline (YYYY-MM-DD)"
+              style={inputStyle}
+            />
             <button
               onClick={createOpenCall}
               disabled={savingOC}
               style={{
-                marginTop: 10,
-                padding: "10px 12px",
-                borderRadius: 10,
-                border: "1px solid #111",
-                background: "#111",
-                color: "#fff",
-                fontWeight: 900,
-                cursor: "pointer",
+                padding: "14px 24px",
+                border: "1px solid #1A1A1A",
+                background: "#1A1A1A",
+                color: "#FFFFFF",
+                fontFamily: F,
+                fontSize: 10,
+                letterSpacing: "0.15em",
+                textTransform: "uppercase",
+                cursor: savingOC ? "not-allowed" : "pointer",
+                opacity: savingOC ? 0.5 : 1,
               }}
             >
-              {savingOC ? "Saving..." : "Publish Open Call"}
+                {savingOC ? t("gallery_publishing", lang) : t("gallery_publish", lang)}
             </button>
-            {ocMsg ? <div style={{ marginTop: 8, fontSize: 12 }}>{ocMsg}</div> : null}
+            {ocMsg && (
+              <p style={{ fontFamily: F, fontSize: 11, color: ocMsg.includes("success") ? "#3D5A3D" : "#8B3A3A" }}>
+                {ocMsg}
+              </p>
+            )}
           </div>
+        </Section>
 
-          <h2 style={{ marginTop: 18, fontSize: 18, fontWeight: 900 }}>
-            My Open Calls
-          </h2>
+        {/* My Open Calls Section */}
+        <Section number="02" title={t("gallery_my_oc", lang)}>
           {openCalls.length === 0 ? (
-            <div style={{ marginTop: 10, opacity: 0.8 }}>No open calls yet.</div>
+            <EmptyState>{t("gallery_no_oc", lang)}</EmptyState>
           ) : (
-            <div style={{ marginTop: 10, display: "grid", gap: 10 }}>
-              {openCalls.map((o) => (
-                <button
+            <div style={{ display: "grid", gap: 1, background: "#E5E0DB" }}>
+              {openCalls.map((o, index) => (
+                <div
                   key={o.id}
-                  onClick={() => router.push(`/open-calls/${o.id}`)}
                   style={{
                     textAlign: "left",
-                    padding: 12,
-                    borderRadius: 12,
-                    border: "1px solid rgba(0,0,0,0.12)",
-                    background: "#fff",
-                    cursor: "pointer",
+                    padding: 24,
+                    background: "#FFFFFF",
+                    transition: "background 0.3s ease",
                   }}
                 >
-                  <div style={{ fontWeight: 900 }}>
-                    {o.country} {o.city} · {o.theme}
-                  </div>
-                  <div style={{ marginTop: 6, fontSize: 12, opacity: 0.8 }}>
-                    Deadline: {o.deadline} · OpenCall: {o.id}
-                  </div>
-                </button>
-              ))}
-            </div>
-          )}
-        </div>
-
-        <div style={{ marginTop: 24 }}>
-          <h2 style={{ fontSize: 18, fontWeight: 900 }}>Chats</h2>
-
-          {rooms.length === 0 ? (
-            <div
-              style={{
-                marginTop: 10,
-                border: "1px solid rgba(0,0,0,0.1)",
-                borderRadius: 12,
-                padding: 12,
-                opacity: 0.8,
-                background: "#fff",
-              }}
-            >
-              No chats yet.
-            </div>
-          ) : (
-            <div style={{ marginTop: 10, display: "grid", gap: 10 }}>
-              {rooms.map((r) => {
-                const last = r.messages?.[r.messages.length - 1];
-                const counterpart = r.artistId;
-
-                return (
-                  <button
-                    key={r.id}
-                    onClick={() =>
-                      router.push(`/chat/${r.id}?uid=${session?.userId}&role=gallery`)
-                    }
-                    style={{
-                      textAlign: "left",
-                      padding: 14,
-                      borderRadius: 14,
-                      border: "1px solid rgba(0,0,0,0.12)",
-                      background: "#fff",
-                      cursor: "pointer",
-                    }}
-                  >
-                    <div style={{ fontWeight: 900 }}>
-                      🎨 Artist: {counterpart}
-                    </div>
-                    <div style={{ marginTop: 6, opacity: 0.85 }}>
-                      OpenCall: <b>{r.openCallId}</b> · Room: {r.id}
-                    </div>
-                    <div style={{ marginTop: 8, opacity: 0.9 }}>
-                      {last ? (
-                        <>
-                          <b>{last.senderId === session?.userId ? "You" : last.senderId}:</b>{" "}
-                          {last.text}
-                        </>
+                  <div style={{ display: "flex", gap: 20, alignItems: "flex-start" }}>
+                    {/* Poster thumbnail + upload */}
+                    <div style={{ flexShrink: 0 }}>
+                      {o.posterImage ? (
+                        <div style={{ width: 100, height: 70, border: "1px solid #E5E0DB", overflow: "hidden", marginBottom: 6 }}>
+                          <img src={o.posterImage} alt="Poster" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                        </div>
                       ) : (
-                        <span style={{ opacity: 0.7 }}>No messages yet</span>
+                        <div style={{ width: 100, height: 70, border: "1px dashed #E5E0DB", display: "flex", alignItems: "center", justifyContent: "center", background: "#FAF8F5", marginBottom: 6 }}>
+                          <span style={{ fontFamily: F, fontSize: 8, color: "#C8C0B4", letterSpacing: "0.08em", textTransform: "uppercase" }}>No poster</span>
+                        </div>
                       )}
+                      <label style={{
+                        display: "block", textAlign: "center", padding: "5px 8px",
+                        border: "1px solid #E5E0DB", background: "transparent",
+                        color: "#8A8A8A", fontFamily: F, fontSize: 8,
+                        letterSpacing: "0.08em", textTransform: "uppercase",
+                        cursor: uploadingPosterId === o.id ? "wait" : "pointer",
+                        opacity: uploadingPosterId === o.id ? 0.5 : 1,
+                      }}>
+                        {uploadingPosterId === o.id ? "..." : o.posterImage ? "Change" : "Upload"}
+                        <input type="file" accept="image/jpeg,image/png,image/webp" onChange={(e) => handlePosterSelect(e, o.id)} style={{ display: "none" }} disabled={uploadingPosterId === o.id} />
+                      </label>
                     </div>
-                  </button>
-                );
-              })}
-            </div>
-          )}
-        </div>
 
-        <div style={{ marginTop: 24 }}>
-          <h2 style={{ fontSize: 18, fontWeight: 900 }}>Invites</h2>
-          {invites.length === 0 ? (
-            <div style={{ marginTop: 10, opacity: 0.8 }}>No invites yet.</div>
-          ) : (
-            <div style={{ marginTop: 10, display: "grid", gap: 10 }}>
-              {invites.map((i) => (
-                <div
-                  key={i.id}
-                  style={{
-                    border: "1px solid rgba(0,0,0,0.12)",
-                    borderRadius: 12,
-                    padding: 12,
-                    background: "#fff",
-                  }}
-                >
-                  <div style={{ fontWeight: 900 }}>
-                    🎨 {i.artistId} · OpenCall {i.openCallId}
-                  </div>
-                  <div style={{ marginTop: 6, fontSize: 12, opacity: 0.8 }}>
-                    {new Date(i.createdAt).toLocaleString()}
-                  </div>
-                  <div style={{ marginTop: 6 }}>{i.message}</div>
-                  <div style={{ marginTop: 8, display: "flex", gap: 8, flexWrap: "wrap" }}>
-                    <span style={{ fontSize: 12, opacity: 0.7 }}>
-                      Status: {i.status}
-                    </span>
-                    <button
-                      onClick={() => updateInviteStatus(i.id, "viewed")}
-                      style={{
-                        padding: "6px 10px",
-                        borderRadius: 10,
-                        border: "1px solid rgba(0,0,0,0.12)",
-                        background: "#fff",
-                        fontSize: 12,
-                        fontWeight: 800,
-                        cursor: "pointer",
-                      }}
-                    >
-                      Mark Viewed
-                    </button>
-                    <button
-                      onClick={() => updateInviteStatus(i.id, "accepted")}
-                      style={{
-                        padding: "6px 10px",
-                        borderRadius: 10,
-                        border: "1px solid #111",
-                        background: "#111",
-                        color: "#fff",
-                        fontSize: 12,
-                        fontWeight: 800,
-                        cursor: "pointer",
-                      }}
-                    >
-                      Mark Accepted
-                    </button>
-                    <button
-                      onClick={() => updateInviteStatus(i.id, "declined")}
-                      style={{
-                        padding: "6px 10px",
-                        borderRadius: 10,
-                        border: "1px solid rgba(200,0,0,0.4)",
-                        background: "rgba(200,0,0,0.06)",
-                        color: "#b00",
-                        fontSize: 12,
-                        fontWeight: 800,
-                        cursor: "pointer",
-                      }}
-                    >
-                      Mark Declined
-                    </button>
+                    {/* Info */}
+                    <div style={{ flex: 1, cursor: "pointer" }} onClick={() => router.push(`/open-calls/${o.id}`)}>
+                      <div style={{ display: "flex", alignItems: "baseline", gap: 12, marginBottom: 8 }}>
+                        <span style={{ fontFamily: F, fontSize: 10, color: "#B0B0B0" }}>
+                          {String(index + 1).padStart(2, "0")}
+                        </span>
+                        <span style={{ fontFamily: F, fontSize: 10, letterSpacing: "0.1em", textTransform: "uppercase", color: "#8A8A8A" }}>
+                          {o.country} / {o.city}
+                        </span>
+                      </div>
+                      <h3 style={{ fontFamily: S, fontSize: 20, fontWeight: 400, color: "#1A1A1A" }}>
+                        {o.theme}
+                      </h3>
+                      <p style={{ fontFamily: F, fontSize: 11, color: "#8A8A8A", marginTop: 6 }}>
+                        Deadline: {o.deadline}
+                      </p>
+                    </div>
                   </div>
                 </div>
               ))}
             </div>
           )}
-        </div>
+        </Section>
 
-        <div style={{ marginTop: 24 }}>
-          <h2 style={{ fontSize: 18, fontWeight: 900 }}>Invite Templates</h2>
-          {!templates ? (
-            <div style={{ marginTop: 10, opacity: 0.8 }}>Loading templates…</div>
+        {/* Chats Section */}
+        <Section number="03" title={t("gallery_messages", lang)}>
+          {rooms.length === 0 ? (
+            <EmptyState>{t("gallery_no_chats", lang)}</EmptyState>
           ) : (
-            <div
-              style={{
-                marginTop: 10,
-                border: "1px solid rgba(0,0,0,0.12)",
-                borderRadius: 12,
-                padding: 12,
-                background: "#fff",
-                display: "grid",
-                gap: 10,
-              }}
-            >
-              <div style={{ fontSize: 12, opacity: 0.7 }}>
-                Use placeholders: {"{{gallery}}"}, {"{{theme}}"}, {"{{artist}}"}, {"{{deadline}}"},{" "}
-                {"{{city}}"}, {"{{country}}"}
-              </div>
+            <div style={{ display: "grid", gap: 1, background: "#E5E0DB" }}>
+              {rooms.map((r) => {
+                const last = r.messages?.[r.messages.length - 1];
+                return (
+                  <button
+                    key={r.id}
+                    onClick={() => router.push(`/chat/${r.id}?uid=${session?.userId}&role=gallery`)}
+                    style={{
+                      textAlign: "left",
+                      padding: 24,
+                      background: "#FFFFFF",
+                      border: "none",
+                      cursor: "pointer",
+                      transition: "background 0.3s ease",
+                    }}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.background = "#FAF8F5";
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.background = "#FFFFFF";
+                    }}
+                  >
+                    <div style={{ fontFamily: F, fontSize: 10, letterSpacing: "0.1em", textTransform: "uppercase", color: "#8A8A8A", marginBottom: 8 }}>
+                      Artist: {r.artistId}
+                    </div>
+                    <p style={{ fontFamily: F, fontSize: 13, color: "#1A1A1A" }}>
+                      {last ? (
+                        <>
+                          <span style={{ color: "#8A8A8A" }}>{last.senderId === session?.userId ? "You" : last.senderId}:</span>{" "}
+                          {last.text}
+                        </>
+                      ) : (
+                        <span style={{ color: "#8A8A8A", fontStyle: "italic" }}>No messages yet</span>
+                      )}
+                    </p>
+                  </button>
+                );
+              })}
+            </div>
+          )}
+        </Section>
+
+        {/* Invites Section */}
+        <Section number="04" title={t("gallery_invites", lang)}>
+          {invites.length === 0 ? (
+            <EmptyState>{t("gallery_no_invites", lang)}</EmptyState>
+          ) : (
+            <div style={{ display: "grid", gap: 1, background: "#E5E0DB" }}>
+              {invites.map((i) => (
+                <div
+                  key={i.id}
+                  style={{
+                    padding: 24,
+                    background: "#FFFFFF",
+                  }}
+                >
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
+                    <div>
+                      <div style={{ fontFamily: F, fontSize: 10, letterSpacing: "0.1em", textTransform: "uppercase", color: "#8A8A8A", marginBottom: 8 }}>
+                        Artist: {i.artistId}
+                      </div>
+                      <p style={{ fontFamily: F, fontSize: 13, color: "#1A1A1A", marginBottom: 8 }}>
+                        {i.message}
+                      </p>
+                      <p style={{ fontFamily: F, fontSize: 11, color: "#8A8A8A" }}>
+                        Status: {i.status} · {new Date(i.createdAt).toLocaleDateString()}
+                      </p>
+                    </div>
+                    <div style={{ display: "flex", gap: 8 }}>
+                      <StatusButton onClick={() => updateInviteStatus(i.id, "viewed")}>Viewed</StatusButton>
+                      <StatusButton onClick={() => updateInviteStatus(i.id, "accepted")} primary>Accepted</StatusButton>
+                      <StatusButton onClick={() => updateInviteStatus(i.id, "declined")} danger>Declined</StatusButton>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </Section>
+
+        {/* Templates Section */}
+        <Section number="05" title={t("gallery_templates", lang)}>
+          {!templates ? (
+            <EmptyState>Loading templates...</EmptyState>
+          ) : (
+            <div style={{ display: "grid", gap: 16 }}>
+              <p style={{ fontFamily: F, fontSize: 11, color: "#8A8A8A", letterSpacing: "0.02em" }}>
+                Use placeholders: {"{{gallery}}"}, {"{{theme}}"}, {"{{artist}}"}, {"{{deadline}}"}, {"{{city}}"}, {"{{country}}"}
+              </p>
               <textarea
                 value={templates.korea}
                 onChange={(e) => setTemplates((p) => (p ? { ...p, korea: e.target.value } : p))}
-                rows={2}
-                style={{ padding: 10, borderRadius: 10, border: "1px solid #ddd" }}
+                rows={3}
+                placeholder="Korea template"
+                style={{ ...inputStyle, resize: "vertical" }}
               />
               <textarea
                 value={templates.japan}
                 onChange={(e) => setTemplates((p) => (p ? { ...p, japan: e.target.value } : p))}
-                rows={2}
-                style={{ padding: 10, borderRadius: 10, border: "1px solid #ddd" }}
+                rows={3}
+                placeholder="Japan template"
+                style={{ ...inputStyle, resize: "vertical" }}
               />
               <textarea
                 value={templates.global}
                 onChange={(e) => setTemplates((p) => (p ? { ...p, global: e.target.value } : p))}
-                rows={2}
-                style={{ padding: 10, borderRadius: 10, border: "1px solid #ddd" }}
+                rows={3}
+                placeholder="Global template"
+                style={{ ...inputStyle, resize: "vertical" }}
               />
               <button
                 onClick={saveTemplates}
                 disabled={tplSaving}
                 style={{
-                  padding: "8px 10px",
-                  borderRadius: 10,
-                  border: "1px solid #111",
-                  background: "#111",
-                  color: "#fff",
-                  fontWeight: 900,
-                  cursor: "pointer",
+                  padding: "14px 24px",
+                  border: "1px solid #1A1A1A",
+                  background: "#1A1A1A",
+                  color: "#FFFFFF",
+                  fontFamily: F,
+                  fontSize: 10,
+                  letterSpacing: "0.15em",
+                  textTransform: "uppercase",
+                  cursor: tplSaving ? "not-allowed" : "pointer",
+                  opacity: tplSaving ? 0.5 : 1,
                 }}
               >
-                {tplSaving ? "Saving..." : "Save Templates"}
+                {tplSaving ? t("profile_saving", lang) : t("gallery_save_templates", lang)}
               </button>
-              {tplMsg ? <div style={{ fontSize: 12 }}>{tplMsg}</div> : null}
+              {tplMsg && (
+                <p style={{ fontFamily: F, fontSize: 11, color: tplMsg.includes("success") ? "#3D5A3D" : "#8B3A3A" }}>
+                  {tplMsg}
+                </p>
+              )}
             </div>
           )}
-        </div>
+        </Section>
       </main>
     </>
   );
+}
+
+const inputStyle: React.CSSProperties = {
+  padding: "14px 18px",
+  border: "1px solid #E5E0DB",
+  background: "#FFFFFF",
+  fontFamily: F,
+  fontSize: 13,
+  color: "#1A1A1A",
+  outline: "none",
+  transition: "border-color 0.3s ease",
+};
+
+function Section({ number, title, children }: { number: string; title: string; children: React.ReactNode }) {
+  return (
+    <div style={{ marginBottom: 48 }}>
+      <div style={{ display: "flex", alignItems: "baseline", gap: 16, marginBottom: 20 }}>
+        <span
+          style={{
+            fontFamily: F,
+            fontSize: 10,
+            letterSpacing: "0.2em",
+            color: "#B0B0B0",
+          }}
+        >
+          {number}
+        </span>
+        <h2
+          style={{
+            fontFamily: S,
+            fontSize: 24,
+            fontWeight: 400,
+            color: "#1A1A1A",
+          }}
+        >
+          {title}
+        </h2>
+      </div>
+      <div
+        style={{
+          border: "1px solid #E5E0DB",
+          padding: 28,
+          background: "#FFFFFF",
+        }}
+      >
+        {children}
+      </div>
+    </div>
+  );
+}
+
+function EmptyState({ children }: { children: React.ReactNode }) {
+  return (
+    <p
+      style={{
+        fontFamily: S,
+        fontSize: 16,
+        fontStyle: "italic",
+        color: "#8A8A8A",
+        textAlign: "center",
+        padding: 24,
+      }}
+    >
+      {children}
+    </p>
+  );
+}
+
+function StatusButton({
+  onClick,
+  children,
+  primary,
+  danger,
+}: {
+  onClick: () => void;
+  children: React.ReactNode;
+  primary?: boolean;
+  danger?: boolean;
+}) {
+  return (
+    <button
+      onClick={onClick}
+      style={{
+        padding: "8px 14px",
+        border: `1px solid ${danger ? "#8B3A3A" : primary ? "#1A1A1A" : "#E5E0DB"}`,
+        background: primary ? "#1A1A1A" : "transparent",
+        color: danger ? "#8B3A3A" : primary ? "#FFFFFF" : "#4A4A4A",
+        fontFamily: F,
+        fontSize: 9,
+        letterSpacing: "0.1em",
+        textTransform: "uppercase",
+        cursor: "pointer",
+        transition: "all 0.3s ease",
+      }}
+    >
+      {children}
+    </button>
+  );
+}
+
+/** Resize image to max dimensions and return base64 data URI */
+function resizeImage(file: File, maxW: number, maxH: number, quality: number): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => {
+      const img = new Image();
+      img.onload = () => {
+        let w = img.width;
+        let h = img.height;
+        if (w > maxW || h > maxH) {
+          const ratio = Math.min(maxW / w, maxH / h);
+          w = Math.round(w * ratio);
+          h = Math.round(h * ratio);
+        }
+        const canvas = document.createElement("canvas");
+        canvas.width = w;
+        canvas.height = h;
+        const ctx = canvas.getContext("2d")!;
+        ctx.drawImage(img, 0, 0, w, h);
+        resolve(canvas.toDataURL("image/jpeg", quality));
+      };
+      img.onerror = reject;
+      img.src = reader.result as string;
+    };
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
+  });
 }

@@ -8,7 +8,7 @@ export async function GET() {
     if (!session || session.role !== "artist") {
       return NextResponse.json({ error: "unauthorized" }, { status: 401 });
     }
-    const invites = listInvitesByArtist(session.userId);
+    const invites = await listInvitesByArtist(session.userId);
     return NextResponse.json({ invites }, { status: 200 });
   } catch (e) {
     console.error("GET /api/artist/invites failed:", e);
@@ -30,12 +30,13 @@ export async function PATCH(req: Request) {
       return NextResponse.json({ error: "invalid status" }, { status: 400 });
     }
 
-    const invite = listInvitesByArtist(session.userId).find((i) => i.id === id);
+    const inviteList = await listInvitesByArtist(session.userId);
+    const invite = inviteList.find((i) => i.id === id);
     if (!invite) {
       return NextResponse.json({ error: "not found" }, { status: 404 });
     }
 
-    const updated = updateInviteStatus(id, status);
+    const updated = await updateInviteStatus(id, status);
     return NextResponse.json({ invite: updated }, { status: 200 });
   } catch (e) {
     console.error("PATCH /api/artist/invites failed:", e);

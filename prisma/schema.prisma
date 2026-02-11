@@ -23,38 +23,40 @@ model User {
 }
 
 model ArtistProfile {
-  id          String   @id @default(cuid())
-  userId      String   @unique
-  user        User     @relation(fields: [userId], references: [id])
-  artistId    String   @unique
-  name        String
-  startedYear Int
-  genre       String
-  instagram   String?
-  country     String?
-  city        String?
-  website     String?
-  bio         String?
+  id           String   @id @default(cuid())
+  userId       String   @unique
+  user         User     @relation(fields: [userId], references: [id])
+  artistId     String   @unique
+  name         String
+  startedYear  Int
+  genre        String
+  instagram    String?
+  country      String?
+  city         String?
+  website      String?
+  bio          String?
   portfolioUrl String?
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  profileImage String?  // Base64 data URI or URL
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
 }
 
 model GalleryProfile {
-  id          String   @id @default(cuid())
-  userId      String   @unique
-  user        User     @relation(fields: [userId], references: [id])
-  galleryId   String   @unique
-  name        String
-  address     String
-  foundedYear Int
-  instagram   String?
-  country     String?
-  city        String?
-  website     String?
-  bio         String?
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  id           String   @id @default(cuid())
+  userId       String   @unique
+  user         User     @relation(fields: [userId], references: [id])
+  galleryId    String   @unique
+  name         String
+  address      String
+  foundedYear  Int
+  instagram    String?
+  country      String?
+  city         String?
+  website      String?
+  bio          String?
+  profileImage String?  // Base64 data URI or URL
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
 }
 
 model ChatRoom {
@@ -81,23 +83,69 @@ model Message {
   @@index([roomId])
 }
 
+// ========== 오픈콜 시스템 ==========
+
+model OpenCall {
+  id                 String   @id @default(cuid())
+  galleryId          String
+  gallery            String
+  city               String
+  country            String
+  theme              String
+  deadline           String
+  posterImage        String?  // Base64 data URI for poster/banner
+  isExternal         Boolean  @default(false)
+  externalEmail      String?
+  externalUrl        String?
+  galleryWebsite     String?
+  galleryDescription String?
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+
+  @@index([country])
+  @@index([galleryId])
+  @@index([isExternal])
+}
+
 // ========== 지원 시스템 ==========
 
 enum ApplicationStatus {
-  submitted    // 지원 완료
-  reviewing    // 검토 중
-  accepted     // 승인됨
-  rejected     // 거절됨
+  submitted
+  reviewing
+  accepted
+  rejected
+}
+
+enum AppShippingStatus {
+  pending
+  shipped
+  received
+  inspected
+  exhibited
 }
 
 model Application {
   id              String            @id @default(cuid())
   openCallId      String
-  artistId        String            // User.id
-  galleryId       String            // User.id
+  artistId        String
+  galleryId       String
+  artistName      String            @default("")
+  artistEmail     String            @default("")
+  artistCountry   String            @default("")
+  artistCity      String            @default("")
+  artistPortfolioUrl String?
   message         String?
   portfolioUrl    String?
   status          ApplicationStatus @default(submitted)
+  shippingStatus  AppShippingStatus @default(pending)
+  shippingNote    String?
+  shippingCarrier String?
+  trackingNumber  String?
+  trackingUrl     String?
+  isExternal      Boolean           @default(false)
+  outreachSent    Boolean           @default(false)
+  outreachSentAt  DateTime?
+  outreachNote    String?
   createdAt       DateTime          @default(now())
   updatedAt       DateTime          @updatedAt
   shipment        Shipment?
@@ -105,79 +153,137 @@ model Application {
   @@unique([openCallId, artistId])
   @@index([artistId])
   @@index([galleryId])
+  @@index([isExternal])
+}
+
+// ========== 커뮤니티 시스템 ==========
+
+model CommunityPost {
+  id          String             @id @default(cuid())
+  authorId    String
+  authorName  String
+  authorRole  String             // "artist" | "gallery"
+  category    String             @default("general")
+  title       String
+  content     String
+  imageUrl    String?
+  pinned      Boolean            @default(false)
+  createdAt   DateTime           @default(now())
+  updatedAt   DateTime           @updatedAt
+  comments    CommunityComment[]
+  likes       CommunityLike[]
+
+  @@index([category])
+  @@index([authorId])
+}
+
+model CommunityComment {
+  id          String        @id @default(cuid())
+  postId      String
+  post        CommunityPost @relation(fields: [postId], references: [id], onDelete: Cascade)
+  authorId    String
+  authorName  String
+  authorRole  String
+  content     String
+  createdAt   DateTime      @default(now())
+
+  @@index([postId])
+}
+
+model CommunityLike {
+  id        String        @id @default(cuid())
+  postId    String
+  post      CommunityPost @relation(fields: [postId], references: [id], onDelete: Cascade)
+  userId    String
+  createdAt DateTime      @default(now())
+
+  @@unique([postId, userId])
+  @@index([postId])
+}
+
+// ========== 알림 시스템 ==========
+
+model Notification {
+  id        String   @id @default(cuid())
+  userId    String
+  type      String   // "new_application", "application_accepted", etc.
+  title     String
+  message   String
+  link      String?
+  data      Json?
+  read      Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+  @@index([userId, read])
+}
+
+// ========== 아웃리치 시스템 ==========
+
+model OutreachRecord {
+  id          String   @id @default(cuid())
+  toEmail     String
+  galleryName String
+  country     String
+  language    String   @default("en")
+  status      String   @default("sent") // "sent", "opened", "clicked", "signed_up", "failed"
+  sentAt      DateTime @default(now())
+  openedAt    DateTime?
+  clickedAt   DateTime?
+  signedUpAt  DateTime?
+
+  @@index([status])
 }
 
 // ========== 물류 시스템 ==========
 
 enum ShipmentStatus {
-  pending           // 배송 예약 전
-  scheduled         // 픽업 예약됨
-  pickup_requested  // 픽업 요청됨
-  picked_up         // 픽업 완료
-  in_transit        // 배송 중
-  customs           // 통관 중 (국제배송)
-  out_for_delivery  // 배송 출발
-  delivered         // 배송 완료
-  returned          // 반송됨
+  pending
+  scheduled
+  pickup_requested
+  picked_up
+  in_transit
+  customs
+  out_for_delivery
+  delivered
+  returned
 }
 
 enum ShipmentType {
-  local        // 국내 배송
-  international // 국제 배송
+  local
+  international
 }
 
 model Shipment {
   id              String          @id @default(cuid())
   applicationId   String          @unique
   application     Application     @relation(fields: [applicationId], references: [id], onDelete: Cascade)
-  
-  // 배송 타입
   type            ShipmentType    @default(local)
-  
-  // 배송 업체 정보
-  carrier         String          // 배송 업체 코드 (dhl, fedex, cj, yamato 등)
-  carrierName     String          // 배송 업체 이름
-  
-  // 배송 상태
+  carrier         String
+  carrierName     String
   status          ShipmentStatus  @default(pending)
-  
-  // 추적 정보
   trackingNumber  String?
   trackingUrl     String?
-  
-  // 픽업 정보
   pickupDate      DateTime?
-  pickupTime      String?         // "09:00-12:00" 형식
+  pickupTime      String?
   pickupAddress   String
-  pickupContact   String          // 연락처
-  pickupNote      String?         // 픽업 시 참고사항
-  
-  // 배송지 정보 (갤러리)
+  pickupContact   String
+  pickupNote      String?
   deliveryAddress String
   deliveryContact String
-  
-  // 작품 정보
   artworkTitle    String?
-  artworkSize     String?         // "100x80x5cm"
-  artworkWeight   String?         // "5kg"
+  artworkSize     String?
+  artworkWeight   String?
   packageCount    Int             @default(1)
-  
-  // 보험
   insured         Boolean         @default(false)
-  insuranceValue  Float?          // 보험 금액 (USD)
-  
-  // 비용
+  insuranceValue  Float?
   estimatedCost   Float?
   actualCost      Float?
   currency        String          @default("KRW")
-  
-  // 타임스탬프
   createdAt       DateTime        @default(now())
   updatedAt       DateTime        @updatedAt
   pickedUpAt      DateTime?
   deliveredAt     DateTime?
-  
-  // 배송 기록
   events          ShipmentEvent[]
 
   @@index([status])

@@ -28,12 +28,14 @@ export async function POST(req: Request) {
             startedYear: body.startedYear ? Number(body.startedYear) : undefined,
             genre: body.genre ? String(body.genre).trim() : undefined,
             portfolioUrl: body.portfolioUrl ? String(body.portfolioUrl).trim() : undefined,
+            profileImage: body.profileImage !== undefined ? (body.profileImage || null) : undefined,
           })
         : await upsertGalleryProfile(session.userId, {
             ...base,
             galleryId: body.galleryId ? String(body.galleryId).trim() : undefined,
             address: body.address ? String(body.address).trim() : undefined,
             foundedYear: body.foundedYear ? Number(body.foundedYear) : undefined,
+            profileImage: body.profileImage !== undefined ? (body.profileImage || null) : undefined,
           });
 
     return NextResponse.json({ ok: true, profile }, { status: 200 });

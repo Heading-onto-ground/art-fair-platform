@@ -4,6 +4,7 @@
 import { cookies } from "next/headers";
 import bcrypt from "bcryptjs";
 import { prisma } from "@/lib/prisma";
+import { signSession, verifySession } from "@/lib/session";
 
 /** ===== Types ===== */
 export type Role = "artist" | "gallery";
@@ -29,6 +30,7 @@ export type ArtistProfile = {
   website?: string;
   bio?: string;
   portfolioUrl?: string;
+  profileImage?: string | null;
   createdAt: number;
   updatedAt: number;
 };
@@ -47,6 +49,7 @@ export type GalleryProfile = {
   city: string;
   website?: string;
   bio?: string;
+  profileImage?: string | null;
   createdAt: number;
   updatedAt: number;
 };
@@ -61,13 +64,30 @@ export function getServerSession(): Session | null {
     const raw = cookies().get(COOKIE_NAME)?.value;
     if (!raw) return null;
 
-    const parsed = JSON.parse(raw);
-    if (!parsed?.userId || !parsed?.role) return null;
+    // Try signed session first (new format)
+    const verified = verifySession<Session>(raw);
+    if (verified && verified.userId && verified.role) {
+      return verified;
+    }
 
-    return parsed as Session;
+    // Fallback: accept unsigned JSON for backward compatibility
+    // (existing sessions before signing was added)
+    try {
+      const parsed = JSON.parse(raw);
+      if (parsed?.userId && parsed?.role) return parsed as Session;
+    } catch {
+      // not JSON either
+    }
+
+    return null;
   } catch {
     return null;
   }
+}
+
+/** Create a signed session cookie value */
+export function createSignedSessionValue(session: Session): string {
+  return signSession(session as unknown as Record<string, unknown>);
 }
 
 /** ===== Profile helpers ===== */
@@ -105,6 +125,7 @@ export function upsertArtistProfile(
       website: data.website,
       bio: data.bio,
       portfolioUrl: data.portfolioUrl,
+      profileImage: data.profileImage,
     },
     update: {
       artistId: data.artistId,
@@ -117,6 +138,7 @@ export function upsertArtistProfile(
       website: data.website,
       bio: data.bio,
       portfolioUrl: data.portfolioUrl,
+      ...(data.profileImage !== undefined ? { profileImage: data.profileImage } : {}),
     },
   });
 }
@@ -138,6 +160,7 @@ export function upsertGalleryProfile(
       city: data.city ?? "",
       website: data.website,
       bio: data.bio,
+      profileImage: data.profileImage,
     },
     update: {
       galleryId: data.galleryId,
@@ -149,6 +172,7 @@ export function upsertGalleryProfile(
       city: data.city,
       website: data.website,
       bio: data.bio,
+      ...(data.profileImage !== undefined ? { profileImage: data.profileImage } : {}),
     },
   });
 }

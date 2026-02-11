@@ -9,7 +9,7 @@ export async function GET() {
       return NextResponse.json({ error: "unauthorized" }, { status: 401 });
     }
 
-    const invites = listInvitesByGallery(session.userId);
+    const invites = await listInvitesByGallery(session.userId);
     return NextResponse.json({ invites }, { status: 200 });
   } catch (e) {
     console.error("GET /api/gallery/invites failed:", e);

@@ -66,7 +66,7 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "missing openCallId/galleryId" }, { status: 400 });
     }
 
-    const openCall = getOpenCallById(openCallId);
+    const openCall = await getOpenCallById(openCallId);
     if (!openCall) {
       return NextResponse.json({ error: "open call not found" }, { status: 404 });
     }

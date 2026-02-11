@@ -16,9 +16,8 @@ export async function PATCH(
       return NextResponse.json({ error: "unauthorized" }, { status: 401 });
     }
 
-    const current = getExhibitionsByGalleryId(session.userId).find(
-      (e) => e.id === params.id
-    );
+    const currentList = await getExhibitionsByGalleryId(session.userId);
+    const current = currentList.find((e) => e.id === params.id);
     if (!current) {
       return NextResponse.json({ error: "not found" }, { status: 404 });
     }
@@ -32,7 +31,7 @@ export async function PATCH(
       summary: body?.summary ? String(body.summary).trim() : undefined,
     };
 
-    const updated = updateExhibition(params.id, payload);
+    const updated = await updateExhibition(params.id, payload);
     return NextResponse.json({ exhibition: updated }, { status: 200 });
   } catch (e) {
     console.error("PATCH /api/gallery/exhibitions/[id] failed:", e);
@@ -50,14 +49,13 @@ export async function DELETE(
       return NextResponse.json({ error: "unauthorized" }, { status: 401 });
     }
 
-    const current = getExhibitionsByGalleryId(session.userId).find(
-      (e) => e.id === params.id
-    );
+    const currentList = await getExhibitionsByGalleryId(session.userId);
+    const current = currentList.find((e) => e.id === params.id);
     if (!current) {
       return NextResponse.json({ error: "not found" }, { status: 404 });
     }
 
-    deleteExhibition(params.id);
+    await deleteExhibition(params.id);
     return NextResponse.json({ ok: true }, { status: 200 });
   } catch (e) {
     console.error("DELETE /api/gallery/exhibitions/[id] failed:", e);

@@ -1,102 +1,37 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import TopBar from "@/app/components/TopBar";
+import { GridCardSkeleton } from "@/app/components/Skeleton";
+import { useFetch } from "@/lib/useFetch";
+import { F, S } from "@/lib/design";
 
-type Artist = { userId: string; name: string; email: string; country: string; city: string; portfolioUrl?: string; updatedAt?: number };
-
-// 나라 이름 → 이모지 매핑
-const COUNTRY_FLAGS: Record<string, string> = {
-  "한국": "🇰🇷",
-  "Korea": "🇰🇷",
-  "South Korea": "🇰🇷",
-  "일본": "🇯🇵",
-  "Japan": "🇯🇵",
-  "영국": "🇬🇧",
-  "UK": "🇬🇧",
-  "United Kingdom": "🇬🇧",
-  "미국": "🇺🇸",
-  "USA": "🇺🇸",
-  "United States": "🇺🇸",
-  "중국": "🇨🇳",
-  "China": "🇨🇳",
-  "프랑스": "🇫🇷",
-  "France": "🇫🇷",
-  "독일": "🇩🇪",
-  "Germany": "🇩🇪",
-  "이탈리아": "🇮🇹",
-  "Italy": "🇮🇹",
-  "스페인": "🇪🇸",
-  "Spain": "🇪🇸",
-  "캐나다": "🇨🇦",
-  "Canada": "🇨🇦",
-  "호주": "🇦🇺",
-  "Australia": "🇦🇺",
-  "네덜란드": "🇳🇱",
-  "Netherlands": "🇳🇱",
-  "스위스": "🇨🇭",
-  "Switzerland": "🇨🇭",
-  "싱가포르": "🇸🇬",
-  "Singapore": "🇸🇬",
-  "홍콩": "🇭🇰",
-  "Hong Kong": "🇭🇰",
-  "대만": "🇹🇼",
-  "Taiwan": "🇹🇼",
-  "브라질": "🇧🇷",
-  "Brazil": "🇧🇷",
-  "멕시코": "🇲🇽",
-  "Mexico": "🇲🇽",
-  "인도": "🇮🇳",
-  "India": "🇮🇳",
-  "러시아": "🇷🇺",
-  "Russia": "🇷🇺",
-  "태국": "🇹🇭",
-  "Thailand": "🇹🇭",
-  "베트남": "🇻🇳",
-  "Vietnam": "🇻🇳",
-  "인도네시아": "🇮🇩",
-  "Indonesia": "🇮🇩",
-  "말레이시아": "🇲🇾",
-  "Malaysia": "🇲🇾",
-  "필리핀": "🇵🇭",
-  "Philippines": "🇵🇭",
-  "아랍에미리트": "🇦🇪",
-  "UAE": "🇦🇪",
+type Artist = {
+  userId: string;
+  name: string;
+  email: string;
+  country: string;
+  city: string;
+  portfolioUrl?: string;
+  profileImage?: string | null;
+  startedYear?: number;
+  genre?: string;
+  updatedAt?: number;
 };
-
-function getCountryFlag(country: string): string {
-  return COUNTRY_FLAGS[country] || "🌍";
-}
 
 export default function ArtistsPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const initializedRef = useRef(false);
-  const [artists, setArtists] = useState<Artist[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const { data, error, isLoading, mutate } = useFetch<{ artists: Artist[] }>("/api/public/artists");
+  const artists = data?.artists ?? [];
   const [country, setCountry] = useState<string>("ALL");
   const [query, setQuery] = useState("");
   const [favorites, setFavorites] = useState<Record<string, boolean>>({});
 
-  async function load() {
-    try {
-      setError(null);
-      setLoading(true);
-      const res = await fetch("/api/public/artists", { cache: "no-store" });
-      const data = await res.json().catch(() => null);
-      if (!res.ok) throw new Error(data?.error ?? `HTTP ${res.status}`);
-      setArtists(Array.isArray(data?.artists) ? data.artists : []);
-    } catch (e: any) {
-      setError(e?.message ?? "Failed to load");
-      setArtists([]);
-    } finally {
-      setLoading(false);
-    }
+  function load() {
+    mutate();
   }
-
-  useEffect(() => { load(); }, []);
 
   useEffect(() => {
     try { setFavorites(JSON.parse(localStorage.getItem("favorite_artists") || "{}")); } catch { setFavorites({}); }
@@ -104,13 +39,9 @@ export default function ArtistsPage() {
 
   useEffect(() => { localStorage.setItem("favorite_artists", JSON.stringify(favorites)); }, [favorites]);
 
-  // 아티스트 데이터에서 동적으로 나라 목록 생성
   const countryTabs = useMemo(() => {
-    const countries = artists
-      .map((a) => (a.country ?? "").trim())
-      .filter(Boolean);
+    const countries = artists.map((a) => (a.country ?? "").trim()).filter(Boolean);
     const uniqueCountries = Array.from(new Set(countries)).sort((a, b) => {
-      // 아티스트 수가 많은 나라가 앞에 오도록 정렬
       const countA = artists.filter((x) => x.country === a).length;
       const countB = artists.filter((x) => x.country === b).length;
       return countB - countA;
@@ -118,7 +49,6 @@ export default function ArtistsPage() {
     return ["ALL", ...uniqueCountries];
   }, [artists]);
 
-  // 각 나라별 아티스트 수
   const countryCounts = useMemo(() => {
     const counts: Record<string, number> = { ALL: artists.length };
     artists.forEach((a) => {
@@ -131,55 +61,92 @@ export default function ArtistsPage() {
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
     return artists.filter((a) => {
-      // "ALL"이면 모든 나라 표시
       if (country !== "ALL" && (a.country ?? "").trim() !== country) return false;
       if (!q) return true;
       return a.name.toLowerCase().includes(q) || a.email.toLowerCase().includes(q) || a.city.toLowerCase().includes(q);
     });
   }, [artists, country, query]);
 
+  function getYearsActive(startedYear?: number): string {
+    if (!startedYear || startedYear <= 0) return "";
+    const years = new Date().getFullYear() - startedYear;
+    if (years <= 0) return "Debut";
+    return `${years}yr${years > 1 ? "s" : ""}`;
+  }
+
   return (
     <>
       <TopBar />
-      <main style={{ padding: "28px 24px", maxWidth: 900, margin: "0 auto" }}>
-        <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 24 }}>
+      <style jsx global>{`
+        .artist-card-grid {
+          display: grid;
+          grid-template-columns: repeat(3, 1fr);
+          gap: 24px;
+        }
+        @media (max-width: 900px) {
+          .artist-card-grid { grid-template-columns: repeat(2, 1fr); gap: 20px; }
+        }
+        @media (max-width: 560px) {
+          .artist-card-grid { grid-template-columns: 1fr; gap: 16px; }
+        }
+      `}</style>
+      <main style={{ padding: "48px 40px", maxWidth: 1100, margin: "0 auto" }}>
+        {/* Header */}
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 48 }}>
           <div>
-            <h1 style={{ fontSize: 28, fontWeight: 800, color: "#111" }}>Artists</h1>
-            <p style={{ color: "#888", fontSize: 14, marginTop: 4 }}>Browse artists by country</p>
+            <span style={{ fontFamily: F, fontSize: 10, letterSpacing: "0.2em", textTransform: "uppercase", color: "#8A8A8A" }}>
+              Directory
+            </span>
+            <h1 style={{ fontFamily: S, fontSize: "clamp(32px, 6vw, 42px)", fontWeight: 300, color: "#1A1A1A", marginTop: 8, letterSpacing: "-0.01em" }}>
+              Artists
+            </h1>
+            <p style={{ fontFamily: F, fontSize: 12, color: "#8A8A8A", marginTop: 8, letterSpacing: "0.02em" }}>
+              Browse artists by country
+            </p>
           </div>
-          <button onClick={load} style={{ padding: "6px 12px", borderRadius: 6, border: "1px solid #e5e5e5", background: "white", color: "#888", fontWeight: 500, fontSize: 12, cursor: "pointer" }}>
+          <button
+            onClick={load}
+            style={{
+              padding: "10px 20px",
+              border: "1px solid #E5E0DB",
+              background: "transparent",
+              color: "#4A4A4A",
+              fontFamily: F,
+              fontSize: 10,
+              letterSpacing: "0.1em",
+              textTransform: "uppercase",
+              cursor: "pointer",
+              transition: "all 0.3s ease",
+            }}
+          >
             Refresh
           </button>
         </div>
 
-        {/* Country Tabs - 동적 생성 */}
-        <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginBottom: 16 }}>
+        {/* Country Tabs */}
+        <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 24 }}>
           {countryTabs.map((c) => (
             <button
               key={c}
               onClick={() => setCountry(c)}
               style={{
-                padding: "6px 12px",
-                borderRadius: 999,
-                border: c === country ? "1px solid #6366f1" : "1px solid #e5e5e5",
-                background: c === country ? "rgba(99,102,241,0.1)" : "white",
-                color: c === country ? "#6366f1" : "#666",
-                fontWeight: 600,
-                fontSize: 12,
+                padding: "10px 18px",
+                border: c === country ? "1px solid #1A1A1A" : "1px solid #E5E0DB",
+                background: c === country ? "#1A1A1A" : "transparent",
+                color: c === country ? "#FFFFFF" : "#4A4A4A",
+                fontFamily: F,
+                fontSize: 10,
+                letterSpacing: "0.1em",
+                textTransform: "uppercase",
                 cursor: "pointer",
+                transition: "all 0.3s ease",
                 display: "flex",
                 alignItems: "center",
-                gap: 4,
+                gap: 8,
               }}
             >
-              {c === "ALL" ? "🌐" : getCountryFlag(c)} {c}
-              <span style={{ 
-                fontSize: 10, 
-                opacity: 0.7,
-                background: c === country ? "rgba(99,102,241,0.2)" : "#f5f5f5",
-                padding: "2px 6px",
-                borderRadius: 999,
-              }}>
+              {c}
+              <span style={{ fontSize: 9, opacity: 0.7, padding: "2px 6px", background: c === country ? "rgba(255,255,255,0.2)" : "#F5F0EB" }}>
                 {countryCounts[c] || 0}
               </span>
             </button>
@@ -187,51 +154,187 @@ export default function ArtistsPage() {
         </div>
 
         {/* Search */}
-        <input
-          value={query}
-          onChange={(e) => setQuery(e.target.value)}
-          placeholder="Search name/email/city..."
-          style={{ width: "100%", maxWidth: 300, marginBottom: 20 }}
-        />
+        <div style={{ marginBottom: 32 }}>
+          <input
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            placeholder="Search by name, email, or city..."
+            style={{
+              width: "100%",
+              maxWidth: 400,
+              padding: "14px 18px",
+              border: "1px solid #E5E0DB",
+              background: "#FFFFFF",
+              fontFamily: F,
+              fontSize: 12,
+              letterSpacing: "0.02em",
+              color: "#1A1A1A",
+              outline: "none",
+              transition: "border-color 0.3s ease",
+            }}
+            onFocus={(e) => { e.currentTarget.style.borderColor = "#1A1A1A"; }}
+            onBlur={(e) => { e.currentTarget.style.borderColor = "#E5E0DB"; }}
+          />
+        </div>
 
         {/* Content */}
-        {loading ? (
-          <p style={{ color: "#888", padding: 20 }}>Loading...</p>
+        {isLoading ? (
+          <GridCardSkeleton count={6} />
         ) : error ? (
-          <div style={{ padding: 16, borderRadius: 10, background: "#fef2f2", border: "1px solid #fecaca", color: "#dc2626" }}>{error}</div>
+          <div style={{ padding: 24, border: "1px solid #D4B0B0", background: "#FDF8F8", color: "#8B3A3A", fontFamily: F, fontSize: 12 }}>
+            {error?.message ?? "Failed to load"}
+          </div>
         ) : (
-          <div style={{ display: "grid", gap: 10 }}>
+          <div className="artist-card-grid">
             {filtered.map((a) => (
               <div
                 key={a.userId}
                 onClick={() => router.push(`/artists/${encodeURIComponent(a.userId)}`)}
-                style={{ background: "white", border: "1px solid #e5e5e5", borderRadius: 12, padding: 16, cursor: "pointer", transition: "all 0.15s" }}
-                onMouseEnter={(e) => { e.currentTarget.style.borderColor = "#6366f1"; }}
-                onMouseLeave={(e) => { e.currentTarget.style.borderColor = "#e5e5e5"; }}
+                style={{
+                  background: "#FFFFFF",
+                  border: "1px solid #EEEAE5",
+                  cursor: "pointer",
+                  transition: "all 0.3s ease",
+                  overflow: "hidden",
+                  position: "relative",
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.borderColor = "#C8C0B4";
+                  e.currentTarget.style.transform = "translateY(-2px)";
+                  e.currentTarget.style.boxShadow = "0 8px 24px rgba(0,0,0,0.06)";
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.borderColor = "#EEEAE5";
+                  e.currentTarget.style.transform = "translateY(0)";
+                  e.currentTarget.style.boxShadow = "none";
+                }}
               >
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
-                  <div>
-                    <div style={{ fontWeight: 700, color: "#111" }}>🎨 {a.name}</div>
-                    <div style={{ fontSize: 13, color: "#666", marginTop: 2 }}>{a.city}, {a.country}</div>
-                    <div style={{ fontSize: 12, color: "#aaa", marginTop: 2 }}>{a.email}</div>
-                  </div>
-                  <div style={{ display: "flex", gap: 6 }}>
-                    <button
-                      onClick={(e) => { e.stopPropagation(); setFavorites((p) => ({ ...p, [a.userId]: !p[a.userId] })); }}
-                      style={{ padding: "6px 10px", borderRadius: 6, border: "1px solid #e5e5e5", background: favorites[a.userId] ? "#6366f1" : "white", color: favorites[a.userId] ? "white" : "#888", fontWeight: 600, fontSize: 12, cursor: "pointer" }}
-                    >
-                      {favorites[a.userId] ? "★" : "☆"}
-                    </button>
-                    {a.portfolioUrl && (
-                      <a href={a.portfolioUrl} target="_blank" rel="noreferrer" onClick={(e) => e.stopPropagation()} style={{ padding: "6px 10px", borderRadius: 6, background: "#6366f1", color: "white", fontWeight: 600, fontSize: 12, textDecoration: "none" }}>
-                        Portfolio
-                      </a>
+                {/* Image */}
+                <div style={{
+                  width: "100%",
+                  aspectRatio: "1 / 1",
+                  background: "#F5F1EB",
+                  overflow: "hidden",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                }}>
+                  {a.profileImage ? (
+                    <img
+                      src={a.profileImage}
+                      alt={a.name}
+                      style={{ width: "100%", height: "100%", objectFit: "cover" }}
+                    />
+                  ) : (
+                    <div style={{ textAlign: "center" }}>
+                      <div style={{ fontSize: 40, color: "#DDD6CC", marginBottom: 8 }}>
+                        {a.name?.charAt(0)?.toUpperCase() || "A"}
+                      </div>
+                      <div style={{ fontFamily: F, fontSize: 8, letterSpacing: "0.15em", textTransform: "uppercase", color: "#C8C0B4" }}>
+                        No photo
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                {/* Info */}
+                <div style={{ padding: "18px 20px 20px" }}>
+                  <h3 style={{
+                    fontFamily: S,
+                    fontSize: 18,
+                    fontWeight: 400,
+                    color: "#1A1A1A",
+                    marginBottom: 8,
+                    lineHeight: 1.3,
+                    overflow: "hidden",
+                    textOverflow: "ellipsis",
+                    whiteSpace: "nowrap",
+                  }}>
+                    {a.name}
+                  </h3>
+
+                  {/* Tags row */}
+                  <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginBottom: 10 }}>
+                    {a.genre && (
+                      <span style={{
+                        fontFamily: F,
+                        fontSize: 9,
+                        fontWeight: 500,
+                        letterSpacing: "0.08em",
+                        textTransform: "uppercase",
+                        color: "#8B7355",
+                        background: "#F5F0E8",
+                        padding: "4px 10px",
+                        border: "1px solid #EDE6DA",
+                      }}>
+                        {a.genre}
+                      </span>
+                    )}
+                    {getYearsActive(a.startedYear) && (
+                      <span style={{
+                        fontFamily: F,
+                        fontSize: 9,
+                        fontWeight: 500,
+                        letterSpacing: "0.08em",
+                        color: "#6A6A6A",
+                        background: "#F5F3F0",
+                        padding: "4px 10px",
+                        border: "1px solid #ECEAE6",
+                      }}>
+                        {getYearsActive(a.startedYear)}
+                      </span>
                     )}
                   </div>
+
+                  {/* Location */}
+                  <p style={{
+                    fontFamily: F,
+                    fontSize: 11,
+                    color: "#8A8580",
+                    letterSpacing: "0.02em",
+                  }}>
+                    {[a.city, a.country].filter(Boolean).join(", ") || "—"}
+                  </p>
                 </div>
+
+                {/* Favorite button */}
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setFavorites((p) => ({ ...p, [a.userId]: !p[a.userId] }));
+                  }}
+                  style={{
+                    position: "absolute",
+                    top: 12,
+                    right: 12,
+                    width: 32,
+                    height: 32,
+                    borderRadius: "50%",
+                    border: "none",
+                    background: favorites[a.userId] ? "#1A1A1A" : "rgba(255,255,255,0.85)",
+                    color: favorites[a.userId] ? "#FFFFFF" : "#8A8A8A",
+                    fontFamily: F,
+                    fontSize: 14,
+                    cursor: "pointer",
+                    transition: "all 0.3s ease",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    backdropFilter: "blur(4px)",
+                  }}
+                >
+                  {favorites[a.userId] ? "★" : "☆"}
+                </button>
               </div>
             ))}
-            {filtered.length === 0 && <p style={{ color: "#888", padding: 20, textAlign: "center", background: "white", borderRadius: 12, border: "1px solid #e5e5e5" }}>No artists in this country yet.</p>}
+          </div>
+        )}
+
+        {!isLoading && !error && filtered.length === 0 && (
+          <div style={{ padding: 64, textAlign: "center" }}>
+            <p style={{ fontFamily: S, fontSize: 18, fontStyle: "italic", color: "#8A8A8A" }}>
+              No artists found.
+            </p>
           </div>
         )}
       </main>

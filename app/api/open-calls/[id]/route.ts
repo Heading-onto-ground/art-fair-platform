@@ -6,7 +6,7 @@ export async function GET(
   { params }: { params: { id: string } }
 ) {
   try {
-    const openCall = getOpenCallById(params.id);
+    const openCall = await getOpenCallById(params.id);
     if (!openCall) {
       return NextResponse.json({ error: "not found" }, { status: 404 });
     }

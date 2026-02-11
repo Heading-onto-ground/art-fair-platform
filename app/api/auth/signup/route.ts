@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { createUser, upsertArtistProfile, upsertGalleryProfile } from "@/lib/auth";
+import { createUser, upsertArtistProfile, upsertGalleryProfile, createSignedSessionValue } from "@/lib/auth";
 
 type Role = "artist" | "gallery";
 
@@ -87,7 +87,7 @@ export async function POST(req: Request) {
       { status: 200 }
     );
     const isProduction = process.env.NODE_ENV === "production";
-    res.cookies.set("afp_session", JSON.stringify({ userId: user.id, role, email }), {
+    res.cookies.set("afp_session", createSignedSessionValue({ userId: user.id, role, email }), {
       httpOnly: true,
       sameSite: "lax",
       secure: isProduction,

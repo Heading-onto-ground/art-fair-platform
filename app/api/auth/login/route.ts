@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { findUserByEmailRole, verifyPassword } from "@/lib/auth";
+import { findUserByEmailRole, verifyPassword, createSignedSessionValue } from "@/lib/auth";
 
 type Role = "artist" | "gallery";
 
@@ -60,7 +60,7 @@ export async function POST(req: Request) {
     );
 
     const isProduction = process.env.NODE_ENV === "production";
-    res.cookies.set("afp_session", JSON.stringify({ userId, role, email }), {
+    res.cookies.set("afp_session", createSignedSessionValue({ userId, role, email }), {
       httpOnly: true,
       sameSite: "lax",
       secure: isProduction,

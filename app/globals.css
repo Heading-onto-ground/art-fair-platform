@@ -1,21 +1,31 @@
 @import "tailwindcss";
 
+/* Fonts are now loaded via next/font in layout.tsx (no render-blocking @import) */
+
 :root {
-  --bg-primary: #fafafa;
-  --bg-secondary: #f5f5f5;
-  --bg-card: #ffffff;
-  --bg-card-hover: #fefefe;
-  --text-primary: #111111;
-  --text-secondary: #555555;
-  --text-muted: #888888;
-  --border-color: #e5e5e5;
-  --border-light: #eeeeee;
-  --accent: #6366f1;
-  --accent-hover: #4f46e5;
-  --accent-soft: rgba(99, 102, 241, 0.1);
-  --success: #10b981;
-  --error: #ef4444;
-  --warning: #f59e0b;
+  /* Céline — Warm Minimal Luxury */
+  --bg-primary: #FDFBF7;
+  --bg-secondary: #F5F1EB;
+  --bg-card: #FFFFFF;
+  --bg-card-hover: #FAF8F4;
+  --bg-accent: #F0EBE3;
+  
+  --text-primary: #1A1A1A;
+  --text-secondary: #4A4A4A;
+  --text-muted: #8A8580;
+  --text-light: #B0AAA2;
+  
+  --border-color: #E8E3DB;
+  --border-light: #F0EBE3;
+  --border-dark: #D4CEC4;
+  
+  --accent: #8B7355;
+  --accent-hover: #6B5A45;
+  --accent-soft: rgba(139, 115, 85, 0.08);
+  
+  --success: #5A7A5A;
+  --error: #8B4A4A;
+  --warning: #9A8A5A;
 }
 
 * {
@@ -25,87 +35,199 @@
 body {
   background: var(--bg-primary);
   color: var(--text-primary);
-  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  font-family: var(--font-inter), 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  font-weight: 400;
   line-height: 1.6;
   margin: 0;
   padding: 0;
   min-height: 100vh;
+  letter-spacing: 0.01em;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
-/* Scrollbar */
+/* Elegant serif headings — Céline */
+h1, h2, h3, h4, h5, h6 {
+  font-family: var(--font-cormorant), 'Cormorant Garamond', serif;
+  font-weight: 400;
+  letter-spacing: 0.02em;
+}
+
+/* Scrollbar — barely visible */
 ::-webkit-scrollbar {
-  width: 8px;
-  height: 8px;
+  width: 6px;
+  height: 6px;
 }
 
 ::-webkit-scrollbar-track {
-  background: var(--bg-secondary);
+  background: transparent;
 }
 
 ::-webkit-scrollbar-thumb {
-  background: #ccc;
-  border-radius: 4px;
+  background: var(--border-dark);
+  border-radius: 3px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: #aaa;
+  background: var(--text-muted);
 }
 
 /* Selection */
 ::selection {
-  background: var(--accent-soft);
-  color: var(--text-primary);
+  background: var(--accent);
+  color: #FFFFFF;
 }
 
 /* Links */
 a {
-  color: var(--accent);
+  color: var(--text-primary);
   text-decoration: none;
-  transition: color 0.2s;
+  transition: color 0.3s ease;
 }
 
 a:hover {
-  color: var(--accent-hover);
+  color: var(--accent);
 }
 
-/* Buttons */
+/* Buttons — understated */
 button {
-  font-family: inherit;
+  font-family: var(--font-inter), 'Inter', sans-serif;
+  font-weight: 500;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  font-size: 11px;
   cursor: pointer;
-  transition: all 0.2s ease;
+  transition: all 0.3s ease;
+  border: none;
+  outline: none;
 }
 
 button:disabled {
-  opacity: 0.5;
+  opacity: 0.4;
   cursor: not-allowed;
 }
 
-/* Inputs */
+/* Inputs — clean and warm */
 input, textarea, select {
-  font-family: inherit;
+  font-family: var(--font-inter), 'Inter', sans-serif;
   background: var(--bg-card);
   border: 1px solid var(--border-color);
   color: var(--text-primary);
-  border-radius: 10px;
-  padding: 12px 14px;
+  border-radius: 0;
+  padding: 14px 16px;
   font-size: 14px;
-  transition: all 0.2s;
+  font-weight: 400;
+  letter-spacing: 0.01em;
+  transition: all 0.3s ease;
   outline: none;
 }
 
 input:focus, textarea:focus, select:focus {
   border-color: var(--accent);
-  box-shadow: 0 0 0 3px var(--accent-soft);
 }
 
 input::placeholder, textarea::placeholder {
-  color: var(--text-muted);
+  color: var(--text-light);
+  font-weight: 300;
 }
 
 select {
   appearance: none;
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23888' d='M6 8L1 3h10z'/%3E%3C/svg%3E");
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='10' viewBox='0 0 10 10'%3E%3Cpath fill='%238A8580' d='M5 7L1 3h8z'/%3E%3C/svg%3E");
   background-repeat: no-repeat;
-  background-position: right 12px center;
-  padding-right: 36px;
+  background-position: right 16px center;
+  padding-right: 40px;
+}
+
+/* Divider */
+.divider {
+  height: 1px;
+  background: var(--border-color);
+  margin: 48px 0;
+}
+
+/* ═══════════════════════════════════════════
+   MOBILE RESPONSIVE — Comprehensive
+   ═══════════════════════════════════════════ */
+
+/* ── Tablet (≤ 1024px) ── */
+@media (max-width: 1024px) {
+  /* TopBar nav wraps */
+  header nav {
+    gap: 2px !important;
+  }
+  header nav button {
+    padding: 6px 8px !important;
+    font-size: 9px !important;
+  }
+}
+
+/* ── Mobile (≤ 768px) ── */
+@media (max-width: 768px) {
+  /* Main content */
+  main {
+    padding: 32px 20px !important;
+  }
+
+  /* Headings */
+  h1 { font-size: 28px !important; }
+  h2 { font-size: 22px !important; }
+  h3 { font-size: 18px !important; }
+
+  /* Sections */
+  section {
+    padding-left: 20px !important;
+    padding-right: 20px !important;
+  }
+
+  /* Home hero */
+  section[style*="minHeight: \"100vh\""],
+  section[style*="min-height: 100vh"] {
+    padding: 40px 20px !important;
+  }
+
+  /* Grids → single column */
+  div[style*="gridTemplateColumns: \"repeat(4"],
+  div[style*="grid-template-columns: repeat(4"],
+  div[style*="gridTemplateColumns: \"repeat(3"],
+  div[style*="grid-template-columns: repeat(3"],
+  div[style*="gridTemplateColumns: \"repeat(2"],
+  div[style*="grid-template-columns: repeat(2"] {
+    grid-template-columns: 1fr !important;
+  }
+
+  /* Inputs */
+  input, textarea, select {
+    padding: 12px 14px;
+    font-size: 16px !important; /* Prevent iOS zoom */
+  }
+
+  /* Footer */
+  footer {
+    padding: 32px 20px !important;
+  }
+}
+
+/* ── Small phone (≤ 480px) ── */
+@media (max-width: 480px) {
+  main {
+    padding: 20px 14px !important;
+  }
+
+  h1 { font-size: 24px !important; }
+  h2 { font-size: 20px !important; }
+  h3 { font-size: 16px !important; }
+
+  section {
+    padding-left: 14px !important;
+    padding-right: 14px !important;
+  }
+
+  input, textarea, select {
+    padding: 11px 12px;
+  }
+
+  button {
+    font-size: 10px !important;
+  }
 }

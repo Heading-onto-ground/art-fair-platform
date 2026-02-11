@@ -20,7 +20,7 @@ export async function PATCH(
       return NextResponse.json({ error: "unauthorized" }, { status: 401 });
     }
 
-    const app = getApplicationById(params.id);
+    const app = await getApplicationById(params.id);
     if (!app) {
       return NextResponse.json({ error: "not found" }, { status: 404 });
     }
@@ -54,7 +54,7 @@ export async function PATCH(
       if (shippingStatus && shippingStatus !== "shipped") {
         return NextResponse.json({ error: "artists can only mark shipped" }, { status: 400 });
       }
-      const updated = updateApplicationShipping(params.id, {
+      const updated = await updateApplicationShipping(params.id, {
         shippingStatus,
         shippingNote,
         shippingCarrier,
@@ -72,17 +72,17 @@ export async function PATCH(
           { status: 400 }
         );
       }
-      const openCall = getOpenCallById(app.openCallId);
+      const openCall = await getOpenCallById(app.openCallId);
       if (!openCall || openCall.galleryId !== session.userId) {
         return NextResponse.json({ error: "forbidden" }, { status: 403 });
       }
       if (shippingStatus && !["received", "inspected", "exhibited"].includes(shippingStatus)) {
         return NextResponse.json({ error: "invalid shippingStatus for gallery" }, { status: 400 });
       }
-      let updated = status ? updateApplicationStatus(params.id, status) : app;
+      let updated = status ? await updateApplicationStatus(params.id, status) : app;
 
       if (shippingStatus) {
-        updated = updateApplicationShipping(params.id, { shippingStatus });
+        updated = await updateApplicationShipping(params.id, { shippingStatus });
       }
 
       if (status === "accepted" && app.status !== "accepted") {

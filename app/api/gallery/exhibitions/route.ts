@@ -12,7 +12,7 @@ export async function GET() {
       return NextResponse.json({ error: "unauthorized" }, { status: 401 });
     }
 
-    const exhibitions = getExhibitionsByGalleryId(session.userId);
+    const exhibitions = await getExhibitionsByGalleryId(session.userId);
     return NextResponse.json({ exhibitions }, { status: 200 });
   } catch (e) {
     console.error("GET /api/gallery/exhibitions failed:", e);
@@ -38,7 +38,7 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "missing fields" }, { status: 400 });
     }
 
-    const created = addExhibition({
+    const created = await addExhibition({
       galleryId: session.userId,
       title,
       country,

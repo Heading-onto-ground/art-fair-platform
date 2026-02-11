@@ -12,9 +12,8 @@ export async function PATCH(
       return NextResponse.json({ error: "unauthorized" }, { status: 401 });
     }
 
-    const existing = listInvitesByGallery(session.userId).find(
-      (i) => i.id === params.id
-    );
+    const existingList = await listInvitesByGallery(session.userId);
+    const existing = existingList.find((i) => i.id === params.id);
     if (!existing) {
       return NextResponse.json({ error: "not found" }, { status: 404 });
     }
@@ -25,7 +24,7 @@ export async function PATCH(
       return NextResponse.json({ error: "invalid status" }, { status: 400 });
     }
 
-    const updated = updateInviteStatus(params.id, status);
+    const updated = await updateInviteStatus(params.id, status);
     return NextResponse.json({ invite: updated }, { status: 200 });
   } catch (e) {
     console.error("PATCH /api/gallery/invites/[id] failed:", e);

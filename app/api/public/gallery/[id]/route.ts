@@ -18,7 +18,7 @@ export async function GET(
       );
     }
 
-    const exhibitions = getExhibitionsByGalleryId(profile.userId);
+    const exhibitions = await getExhibitionsByGalleryId(profile.userId);
 
     return NextResponse.json({ ok: true, profile, exhibitions }, { status: 200 });
   } catch (e) {

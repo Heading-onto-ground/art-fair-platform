@@ -8,7 +8,7 @@ export async function GET() {
     if (!session || session.role !== "gallery") {
       return NextResponse.json({ error: "unauthorized" }, { status: 401 });
     }
-    const templates = getTemplates(session.userId);
+    const templates = await getTemplates(session.userId);
     return NextResponse.json({ templates }, { status: 200 });
   } catch (e) {
     console.error("GET /api/gallery/invite-templates failed:", e);
@@ -24,7 +24,7 @@ export async function POST(req: Request) {
     }
 
     const body = await req.json().catch(() => ({}));
-    const templates = updateTemplates(session.userId, {
+    const templates = await updateTemplates(session.userId, {
       korea: body?.korea ? String(body.korea) : undefined,
       japan: body?.japan ? String(body.japan) : undefined,
       global: body?.global ? String(body.global) : undefined,

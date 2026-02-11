@@ -3,510 +3,205 @@
 import Link from "next/link";
 import { useLanguage } from "@/lib/useLanguage";
 import { t } from "@/lib/translate";
-import { useEffect, useState } from "react";
+import { useMemo } from "react";
+import { useFetch } from "@/lib/useFetch";
+import { F, S } from "@/lib/design";
 
 export default function Home() {
   const { lang } = useLanguage();
-  const [stats, setStats] = useState({ artists: 0, galleries: 0, countries: 0 });
+  // SWR-based: warms cache for /artists and /galleries pages too
+  const { data: artistData } = useFetch<{ artists: any[] }>("/api/public/artists", { revalidateOnFocus: false });
+  const { data: galleryData } = useFetch<{ galleries: any[] }>("/api/public/galleries", { revalidateOnFocus: false });
 
-  // 실제 통계 가져오기 (선택적)
-  useEffect(() => {
-    (async () => {
-      try {
-        const [artistRes, galleryRes] = await Promise.all([
-          fetch("/api/public/artists").then(r => r.json()).catch(() => ({ artists: [] })),
-          fetch("/api/public/galleries").then(r => r.json()).catch(() => ({ galleries: [] })),
-        ]);
-        const artists = artistRes?.artists || [];
-        const galleries = galleryRes?.galleries || [];
-        const allCountries = new Set([
-          ...artists.map((a: any) => a.country),
-          ...galleries.map((g: any) => g.country),
-        ]);
-        setStats({
-          artists: artists.length || 50,
-          galleries: galleries.length || 20,
-          countries: allCountries.size || 15,
-        });
-      } catch {
-        setStats({ artists: 50, galleries: 20, countries: 15 });
-      }
-    })();
-  }, []);
+  const stats = useMemo(() => {
+    const artists = artistData?.artists || [];
+    const galleries = galleryData?.galleries || [];
+    const allCountries = new Set([...artists.map((a: any) => a.country), ...galleries.map((g: any) => g.country)]);
+    return {
+      artists: artists.length || 50,
+      galleries: galleries.length || 20,
+      countries: allCountries.size || 15,
+    };
+  }, [artistData, galleryData]);
 
   return (
-    <main style={{ minHeight: "100vh", background: "#fafafa" }}>
-      {/* Hero Section */}
-      <section
-        style={{
-          padding: "80px 20px 60px",
-          textAlign: "center",
-          background: "linear-gradient(180deg, #fff 0%, #fafafa 100%)",
-        }}
-      >
-        {/* Badge */}
-        <div
-          style={{
-            display: "inline-flex",
-            alignItems: "center",
-            gap: 8,
-            padding: "8px 16px",
-            borderRadius: 999,
-            background: "rgba(99, 102, 241, 0.1)",
-            color: "#6366f1",
-            fontSize: 13,
-            fontWeight: 600,
-            marginBottom: 24,
-          }}
-        >
-          🌐 Global Art Exhibition Network
+    <main style={{ minHeight: "100vh", background: "#FDFBF7" }}>
+      {/* Hero */}
+      <section className="hero-section" style={{ minHeight: "100vh", display: "flex", flexDirection: "column", justifyContent: "center", alignItems: "center", padding: "60px 40px", textAlign: "center", position: "relative" }}>
+        <div style={{ fontFamily: F, fontSize: 10, fontWeight: 500, letterSpacing: "0.3em", color: "#8B7355", marginBottom: 32, textTransform: "uppercase" }}>
+          {t("home_badge", lang)}
         </div>
 
-        <h1
-          style={{
-            fontSize: "clamp(32px, 5vw, 56px)",
-            fontWeight: 800,
-            color: "#111",
-            marginBottom: 16,
-            lineHeight: 1.2,
-          }}
-        >
-          {t("home_title", lang)}
+        <h1 style={{ fontFamily: S, fontSize: "clamp(36px, 10vw, 100px)", fontWeight: 300, color: "#1A1A1A", marginBottom: 16, lineHeight: 1.05, letterSpacing: "0.02em" }}>
+          Role of Bridge
         </h1>
 
-        {/* 핵심 가치 메시지 - ChatGPT 피드백 반영 */}
-        <p
-          style={{
-            fontSize: "clamp(16px, 2.5vw, 20px)",
-            color: "#666",
-            maxWidth: 600,
-            margin: "0 auto 12px",
-            lineHeight: 1.6,
-          }}
-        >
+        <p style={{ fontFamily: F, fontSize: 14, fontWeight: 300, color: "#8A8580", maxWidth: 420, margin: "0 auto 56px", lineHeight: 1.8, whiteSpace: "pre-line", padding: "0 16px" }}>
           {t("home_subtitle", lang)}
         </p>
 
-        {/* 추가 설명 - "왜 이 서비스를 써야 하는가" */}
-        <p
-          style={{
-            fontSize: 15,
-            color: "#888",
-            maxWidth: 500,
-            margin: "0 auto 40px",
-          }}
-        >
-          전시회 참가 신청부터 갤러리 콜렉션까지, 모든 과정을 한 곳에서.
-        </p>
+        <div style={{ display: "flex", gap: 16, justifyContent: "center", flexWrap: "wrap", padding: "0 16px" }}>
+          <Link href="/login?role=artist" style={{ padding: "16px 40px", background: "#1A1A1A", color: "#FDFBF7", fontFamily: F, fontSize: 11, fontWeight: 500, letterSpacing: "0.12em", textTransform: "uppercase", textDecoration: "none", transition: "all 0.3s ease", flex: "0 1 auto" }}
+            onMouseEnter={(e) => { e.currentTarget.style.background = "#8B7355"; }}
+            onMouseLeave={(e) => { e.currentTarget.style.background = "#1A1A1A"; }}>
+            {t("home_i_am_artist", lang)}
+          </Link>
+          <Link href="/login?role=gallery" style={{ padding: "16px 40px", border: "1px solid #1A1A1A", background: "transparent", color: "#1A1A1A", fontFamily: F, fontSize: 11, fontWeight: 500, letterSpacing: "0.12em", textTransform: "uppercase", textDecoration: "none", transition: "all 0.3s ease", flex: "0 1 auto" }}
+            onMouseEnter={(e) => { e.currentTarget.style.background = "#1A1A1A"; e.currentTarget.style.color = "#FDFBF7"; }}
+            onMouseLeave={(e) => { e.currentTarget.style.background = "transparent"; e.currentTarget.style.color = "#1A1A1A"; }}>
+            {t("home_i_am_gallery", lang)}
+          </Link>
+        </div>
 
-        {/* Role Cards - 목적 + 행동이 드러나는 텍스트 */}
-        <div style={{ display: "flex", gap: 20, flexWrap: "wrap", justifyContent: "center", alignItems: "stretch" }}>
-          <RoleCard
-            href="/login?role=artist"
-            icon="🎨"
-            title="For Artists"
-            subtitle="Submit to Global Exhibitions"
-            description="전 세계 갤러리의 오픈콜에 지원하고, 포트폴리오를 공유하세요."
-            features={["오픈콜 검색 & 지원", "포트폴리오 업로드", "갤러리와 직접 채팅", "지원 현황 추적"]}
-            color="#6366f1"
-            buttonText="아티스트로 시작하기"
-          />
-          <RoleCard
-            href="/login?role=gallery"
-            icon="🏛️"
-            title="For Galleries"
-            subtitle="Discover & Invite Artists"
-            description="전 세계 아티스트를 발굴하고, 전시에 초대하세요."
-            features={["오픈콜 게시", "아티스트 검색 & 초대", "지원서 관리", "배송 & 물류 추적"]}
-            color="#ec4899"
-            buttonText="갤러리로 시작하기"
-          />
+        <div className="hide-on-mobile" style={{ position: "absolute", bottom: 40, left: "50%", transform: "translateX(-50%)", display: "flex", flexDirection: "column", alignItems: "center", gap: 8 }}>
+          <div style={{ width: 1, height: 40, background: "linear-gradient(to bottom, #D4CEC4, transparent)" }} />
         </div>
       </section>
 
-      {/* Stats Section - 신뢰성 요소 */}
-      <section
-        style={{
-          padding: "48px 20px",
-          background: "#fff",
-          borderTop: "1px solid #eee",
-          borderBottom: "1px solid #eee",
-        }}
-      >
-        <div
-          style={{
-            maxWidth: 800,
-            margin: "0 auto",
-            display: "flex",
-            justifyContent: "center",
-            gap: 48,
-            flexWrap: "wrap",
-          }}
-        >
-          <StatItem number={stats.artists + "+"} label="Artists" />
-          <StatItem number={stats.galleries + "+"} label="Galleries" />
-          <StatItem number={stats.countries + "+"} label="Countries" />
-          <StatItem number="24/7" label="Support" />
+      {/* Stats */}
+      <section style={{ padding: "60px 24px", borderTop: "1px solid #E8E3DB" }}>
+        <div className="stats-grid" style={{ maxWidth: 900, margin: "0 auto", display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 24 }}>
+          <StatItem number={stats.artists} label={t("home_artists", lang)} />
+          <StatItem number={stats.galleries} label={t("home_galleries", lang)} />
+          <StatItem number={stats.countries} label={t("home_countries", lang)} />
+          <StatItem number="∞" label={t("home_connections", lang)} />
         </div>
       </section>
 
-      {/* How It Works - 기능 흐름 설명 */}
-      <section style={{ padding: "64px 20px", maxWidth: 1000, margin: "0 auto" }}>
-        <h2
-          style={{
-            textAlign: "center",
-            fontSize: 28,
-            fontWeight: 800,
-            color: "#111",
-            marginBottom: 12,
-          }}
-        >
-          How It Works
-        </h2>
-        <p style={{ textAlign: "center", color: "#666", marginBottom: 48 }}>
-          간단한 3단계로 전 세계 아트 네트워크에 참여하세요
-        </p>
-
-        <div
-          style={{
-            display: "grid",
-            gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))",
-            gap: 24,
-          }}
-        >
-          <StepCard
-            step="1"
-            title="프로필 등록"
-            description="아티스트 또는 갤러리로 가입하고, 프로필과 포트폴리오를 등록하세요."
-            icon="📝"
-          />
-          <StepCard
-            step="2"
-            title="매칭 & 연결"
-            description="오픈콜에 지원하거나, 아티스트를 검색하고 직접 초대하세요."
-            icon="🤝"
-          />
-          <StepCard
-            step="3"
-            title="전시 진행"
-            description="채팅으로 소통하고, 물류 시스템으로 작품 배송까지 한 번에 관리하세요."
-            icon="🖼️"
-          />
-        </div>
-      </section>
-
-      {/* Features Section - 핵심 기능 */}
-      <section
-        style={{
-          padding: "64px 20px",
-          background: "#fff",
-          borderTop: "1px solid #eee",
-        }}
-      >
-        <div style={{ maxWidth: 1000, margin: "0 auto" }}>
-          <h2
-            style={{
-              textAlign: "center",
-              fontSize: 28,
-              fontWeight: 800,
-              color: "#111",
-              marginBottom: 12,
-            }}
-          >
-            Why Choose Us?
+      {/* How it works */}
+      <section style={{ padding: "80px 24px", maxWidth: 1000, margin: "0 auto" }}>
+        <div style={{ textAlign: "center", marginBottom: 56 }}>
+          <span style={{ fontFamily: F, fontSize: 10, fontWeight: 500, letterSpacing: "0.3em", color: "#8B7355", textTransform: "uppercase" }}>{t("home_how_it_works", lang)}</span>
+          <h2 style={{ fontFamily: S, fontSize: "clamp(28px, 5vw, 42px)", fontWeight: 300, color: "#1A1A1A", marginTop: 16, letterSpacing: "0.02em" }}>
+            {t("home_three_steps", lang)}
           </h2>
-          <p style={{ textAlign: "center", color: "#666", marginBottom: 48 }}>
-            아티스트와 갤러리 모두를 위한 올인원 플랫폼
-          </p>
+        </div>
 
-          <div
-            style={{
-              display: "grid",
-              gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
-              gap: 20,
-            }}
-          >
-            <FeatureCard
-              icon="🌍"
-              title="Global Network"
-              description="전 세계 갤러리와 아티스트가 참여하는 글로벌 네트워크"
-            />
-            <FeatureCard
-              icon="💬"
-              title="Direct Chat"
-              description="번역 기능이 포함된 실시간 채팅으로 언어 장벽 없이 소통"
-            />
-            <FeatureCard
-              icon="📄"
-              title="Portfolio Sharing"
-              description="PDF 포트폴리오를 업로드하고 갤러리에 직접 공유"
-            />
-            <FeatureCard
-              icon="📦"
-              title="Logistics Support"
-              description="DHL, FedEx 등 글로벌 배송 예약 및 실시간 추적"
-            />
-            <FeatureCard
-              icon="🔔"
-              title="Instant Updates"
-              description="지원 현황, 초대, 메시지 등 실시간 알림"
-            />
-            <FeatureCard
-              icon="🌐"
-              title="Auto Translation"
-              description="채팅과 프로필을 자동 번역하여 글로벌 소통 지원"
-            />
+        <div className="feature-grid" style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 1, background: "#E8E3DB" }}>
+          <FeatureCard number="01" title={t("home_step1_title", lang)} description={t("home_step1_desc", lang)} />
+          <FeatureCard number="02" title={t("home_step2_title", lang)} description={t("home_step2_desc", lang)} />
+          <FeatureCard number="03" title={t("home_step3_title", lang)} description={t("home_step3_desc", lang)} />
+        </div>
+      </section>
+
+      {/* Role Cards */}
+      <section style={{ padding: "60px 24px", background: "#F5F1EB" }}>
+        <div className="role-grid" style={{ maxWidth: 900, margin: "0 auto", display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: 1, background: "#E8E3DB", alignItems: "stretch" }}>
+          <RoleCard href="/login?role=artist" label={t("home_for_artists", lang)} title={t("home_artist_title", lang)} features={[t("home_artist_feat1", lang), t("home_artist_feat2", lang), t("home_artist_feat3", lang), t("home_artist_feat4", lang), t("home_artist_feat5", lang), t("home_artist_feat6", lang), t("home_artist_feat7", lang)]} lang={lang} />
+          <RoleCard href="/login?role=gallery" label={t("home_for_galleries", lang)} title={t("home_gallery_title", lang)} features={[t("home_gallery_feat1", lang), t("home_gallery_feat2", lang), t("home_gallery_feat3", lang), t("home_gallery_feat4", lang), t("home_gallery_feat5", lang)]} lang={lang} />
+        </div>
+      </section>
+
+      {/* Country Landing Pages */}
+      <section style={{ padding: "60px 24px", background: "#FDFBF7" }}>
+        <div style={{ maxWidth: 900, margin: "0 auto", textAlign: "center" }}>
+          <span style={{ fontFamily: F, fontSize: 10, fontWeight: 500, letterSpacing: "0.3em", color: "#8B7355", textTransform: "uppercase" }}>{t("home_explore_country", lang)}</span>
+          <h2 style={{ fontFamily: S, fontSize: "clamp(24px, 4vw, 36px)", fontWeight: 300, color: "#1A1A1A", marginTop: 16, marginBottom: 32 }}>
+            {t("home_10_countries", lang)}
+          </h2>
+          <div style={{ display: "flex", gap: 12, flexWrap: "wrap", justifyContent: "center" }}>
+            {[
+              { code: "kr", flag: "🇰🇷", name: lang === "ko" ? "한국" : lang === "ja" ? "韓国" : "Korea" },
+              { code: "jp", flag: "🇯🇵", name: lang === "ko" ? "일본" : lang === "ja" ? "日本" : "Japan" },
+              { code: "uk", flag: "🇬🇧", name: lang === "ko" ? "영국" : lang === "ja" ? "イギリス" : "UK" },
+              { code: "fr", flag: "🇫🇷", name: lang === "ko" ? "프랑스" : lang === "ja" ? "フランス" : "France" },
+              { code: "us", flag: "🇺🇸", name: lang === "ko" ? "미국" : lang === "ja" ? "アメリカ" : "USA" },
+              { code: "de", flag: "🇩🇪", name: lang === "ko" ? "독일" : lang === "ja" ? "ドイツ" : "Germany" },
+              { code: "it", flag: "🇮🇹", name: lang === "ko" ? "이탈리아" : lang === "ja" ? "イタリア" : "Italy" },
+              { code: "ch", flag: "🇨🇭", name: lang === "ko" ? "스위스" : lang === "ja" ? "スイス" : "Switzerland" },
+              { code: "cn", flag: "🇨🇳", name: lang === "ko" ? "중국" : lang === "ja" ? "中国" : "China" },
+              { code: "au", flag: "🇦🇺", name: lang === "ko" ? "호주" : lang === "ja" ? "オーストラリア" : "Australia" },
+            ].map((c) => (
+              <Link key={c.code} href={`/country/${c.code}`}
+                style={{ padding: "14px 24px", border: "1px solid #E8E3DB", background: "#FFFFFF", fontFamily: F, fontSize: 12, color: "#1A1A1A", textDecoration: "none", transition: "all 0.3s", display: "flex", alignItems: "center", gap: 10 }}
+                onMouseEnter={(e) => { e.currentTarget.style.borderColor = "#8B7355"; e.currentTarget.style.background = "#FAF8F4"; }}
+                onMouseLeave={(e) => { e.currentTarget.style.borderColor = "#E8E3DB"; e.currentTarget.style.background = "#FFFFFF"; }}>
+                <span style={{ fontSize: 18 }}>{c.flag}</span>
+                <span style={{ fontWeight: 400 }}>{c.name}</span>
+              </Link>
+            ))}
           </div>
         </div>
       </section>
 
-      {/* CTA Section */}
-      <section
-        style={{
-          padding: "64px 20px",
-          textAlign: "center",
-          background: "linear-gradient(135deg, #6366f1 0%, #ec4899 100%)",
-        }}
-      >
-        <h2 style={{ fontSize: 32, fontWeight: 800, color: "#fff", marginBottom: 12 }}>
-          지금 바로 시작하세요
+      {/* CTA */}
+      <section style={{ padding: "80px 24px", textAlign: "center" }}>
+        <h2 style={{ fontFamily: S, fontSize: "clamp(28px, 5vw, 56px)", fontWeight: 300, color: "#1A1A1A", margin: "0 0 40px" }}>
+          {t("home_begin", lang)}
         </h2>
-        <p style={{ color: "rgba(255,255,255,0.85)", marginBottom: 32, fontSize: 16 }}>
-          전 세계 아티스트와 갤러리가 기다리고 있습니다
-        </p>
-        <div style={{ display: "flex", gap: 16, justifyContent: "center", flexWrap: "wrap" }}>
-          <Link
-            href="/login?role=artist"
-            style={{
-              padding: "14px 32px",
-              borderRadius: 12,
-              background: "#fff",
-              color: "#6366f1",
-              fontWeight: 700,
-              fontSize: 15,
-              textDecoration: "none",
-              boxShadow: "0 4px 14px rgba(0,0,0,0.15)",
-            }}
-          >
-            🎨 아티스트로 가입
-          </Link>
-          <Link
-            href="/login?role=gallery"
-            style={{
-              padding: "14px 32px",
-              borderRadius: 12,
-              background: "rgba(255,255,255,0.15)",
-              color: "#fff",
-              fontWeight: 700,
-              fontSize: 15,
-              textDecoration: "none",
-              border: "2px solid rgba(255,255,255,0.3)",
-            }}
-          >
-            🏛️ 갤러리로 가입
-          </Link>
-        </div>
+        <Link href="/login" style={{ display: "inline-block", padding: "18px 48px", background: "#1A1A1A", color: "#FDFBF7", fontFamily: F, fontSize: 11, fontWeight: 500, letterSpacing: "0.12em", textTransform: "uppercase", textDecoration: "none", transition: "all 0.3s ease" }}
+          onMouseEnter={(e) => { e.currentTarget.style.background = "#8B7355"; }}
+          onMouseLeave={(e) => { e.currentTarget.style.background = "#1A1A1A"; }}>
+          {t("enter", lang)}
+        </Link>
       </section>
 
       {/* Footer */}
-      <footer
-        style={{
-          padding: "32px 20px",
-          textAlign: "center",
-          background: "#111",
-          color: "#888",
-          fontSize: 13,
-        }}
-      >
-        <div style={{ marginBottom: 8, color: "#fff", fontWeight: 600 }}>
-          ROB : Role of Bridge
-        </div>
-        <div>Connecting Artists & Galleries Worldwide</div>
-        <div style={{ marginTop: 16, fontSize: 12, color: "#666" }}>
-          © 2024 Global Art Fair Platform. All rights reserved.
-        </div>
+      <footer style={{ padding: "40px 24px", textAlign: "center", borderTop: "1px solid #E8E3DB" }}>
+        <div style={{ fontFamily: S, fontSize: 20, fontWeight: 400, color: "#1A1A1A", marginBottom: 4 }}>ROB</div>
+        <div style={{ fontFamily: F, fontSize: 9, fontWeight: 500, letterSpacing: "0.2em", textTransform: "uppercase", color: "#B0AAA2", marginBottom: 16 }}>Role of Bridge</div>
+        <div style={{ fontFamily: F, fontSize: 10, letterSpacing: "0.08em", color: "#D4CEC4" }}>© 2026 Global Art Platform</div>
       </footer>
+
+      <style jsx global>{`
+        @media (max-width: 768px) {
+          .hero-section { min-height: 80vh !important; padding: 40px 20px !important; }
+          .stats-grid { grid-template-columns: repeat(2, 1fr) !important; gap: 32px 16px !important; }
+          .feature-grid { grid-template-columns: 1fr !important; }
+          .role-grid { grid-template-columns: 1fr !important; }
+          .hide-on-mobile { display: none !important; }
+        }
+        @media (max-width: 480px) {
+          .hero-section { min-height: auto !important; padding: 48px 16px 60px !important; }
+          .stats-grid { grid-template-columns: repeat(2, 1fr) !important; gap: 24px 12px !important; }
+        }
+      `}</style>
     </main>
   );
 }
 
-/* ========== Components ========== */
-
-function RoleCard({
-  href,
-  icon,
-  title,
-  subtitle,
-  description,
-  features,
-  color,
-  buttonText,
-}: {
-  href: string;
-  icon: string;
-  title: string;
-  subtitle: string;
-  description: string;
-  features: string[];
-  color: string;
-  buttonText: string;
-}) {
+function StatItem({ number, label }: { number: number | string; label: string }) {
   return (
-    <Link href={href} style={{ textDecoration: "none", display: "flex" }}>
-      <div
-        style={{
-          width: 300,
-          padding: 28,
-          borderRadius: 20,
-          background: "white",
-          border: "2px solid #e5e5e5",
-          cursor: "pointer",
-          transition: "all 0.25s",
-          boxShadow: "0 4px 20px rgba(0,0,0,0.06)",
-          textAlign: "left",
-          display: "flex",
-          flexDirection: "column",
-        }}
-        onMouseEnter={(e) => {
-          e.currentTarget.style.transform = "translateY(-6px)";
-          e.currentTarget.style.boxShadow = "0 12px 40px rgba(0,0,0,0.12)";
-          e.currentTarget.style.borderColor = color;
-        }}
-        onMouseLeave={(e) => {
-          e.currentTarget.style.transform = "translateY(0)";
-          e.currentTarget.style.boxShadow = "0 4px 20px rgba(0,0,0,0.06)";
-          e.currentTarget.style.borderColor = "#e5e5e5";
-        }}
-      >
-        <div style={{ fontSize: 44, marginBottom: 12 }}>{icon}</div>
-        <div style={{ fontSize: 13, fontWeight: 600, color: color, marginBottom: 4 }}>
-          {title}
-        </div>
-        <h2 style={{ fontSize: 20, fontWeight: 800, color: "#111", marginBottom: 8 }}>
-          {subtitle}
-        </h2>
-        <p style={{ fontSize: 14, color: "#666", lineHeight: 1.5, marginBottom: 16, flex: 1 }}>
-          {description}
-        </p>
+    <div style={{ textAlign: "center" }}>
+      <div style={{ fontFamily: S, fontSize: "clamp(36px, 6vw, 52px)", fontWeight: 300, color: "#1A1A1A", lineHeight: 1 }}>
+        {typeof number === "number" ? `${number}+` : number}
+      </div>
+      <div style={{ fontFamily: F, fontSize: 10, fontWeight: 500, letterSpacing: "0.15em", textTransform: "uppercase", color: "#8A8580", marginTop: 12 }}>{label}</div>
+    </div>
+  );
+}
 
-        {/* Feature List */}
-        <ul style={{ margin: 0, padding: 0, listStyle: "none", marginBottom: 20 }}>
+function FeatureCard({ number, title, description }: { number: string; title: string; description: string }) {
+  return (
+    <div style={{ padding: "clamp(24px, 4vw, 48px)", background: "#FFFFFF", transition: "all 0.3s ease" }}
+      onMouseEnter={(e) => { e.currentTarget.style.background = "#FAF8F4"; }}
+      onMouseLeave={(e) => { e.currentTarget.style.background = "#FFFFFF"; }}>
+      <div style={{ fontFamily: S, fontSize: "clamp(28px, 4vw, 36px)", fontWeight: 300, color: "#D4CEC4", marginBottom: 16 }}>{number}</div>
+      <h3 style={{ fontFamily: S, fontSize: "clamp(20px, 3vw, 28px)", fontWeight: 400, color: "#1A1A1A", marginBottom: 12 }}>{title}</h3>
+      <p style={{ fontFamily: F, fontSize: 13, fontWeight: 300, color: "#8A8580", lineHeight: 1.7 }}>{description}</p>
+    </div>
+  );
+}
+
+function RoleCard({ href, label, title, features, lang }: { href: string; label: string; title: string; features: string[]; lang: string }) {
+  return (
+    <Link href={href} style={{ textDecoration: "none", display: "block", height: "100%" }}>
+      <div style={{ padding: "clamp(24px, 4vw, 48px)", background: "#FFFFFF", height: "100%", display: "flex", flexDirection: "column", transition: "all 0.3s ease" }}
+        onMouseEnter={(e) => { e.currentTarget.style.background = "#FAF8F4"; }}
+        onMouseLeave={(e) => { e.currentTarget.style.background = "#FFFFFF"; }}>
+        <div style={{ fontFamily: F, fontSize: 10, fontWeight: 500, letterSpacing: "0.2em", color: "#8B7355", textTransform: "uppercase", marginBottom: 16 }}>{label}</div>
+        <h3 style={{ fontFamily: S, fontSize: "clamp(20px, 3vw, 24px)", fontWeight: 400, color: "#1A1A1A", marginBottom: 24, lineHeight: 1.3 }}>{title}</h3>
+        <ul style={{ margin: 0, padding: 0, listStyle: "none", flex: 1 }}>
           {features.map((f, i) => (
-            <li
-              key={i}
-              style={{
-                fontSize: 13,
-                color: "#555",
-                padding: "4px 0",
-                display: "flex",
-                alignItems: "center",
-                gap: 8,
-              }}
-            >
-              <span style={{ color: color }}>✓</span> {f}
+            <li key={i} style={{ fontFamily: F, fontSize: 12, fontWeight: 400, color: "#8A8580", padding: "10px 0", borderBottom: "1px solid #F0EBE3", display: "flex", alignItems: "center", gap: 10 }}>
+              <span style={{ color: "#8B7355" }}>—</span> {f}
             </li>
           ))}
         </ul>
-
-        <div
-          style={{
-            padding: "12px 0",
-            borderRadius: 10,
-            background: color,
-            color: "#fff",
-            fontWeight: 700,
-            fontSize: 14,
-            textAlign: "center",
-            marginTop: "auto",
-          }}
-        >
-          {buttonText} →
+        <div style={{ marginTop: 24, padding: "14px 0", border: "1px solid #1A1A1A", color: "#1A1A1A", fontFamily: F, fontSize: 10, fontWeight: 500, letterSpacing: "0.12em", textTransform: "uppercase", textAlign: "center", transition: "all 0.3s ease" }}>
+          {lang === "ko" ? "입장" : lang === "ja" ? "入場" : "Enter"}
         </div>
       </div>
     </Link>
-  );
-}
-
-function StatItem({ number, label }: { number: string; label: string }) {
-  return (
-    <div style={{ textAlign: "center" }}>
-      <div style={{ fontSize: 36, fontWeight: 800, color: "#111" }}>{number}</div>
-      <div style={{ fontSize: 14, color: "#888", marginTop: 4 }}>{label}</div>
-    </div>
-  );
-}
-
-function StepCard({
-  step,
-  title,
-  description,
-  icon,
-}: {
-  step: string;
-  title: string;
-  description: string;
-  icon: string;
-}) {
-  return (
-    <div
-      style={{
-        padding: 28,
-        borderRadius: 16,
-        background: "#fff",
-        border: "1px solid #eee",
-        textAlign: "center",
-      }}
-    >
-      <div
-        style={{
-          width: 48,
-          height: 48,
-          borderRadius: "50%",
-          background: "linear-gradient(135deg, #6366f1 0%, #ec4899 100%)",
-          color: "#fff",
-          fontSize: 20,
-          fontWeight: 800,
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          margin: "0 auto 16px",
-        }}
-      >
-        {step}
-      </div>
-      <div style={{ fontSize: 32, marginBottom: 12 }}>{icon}</div>
-      <h3 style={{ fontSize: 18, fontWeight: 700, color: "#111", marginBottom: 8 }}>
-        {title}
-      </h3>
-      <p style={{ fontSize: 14, color: "#666", lineHeight: 1.5 }}>{description}</p>
-    </div>
-  );
-}
-
-function FeatureCard({
-  icon,
-  title,
-  description,
-}: {
-  icon: string;
-  title: string;
-  description: string;
-}) {
-  return (
-    <div
-      style={{
-        padding: 24,
-        borderRadius: 14,
-        background: "#fafafa",
-        border: "1px solid #eee",
-        textAlign: "center",
-      }}
-    >
-      <div style={{ fontSize: 32, marginBottom: 12 }}>{icon}</div>
-      <h3 style={{ fontSize: 16, fontWeight: 700, color: "#111", marginBottom: 6 }}>
-        {title}
-      </h3>
-      <p style={{ fontSize: 13, color: "#666", lineHeight: 1.5 }}>{description}</p>
-    </div>
   );
 }

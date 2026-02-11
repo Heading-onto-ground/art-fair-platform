@@ -8,8 +8,10 @@ const DEFAULT_LANG: Language = "en";
 
 export function useLanguage() {
   const [lang, setLang] = useState<Language>(DEFAULT_LANG);
+  const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
+    setMounted(true);
     if (typeof navigator !== "undefined") {
       const stored = localStorage.getItem("afp_lang") as Language | null;
       if (stored) {
@@ -22,12 +24,13 @@ export function useLanguage() {
   }, []);
 
   return {
-    lang,
+    lang: mounted ? lang : DEFAULT_LANG,
     setLang: (v: Language) => {
       setLang(v);
       if (typeof localStorage !== "undefined") {
         localStorage.setItem("afp_lang", v);
       }
     },
+    mounted,
   };
 }
