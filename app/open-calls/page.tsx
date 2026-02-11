@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import TopBar from "@/app/components/TopBar";
 import SignupPromptModal from "@/app/components/SignupPromptModal";
 import { CardSkeleton } from "@/app/components/Skeleton";
+import OpenCallPoster from "@/app/components/OpenCallPoster";
 import { useFetch } from "@/lib/useFetch";
 import { useLanguage } from "@/lib/useLanguage";
 import { t } from "@/lib/translate";
@@ -95,11 +96,17 @@ export default function OpenCallsPage() {
                 onMouseLeave={(e) => { e.currentTarget.style.background = "#FFFFFF"; }}>
                 <div className="oc-list-inner" style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 20 }}>
                   {/* Poster Image */}
-                  {o.posterImage && (
-                    <div className="oc-list-poster" style={{ width: 140, height: 100, flexShrink: 0, overflow: "hidden", border: "1px solid #EEEAE5" }}>
-                      <img src={o.posterImage} alt={o.gallery} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
-                    </div>
-                  )}
+                  <OpenCallPoster
+                    className="oc-list-poster"
+                    posterImage={o.posterImage}
+                    gallery={o.gallery}
+                    theme={o.theme}
+                    city={o.city}
+                    country={o.country}
+                    deadline={o.deadline}
+                    width={160}
+                    height={110}
+                  />
                   <div style={{ flex: 1 }}>
                     <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 12 }}>
                       <span style={{ fontFamily: S, fontSize: 20, fontWeight: 300, color: "#D4CEC4" }}>

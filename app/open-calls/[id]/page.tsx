@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import TopBar from "@/app/components/TopBar";
+import OpenCallPoster from "@/app/components/OpenCallPoster";
 import { useLanguage } from "@/lib/useLanguage";
 import { t } from "@/lib/translate";
 import { LANGUAGE_NAMES, type SupportedLang } from "@/lib/translateApi";
@@ -11,7 +12,7 @@ import { F, S } from "@/lib/design";
 
 type Role = "artist" | "gallery";
 type MeResponse = { session: { userId: string; role: Role; email?: string } | null; profile: any | null };
-type OpenCall = { id: string; galleryId: string; gallery: string; city: string; country: string; theme: string; deadline: string; isExternal?: boolean; externalEmail?: string; externalUrl?: string; galleryWebsite?: string; galleryDescription?: string };
+type OpenCall = { id: string; galleryId: string; gallery: string; city: string; country: string; theme: string; deadline: string; posterImage?: string | null; isExternal?: boolean; externalEmail?: string; externalUrl?: string; galleryWebsite?: string; galleryDescription?: string };
 type Application = { id: string; openCallId: string; galleryId: string; artistId: string; artistName: string; artistEmail: string; artistCountry: string; artistCity: string; artistPortfolioUrl?: string; message?: string; status: "submitted" | "reviewing" | "accepted" | "rejected"; shippingStatus: "pending" | "shipped" | "received" | "inspected" | "exhibited"; shippingNote?: string; shippingCarrier?: string; trackingNumber?: string; trackingUrl?: string; createdAt: number; updatedAt: number };
 
 async function fetchMe(): Promise<MeResponse | null> { try { const res = await fetch("/api/auth/me", { cache: "no-store", credentials: "include" }); return (await res.json().catch(() => null)) as MeResponse | null; } catch { return null; } }
@@ -100,7 +101,20 @@ export default function OpenCallDetailPage({ params }: { params: { id: string } 
         : error ? <div style={{ padding: 20, border: "1px solid rgba(139,74,74,0.2)", background: "rgba(139,74,74,0.04)", color: "#8B4A4A", fontFamily: F, fontSize: 12 }}>{error}</div>
         : !openCall ? <p style={{ fontFamily: F, color: "#B0AAA2" }}>Not found</p>
         : (
-          <div style={{ border: "1px solid #E8E3DB", background: "#FFFFFF", padding: 40 }}>
+          <div style={{ border: "1px solid #E8E3DB", background: "#FFFFFF", overflow: "hidden" }}>
+            {/* Hero Poster */}
+            <OpenCallPoster
+              posterImage={openCall.posterImage}
+              gallery={openCall.gallery}
+              theme={openCall.theme}
+              city={openCall.city}
+              country={openCall.country}
+              deadline={openCall.deadline}
+              width="100%"
+              height={200}
+            />
+
+            <div style={{ padding: 40 }}>
             <span style={{ fontFamily: F, fontSize: 10, fontWeight: 500, letterSpacing: "0.1em", textTransform: "uppercase", color: "#8B7355" }}>
               {openCall.country} / {openCall.city}
             </span>
@@ -222,6 +236,7 @@ export default function OpenCallDetailPage({ params }: { params: { id: string } 
                 )}
               </div>
             )}
+            </div>{/* end padding wrapper */}
           </div>
         )}
       </main>
