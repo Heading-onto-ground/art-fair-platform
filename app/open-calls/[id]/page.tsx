@@ -110,8 +110,7 @@ export default function OpenCallDetailPage({ params }: { params: { id: string } 
               city={openCall.city}
               country={openCall.country}
               deadline={openCall.deadline}
-              width="100%"
-              height={200}
+              hero
             />
 
             <div style={{ padding: 40 }}>

@@ -98,7 +98,7 @@ export default function ArtistPage() {
           .artist-header-btns { width: 100% !important; flex-wrap: wrap !important; }
           .artist-header-btns > * { flex: 1 1 auto !important; text-align: center !important; }
           .oc-card-inner { flex-direction: column !important; }
-          .oc-poster { width: 100% !important; height: 180px !important; }
+          .oc-poster { width: 100% !important; height: auto !important; aspect-ratio: 3/4 !important; max-height: 280px !important; }
           .oc-card-right { text-align: left !important; margin-left: 0 !important; margin-top: 12px !important; }
           .oc-card-actions { flex-wrap: wrap !important; }
           .country-tabs { -webkit-overflow-scrolling: touch; scrollbar-width: none; }
@@ -214,8 +214,8 @@ export default function ArtistPage() {
                     city={o.city}
                     country={o.country}
                     deadline={o.deadline}
-                    width={140}
-                    height={100}
+                    width={100}
+                    height={134}
                   />
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 10 }}>

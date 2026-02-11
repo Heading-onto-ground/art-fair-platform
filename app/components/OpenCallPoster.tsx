@@ -34,6 +34,8 @@ type Props = {
   deadline?: string;
   width?: number | string;
   height?: number | string;
+  /** If true, uses aspect-ratio instead of fixed height (for responsive hero banners) */
+  hero?: boolean;
   className?: string;
 };
 
@@ -44,14 +46,20 @@ export default function OpenCallPoster({
   city,
   country,
   deadline,
-  width = 160,
-  height = 120,
+  width = 100,
+  height = 140,
+  hero = false,
   className,
 }: Props) {
   // If real poster, just show it
   if (posterImage) {
     return (
-      <div className={className} style={{ width, height, flexShrink: 0, overflow: "hidden", border: "1px solid #EEEAE5" }}>
+      <div className={className} style={{
+        width: hero ? "100%" : width,
+        height: hero ? undefined : height,
+        aspectRatio: hero ? "16 / 6" : undefined,
+        flexShrink: 0, overflow: "hidden", border: hero ? "none" : "1px solid #EEEAE5",
+      }}>
         <img src={posterImage} alt={gallery} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
       </div>
     );
@@ -71,8 +79,9 @@ export default function OpenCallPoster({
     <div
       className={className}
       style={{
-        width,
-        height,
+        width: hero ? "100%" : width,
+        height: hero ? undefined : height,
+        aspectRatio: hero ? "16 / 6" : undefined,
         flexShrink: 0,
         overflow: "hidden",
         background: palette.bg,
@@ -80,7 +89,7 @@ export default function OpenCallPoster({
         display: "flex",
         flexDirection: "column",
         justifyContent: "space-between",
-        padding: "10px 12px",
+        padding: hero ? "24px 32px" : "12px 14px",
       }}
     >
       {/* Decorative corner accent */}
@@ -97,14 +106,14 @@ export default function OpenCallPoster({
         }}
       />
       {/* Thin accent line */}
-      <div style={{ width: 24, height: 2, background: palette.accent, marginBottom: 6, opacity: 0.8 }} />
+      <div style={{ width: hero ? 40 : 24, height: 2, background: palette.accent, marginBottom: hero ? 10 : 6, opacity: 0.8 }} />
 
       {/* Gallery name */}
-      <div style={{ flex: 1, display: "flex", flexDirection: "column", justifyContent: "center", gap: 2, position: "relative", zIndex: 1 }}>
+      <div style={{ flex: 1, display: "flex", flexDirection: "column", justifyContent: "center", gap: hero ? 6 : 3, position: "relative", zIndex: 1 }}>
         <span
           style={{
             fontFamily: S,
-            fontSize: typeof width === "number" && width < 140 ? 11 : 13,
+            fontSize: hero ? 28 : 13,
             fontWeight: 400,
             color: palette.text,
             lineHeight: 1.2,
@@ -116,10 +125,28 @@ export default function OpenCallPoster({
         >
           {gallery}
         </span>
+        {hero && theme && (
+          <span
+            style={{
+              fontFamily: F,
+              fontSize: 13,
+              fontWeight: 300,
+              color: palette.text,
+              opacity: 0.7,
+              lineHeight: 1.4,
+              overflow: "hidden",
+              display: "-webkit-box",
+              WebkitLineClamp: 1,
+              WebkitBoxOrient: "vertical" as any,
+            }}
+          >
+            {theme}
+          </span>
+        )}
         <span
           style={{
             fontFamily: F,
-            fontSize: 8,
+            fontSize: hero ? 11 : 8,
             fontWeight: 400,
             color: palette.accent,
             letterSpacing: "0.06em",
@@ -136,7 +163,7 @@ export default function OpenCallPoster({
         <span
           style={{
             fontFamily: F,
-            fontSize: 7,
+            fontSize: hero ? 10 : 7,
             fontWeight: 600,
             letterSpacing: "0.14em",
             textTransform: "uppercase",
@@ -150,7 +177,7 @@ export default function OpenCallPoster({
           <span
             style={{
               fontFamily: F,
-              fontSize: 7,
+              fontSize: hero ? 10 : 7,
               fontWeight: 400,
               color: palette.text,
               opacity: 0.5,

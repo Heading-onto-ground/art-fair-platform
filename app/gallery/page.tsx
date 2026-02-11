@@ -279,7 +279,7 @@ export default function GalleryPage() {
     if (!file.type.startsWith("image/")) return;
     if (file.size > 5 * 1024 * 1024) { alert(lang === "ko" ? "이미지가 너무 큽니다 (최대 5MB)" : "Image too large (max 5MB)"); return; }
 
-    resizeImage(file, 1000, 800, 0.82).then((dataUri) => {
+    resizeImage(file, 800, 1100, 0.82).then((dataUri) => {
       if (mode === "create") {
         setOcPosterPreview(dataUri);
         setOcPosterData(dataUri);

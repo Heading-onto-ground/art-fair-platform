@@ -58,7 +58,7 @@ export default function OpenCallsPage() {
       <style jsx global>{`
         @media (max-width: 768px) {
           .oc-list-inner { flex-direction: column !important; }
-          .oc-list-poster { width: 100% !important; height: 180px !important; }
+          .oc-list-poster { width: 100% !important; height: auto !important; aspect-ratio: 3/4 !important; max-height: 300px !important; }
         }
       `}</style>
       <main style={{ padding: "56px 40px", maxWidth: 960, margin: "0 auto" }}>
@@ -104,8 +104,8 @@ export default function OpenCallsPage() {
                     city={o.city}
                     country={o.country}
                     deadline={o.deadline}
-                    width={160}
-                    height={110}
+                    width={110}
+                    height={148}
                   />
                   <div style={{ flex: 1 }}>
                     <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 12 }}>
