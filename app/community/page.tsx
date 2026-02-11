@@ -4,6 +4,7 @@ import { useEffect, useState, useMemo } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useLanguage } from "@/lib/useLanguage";
 import { t } from "@/lib/translate";
+import { type SupportedLang } from "@/lib/translateApi";
 import TopBar from "@/app/components/TopBar";
 import { PostSkeleton } from "@/app/components/Skeleton";
 import { useFetch } from "@/lib/useFetch";
@@ -73,6 +74,13 @@ export default function CommunityPage() {
   const [expandedPostId, setExpandedPostId] = useState<string | null>(null);
   const [commentText, setCommentText] = useState("");
   const [commenting, setCommenting] = useState(false);
+
+  // Translation state: { [postId]: { title, content, comments: { [commentId]: string }, loading } }
+  const [translations, setTranslations] = useState<Record<string, {
+    title?: string; content?: string;
+    comments?: Record<string, string>;
+    loading?: boolean;
+  }>>({});
 
   useEffect(() => {
     setMounted(true);
@@ -146,6 +154,39 @@ export default function CommunityPage() {
       console.error(e);
     }
     setCommenting(false);
+  }
+
+  async function translatePost(post: Post) {
+    const postId = post.id;
+    // Toggle off if already translated
+    if (translations[postId]?.title) {
+      setTranslations((prev) => { const next = { ...prev }; delete next[postId]; return next; });
+      return;
+    }
+    // Mark loading
+    setTranslations((prev) => ({ ...prev, [postId]: { loading: true } }));
+    try {
+      // Batch all texts: [title, content, ...commentContents]
+      const allTexts = [post.title, post.content, ...post.comments.map((c) => c.content)];
+      const res = await fetch("/api/translate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ texts: allTexts, targetLang: lang }),
+      });
+      const data = await res.json().catch(() => null);
+      const translated: string[] = data?.translated || allTexts;
+
+      const tComments: Record<string, string> = {};
+      post.comments.forEach((c, i) => { tComments[c.id] = translated[2 + i] || c.content; });
+
+      setTranslations((prev) => ({
+        ...prev,
+        [postId]: { title: translated[0], content: translated[1], comments: tComments, loading: false },
+      }));
+    } catch (e) {
+      console.error("Translation failed:", e);
+      setTranslations((prev) => ({ ...prev, [postId]: { loading: false } }));
+    }
   }
 
   function timeAgo(ts: number): string {
@@ -441,11 +482,35 @@ export default function CommunityPage() {
 
                 {/* Post content */}
                 <h2 style={{ fontFamily: S, fontSize: 22, fontWeight: 400, color: "#1A1A1A", margin: "0 0 12px", lineHeight: 1.3 }}>
-                  {post.title}
+                  {translations[post.id]?.title || post.title}
                 </h2>
-                <div style={{ fontFamily: F, fontSize: 13, color: "#4A4A4A", lineHeight: 1.8, whiteSpace: "pre-wrap", marginBottom: 20 }}>
-                  {post.content}
+                <div style={{ fontFamily: F, fontSize: 13, color: "#4A4A4A", lineHeight: 1.8, whiteSpace: "pre-wrap", marginBottom: 12 }}>
+                  {translations[post.id]?.content || post.content}
                 </div>
+                {/* Translate button */}
+                <button
+                  onClick={() => translatePost(post)}
+                  disabled={translations[post.id]?.loading}
+                  style={{
+                    padding: "4px 12px",
+                    border: "1px solid #E8E3DB",
+                    background: translations[post.id]?.title ? "rgba(139,115,85,0.08)" : "transparent",
+                    color: translations[post.id]?.title ? "#8B7355" : "#B0AAA2",
+                    fontFamily: F,
+                    fontSize: 10,
+                    fontWeight: 500,
+                    letterSpacing: "0.06em",
+                    cursor: translations[post.id]?.loading ? "wait" : "pointer",
+                    marginBottom: 16,
+                    transition: "all 0.2s",
+                  }}
+                >
+                  {translations[post.id]?.loading
+                    ? (lang === "ko" ? "번역 중..." : "Translating...")
+                    : translations[post.id]?.title
+                      ? (lang === "ko" ? "원문 보기" : "Show original")
+                      : (lang === "ko" ? "🌐 번역" : "🌐 Translate")}
+                </button>
 
                 {/* Actions bar */}
                 <div style={{ display: "flex", alignItems: "center", gap: 24, paddingTop: 16, borderTop: "1px solid #F0EBE3" }}>
@@ -525,7 +590,7 @@ export default function CommunityPage() {
                               </span>
                             </div>
                             <p style={{ fontFamily: F, fontSize: 12, color: "#4A4A4A", lineHeight: 1.6, margin: 0 }}>
-                              {comment.content}
+                              {translations[post.id]?.comments?.[comment.id] || comment.content}
                             </p>
                           </div>
                         ))}
