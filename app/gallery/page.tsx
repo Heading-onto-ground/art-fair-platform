@@ -254,6 +254,7 @@ export default function GalleryPage() {
       const res = await fetch("/api/open-calls", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
+        credentials: "include",
         body: JSON.stringify(payload),
       });
       const data = await res.json().catch(() => null);
@@ -276,9 +277,9 @@ export default function GalleryPage() {
     const file = e.target.files?.[0];
     if (!file) return;
     if (!file.type.startsWith("image/")) return;
-    if (file.size > 2 * 1024 * 1024) { alert("Image too large (max 2MB)"); return; }
+    if (file.size > 5 * 1024 * 1024) { alert(lang === "ko" ? "이미지가 너무 큽니다 (최대 5MB)" : "Image too large (max 5MB)"); return; }
 
-    resizeImage(file, 600, 600, 0.85).then((dataUri) => {
+    resizeImage(file, 1000, 800, 0.82).then((dataUri) => {
       if (mode === "create") {
         setOcPosterPreview(dataUri);
         setOcPosterData(dataUri);
@@ -405,33 +406,40 @@ export default function GalleryPage() {
         {/* Create Open Call Section */}
         <Section number="01" title={t("gallery_create_oc", lang)}>
           <div style={{ display: "grid", gap: 16 }}>
-            {/* Poster Image Upload */}
+            {/* Poster Image Upload — prominent */}
             <div>
-              <label style={{ fontFamily: F, fontSize: 10, fontWeight: 500, letterSpacing: "0.1em", textTransform: "uppercase", color: "#8A8A8A", marginBottom: 8, display: "block" }}>
-                Poster Image (optional)
+              <label style={{ fontFamily: F, fontSize: 10, fontWeight: 600, letterSpacing: "0.12em", textTransform: "uppercase", color: "#8B7355", marginBottom: 10, display: "block" }}>
+                {lang === "ko" ? "📷 오픈콜 포스터 이미지" : lang === "ja" ? "📷 ポスター画像" : "📷 Open Call Poster Image"}
               </label>
-              <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
-                {ocPosterPreview ? (
-                  <div style={{ width: 120, height: 80, border: "1px solid #E5E0DB", overflow: "hidden", flexShrink: 0 }}>
-                    <img src={ocPosterPreview} alt="Poster" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
-                  </div>
-                ) : (
-                  <div style={{ width: 120, height: 80, border: "1px dashed #E5E0DB", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, background: "#FAF8F5" }}>
-                    <span style={{ fontFamily: F, fontSize: 9, color: "#C8C0B4", letterSpacing: "0.08em", textTransform: "uppercase" }}>No image</span>
-                  </div>
-                )}
-                <div style={{ display: "flex", gap: 8 }}>
-                  <label style={{ padding: "10px 16px", border: "1px solid #E5E0DB", background: "transparent", color: "#4A4A4A", fontFamily: F, fontSize: 10, letterSpacing: "0.1em", textTransform: "uppercase", cursor: "pointer" }}>
-                    {ocPosterPreview ? "Change" : "Upload"}
-                    <input type="file" accept="image/jpeg,image/png,image/webp" onChange={(e) => handlePosterSelect(e, "create")} style={{ display: "none" }} />
-                  </label>
-                  {ocPosterPreview && (
-                    <button onClick={() => { setOcPosterPreview(null); setOcPosterData(null); }} style={{ padding: "10px 16px", border: "1px solid #D4B0B0", background: "transparent", color: "#8B3A3A", fontFamily: F, fontSize: 10, letterSpacing: "0.1em", textTransform: "uppercase", cursor: "pointer" }}>
-                      Remove
+              {ocPosterPreview ? (
+                <div style={{ position: "relative", border: "1px solid #E5E0DB", overflow: "hidden", maxWidth: 400, marginBottom: 12 }}>
+                  <img src={ocPosterPreview} alt="Poster" style={{ width: "100%", height: "auto", display: "block", maxHeight: 300, objectFit: "cover" }} />
+                  <div style={{ position: "absolute", bottom: 0, left: 0, right: 0, display: "flex", gap: 0, background: "rgba(0,0,0,0.6)" }}>
+                    <label style={{ flex: 1, padding: "10px 0", color: "#FFFFFF", fontFamily: F, fontSize: 10, fontWeight: 500, letterSpacing: "0.08em", textTransform: "uppercase", textAlign: "center", cursor: "pointer" }}>
+                      {lang === "ko" ? "변경" : "Change"}
+                      <input type="file" accept="image/jpeg,image/png,image/webp" onChange={(e) => handlePosterSelect(e, "create")} style={{ display: "none" }} />
+                    </label>
+                    <button onClick={() => { setOcPosterPreview(null); setOcPosterData(null); }} style={{ flex: 1, padding: "10px 0", border: "none", borderLeft: "1px solid rgba(255,255,255,0.2)", background: "transparent", color: "#FF9999", fontFamily: F, fontSize: 10, fontWeight: 500, letterSpacing: "0.08em", textTransform: "uppercase", cursor: "pointer" }}>
+                      {lang === "ko" ? "삭제" : "Remove"}
                     </button>
-                  )}
+                  </div>
                 </div>
-              </div>
+              ) : (
+                <label style={{
+                  display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center",
+                  width: "100%", maxWidth: 400, height: 160, border: "2px dashed #D4CEC4", background: "#FDFBF7",
+                  cursor: "pointer", transition: "all 0.3s",
+                }}>
+                  <span style={{ fontSize: 32, marginBottom: 8, opacity: 0.4 }}>🖼️</span>
+                  <span style={{ fontFamily: F, fontSize: 12, fontWeight: 500, color: "#8B7355", marginBottom: 4 }}>
+                    {lang === "ko" ? "포스터 이미지를 업로드하세요" : lang === "ja" ? "ポスター画像をアップロード" : "Upload poster image"}
+                  </span>
+                  <span style={{ fontFamily: F, fontSize: 10, color: "#B0AAA2" }}>
+                    JPG, PNG, WebP · {lang === "ko" ? "최대 5MB" : "Max 5MB"}
+                  </span>
+                  <input type="file" accept="image/jpeg,image/png,image/webp" onChange={(e) => handlePosterSelect(e, "create")} style={{ display: "none" }} />
+                </label>
+              )}
             </div>
 
             <input
@@ -515,23 +523,29 @@ export default function GalleryPage() {
                     {/* Poster thumbnail + upload */}
                     <div style={{ flexShrink: 0 }}>
                       {o.posterImage ? (
-                        <div style={{ width: 100, height: 70, border: "1px solid #E5E0DB", overflow: "hidden", marginBottom: 6 }}>
+                        <div style={{ width: 140, height: 100, border: "1px solid #E5E0DB", overflow: "hidden", marginBottom: 8 }}>
                           <img src={o.posterImage} alt="Poster" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
                         </div>
                       ) : (
-                        <div style={{ width: 100, height: 70, border: "1px dashed #E5E0DB", display: "flex", alignItems: "center", justifyContent: "center", background: "#FAF8F5", marginBottom: 6 }}>
-                          <span style={{ fontFamily: F, fontSize: 8, color: "#C8C0B4", letterSpacing: "0.08em", textTransform: "uppercase" }}>No poster</span>
+                        <div style={{ width: 140, height: 100, border: "2px dashed #D4CEC4", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", background: "#FDFBF7", marginBottom: 8 }}>
+                          <span style={{ fontSize: 20, marginBottom: 4, opacity: 0.3 }}>🖼️</span>
+                          <span style={{ fontFamily: F, fontSize: 9, color: "#C8C0B4" }}>
+                            {lang === "ko" ? "포스터 없음" : "No poster"}
+                          </span>
                         </div>
                       )}
                       <label style={{
-                        display: "block", textAlign: "center", padding: "5px 8px",
-                        border: "1px solid #E5E0DB", background: "transparent",
-                        color: "#8A8A8A", fontFamily: F, fontSize: 8,
-                        letterSpacing: "0.08em", textTransform: "uppercase",
+                        display: "block", textAlign: "center", padding: "7px 12px",
+                        border: "1px solid #8B7355", background: o.posterImage ? "transparent" : "#8B7355",
+                        color: o.posterImage ? "#8B7355" : "#FFFFFF", fontFamily: F, fontSize: 9,
+                        fontWeight: 500, letterSpacing: "0.08em", textTransform: "uppercase",
                         cursor: uploadingPosterId === o.id ? "wait" : "pointer",
                         opacity: uploadingPosterId === o.id ? 0.5 : 1,
+                        transition: "all 0.3s",
                       }}>
-                        {uploadingPosterId === o.id ? "..." : o.posterImage ? "Change" : "Upload"}
+                        {uploadingPosterId === o.id ? "..." : o.posterImage
+                          ? (lang === "ko" ? "포스터 변경" : "Change")
+                          : (lang === "ko" ? "📷 포스터 등록" : "📷 Upload")}
                         <input type="file" accept="image/jpeg,image/png,image/webp" onChange={(e) => handlePosterSelect(e, o.id)} style={{ display: "none" }} disabled={uploadingPosterId === o.id} />
                       </label>
                     </div>
@@ -550,7 +564,7 @@ export default function GalleryPage() {
                         {o.theme}
                       </h3>
                       <p style={{ fontFamily: F, fontSize: 11, color: "#8A8A8A", marginTop: 6 }}>
-                        Deadline: {o.deadline}
+                        {lang === "ko" ? "마감" : "Deadline"}: {o.deadline}
                       </p>
                     </div>
                   </div>

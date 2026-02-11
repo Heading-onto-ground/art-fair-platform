@@ -4,7 +4,7 @@ import { getOpenCallById, updateOpenCallPoster } from "@/app/data/openCalls";
 
 export const dynamic = "force-dynamic";
 
-const MAX_SIZE = 800 * 1024; // ~800KB base64
+const MAX_SIZE = 1500 * 1024; // ~1.5MB base64
 
 export async function POST(req: Request, { params }: { params: { id: string } }) {
   try {
