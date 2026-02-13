@@ -1,0 +1,9 @@
+{
+  "crons": [
+    {
+      "path": "/api/cron/crawl-opencalls",
+      "schedule": "10 3 * * *"
+    }
+  ]
+}
+
