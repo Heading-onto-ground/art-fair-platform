@@ -128,9 +128,6 @@ export default function ArtistPage() {
               onMouseLeave={(e) => { e.currentTarget.style.borderColor = "#E8E3DB"; e.currentTarget.style.color = "#8A8580"; }}>
               {t("artist_my_profile", lang)}
             </button>
-            <Link href="/artist/exhibitions" style={{ padding: "10px 16px", border: "1px solid #E8E3DB", background: "transparent", color: "#8A8580", fontFamily: F, fontSize: 10, fontWeight: 500, letterSpacing: "0.08em", textTransform: "uppercase", textDecoration: "none" }}>
-              {lang === "ko" ? "전시 보드" : "Exhibition Board"}
-            </Link>
             <Link href="/open-calls" style={{ padding: "10px 16px", border: "1px solid #1A1A1A", background: "#1A1A1A", color: "#FDFBF7", fontFamily: F, fontSize: 10, fontWeight: 500, letterSpacing: "0.08em", textTransform: "uppercase", textDecoration: "none" }}>
               {t("artist_full_list", lang)}
             </Link>
