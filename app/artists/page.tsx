@@ -20,12 +20,19 @@ type Artist = {
   updatedAt?: number;
 };
 
+type MeResponse = {
+  session: { userId: string; role: "artist" | "gallery"; email?: string } | null;
+  profile: any | null;
+};
+
 export default function ArtistsPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { data, error, isLoading, mutate } = useFetch<{ artists: Artist[] }>("/api/public/artists");
   const artists = data?.artists ?? [];
   const [country, setCountry] = useState<string>("ALL");
+  const [preferredCountry, setPreferredCountry] = useState("");
+  const [hasAutoSelectedCountry, setHasAutoSelectedCountry] = useState(false);
   const [query, setQuery] = useState("");
   const [favorites, setFavorites] = useState<Record<string, boolean>>({});
 
@@ -39,6 +46,17 @@ export default function ArtistsPage() {
 
   useEffect(() => { localStorage.setItem("favorite_artists", JSON.stringify(favorites)); }, [favorites]);
 
+  useEffect(() => {
+    fetch("/api/auth/me", { cache: "no-store" })
+      .then((r) => r.json())
+      .then((data: MeResponse) => {
+        setPreferredCountry((data?.profile?.country ?? "").trim());
+      })
+      .catch(() => {
+        setPreferredCountry("");
+      });
+  }, []);
+
   const countryTabs = useMemo(() => {
     const countries = artists.map((a) => (a.country ?? "").trim()).filter(Boolean);
     const uniqueCountries = Array.from(new Set(countries)).sort((a, b) => {
@@ -46,8 +64,15 @@ export default function ArtistsPage() {
       const countB = artists.filter((x) => x.country === b).length;
       return countB - countA;
     });
+    if (preferredCountry) {
+      const idx = uniqueCountries.indexOf(preferredCountry);
+      if (idx > 0) {
+        uniqueCountries.splice(idx, 1);
+        uniqueCountries.unshift(preferredCountry);
+      }
+    }
     return ["ALL", ...uniqueCountries];
-  }, [artists]);
+  }, [artists, preferredCountry]);
 
   const countryCounts = useMemo(() => {
     const counts: Record<string, number> = { ALL: artists.length };
@@ -66,6 +91,18 @@ export default function ArtistsPage() {
       return a.name.toLowerCase().includes(q) || a.email.toLowerCase().includes(q) || a.city.toLowerCase().includes(q);
     });
   }, [artists, country, query]);
+
+  useEffect(() => {
+    if (hasAutoSelectedCountry) return;
+    if (country !== "ALL") {
+      setHasAutoSelectedCountry(true);
+      return;
+    }
+    if (!preferredCountry) return;
+    if (!countryTabs.includes(preferredCountry)) return;
+    setCountry(preferredCountry);
+    setHasAutoSelectedCountry(true);
+  }, [hasAutoSelectedCountry, country, preferredCountry, countryTabs]);
 
   function getYearsActive(startedYear?: number): string {
     if (!startedYear || startedYear <= 0) return "";

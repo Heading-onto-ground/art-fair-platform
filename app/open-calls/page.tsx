@@ -28,6 +28,8 @@ export default function OpenCallsPage() {
   const [countryFilter, setCountryFilter] = useState<string>("ALL");
   const [showSignup, setShowSignup] = useState(false);
   const [isLoggedIn, setIsLoggedIn] = useState(true);
+  const [preferredCountry, setPreferredCountry] = useState("");
+  const [hasAutoSelectedCountry, setHasAutoSelectedCountry] = useState(false);
   const { lang } = useLanguage();
 
   function load() {
@@ -38,19 +40,47 @@ export default function OpenCallsPage() {
     // Check login status
     fetch("/api/auth/me", { cache: "no-store" })
       .then((r) => r.json())
-      .then((data: MeResponse) => { setIsLoggedIn(!!data?.session); })
-      .catch(() => { setIsLoggedIn(false); });
+      .then((data: MeResponse) => {
+        setIsLoggedIn(!!data?.session);
+        setPreferredCountry((data?.profile?.country ?? "").trim());
+      })
+      .catch(() => {
+        setIsLoggedIn(false);
+        setPreferredCountry("");
+      });
   }, []);
 
   const countries = useMemo(() => {
-    const set = new Set(openCalls.map(o => o.country));
-    return ["ALL", ...Array.from(set)];
-  }, [openCalls]);
+    const set = new Set(
+      openCalls.map((o) => (o.country ?? "").trim()).filter(Boolean)
+    );
+    const ordered = Array.from(set);
+    if (preferredCountry) {
+      const idx = ordered.indexOf(preferredCountry);
+      if (idx > 0) {
+        ordered.splice(idx, 1);
+        ordered.unshift(preferredCountry);
+      }
+    }
+    return ["ALL", ...ordered];
+  }, [openCalls, preferredCountry]);
 
   const filtered = useMemo(() => {
     if (countryFilter === "ALL") return openCalls;
     return openCalls.filter((o) => (o.country ?? "").trim() === countryFilter);
   }, [openCalls, countryFilter]);
+
+  useEffect(() => {
+    if (hasAutoSelectedCountry) return;
+    if (countryFilter !== "ALL") {
+      setHasAutoSelectedCountry(true);
+      return;
+    }
+    if (!preferredCountry) return;
+    if (!countries.includes(preferredCountry)) return;
+    setCountryFilter(preferredCountry);
+    setHasAutoSelectedCountry(true);
+  }, [hasAutoSelectedCountry, countryFilter, preferredCountry, countries]);
 
   return (
     <>

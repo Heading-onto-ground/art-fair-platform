@@ -41,6 +41,8 @@ export default function ArtistPage() {
   const [contactError, setContactError] = useState<string | null>(null);
   const [countryFilter, setCountryFilter] = useState<string>("ALL");
   const [applyingId, setApplyingId] = useState<string | null>(null);
+  const [hasAutoSelectedCountry, setHasAutoSelectedCountry] = useState(false);
+  const preferredCountry = (me?.profile?.country ?? "").trim();
 
   function load() { mutateOc(); mutateApps(); }
 
@@ -69,14 +71,36 @@ export default function ArtistPage() {
 
   // Dynamic country list from data
   const countries = useMemo(() => {
-    const set = new Set(openCalls.map(o => o.country));
-    return ["ALL", ...Array.from(set)];
-  }, [openCalls]);
+    const set = new Set(
+      openCalls.map((o) => (o.country ?? "").trim()).filter(Boolean)
+    );
+    const ordered = Array.from(set);
+    if (preferredCountry) {
+      const idx = ordered.indexOf(preferredCountry);
+      if (idx > 0) {
+        ordered.splice(idx, 1);
+        ordered.unshift(preferredCountry);
+      }
+    }
+    return ["ALL", ...ordered];
+  }, [openCalls, preferredCountry]);
 
   const filtered = useMemo(() => {
     if (countryFilter === "ALL") return openCalls;
     return openCalls.filter((o) => (o.country ?? "").trim() === countryFilter);
   }, [openCalls, countryFilter]);
+
+  useEffect(() => {
+    if (hasAutoSelectedCountry) return;
+    if (countryFilter !== "ALL") {
+      setHasAutoSelectedCountry(true);
+      return;
+    }
+    if (!preferredCountry) return;
+    if (!countries.includes(preferredCountry)) return;
+    setCountryFilter(preferredCountry);
+    setHasAutoSelectedCountry(true);
+  }, [hasAutoSelectedCountry, countryFilter, preferredCountry, countries]);
 
   async function contactGallery(openCallId: string, galleryId: string) {
     setContactError(null); setContactingId(openCallId);
