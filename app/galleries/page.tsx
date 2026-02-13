@@ -23,6 +23,7 @@ export default function GalleriesPage() {
   const { data, error, isLoading, mutate } = useFetch<{ galleries: Gallery[] }>("/api/public/galleries");
   const galleries = data?.galleries ?? [];
   const [country, setCountry] = useState<string>("ALL");
+  const [city, setCity] = useState<string>("ALL");
   const [query, setQuery] = useState("");
   const [favorites, setFavorites] = useState<Record<string, boolean>>({});
 
@@ -55,14 +56,44 @@ export default function GalleriesPage() {
     return counts;
   }, [galleries]);
 
+  const cityTabs = useMemo(() => {
+    const scoped = country === "ALL"
+      ? galleries
+      : galleries.filter((g) => (g.country ?? "").trim() === country);
+    const cities = scoped.map((g) => (g.city ?? "").trim()).filter(Boolean);
+    const uniqueCities = Array.from(new Set(cities)).sort((a, b) => {
+      const countA = scoped.filter((g) => (g.city ?? "").trim() === a).length;
+      const countB = scoped.filter((g) => (g.city ?? "").trim() === b).length;
+      return countB - countA;
+    });
+    return ["ALL", ...uniqueCities];
+  }, [galleries, country]);
+
+  const cityCounts = useMemo(() => {
+    const scoped = country === "ALL"
+      ? galleries
+      : galleries.filter((g) => (g.country ?? "").trim() === country);
+    const counts: Record<string, number> = { ALL: scoped.length };
+    scoped.forEach((g) => {
+      const c = (g.city ?? "").trim();
+      if (c) counts[c] = (counts[c] || 0) + 1;
+    });
+    return counts;
+  }, [galleries, country]);
+
+  useEffect(() => {
+    if (!cityTabs.includes(city)) setCity("ALL");
+  }, [cityTabs, city]);
+
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
     return galleries.filter((g) => {
       if (country !== "ALL" && (g.country ?? "").trim() !== country) return false;
+      if (city !== "ALL" && (g.city ?? "").trim() !== city) return false;
       if (!q) return true;
       return g.name.toLowerCase().includes(q) || g.email.toLowerCase().includes(q) || g.city.toLowerCase().includes(q);
     });
-  }, [galleries, country, query]);
+  }, [galleries, country, city, query]);
 
   function getYearsSince(year?: number): string {
     if (!year || year <= 0) return "";
@@ -125,7 +156,10 @@ export default function GalleriesPage() {
           {countryTabs.map((c) => (
             <button
               key={c}
-              onClick={() => setCountry(c)}
+              onClick={() => {
+                setCountry(c);
+                setCity("ALL");
+              }}
               style={{
                 padding: "10px 18px",
                 border: c === country ? "1px solid #1A1A1A" : "1px solid #E5E0DB",
@@ -145,6 +179,36 @@ export default function GalleriesPage() {
               {c}
               <span style={{ fontSize: 9, opacity: 0.7, padding: "2px 6px", background: c === country ? "rgba(255,255,255,0.2)" : "#F5F0EB" }}>
                 {countryCounts[c] || 0}
+              </span>
+            </button>
+          ))}
+        </div>
+
+        {/* City Sub Tabs */}
+        <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 28 }}>
+          {cityTabs.map((c) => (
+            <button
+              key={c}
+              onClick={() => setCity(c)}
+              style={{
+                padding: "8px 14px",
+                border: c === city ? "1px solid #8B7355" : "1px solid #EDE7DD",
+                background: c === city ? "rgba(139,115,85,0.08)" : "transparent",
+                color: c === city ? "#8B7355" : "#6A6A6A",
+                fontFamily: F,
+                fontSize: 10,
+                letterSpacing: "0.08em",
+                textTransform: "uppercase",
+                cursor: "pointer",
+                transition: "all 0.3s ease",
+                display: "flex",
+                alignItems: "center",
+                gap: 8,
+              }}
+            >
+              {c}
+              <span style={{ fontSize: 9, opacity: 0.7, padding: "2px 6px", background: c === city ? "rgba(139,115,85,0.15)" : "#F7F3ED" }}>
+                {cityCounts[c] || 0}
               </span>
             </button>
           ))}
