@@ -86,6 +86,7 @@ export default function AdminTopBar() {
         {/* Nav */}
         <nav style={{ display: "flex", alignItems: "center", gap: 24 }}>
           <NavLink onClick={() => router.push("/admin/outreach")} label="Dashboard" />
+          <NavLink onClick={() => router.push("/admin/users")} label="Users" />
           <NavLink onClick={() => router.push("/")} label="View Site" />
 
           <div
