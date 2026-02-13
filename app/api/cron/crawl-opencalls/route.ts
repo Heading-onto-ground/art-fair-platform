@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { createOpenCall, listOpenCalls } from "@/app/data/openCalls";
 import crypto from "crypto";
+import { prisma } from "@/lib/prisma";
 
 export const dynamic = "force-dynamic";
 
@@ -25,6 +26,12 @@ type CityQuery = {
   city: string;
 };
 
+type PortalSource = {
+  name: string;
+  buildQuery: (city: string) => string;
+  buildSearchUrl: (query: string) => string;
+};
+
 const CITY_QUERIES: CityQuery[] = [
   { country: "한국", city: "서울" },
   { country: "일본", city: "도쿄" },
@@ -37,6 +44,91 @@ const CITY_QUERIES: CityQuery[] = [
   { country: "스위스", city: "취리히" },
   { country: "호주", city: "멜버른" },
 ];
+
+const NEWS_HOST_KEYWORDS = [
+  "news",
+  "press",
+  "times",
+  "일보",
+  "신문",
+  "herald",
+  "daily",
+  "tf.co.kr",
+  "newsen",
+  "sports",
+  "yna.co.kr",
+  "newsis.com",
+  "fnnews.com",
+  "mk.co.kr",
+];
+
+const EXHIBITION_KEYWORDS = [
+  "전시",
+  "전시회",
+  "미술관",
+  "갤러리",
+  "아트페어",
+  "비엔날레",
+  "展示",
+  "展示会",
+  "美術館",
+  "ギャラリー",
+  "展览",
+  "美术馆",
+  "exhibition",
+  "gallery",
+  "museum",
+  "biennale",
+  "art fair",
+  "open call",
+  "residency",
+];
+
+function getPortalSource(country: string): PortalSource {
+  const month = new Date().getMonth() + 1;
+  const googleDomainByCountry: Record<string, string> = {
+    "미국": "google.com",
+    "영국": "google.co.uk",
+    "프랑스": "google.fr",
+    "독일": "google.de",
+    "이탈리아": "google.it",
+    "스위스": "google.ch",
+    "호주": "google.com.au",
+  };
+
+  if (country === "한국") {
+    return {
+      name: "naver-web",
+      buildQuery: (city) => `${month}월 ${city} 전시회`,
+      buildSearchUrl: (query) =>
+        `https://search.naver.com/search.naver?where=nexearch&query=${encodeURIComponent(query)}`,
+    };
+  }
+  if (country === "일본") {
+    return {
+      name: "yahoo-japan",
+      buildQuery: (city) => `${month}月 ${city} 展示会`,
+      buildSearchUrl: (query) =>
+        `https://search.yahoo.co.jp/search?p=${encodeURIComponent(query)}`,
+    };
+  }
+  if (country === "중국") {
+    return {
+      name: "baidu",
+      buildQuery: (city) => `${month}月 ${city} 展览`,
+      buildSearchUrl: (query) =>
+        `https://www.baidu.com/s?wd=${encodeURIComponent(query)}`,
+    };
+  }
+
+  const googleDomain = googleDomainByCountry[country] || "google.com";
+  return {
+    name: `google-${googleDomain}`,
+    buildQuery: (city) => `${month} ${city} exhibition`,
+    buildSearchUrl: (query) =>
+      `https://${googleDomain}/search?q=${encodeURIComponent(query)}`,
+  };
+}
 
 function decodeHtml(raw: string): string {
   return raw
@@ -59,6 +151,21 @@ function hostName(url: string): string {
   }
 }
 
+function normalizeSearchResultUrl(rawUrl: string): string {
+  const u = (rawUrl || "").trim();
+  if (!u) return "";
+  if (u.startsWith("/url?q=")) {
+    try {
+      const queryPart = u.split("/url?q=")[1]?.split("&")[0] || "";
+      return decodeURIComponent(queryPart);
+    } catch {
+      return "";
+    }
+  }
+  if (!/^https?:\/\//i.test(u)) return "";
+  return u;
+}
+
 function defaultDeadline(days = 45): string {
   const d = new Date();
   d.setDate(d.getDate() + days);
@@ -71,15 +178,20 @@ function queryHash(input: string): string {
 
 function isUsefulResult(title: string, url: string): boolean {
   const t = title.toLowerCase();
-  if (url.includes("adcr.naver.com")) return false;
-  if (!/^https?:\/\//.test(url)) return false;
-  return /(전시|아트|미술|미술관|갤러리|exhibition|museum|gallery|art)/i.test(t);
+  const cleanUrl = normalizeSearchResultUrl(url);
+  if (!cleanUrl) return false;
+  const h = hostName(cleanUrl).toLowerCase();
+  if (!h || h === "external-source") return false;
+  if (cleanUrl.includes("adcr.naver.com")) return false;
+  if (NEWS_HOST_KEYWORDS.some((k) => h.includes(k))) return false;
+  const text = `${title} ${cleanUrl}`.toLowerCase();
+  return EXHIBITION_KEYWORDS.some((k) => text.includes(k.toLowerCase()));
 }
 
-async function crawlNaverByCity(country: string, city: string): Promise<CrawledOpenCall[]> {
-  const month = new Date().getMonth() + 1;
-  const query = `${month}월 ${city} 전시`;
-  const searchUrl = `https://search.naver.com/search.naver?where=news&query=${encodeURIComponent(query)}`;
+async function crawlPortalByCity(country: string, city: string): Promise<CrawledOpenCall[]> {
+  const portal = getPortalSource(country);
+  const query = portal.buildQuery(city);
+  const searchUrl = portal.buildSearchUrl(query);
 
   try {
     const res = await fetch(searchUrl, {
@@ -103,39 +215,41 @@ async function crawlNaverByCity(country: string, city: string): Promise<CrawledO
       if (seen.has(url)) continue;
       seen.add(url);
 
-      const host = hostName(url);
-      const website = `https://${host}`;
+      const cleanUrl = normalizeSearchResultUrl(url);
+      const cleanHost = hostName(cleanUrl);
+      if (!cleanUrl || !cleanHost) continue;
+
       results.push({
-        source: "naver-search",
-        gallery: host,
-        galleryId: `__external_naver_${queryHash(url)}`,
+        source: portal.name,
+        gallery: cleanHost,
+        galleryId: `__external_${portal.name}_${queryHash(cleanUrl)}`,
         city,
         country,
         theme: title.slice(0, 120),
         deadline: defaultDeadline(45),
-        externalEmail: `info@${host}`.slice(0, 100),
-        externalUrl: url,
-        galleryWebsite: website,
-        galleryDescription: `Naver auto-collected (${query})`,
+        externalEmail: `info@${cleanHost}`.slice(0, 100),
+        externalUrl: cleanUrl,
+        galleryWebsite: `https://${cleanHost}`,
+        galleryDescription: `${portal.name} auto-collected (${query})`,
       });
 
-      if (results.length >= 3) break;
+      if (results.length >= 2) break;
     }
 
-    // Fallback: keep one search entry if parsing found none.
+    // Fallback: keep one portal-search entry if parsing found none.
     if (results.length === 0) {
       results.push({
-        source: "naver-search",
+        source: portal.name,
         gallery: `${city} exhibition search`,
-        galleryId: `__external_naver_search_${queryHash(searchUrl)}`,
+        galleryId: `__external_${portal.name}_search_${queryHash(searchUrl)}`,
         city,
         country,
-        theme: `${query} 검색 결과 모음`,
+        theme: `${query} exhibition search`,
         deadline: defaultDeadline(45),
-        externalEmail: "info@search.naver.com",
+        externalEmail: `info@${hostName(searchUrl)}`,
         externalUrl: searchUrl,
-        galleryWebsite: "https://search.naver.com",
-        galleryDescription: `Naver monthly exhibition search for ${city}`,
+        galleryWebsite: `https://${hostName(searchUrl)}`,
+        galleryDescription: `${portal.name} exhibition search for ${city}`,
       });
     }
 
@@ -145,11 +259,25 @@ async function crawlNaverByCity(country: string, city: string): Promise<CrawledO
   }
 }
 
-async function crawlNaverMonthly(): Promise<CrawledOpenCall[]> {
+async function crawlPortalMonthly(): Promise<CrawledOpenCall[]> {
   const chunks = await Promise.all(
-    CITY_QUERIES.map((c) => crawlNaverByCity(c.country, c.city))
+    CITY_QUERIES.map((c) => crawlPortalByCity(c.country, c.city))
   );
   return chunks.flat();
+}
+
+async function cleanupNoisyPortalEntries() {
+  const existing = await listOpenCalls();
+  const noisy = existing.filter((oc) => {
+    if (!oc.isExternal) return false;
+    if (!oc.galleryId.startsWith("__external_")) return false;
+    const h = hostName(oc.externalUrl || "").toLowerCase();
+    return NEWS_HOST_KEYWORDS.some((k) => h.includes(k));
+  });
+  if (!noisy.length) return 0;
+  const ids = noisy.map((n) => n.id);
+  const res = await prisma.openCall.deleteMany({ where: { id: { in: ids } } });
+  return res.count;
 }
 
 // Simulated crawler results — in production these would come from
@@ -235,6 +363,7 @@ function crawlTransartists(): CrawledOpenCall[] {
 }
 
 async function runCrawlJob() {
+  const cleaned = await cleanupNoisyPortalEntries();
   const existingOpenCalls = await listOpenCalls();
   const existingIds = new Set(existingOpenCalls.map((oc) => oc.galleryId));
   const existingUrls = new Set(
@@ -244,9 +373,9 @@ async function runCrawlJob() {
   );
 
   // Run all crawlers
-  const naverResults = await crawlNaverMonthly();
+  const portalResults = await crawlPortalMonthly();
   const allCrawled: CrawledOpenCall[] = [
-    ...naverResults,
+    ...portalResults,
     ...crawlEflux(),
     ...crawlArtrabbit(),
     ...crawlTransartists(),
@@ -293,7 +422,8 @@ async function runCrawlJob() {
     message: `Crawler completed. ${imported.length} new open calls imported.`,
     imported,
     skipped: allCrawled.length - imported.length,
-    sources: ["naver-search", "e-flux", "artrabbit", "transartists"],
+    cleaned,
+    sources: ["portal-web", "e-flux", "artrabbit", "transartists"],
   };
 }
 
@@ -329,7 +459,7 @@ export async function GET(req: Request) {
 
   return NextResponse.json({
     sources: [
-      { name: "naver-search", url: "https://search.naver.com", type: "Scrape", status: "active" },
+      { name: "portal-web", url: "https://search.naver.com / yahoo.co.jp / baidu.com / google.*", type: "Web Search Scrape", status: "active" },
       { name: "e-flux", url: "https://www.e-flux.com", type: "RSS/Scrape", status: "active" },
       { name: "artrabbit", url: "https://www.artrabbit.com", type: "Scrape", status: "active" },
       { name: "transartists", url: "https://www.transartists.org", type: "Scrape", status: "active" },
