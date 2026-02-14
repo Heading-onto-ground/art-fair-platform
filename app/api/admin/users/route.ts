@@ -15,6 +15,25 @@ type AdminUserRow = {
   profileId: string;
 };
 
+type UserWithProfiles = {
+  id: string;
+  email: string;
+  role: "artist" | "gallery";
+  createdAt: Date;
+  artistProfile: {
+    artistId: string;
+    name: string;
+    country: string | null;
+    city: string | null;
+  } | null;
+  galleryProfile: {
+    galleryId: string;
+    name: string;
+    country: string | null;
+    city: string | null;
+  } | null;
+};
+
 export async function GET() {
   try {
     const admin = getAdminSession();
@@ -22,7 +41,7 @@ export async function GET() {
       return NextResponse.json({ error: "unauthorized" }, { status: 401 });
     }
 
-    const rows = await prisma.user.findMany({
+    const rows: UserWithProfiles[] = await prisma.user.findMany({
       orderBy: { createdAt: "desc" },
       select: {
         id: true,
@@ -48,7 +67,7 @@ export async function GET() {
       },
     });
 
-    const users: AdminUserRow[] = rows.map((u) => {
+    const users: AdminUserRow[] = rows.map((u: UserWithProfiles) => {
       const isArtist = u.role === "artist";
       const p = isArtist ? u.artistProfile : u.galleryProfile;
       return {
