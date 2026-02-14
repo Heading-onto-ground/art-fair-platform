@@ -167,6 +167,7 @@ const dictionary: Dictionary = {
   oc_no_results: { en: "No open calls for this region yet", ko: "이 지역의 오픈콜이 아직 없습니다", ja: "この地域のオープンコールはまだありません", fr: "Pas encore d'appels pour cette région" },
   oc_visit_website: { en: "Visit website", ko: "웹사이트 방문", ja: "ウェブサイトへ", fr: "Visiter le site" },
   oc_source: { en: "Source", ko: "원문 보기", ja: "原文", fr: "Source" },
+  oc_original_text: { en: "Original", ko: "원문", ja: "原文", fr: "Original" },
   oc_show_original: { en: "Original", ko: "원문 보기", ja: "原文", fr: "Original" },
   oc_show_translation: { en: "Translate", ko: "번역 보기", ja: "翻訳", fr: "Traduire" },
   oc_auto_forward: { en: "Auto-forward to gallery", ko: "갤러리로 자동 전달", ja: "ギャラリーへ自動転送", fr: "Transfert automatique" },

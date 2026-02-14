@@ -7,7 +7,6 @@ import TopBar from "@/app/components/TopBar";
 import OpenCallPoster from "@/app/components/OpenCallPoster";
 import { useLanguage } from "@/lib/useLanguage";
 import { t } from "@/lib/translate";
-import { LANGUAGE_NAMES, type SupportedLang } from "@/lib/translateApi";
 import { F, S } from "@/lib/design";
 
 type Role = "artist" | "gallery";
@@ -168,7 +167,7 @@ export default function OpenCallDetailPage({ params }: { params: { id: string } 
                       padding: "6px 10px",
                     }}
                   >
-                    {lang === "ko" ? "원문 보기" : lang === "ja" ? "原文" : "Source"}
+                    {t("oc_source", lang)}
                   </a>
                 )}
               </div>
@@ -186,14 +185,14 @@ export default function OpenCallDetailPage({ params }: { params: { id: string } 
                   <span style={{ fontFamily: F, fontSize: 10, fontWeight: 500, letterSpacing: "0.1em", color: "#B0AAA2", textTransform: "uppercase" }}>{t("oc_theme", lang)}</span>
                   <div style={{ marginTop: 4 }}>
                     {showTranslation && translatedTheme ? (
-                      <><div style={{ fontFamily: S, fontSize: 22, fontWeight: 400, color: "#8B7355" }}>{translatedTheme}</div><div style={{ fontFamily: F, fontSize: 12, color: "#B0AAA2", fontStyle: "italic", marginTop: 4 }}>Original: {openCall.theme}</div></>
+                      <><div style={{ fontFamily: S, fontSize: 22, fontWeight: 400, color: "#8B7355" }}>{translatedTheme}</div><div style={{ fontFamily: F, fontSize: 12, color: "#B0AAA2", fontStyle: "italic", marginTop: 4 }}>{t("oc_original_text", lang)}: {openCall.theme}</div></>
                     ) : (
                       <div style={{ fontFamily: S, fontSize: 22, fontWeight: 400, color: "#1A1A1A" }}>{openCall.theme}</div>
                     )}
                   </div>
                 </div>
                 <button onClick={translateTheme} disabled={translating} style={{ ...inp, width: "auto", padding: "6px 14px", fontSize: 10, color: "#8A8580", cursor: translating ? "wait" : "pointer", whiteSpace: "nowrap" }}>
-                  {translating ? "..." : showTranslation ? "Original" : `\u{1F310} ${LANGUAGE_NAMES[lang as SupportedLang] || lang}`}
+                  {translating ? "..." : showTranslation ? t("oc_show_original", lang) : t("oc_show_translation", lang)}
                 </button>
               </div>
 
