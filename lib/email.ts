@@ -4,6 +4,7 @@
 const RESEND_API_KEY = process.env.RESEND_API_KEY || "";
 const FROM_EMAIL = process.env.FROM_EMAIL || "onboarding@resend.dev";
 const PLATFORM_NAME = "ROB — Role of Bridge";
+const PLATFORM_URL = process.env.NEXT_PUBLIC_APP_URL || "https://www.rob-roleofbridge.com";
 
 export type ArtistApplicationEmail = {
   galleryEmail: string;
@@ -18,6 +19,103 @@ export type ArtistApplicationEmail = {
   artistWebsite?: string;
   message?: string;
 };
+
+export type WelcomeEmailInput = {
+  to: string;
+  role: "artist" | "gallery";
+  name?: string;
+  lang?: "en" | "ko" | "ja" | "fr";
+};
+
+function normalizeLang(lang?: string): "en" | "ko" | "ja" | "fr" {
+  const v = String(lang || "").toLowerCase();
+  if (v.startsWith("ko")) return "ko";
+  if (v.startsWith("ja")) return "ja";
+  if (v.startsWith("fr")) return "fr";
+  return "en";
+}
+
+function buildWelcomeSubject(role: "artist" | "gallery", lang: "en" | "ko" | "ja" | "fr"): string {
+  const roleLabel =
+    lang === "ko" ? (role === "artist" ? "아티스트" : "갤러리")
+    : lang === "ja" ? (role === "artist" ? "アーティスト" : "ギャラリー")
+    : lang === "fr" ? (role === "artist" ? "artiste" : "galerie")
+    : role;
+
+  if (lang === "ko") return `ROB 가입을 환영합니다 — ${roleLabel} 계정이 생성되었습니다`;
+  if (lang === "ja") return `ROBへようこそ — ${roleLabel}アカウントを作成しました`;
+  if (lang === "fr") return `Bienvenue sur ROB — Votre compte ${roleLabel} est créé`;
+  return `Welcome to ROB — Your ${roleLabel} account is ready`;
+}
+
+function buildWelcomeText(input: WelcomeEmailInput, lang: "en" | "ko" | "ja" | "fr"): string {
+  const name = input.name?.trim() || (lang === "ko" ? "회원님" : lang === "ja" ? "ユーザー様" : lang === "fr" ? "membre" : "there");
+  const dashboardPath = input.role === "artist" ? "/artist" : "/gallery";
+  const dashboardUrl = `${PLATFORM_URL}${dashboardPath}`;
+
+  if (lang === "ko") {
+    return `
+안녕하세요 ${name},
+
+ROB(Role of Bridge)에 가입해주셔서 감사합니다.
+${input.role === "artist" ? "아티스트" : "갤러리"} 계정이 정상적으로 생성되었습니다.
+
+지금 바로 시작하기:
+${dashboardUrl}
+
+ROB 팀 드림
+`.trim();
+  }
+
+  if (lang === "ja") {
+    return `
+${name} 様
+
+ROB（Role of Bridge）にご登録いただきありがとうございます。
+${input.role === "artist" ? "アーティスト" : "ギャラリー"}アカウントの作成が完了しました。
+
+こちらから開始できます:
+${dashboardUrl}
+
+ROB Team
+`.trim();
+  }
+
+  if (lang === "fr") {
+    return `
+Bonjour ${name},
+
+Merci d'avoir rejoint ROB (Role of Bridge).
+Votre compte ${input.role === "artist" ? "artiste" : "galerie"} est prêt.
+
+Commencer maintenant :
+${dashboardUrl}
+
+L'équipe ROB
+`.trim();
+  }
+
+  return `
+Hi ${name},
+
+Thanks for joining ROB (Role of Bridge).
+Your ${input.role} account has been created successfully.
+
+Get started:
+${dashboardUrl}
+
+The ROB Team
+`.trim();
+}
+
+function buildWelcomeHtml(input: WelcomeEmailInput, lang: "en" | "ko" | "ja" | "fr"): string {
+  const plain = buildWelcomeText(input, lang).replace(/\n/g, "<br/>");
+  return `
+<div style="font-family:Helvetica,Arial,sans-serif;max-width:620px;margin:0 auto;padding:24px;background:#ffffff;color:#111111;">
+  <h2 style="margin:0 0 12px 0;">ROB — Role of Bridge</h2>
+  <div style="font-size:14px;line-height:1.7;">${plain}</div>
+</div>`;
+}
 
 function buildApplicationEmailHtml(data: ArtistApplicationEmail): string {
   return `
@@ -169,5 +267,47 @@ export async function sendApplicationEmail(data: ArtistApplicationEmail): Promis
   } catch (error: any) {
     console.error("Email send failed:", error);
     return { ok: false, error: error?.message || "Email send failed" };
+  }
+}
+
+export async function sendWelcomeEmail(input: WelcomeEmailInput): Promise<{ ok: boolean; error?: string }> {
+  const lang = normalizeLang(input.lang);
+  const subject = buildWelcomeSubject(input.role, lang);
+  const text = buildWelcomeText(input, lang);
+  const html = buildWelcomeHtml(input, lang);
+
+  if (!RESEND_API_KEY) {
+    console.log("═══════════════════════════════════════════════");
+    console.log("📧 WELCOME EMAIL (No RESEND_API_KEY set)");
+    console.log(`   TO: ${input.to}`);
+    console.log(`   ROLE: ${input.role}`);
+    console.log(`   LANG: ${lang}`);
+    console.log(`   SUBJECT: ${subject}`);
+    console.log("═══════════════════════════════════════════════");
+    return { ok: true };
+  }
+
+  try {
+    const res = await fetch("https://api.resend.com/emails", {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${RESEND_API_KEY}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        from: `${PLATFORM_NAME} <${FROM_EMAIL}>`,
+        to: [input.to],
+        subject,
+        html,
+        text,
+      }),
+    });
+    const result = await res.json().catch(() => ({}));
+    if (!res.ok) {
+      return { ok: false, error: result?.message || "Failed to send welcome email" };
+    }
+    return { ok: true };
+  } catch (e: any) {
+    return { ok: false, error: e?.message || "Welcome email send failed" };
   }
 }

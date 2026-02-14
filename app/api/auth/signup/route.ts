@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { createUser, upsertArtistProfile, upsertGalleryProfile, createSignedSessionValue } from "@/lib/auth";
+import { sendWelcomeEmail } from "@/lib/email";
 
 type Role = "artist" | "gallery";
 
@@ -81,6 +82,23 @@ export async function POST(req: Request) {
         instagram,
       });
     }
+
+    // Send welcome email (non-blocking for signup success)
+    const acceptLang = req.headers.get("accept-language") || "en";
+    sendWelcomeEmail({
+      to: email,
+      role,
+      name,
+      lang: acceptLang.startsWith("ko")
+        ? "ko"
+        : acceptLang.startsWith("ja")
+          ? "ja"
+          : acceptLang.startsWith("fr")
+            ? "fr"
+            : "en",
+    }).catch((e) => {
+      console.error("Welcome email send failed (non-fatal):", e);
+    });
 
     const res = NextResponse.json(
       { ok: true, session: { userId: user.id, role, email } },
