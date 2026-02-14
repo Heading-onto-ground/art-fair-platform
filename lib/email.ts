@@ -27,6 +27,13 @@ export type WelcomeEmailInput = {
   lang?: "en" | "ko" | "ja" | "fr";
 };
 
+export type VerificationEmailInput = {
+  to: string;
+  role: "artist" | "gallery";
+  verifyUrl: string;
+  lang?: "en" | "ko" | "ja" | "fr";
+};
+
 function normalizeLang(lang?: string): "en" | "ko" | "ja" | "fr" {
   const v = String(lang || "").toLowerCase();
   if (v.startsWith("ko")) return "ko";
@@ -114,6 +121,36 @@ function buildWelcomeHtml(input: WelcomeEmailInput, lang: "en" | "ko" | "ja" | "
 <div style="font-family:Helvetica,Arial,sans-serif;max-width:620px;margin:0 auto;padding:24px;background:#ffffff;color:#111111;">
   <h2 style="margin:0 0 12px 0;">ROB — Role of Bridge</h2>
   <div style="font-size:14px;line-height:1.7;">${plain}</div>
+</div>`;
+}
+
+function buildVerificationSubject(lang: "en" | "ko" | "ja" | "fr"): string {
+  if (lang === "ko") return "ROB 이메일 인증을 완료해주세요";
+  if (lang === "ja") return "ROB メール認証を完了してください";
+  if (lang === "fr") return "Veuillez verifier votre email ROB";
+  return "Verify your email for ROB";
+}
+
+function buildVerificationText(input: VerificationEmailInput, lang: "en" | "ko" | "ja" | "fr"): string {
+  if (lang === "ko") {
+    return `안녕하세요,\n\nROB 계정 생성을 완료하려면 아래 링크를 눌러 이메일 인증을 진행해주세요.\n\n${input.verifyUrl}\n\n본인이 가입하지 않았다면 이 메일을 무시하셔도 됩니다.\n\nROB 팀`;
+  }
+  if (lang === "ja") {
+    return `こんにちは。\n\nROBアカウントの作成を完了するには、以下のリンクからメール認証を行ってください。\n\n${input.verifyUrl}\n\n心当たりがない場合は、このメールを無視してください。\n\nROB Team`;
+  }
+  if (lang === "fr") {
+    return `Bonjour,\n\nPour finaliser la creation de votre compte ROB, veuillez verifier votre email via le lien ci-dessous.\n\n${input.verifyUrl}\n\nSi vous n'etes pas a l'origine de cette demande, ignorez cet email.\n\nL'equipe ROB`;
+  }
+  return `Hi,\n\nTo finish creating your ROB account, please verify your email using the link below.\n\n${input.verifyUrl}\n\nIf you did not create this account, you can ignore this message.\n\nThe ROB Team`;
+}
+
+function buildVerificationHtml(input: VerificationEmailInput, lang: "en" | "ko" | "ja" | "fr"): string {
+  const text = buildVerificationText(input, lang).replace(/\n/g, "<br/>");
+  return `
+<div style="font-family:Helvetica,Arial,sans-serif;max-width:620px;margin:0 auto;padding:24px;background:#ffffff;color:#111111;">
+  <h2 style="margin:0 0 12px 0;">ROB — Role of Bridge</h2>
+  <div style="font-size:14px;line-height:1.7;margin-bottom:16px;">${text}</div>
+  <a href="${input.verifyUrl}" style="display:inline-block;padding:10px 16px;background:#1A1A1A;color:#fff;text-decoration:none;border-radius:4px;">Verify Email</a>
 </div>`;
 }
 
@@ -309,5 +346,46 @@ export async function sendWelcomeEmail(input: WelcomeEmailInput): Promise<{ ok: 
     return { ok: true };
   } catch (e: any) {
     return { ok: false, error: e?.message || "Welcome email send failed" };
+  }
+}
+
+export async function sendVerificationEmail(input: VerificationEmailInput): Promise<{ ok: boolean; error?: string }> {
+  const lang = normalizeLang(input.lang);
+  const subject = buildVerificationSubject(lang);
+  const text = buildVerificationText(input, lang);
+  const html = buildVerificationHtml(input, lang);
+
+  if (!RESEND_API_KEY) {
+    console.log("═══════════════════════════════════════════════");
+    console.log("📧 VERIFICATION EMAIL (No RESEND_API_KEY set)");
+    console.log(`   TO: ${input.to}`);
+    console.log(`   ROLE: ${input.role}`);
+    console.log(`   LINK: ${input.verifyUrl}`);
+    console.log("═══════════════════════════════════════════════");
+    return { ok: true };
+  }
+
+  try {
+    const res = await fetch("https://api.resend.com/emails", {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${RESEND_API_KEY}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        from: `${PLATFORM_NAME} <${FROM_EMAIL}>`,
+        to: [input.to],
+        subject,
+        html,
+        text,
+      }),
+    });
+    const result = await res.json().catch(() => ({}));
+    if (!res.ok) {
+      return { ok: false, error: result?.message || "Failed to send verification email" };
+    }
+    return { ok: true };
+  } catch (e: any) {
+    return { ok: false, error: e?.message || "Verification email send failed" };
   }
 }

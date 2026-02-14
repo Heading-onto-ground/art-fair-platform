@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
-import { createUser, upsertArtistProfile, upsertGalleryProfile, createSignedSessionValue } from "@/lib/auth";
-import { sendWelcomeEmail } from "@/lib/email";
+import { createUser, upsertArtistProfile, upsertGalleryProfile } from "@/lib/auth";
+import { sendVerificationEmail } from "@/lib/email";
+import { createOrRefreshVerificationToken } from "@/lib/emailVerification";
 
 type Role = "artist" | "gallery";
 
@@ -83,12 +84,15 @@ export async function POST(req: Request) {
       });
     }
 
-    // Send welcome email (non-blocking for signup success)
+    // Send verification email (signup requires email verification before login)
     const acceptLang = req.headers.get("accept-language") || "en";
-    sendWelcomeEmail({
+    const { token } = await createOrRefreshVerificationToken({ email, role });
+    const appUrl = process.env.NEXT_PUBLIC_APP_URL || "https://www.rob-roleofbridge.com";
+    const verifyUrl = `${appUrl}/api/auth/verify?token=${encodeURIComponent(token)}&email=${encodeURIComponent(email)}&role=${encodeURIComponent(role)}`;
+    sendVerificationEmail({
       to: email,
       role,
-      name,
+      verifyUrl,
       lang: acceptLang.startsWith("ko")
         ? "ko"
         : acceptLang.startsWith("ja")
@@ -97,22 +101,13 @@ export async function POST(req: Request) {
             ? "fr"
             : "en",
     }).catch((e) => {
-      console.error("Welcome email send failed (non-fatal):", e);
+      console.error("Verification email send failed (non-fatal):", e);
     });
 
-    const res = NextResponse.json(
-      { ok: true, session: { userId: user.id, role, email } },
+    return NextResponse.json(
+      { ok: true, requiresEmailVerification: true, email },
       { status: 200 }
     );
-    const isProduction = process.env.NODE_ENV === "production";
-    res.cookies.set("afp_session", createSignedSessionValue({ userId: user.id, role, email }), {
-      httpOnly: true,
-      sameSite: "lax",
-      secure: isProduction,
-      path: "/",
-      maxAge: 60 * 60 * 24 * 7,
-    });
-    return res;
   } catch (e: any) {
     if (String(e?.message).includes("user exists")) {
       return NextResponse.json({ ok: false, error: "user exists" }, { status: 409 });

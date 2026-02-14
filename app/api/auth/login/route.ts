@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { findUserByEmailRole, verifyPassword, createSignedSessionValue } from "@/lib/auth";
+import { getEmailVerificationState } from "@/lib/emailVerification";
 
 type Role = "artist" | "gallery";
 
@@ -50,6 +51,16 @@ export async function POST(req: Request) {
     const user = await findUserByEmailRole(email.toLowerCase(), role);
     if (!user || !verifyPassword(user, password)) {
       return NextResponse.json({ ok: false, error: "wrong password" }, { status: 401 });
+    }
+    const verification = await getEmailVerificationState({
+      email: email.toLowerCase(),
+      role,
+    });
+    if (verification.exists && !verification.verified) {
+      return NextResponse.json(
+        { ok: false, error: "email not verified" },
+        { status: 403 }
+      );
     }
 
     const userId = user.id;

@@ -29,11 +29,28 @@ export default function LoginPage() {
   const [foundedYear, setFoundedYear] = useState("");
   const [loading, setLoading] = useState(false);
   const [err, setErr] = useState<string | null>(null);
+  const [info, setInfo] = useState<string | null>(null);
+  const [resending, setResending] = useState(false);
+  const [needsVerification, setNeedsVerification] = useState(false);
+
+  const tr = (en: string, ko: string, ja: string, fr: string) =>
+    lang === "ko" ? ko : lang === "ja" ? ja : lang === "fr" ? fr : en;
 
   useEffect(() => {
     const roleParam = searchParams.get("role");
     if (roleParam === "artist" || roleParam === "gallery") setRole(roleParam);
-  }, [searchParams]);
+    const verified = searchParams.get("verified");
+    if (verified === "success") {
+      setInfo(tr("Email verified. You can now sign in.", "이메일 인증이 완료되었습니다. 이제 로그인할 수 있습니다.", "メール認証が完了しました。ログインできます。", "Email verifie. Vous pouvez maintenant vous connecter."));
+      setMode("login");
+    } else if (verified === "expired") {
+      setErr(tr("Verification link expired. Please resend verification email.", "인증 링크가 만료되었습니다. 인증 메일을 다시 보내주세요.", "認証リンクの有効期限が切れました。認証メールを再送してください。", "Le lien de verification a expire. Veuillez renvoyer l'email de verification."));
+      setMode("login");
+    } else if (verified === "invalid") {
+      setErr(tr("Invalid verification link.", "유효하지 않은 인증 링크입니다.", "無効な認証リンクです。", "Lien de verification invalide."));
+      setMode("login");
+    }
+  }, [searchParams, lang]);
 
   const gotoByServerSession = async () => {
     const meRes = await fetch("/api/auth/me", { cache: "no-store" });
@@ -46,6 +63,8 @@ export default function LoginPage() {
 
   const onLogin = async () => {
     setErr(null);
+    setInfo(null);
+    setNeedsVerification(false);
     const e = email.trim(), p = password.trim();
     if (!e) return setErr(t("login_email_required", lang));
     if (!p) return setErr(t("login_password_required", lang));
@@ -53,7 +72,22 @@ export default function LoginPage() {
     try {
       const res = await fetch("/api/auth/login", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ role, email: e, password: p }) });
       const data = await res.json().catch(() => null);
-      if (!res.ok || !data?.ok) { setErr(data?.error ?? `Login failed (${res.status})`); return; }
+      if (!res.ok || !data?.ok) {
+        if (data?.error === "email not verified") {
+          setNeedsVerification(true);
+          setErr(
+            tr(
+              "Email is not verified. Please verify your email first.",
+              "이메일 인증이 완료되지 않았습니다. 먼저 이메일 인증을 해주세요.",
+              "メール認証が完了していません。先に認証してください。",
+              "Votre email n'est pas verifie. Veuillez d'abord verifier votre email."
+            )
+          );
+        } else {
+          setErr(data?.error ?? `Login failed (${res.status})`);
+        }
+        return;
+      }
       await gotoByServerSession();
     } catch { setErr(t("login_server_error", lang)); }
     finally { setLoading(false); }
@@ -61,6 +95,8 @@ export default function LoginPage() {
 
   const onSignup = async () => {
     setErr(null);
+    setInfo(null);
+    setNeedsVerification(false);
     const e = email.trim(), p = password.trim();
     if (!e) return setErr(t("login_email_required", lang));
     if (!p || p.length < 6) return setErr(t("login_password_min", lang));
@@ -71,9 +107,58 @@ export default function LoginPage() {
       const res = await fetch("/api/auth/signup", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ role, email: e, password: p, artistId: role === "artist" ? artistId : undefined, galleryId: role === "gallery" ? galleryId : undefined, name, startedYear: role === "artist" ? Number(startedYear) : undefined, genre: role === "artist" ? genre : undefined, instagram, portfolioUrl: role === "artist" ? portfolioUrl : undefined, address: role === "gallery" ? address : undefined, foundedYear: role === "gallery" ? Number(foundedYear) : undefined }) });
       const data = await res.json().catch(() => null);
       if (!res.ok || !data?.ok) { setErr(data?.error ?? `Signup failed (${res.status})`); return; }
+      if (data?.requiresEmailVerification) {
+        setInfo(
+          tr(
+            "Signup complete. Please check your email and verify your account before login.",
+            "가입이 완료되었습니다. 로그인 전에 이메일 인증을 완료해주세요.",
+            "登録が完了しました。ログイン前にメール認証を完了してください。",
+            "Inscription terminee. Veuillez verifier votre email avant de vous connecter."
+          )
+        );
+        setMode("login");
+        setPassword("");
+        return;
+      }
       await gotoByServerSession();
     } catch { setErr(t("login_server_error", lang)); }
     finally { setLoading(false); }
+  };
+
+  const onResendVerification = async () => {
+    const e = email.trim();
+    if (!e) {
+      setErr(tr("Enter your email first.", "먼저 이메일을 입력해주세요.", "先にメールを入力してください。", "Veuillez d'abord saisir votre email."));
+      return;
+    }
+    setResending(true);
+    setErr(null);
+    setInfo(null);
+    setNeedsVerification(false);
+    try {
+      const res = await fetch("/api/auth/verify/resend", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: e, role, lang }),
+      });
+      const data = await res.json().catch(() => null);
+      if (!res.ok || !data?.ok) {
+        setErr(data?.error ?? "Failed to resend verification email");
+        return;
+      }
+      setInfo(
+        tr(
+          "Verification email sent. Please check your inbox.",
+          "인증 메일을 다시 보냈습니다. 받은편지함을 확인해주세요.",
+          "認証メールを再送しました。受信トレイを確認してください。",
+          "Email de verification renvoye. Veuillez verifier votre boite de reception."
+        )
+      );
+    } catch {
+      setErr(t("login_server_error", lang));
+    } finally {
+      setResending(false);
+    }
   };
 
   const inp: React.CSSProperties = { width: "100%", padding: "14px 16px", background: "#FFFFFF", border: "1px solid #E8E3DB", color: "#1A1A1A", fontFamily: F, fontSize: 13, fontWeight: 400, outline: "none" };
@@ -153,10 +238,39 @@ export default function LoginPage() {
             )}
           </div>
 
+          {info && (
+            <div style={{ marginTop: 20, padding: "12px 16px", background: "rgba(90,122,90,0.08)", border: "1px solid rgba(90,122,90,0.24)", color: "#3D5A3D", fontFamily: F, fontSize: 12, fontWeight: 400 }}>
+              {info}
+            </div>
+          )}
           {err && (
             <div style={{ marginTop: 20, padding: "12px 16px", background: "rgba(139,74,74,0.06)", border: "1px solid rgba(139,74,74,0.2)", color: "#8B4A4A", fontFamily: F, fontSize: 12, fontWeight: 400 }}>
               {err}
             </div>
+          )}
+          {mode === "login" && needsVerification && (
+            <button
+              onClick={onResendVerification}
+              disabled={resending}
+              style={{
+                marginTop: 10,
+                border: "1px solid #E8E3DB",
+                background: "#FFFFFF",
+                color: "#8A8580",
+                padding: "10px 12px",
+                width: "100%",
+                fontFamily: F,
+                fontSize: 10,
+                fontWeight: 500,
+                letterSpacing: "0.08em",
+                textTransform: "uppercase",
+                cursor: resending ? "wait" : "pointer",
+              }}
+            >
+              {resending
+                ? "..."
+                : tr("Resend Verification Email", "인증 메일 다시 보내기", "認証メールを再送", "Renvoyer l'email de verification")}
+            </button>
           )}
 
           <button onClick={mode === "login" ? onLogin : onSignup} disabled={loading} style={{ marginTop: 28, width: "100%", padding: "16px", border: "none", background: loading ? "#E8E3DB" : "#1A1A1A", color: loading ? "#8A8580" : "#FDFBF7", fontFamily: F, fontSize: 11, fontWeight: 500, letterSpacing: "0.1em", textTransform: "uppercase", cursor: loading ? "not-allowed" : "pointer", transition: "all 0.3s" }}
