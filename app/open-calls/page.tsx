@@ -39,6 +39,11 @@ export default function OpenCallsPage() {
   const [isLoggedIn, setIsLoggedIn] = useState(true);
   const [preferredCountry, setPreferredCountry] = useState("");
   const [hasAutoSelectedCountry, setHasAutoSelectedCountry] = useState(false);
+  const [translatedById, setTranslatedById] = useState<
+    Record<string, { theme?: string; galleryDescription?: string }>
+  >({});
+  const [showOriginalById, setShowOriginalById] = useState<Record<string, boolean>>({});
+  const [translatingById, setTranslatingById] = useState<Record<string, boolean>>({});
   const { lang } = useLanguage();
 
   function load() {
@@ -90,6 +95,55 @@ export default function OpenCallsPage() {
     setCountryFilter(preferredCountry);
     setHasAutoSelectedCountry(true);
   }, [hasAutoSelectedCountry, countryFilter, preferredCountry, countries]);
+
+  async function translateOpenCall(id: string, theme: string, galleryDescription?: string) {
+    const texts = [theme, galleryDescription?.trim() || ""].filter(Boolean);
+    if (texts.length === 0) return;
+    const res = await fetch("/api/translate", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ texts, targetLang: lang }),
+    });
+    const data = await res.json().catch(() => null);
+    if (!res.ok || !Array.isArray(data?.translated)) return;
+    const translated = data.translated as string[];
+    setTranslatedById((prev) => ({
+      ...prev,
+      [id]: {
+        theme: translated[0] || prev[id]?.theme,
+        galleryDescription: texts.length > 1 ? translated[1] || prev[id]?.galleryDescription : prev[id]?.galleryDescription,
+      },
+    }));
+  }
+
+  async function toggleTranslation(openCall: OpenCall) {
+    if (lang === "en") return;
+    const hasTranslated = !!translatedById[openCall.id]?.theme;
+    if (hasTranslated) {
+      setShowOriginalById((prev) => ({ ...prev, [openCall.id]: !prev[openCall.id] }));
+      return;
+    }
+    setTranslatingById((prev) => ({ ...prev, [openCall.id]: true }));
+    try {
+      await translateOpenCall(openCall.id, openCall.theme, openCall.galleryDescription);
+      setShowOriginalById((prev) => ({ ...prev, [openCall.id]: false }));
+    } finally {
+      setTranslatingById((prev) => ({ ...prev, [openCall.id]: false }));
+    }
+  }
+
+  useEffect(() => {
+    if (lang === "en" || openCalls.length === 0) return;
+    const targets = openCalls
+      .filter((o) => !translatedById[o.id]?.theme)
+      .slice(0, 20);
+    if (targets.length === 0) return;
+    (async () => {
+      for (const item of targets) {
+        await translateOpenCall(item.id, item.theme, item.galleryDescription);
+      }
+    })();
+  }, [openCalls, lang, translatedById]);
 
   return (
     <>
@@ -158,7 +212,11 @@ export default function OpenCallsPage() {
                     <h3 style={{ fontFamily: S, fontSize: 24, fontWeight: 400, color: "#1A1A1A", marginBottom: 6 }}>
                       {o.gallery}
                     </h3>
-                    <p style={{ fontFamily: F, fontSize: 13, fontWeight: 300, color: "#8A8580" }}>{o.theme}</p>
+                    <p style={{ fontFamily: F, fontSize: 13, fontWeight: 300, color: "#8A8580" }}>
+                      {lang !== "en" && translatedById[o.id]?.theme && !showOriginalById[o.id]
+                        ? translatedById[o.id]?.theme
+                        : o.theme}
+                    </p>
                     <p
                       style={{
                         fontFamily: F,
@@ -174,7 +232,9 @@ export default function OpenCallsPage() {
                       }}
                     >
                       {o.galleryDescription?.trim()
-                        ? o.galleryDescription
+                        ? (lang !== "en" && translatedById[o.id]?.galleryDescription && !showOriginalById[o.id]
+                          ? translatedById[o.id]?.galleryDescription
+                          : o.galleryDescription)
                         : (lang === "ko"
                           ? "상세 정보는 상세보기에서 확인할 수 있습니다."
                           : lang === "ja"
@@ -183,6 +243,32 @@ export default function OpenCallsPage() {
                     </p>
                     {(o.galleryWebsite || o.externalUrl) && (
                       <div style={{ marginTop: 10, display: "flex", gap: 8, flexWrap: "wrap" }}>
+                        {lang !== "en" && (
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              toggleTranslation(o);
+                            }}
+                            disabled={!!translatingById[o.id]}
+                            style={{
+                              fontFamily: F,
+                              fontSize: 10,
+                              letterSpacing: "0.08em",
+                              textTransform: "uppercase",
+                              color: "#8A8580",
+                              border: "1px solid #E8E3DB",
+                              padding: "6px 10px",
+                              background: "#FFFFFF",
+                              cursor: translatingById[o.id] ? "wait" : "pointer",
+                            }}
+                          >
+                            {translatingById[o.id]
+                              ? "..."
+                              : showOriginalById[o.id]
+                                ? (lang === "ko" ? "번역 보기" : lang === "ja" ? "翻訳" : "Translate")
+                                : (lang === "ko" ? "원문 보기" : lang === "ja" ? "原文" : "Original")}
+                          </button>
+                        )}
                         {o.galleryWebsite && (
                           <a
                             href={o.galleryWebsite}

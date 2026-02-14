@@ -90,6 +90,9 @@ export default function GalleryPage() {
   const [savingOC, setSavingOC] = useState(false);
   const [ocMsg, setOcMsg] = useState<string | null>(null);
   const [uploadingPosterId, setUploadingPosterId] = useState<string | null>(null);
+  const [translatedThemeById, setTranslatedThemeById] = useState<Record<string, string>>({});
+  const [showOriginalById, setShowOriginalById] = useState<Record<string, boolean>>({});
+  const [translatingById, setTranslatingById] = useState<Record<string, boolean>>({});
 
   const session = me?.session;
 
@@ -361,6 +364,48 @@ export default function GalleryPage() {
     }
   }
 
+  async function translateTheme(openCall: OpenCall) {
+    if (lang === "en") return;
+    if (translatedThemeById[openCall.id]) {
+      setShowOriginalById((prev) => ({ ...prev, [openCall.id]: !prev[openCall.id] }));
+      return;
+    }
+    setTranslatingById((prev) => ({ ...prev, [openCall.id]: true }));
+    try {
+      const res = await fetch("/api/translate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ text: openCall.theme, targetLang: lang }),
+      });
+      const data = await res.json().catch(() => null);
+      if (res.ok && data?.translated) {
+        setTranslatedThemeById((prev) => ({ ...prev, [openCall.id]: String(data.translated) }));
+        setShowOriginalById((prev) => ({ ...prev, [openCall.id]: false }));
+      }
+    } finally {
+      setTranslatingById((prev) => ({ ...prev, [openCall.id]: false }));
+    }
+  }
+
+  useEffect(() => {
+    if (lang === "en" || openCalls.length === 0) return;
+    const targets = openCalls.filter((o) => !translatedThemeById[o.id]).slice(0, 20);
+    if (targets.length === 0) return;
+    (async () => {
+      for (const item of targets) {
+        const res = await fetch("/api/translate", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ text: item.theme, targetLang: lang }),
+        });
+        const data = await res.json().catch(() => null);
+        if (res.ok && data?.translated) {
+          setTranslatedThemeById((prev) => ({ ...prev, [item.id]: String(data.translated) }));
+        }
+      }
+    })();
+  }, [openCalls, lang, translatedThemeById]);
+
   if (loading) {
     return (
       <>
@@ -613,11 +658,40 @@ export default function GalleryPage() {
                         </span>
                       </div>
                       <h3 style={{ fontFamily: S, fontSize: 20, fontWeight: 400, color: "#1A1A1A" }}>
-                        {o.theme}
+                        {lang !== "en" && translatedThemeById[o.id] && !showOriginalById[o.id]
+                          ? translatedThemeById[o.id]
+                          : o.theme}
                       </h3>
                       <p style={{ fontFamily: F, fontSize: 11, color: "#8A8A8A", marginTop: 6 }}>
                         {lang === "ko" ? "마감" : "Deadline"}: {o.deadline}
                       </p>
+                      {lang !== "en" && (
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            translateTheme(o);
+                          }}
+                          disabled={!!translatingById[o.id]}
+                          style={{
+                            marginTop: 8,
+                            padding: "6px 10px",
+                            border: "1px solid #E8E3DB",
+                            background: "#FFFFFF",
+                            color: "#8A8580",
+                            fontFamily: F,
+                            fontSize: 9,
+                            letterSpacing: "0.08em",
+                            textTransform: "uppercase",
+                            cursor: translatingById[o.id] ? "wait" : "pointer",
+                          }}
+                        >
+                          {translatingById[o.id]
+                            ? "..."
+                            : showOriginalById[o.id]
+                              ? (lang === "ko" ? "번역 보기" : lang === "ja" ? "翻訳" : "Translate")
+                              : (lang === "ko" ? "원문 보기" : lang === "ja" ? "原文" : "Original")}
+                        </button>
+                      )}
                     </div>
                   </div>
                 </div>
