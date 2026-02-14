@@ -688,8 +688,8 @@ export default function GalleryPage() {
                           {translatingById[o.id]
                             ? "..."
                             : showOriginalById[o.id]
-                              ? (lang === "ko" ? "번역 보기" : lang === "ja" ? "翻訳" : "Translate")
-                              : (lang === "ko" ? "원문 보기" : lang === "ja" ? "原文" : "Original")}
+                              ? t("oc_show_translation", lang)
+                              : t("oc_show_original", lang)}
                         </button>
                       )}
                     </div>
