@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import TopBar from "@/app/components/TopBar";
 import RecommendationBanner from "@/app/components/RecommendationBanner";
 import { CardSkeleton } from "@/app/components/Skeleton";
@@ -37,11 +37,14 @@ async function fetchMe(): Promise<MeResponse | null> {
 
 export default function ArtistPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { lang } = useLanguage();
+  const isAdminView = searchParams.get("adminView") === "1";
   const [me, setMe] = useState<MeResponse | null>(null);
+  const [adminReadOnly, setAdminReadOnly] = useState(false);
   const [ready, setReady] = useState(false);
   const { data: ocData, error: ocError, isLoading: ocLoading, mutate: mutateOc } = useFetch<{ openCalls: OpenCall[] }>(ready ? "/api/open-calls" : null);
-  const { data: appData, mutate: mutateApps } = useFetch<{ applications: { openCallId: string }[] }>(ready ? "/api/applications" : null);
+  const { data: appData, mutate: mutateApps } = useFetch<{ applications: { openCallId: string }[] }>(ready && !adminReadOnly ? "/api/applications" : null);
   const openCalls = ocData?.openCalls ?? [];
   const appliedIds = useMemo(() => new Set<string>((appData?.applications ?? []).map((a) => a.openCallId)), [appData]);
   const loading = ocLoading;
@@ -53,9 +56,16 @@ export default function ArtistPage() {
   const [hasAutoSelectedCountry, setHasAutoSelectedCountry] = useState(false);
   const preferredCountry = (me?.profile?.country ?? "").trim();
 
-  function load() { mutateOc(); mutateApps(); }
+  function load() {
+    mutateOc();
+    if (!adminReadOnly) mutateApps();
+  }
 
   async function applyToOpenCall(openCallId: string, galleryId: string) {
+    if (adminReadOnly) {
+      alert(lang === "ko" ? "관리자 미리보기 모드에서는 지원할 수 없습니다." : "Apply is disabled in admin preview mode.");
+      return;
+    }
     setApplyingId(openCallId);
     try {
       const res = await fetch("/api/applications", { method: "POST", headers: { "Content-Type": "application/json" }, credentials: "include", body: JSON.stringify({ openCallId, galleryId }) });
@@ -70,13 +80,22 @@ export default function ArtistPage() {
 
   useEffect(() => {
     (async () => {
+      if (isAdminView) {
+        const adminRes = await fetch("/api/admin/me", { cache: "no-store", credentials: "include" }).catch(() => null);
+        const adminData = adminRes ? await adminRes.json().catch(() => null) : null;
+        if (adminData?.authenticated) {
+          setAdminReadOnly(true);
+          setReady(true);
+          return;
+        }
+      }
       const m = await fetchMe();
       if (!m?.session) { router.replace("/login?role=artist"); return; }
       if (m.session.role !== "artist") { router.replace("/gallery"); return; }
       setMe(m);
       setReady(true); // Triggers SWR fetches
     })();
-  }, [router]);
+  }, [router, isAdminView]);
 
   // Dynamic country list from data
   const countries = useMemo(() => {
@@ -112,6 +131,10 @@ export default function ArtistPage() {
   }, [hasAutoSelectedCountry, countryFilter, preferredCountry, countries]);
 
   async function contactGallery(openCallId: string, galleryId: string) {
+    if (adminReadOnly) {
+      setContactError(lang === "ko" ? "관리자 미리보기 모드에서는 메시지를 보낼 수 없습니다." : "Messaging is disabled in admin preview mode.");
+      return;
+    }
     setContactError(null); setContactingId(openCallId);
     try {
       const res = await fetch("/api/chat", { method: "POST", headers: { "Content-Type": "application/json" }, credentials: "include", body: JSON.stringify({ openCallId, galleryId }) });
@@ -166,6 +189,11 @@ export default function ArtistPage() {
             </Link>
           </div>
         </div>
+        {adminReadOnly && (
+          <div style={{ marginBottom: 20, padding: "12px 14px", border: "1px solid #E8E3DB", background: "#FAF8F4", color: "#8A8580", fontFamily: F, fontSize: 11, letterSpacing: "0.04em" }}>
+            {lang === "ko" ? "관리자 미리보기 모드 (읽기 전용)" : "Admin preview mode (read-only)"}
+          </div>
+        )}
 
         {/* Personalized Recommendations */}
         <RecommendationBanner />
@@ -334,7 +362,11 @@ export default function ArtistPage() {
                 </div>
 
                 <div className="oc-card-actions" style={{ marginTop: 16, display: "flex", gap: 10 }}>
-                  {appliedIds.has(o.id) ? (
+                  {adminReadOnly ? (
+                    <span style={{ padding: "10px 20px", border: "1px solid #E8E3DB", color: "#8A8580", fontFamily: F, fontSize: 10, fontWeight: 500, letterSpacing: "0.08em", textTransform: "uppercase" }}>
+                      {lang === "ko" ? "읽기 전용" : "Read-only"}
+                    </span>
+                  ) : appliedIds.has(o.id) ? (
                     <span style={{ padding: "10px 20px", border: "1px solid #5A7A5A", color: "#5A7A5A", fontFamily: F, fontSize: 10, fontWeight: 500, letterSpacing: "0.08em", textTransform: "uppercase" }}>{t("applied", lang)}</span>
                   ) : (
                     <button onClick={(e) => { e.stopPropagation(); applyToOpenCall(o.id, o.galleryId); }} disabled={applyingId === o.id}

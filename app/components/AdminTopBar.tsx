@@ -1,16 +1,48 @@
 "use client";
 
-import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { useEffect, useRef, useState } from "react";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { F, S } from "@/lib/design";
 import { useLanguage } from "@/lib/useLanguage";
 
 export default function AdminTopBar() {
   const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
   const { lang } = useLanguage();
   const [loggingOut, setLoggingOut] = useState(false);
+  const [previewOpen, setPreviewOpen] = useState(false);
+  const previewRef = useRef<HTMLDivElement | null>(null);
+  const isAdminView = searchParams.get("adminView") === "1";
   const tr = (en: string, ko: string, ja: string, fr: string) =>
     lang === "ko" ? ko : lang === "ja" ? ja : lang === "fr" ? fr : en;
+  const isDashboardActive = pathname === "/admin/outreach";
+  const isUsersActive = pathname === "/admin/users";
+  const isArtistDashboardPreview = pathname === "/artist" && isAdminView;
+  const isArtistProfilePreview = pathname === "/artist/me" && isAdminView;
+  const isGalleryDashboardPreview = pathname === "/gallery" && isAdminView;
+  const isGalleryProfilePreview = pathname === "/gallery/me" && isAdminView;
+  const isPreviewActive =
+    isArtistDashboardPreview ||
+    isArtistProfilePreview ||
+    isGalleryDashboardPreview ||
+    isGalleryProfilePreview;
+  const isViewSiteActive = pathname === "/" && !isAdminView;
+
+  useEffect(() => {
+    function onClickOutside(e: MouseEvent) {
+      if (!previewRef.current) return;
+      if (!previewRef.current.contains(e.target as Node)) {
+        setPreviewOpen(false);
+      }
+    }
+    document.addEventListener("mousedown", onClickOutside);
+    return () => document.removeEventListener("mousedown", onClickOutside);
+  }, []);
+
+  useEffect(() => {
+    setPreviewOpen(false);
+  }, [pathname, searchParams]);
 
   async function handleLogout() {
     setLoggingOut(true);
@@ -88,10 +120,81 @@ export default function AdminTopBar() {
         </div>
 
         {/* Nav */}
-        <nav style={{ display: "flex", alignItems: "center", gap: 24 }}>
-          <NavLink onClick={() => router.push("/admin/outreach")} label={tr("Dashboard", "대시보드", "ダッシュボード", "Tableau")} />
-          <NavLink onClick={() => router.push("/admin/users")} label={tr("Users", "가입자", "ユーザー", "Utilisateurs")} />
-          <NavLink onClick={() => router.push("/")} label={tr("View Site", "사이트 보기", "サイトを見る", "Voir le site")} />
+        <nav style={{ display: "flex", alignItems: "center", gap: 18 }}>
+          <NavLink onClick={() => router.push("/admin/outreach")} label={tr("Dashboard", "대시보드", "ダッシュボード", "Tableau")} active={isDashboardActive} />
+          <NavLink onClick={() => router.push("/admin/users")} label={tr("Users", "가입자", "ユーザー", "Utilisateurs")} active={isUsersActive} />
+          <div ref={previewRef} style={{ position: "relative" }}>
+            <button
+              onClick={() => setPreviewOpen((p) => !p)}
+              style={{
+                background: "transparent",
+                border: "none",
+                fontFamily: F,
+                fontSize: 11,
+                fontWeight: 500,
+                letterSpacing: "0.06em",
+                color: isPreviewActive ? "#1A1A1A" : "#8A8580",
+                cursor: "pointer",
+                padding: "4px 0",
+                textTransform: "uppercase",
+                display: "flex",
+                alignItems: "center",
+                gap: 6,
+              }}
+            >
+              {tr("Preview", "미리보기", "プレビュー", "Apercu")}
+              <span style={{ fontSize: 10, lineHeight: 1 }}>{previewOpen ? "▲" : "▼"}</span>
+            </button>
+            {previewOpen && (
+              <div
+                style={{
+                  position: "absolute",
+                  top: "calc(100% + 8px)",
+                  left: 0,
+                  minWidth: 220,
+                  border: "1px solid #E8E3DB",
+                  background: "#FFFFFF",
+                  boxShadow: "0 8px 24px rgba(0,0,0,0.08)",
+                  padding: "8px 0",
+                  zIndex: 200,
+                }}
+              >
+                <MenuItem
+                  label={tr("Artist Dashboard", "아티스트 대시보드", "アーティストダッシュボード", "Tableau artiste")}
+                  active={isArtistDashboardPreview}
+                  onClick={() => {
+                    setPreviewOpen(false);
+                    router.push("/artist?adminView=1");
+                  }}
+                />
+                <MenuItem
+                  label={tr("Artist Profile", "아티스트 프로필", "アーティストプロフィール", "Profil artiste")}
+                  active={isArtistProfilePreview}
+                  onClick={() => {
+                    setPreviewOpen(false);
+                    router.push("/artist/me?adminView=1");
+                  }}
+                />
+                <MenuItem
+                  label={tr("Gallery Dashboard", "갤러리 대시보드", "ギャラリーダッシュボード", "Tableau galerie")}
+                  active={isGalleryDashboardPreview}
+                  onClick={() => {
+                    setPreviewOpen(false);
+                    router.push("/gallery?adminView=1");
+                  }}
+                />
+                <MenuItem
+                  label={tr("Gallery Profile", "갤러리 프로필", "ギャラリープロフィール", "Profil galerie")}
+                  active={isGalleryProfilePreview}
+                  onClick={() => {
+                    setPreviewOpen(false);
+                    router.push("/gallery/me?adminView=1");
+                  }}
+                />
+              </div>
+            )}
+          </div>
+          <NavLink onClick={() => router.push("/")} label={tr("View Site", "사이트 보기", "サイトを見る", "Voir le site")} active={isViewSiteActive} />
 
           <div
             style={{
@@ -126,7 +229,7 @@ export default function AdminTopBar() {
   );
 }
 
-function NavLink({ onClick, label }: { onClick: () => void; label: string }) {
+function NavLink({ onClick, label, active = false }: { onClick: () => void; label: string; active?: boolean }) {
   return (
     <button
       onClick={onClick}
@@ -137,10 +240,33 @@ function NavLink({ onClick, label }: { onClick: () => void; label: string }) {
         fontSize: 11,
         fontWeight: 500,
         letterSpacing: "0.06em",
-        color: "#8A8580",
+        color: active ? "#1A1A1A" : "#8A8580",
         cursor: "pointer",
         padding: "4px 0",
         textTransform: "uppercase",
+      }}
+    >
+      {label}
+    </button>
+  );
+}
+
+function MenuItem({ onClick, label, active = false }: { onClick: () => void; label: string; active?: boolean }) {
+  return (
+    <button
+      onClick={onClick}
+      style={{
+        width: "100%",
+        textAlign: "left",
+        background: active ? "#FAF8F4" : "transparent",
+        border: "none",
+        padding: "10px 14px",
+        fontFamily: F,
+        fontSize: 11,
+        fontWeight: 500,
+        letterSpacing: "0.04em",
+        color: active ? "#1A1A1A" : "#4A4A4A",
+        cursor: "pointer",
       }}
     >
       {label}

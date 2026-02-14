@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import TopBar from "@/app/components/TopBar";
 import ProfileImageUpload from "@/app/components/ProfileImageUpload";
 import { F, S } from "@/lib/design";
@@ -50,6 +50,9 @@ type Exhibition = {
 
 export default function GalleryMePage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const isAdminView = searchParams.get("adminView") === "1";
+  const [adminReadOnly, setAdminReadOnly] = useState(false);
 
   const [me, setMe] = useState<MeResponse | null>(null);
   const [loading, setLoading] = useState(true);
@@ -80,6 +83,19 @@ export default function GalleryMePage() {
   const [exMsg, setExMsg] = useState<string | null>(null);
 
   const loadMe = async () => {
+    if (isAdminView) {
+      const adminRes = await fetch("/api/admin/me", { cache: "no-store", credentials: "include" }).catch(() => null);
+      const adminData = adminRes ? await adminRes.json().catch(() => null) : null;
+      if (adminData?.authenticated) {
+        setAdminReadOnly(true);
+        setMe({
+          session: { userId: "__admin_preview__", role: "gallery", email: adminData?.session?.email || "admin@rob.art" },
+          profile: null,
+        });
+        setLoading(false);
+        return;
+      }
+    }
     const res = await fetch("/api/auth/me", { cache: "no-store" });
     const data = (await res.json()) as MeResponse;
 
@@ -127,14 +143,18 @@ export default function GalleryMePage() {
 
   useEffect(() => {
     loadMe();
-  }, []);
+  }, [isAdminView]);
 
   useEffect(() => {
-    if (!me?.session) return;
+    if (!me?.session || adminReadOnly) return;
     loadExhibitions();
-  }, [me?.session?.userId]);
+  }, [me?.session?.userId, adminReadOnly]);
 
   const addExhibition = async () => {
+    if (adminReadOnly) {
+      setExMsg("Read-only admin preview mode");
+      return;
+    }
     setExMsg(null);
     try {
       const res = await fetch("/api/gallery/exhibitions", {
@@ -161,6 +181,7 @@ export default function GalleryMePage() {
   };
 
   const updateExhibition = async (id: string, patch: Partial<Exhibition>) => {
+    if (adminReadOnly) return;
     const res = await fetch(`/api/gallery/exhibitions/${id}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
@@ -173,6 +194,7 @@ export default function GalleryMePage() {
   };
 
   const removeExhibition = async (id: string) => {
+    if (adminReadOnly) return;
     const res = await fetch(`/api/gallery/exhibitions/${id}`, { method: "DELETE" });
     if (res.ok) {
       setExhibitions((p) => p.filter((e) => e.id !== id));
@@ -180,6 +202,10 @@ export default function GalleryMePage() {
   };
 
   const onSave = async () => {
+    if (adminReadOnly) {
+      setMsg("Read-only admin preview mode");
+      return;
+    }
     setMsg(null);
     setSaveLoading(true);
 
@@ -226,6 +252,11 @@ export default function GalleryMePage() {
       <TopBar />
 
       <main style={{ maxWidth: 900, margin: "0 auto", padding: "48px 40px" }}>
+        {adminReadOnly && (
+          <div style={{ marginBottom: 20, padding: "12px 14px", border: "1px solid #E8E3DB", background: "#FAF8F4", color: "#8A8580", fontFamily: F, fontSize: 11, letterSpacing: "0.04em" }}>
+            Admin preview mode (read-only)
+          </div>
+        )}
         {/* Header - Margiela Style */}
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 48 }}>
           <div>

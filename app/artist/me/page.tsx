@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useEffect, useMemo, useState } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import TopBar from "@/app/components/TopBar";
 import ProfileImageUpload from "@/app/components/ProfileImageUpload";
 import { useLanguage } from "@/lib/useLanguage";
@@ -18,6 +18,9 @@ const btnStyle = (disabled: boolean): React.CSSProperties => ({ padding: "14px 3
 
 export default function ArtistMePage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const isAdminView = searchParams.get("adminView") === "1";
+  const [adminReadOnly, setAdminReadOnly] = useState(false);
   const { lang } = useLanguage();
   const [me, setMe] = useState<MeResponse | null>(null);
   const [loadingMe, setLoadingMe] = useState(true);
@@ -26,19 +29,49 @@ export default function ArtistMePage() {
   const [file, setFile] = useState<File | null>(null); const [uploading, setUploading] = useState(false); const [uploadMsg, setUploadMsg] = useState<string | null>(null);
   const [applications, setApplications] = useState<Application[]>([]); const [openCallMap, setOpenCallMap] = useState<Record<string, OpenCall>>({}); const [invites, setInvites] = useState<Invite[]>([]);
 
-  const loadMe = async () => { setLoadingMe(true); try { const res = await fetch("/api/auth/me", { cache: "no-store" }); const data = (await res.json()) as MeResponse; setMe(data); if (!data.session) { router.push("/login"); return; } if (data.session.role !== "artist") { router.push("/gallery"); return; } const p = data.profile; setArtistId(p?.artistId ?? ""); setName(p?.name ?? ""); setStartedYear(p?.startedYear ? String(p.startedYear) : ""); setGenre(p?.genre ?? ""); setInstagram(p?.instagram ?? ""); setCountry(p?.country ?? ""); setCity(p?.city ?? ""); setWebsite(p?.website ?? ""); setBio(p?.bio ?? ""); } finally { setLoadingMe(false); } };
+  const loadMe = async () => {
+    setLoadingMe(true);
+    try {
+      if (isAdminView) {
+        const adminRes = await fetch("/api/admin/me", { cache: "no-store", credentials: "include" }).catch(() => null);
+        const adminData = adminRes ? await adminRes.json().catch(() => null) : null;
+        if (adminData?.authenticated) {
+          setAdminReadOnly(true);
+          setMe({ session: { userId: "__admin_preview__", role: "artist", email: adminData?.session?.email || "admin@rob.art" }, profile: null });
+          return;
+        }
+      }
+      const res = await fetch("/api/auth/me", { cache: "no-store" });
+      const data = (await res.json()) as MeResponse;
+      setMe(data);
+      if (!data.session) { router.push("/login"); return; }
+      if (data.session.role !== "artist") { router.push("/gallery"); return; }
+      const p = data.profile;
+      setArtistId(p?.artistId ?? "");
+      setName(p?.name ?? "");
+      setStartedYear(p?.startedYear ? String(p.startedYear) : "");
+      setGenre(p?.genre ?? "");
+      setInstagram(p?.instagram ?? "");
+      setCountry(p?.country ?? "");
+      setCity(p?.city ?? "");
+      setWebsite(p?.website ?? "");
+      setBio(p?.bio ?? "");
+    } finally {
+      setLoadingMe(false);
+    }
+  };
 
-  useEffect(() => { loadMe(); }, []);
-  useEffect(() => { if (!me?.session) return; loadApplications(); loadInvites(); }, [me?.session?.userId]);
+  useEffect(() => { loadMe(); }, [isAdminView]);
+  useEffect(() => { if (!me?.session || adminReadOnly) return; loadApplications(); loadInvites(); }, [me?.session?.userId, adminReadOnly]);
 
   const loadApplications = async () => { const [appsRes, ocRes] = await Promise.all([fetch("/api/applications", { cache: "no-store", credentials: "include" }), fetch("/api/open-calls", { cache: "no-store" })]); const appsJson = await appsRes.json().catch(() => null); const ocJson = await ocRes.json().catch(() => null); const map: Record<string, OpenCall> = {}; for (const oc of ocJson?.openCalls ?? []) map[oc.id] = oc; setOpenCallMap(map); setApplications(appsJson?.applications ?? []); };
   const loadInvites = async () => { const res = await fetch("/api/artist/invites", { cache: "no-store", credentials: "include" }); const data = await res.json().catch(() => null); if (res.ok) setInvites(data?.invites ?? []); };
-  const updateInviteStatus = async (id: string, status: string) => { const res = await fetch("/api/artist/invites", { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ id, status }) }); const data = await res.json().catch(() => null); if (res.ok && data?.invite) setInvites((p) => p.map((i) => (i.id === id ? data.invite : i))); };
+  const updateInviteStatus = async (id: string, status: string) => { if (adminReadOnly) return; const res = await fetch("/api/artist/invites", { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ id, status }) }); const data = await res.json().catch(() => null); if (res.ok && data?.invite) setInvites((p) => p.map((i) => (i.id === id ? data.invite : i))); };
 
   const canSave = useMemo(() => name.trim() && artistId.trim() && startedYear.trim() && genre.trim() && country.trim() && city.trim(), [name, artistId, startedYear, genre, country, city]);
 
-  const onSaveProfile = async () => { setSaveMsg(null); if (!canSave) { setSaveMsg("Fill in all required fields"); return; } setSaving(true); try { const res = await fetch("/api/profile/save", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ artistId: artistId.trim(), name: name.trim(), startedYear: Number(startedYear), genre: genre.trim(), instagram: instagram.trim(), country: country.trim(), city: city.trim(), website: website.trim() || undefined, bio: bio || undefined }) }); const data = await res.json().catch(() => null); if (!res.ok || !data?.ok) { setSaveMsg(data?.error ?? "Save failed"); return; } setSaveMsg("Profile saved"); await loadMe(); } finally { setSaving(false); } };
-  const onUploadPdf = async () => { setUploadMsg(null); if (!file || file.type !== "application/pdf") { setUploadMsg("Select a PDF file"); return; } setUploading(true); try { const form = new FormData(); form.append("file", file); const res = await fetch("/api/profile/upload", { method: "POST", body: form }); const data = await res.json().catch(() => null); if (!res.ok || !data?.ok) { setUploadMsg(data?.error ?? "Upload failed"); return; } setUploadMsg("Portfolio uploaded"); setFile(null); await loadMe(); } finally { setUploading(false); } };
+  const onSaveProfile = async () => { if (adminReadOnly) { setSaveMsg(lang === "ko" ? "관리자 미리보기 모드에서는 저장할 수 없습니다." : "Save is disabled in admin preview mode."); return; } setSaveMsg(null); if (!canSave) { setSaveMsg("Fill in all required fields"); return; } setSaving(true); try { const res = await fetch("/api/profile/save", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ artistId: artistId.trim(), name: name.trim(), startedYear: Number(startedYear), genre: genre.trim(), instagram: instagram.trim(), country: country.trim(), city: city.trim(), website: website.trim() || undefined, bio: bio || undefined }) }); const data = await res.json().catch(() => null); if (!res.ok || !data?.ok) { setSaveMsg(data?.error ?? "Save failed"); return; } setSaveMsg("Profile saved"); await loadMe(); } finally { setSaving(false); } };
+  const onUploadPdf = async () => { if (adminReadOnly) { setUploadMsg(lang === "ko" ? "관리자 미리보기 모드에서는 업로드할 수 없습니다." : "Upload is disabled in admin preview mode."); return; } setUploadMsg(null); if (!file || file.type !== "application/pdf") { setUploadMsg("Select a PDF file"); return; } setUploading(true); try { const form = new FormData(); form.append("file", file); const res = await fetch("/api/profile/upload", { method: "POST", body: form }); const data = await res.json().catch(() => null); if (!res.ok || !data?.ok) { setUploadMsg(data?.error ?? "Upload failed"); return; } setUploadMsg("Portfolio uploaded"); setFile(null); await loadMe(); } finally { setUploading(false); } };
 
   const session = me?.session; const profile = me?.profile;
 
@@ -46,6 +79,11 @@ export default function ArtistMePage() {
     <>
       <TopBar />
       <main style={{ maxWidth: 860, margin: "0 auto", padding: "56px 40px" }}>
+        {adminReadOnly && (
+          <div style={{ marginBottom: 20, padding: "12px 14px", border: "1px solid #E8E3DB", background: "#FAF8F4", color: "#8A8580", fontFamily: F, fontSize: 11, letterSpacing: "0.04em" }}>
+            {lang === "ko" ? "관리자 미리보기 모드 (읽기 전용)" : "Admin preview mode (read-only)"}
+          </div>
+        )}
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end", marginBottom: 48 }}>
           <div>
             <span style={{ fontFamily: F, fontSize: 10, fontWeight: 500, letterSpacing: "0.2em", color: "#8B7355", textTransform: "uppercase" }}>{t("nav_profile", lang)}</span>

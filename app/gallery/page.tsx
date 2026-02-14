@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import TopBar from "@/app/components/TopBar";
 import { CardSkeleton } from "@/app/components/Skeleton";
 import { useLanguage } from "@/lib/useLanguage";
@@ -64,7 +64,10 @@ async function fetchMe(): Promise<MeResponse | null> {
 
 export default function GalleryPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { lang } = useLanguage();
+  const isAdminView = searchParams.get("adminView") === "1";
+  const [adminReadOnly, setAdminReadOnly] = useState(false);
 
   const [me, setMe] = useState<MeResponse | null>(null);
   const [rooms, setRooms] = useState<ChatRoom[]>([]);
@@ -132,6 +135,27 @@ export default function GalleryPage() {
       setLoading(true);
       setErr(null);
 
+      if (isAdminView) {
+        const adminRes = await fetch("/api/admin/me", { cache: "no-store", credentials: "include" }).catch(() => null);
+        const adminData = adminRes ? await adminRes.json().catch(() => null) : null;
+        if (adminData?.authenticated) {
+          setAdminReadOnly(true);
+          setMe({ session: { userId: "__admin_preview__", role: "gallery" }, profile: null });
+          try {
+            const allOCs = await loadOpenCalls();
+            setOpenCalls(allOCs);
+          } catch {
+            setOpenCalls([]);
+          } finally {
+            setRooms([]);
+            setInvites([]);
+            setTemplates(null);
+            setLoading(false);
+          }
+          return;
+        }
+      }
+
       const m = await fetchMe();
       const r = m?.session?.role;
 
@@ -173,9 +197,19 @@ export default function GalleryPage() {
         setLoading(false);
       }
     })();
-  }, [router]);
+  }, [router, isAdminView]);
 
   async function refresh() {
+    if (adminReadOnly) {
+      setErr(null);
+      try {
+        const allOCs = await loadOpenCalls();
+        setOpenCalls(allOCs);
+      } catch (e: any) {
+        setErr(e?.message ?? "Failed to load open calls");
+      }
+      return;
+    }
     if (!session) return;
     setErr(null);
     try {
@@ -197,6 +231,7 @@ export default function GalleryPage() {
   }
 
   async function updateInviteStatus(id: string, status: Invite["status"]) {
+    if (adminReadOnly) return;
     const res = await fetch(`/api/gallery/invites/${id}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
@@ -211,6 +246,10 @@ export default function GalleryPage() {
   }
 
   async function saveTemplates() {
+    if (adminReadOnly) {
+      setTplMsg(lang === "ko" ? "관리자 미리보기 모드에서는 저장할 수 없습니다." : "Save is disabled in admin preview mode.");
+      return;
+    }
     if (!templates) return;
     setTplSaving(true);
     setTplMsg(null);
@@ -239,6 +278,10 @@ export default function GalleryPage() {
   }
 
   async function createOpenCall() {
+    if (adminReadOnly) {
+      setOcMsg(lang === "ko" ? "관리자 미리보기 모드에서는 오픈콜을 생성할 수 없습니다." : "Create is disabled in admin preview mode.");
+      return;
+    }
     if (!session) return;
     setOcMsg(null);
     setSavingOC(true);
@@ -291,6 +334,10 @@ export default function GalleryPage() {
   }
 
   async function uploadPosterToExisting(openCallId: string, dataUri: string) {
+    if (adminReadOnly) {
+      alert(lang === "ko" ? "관리자 미리보기 모드에서는 업로드할 수 없습니다." : "Upload is disabled in admin preview mode.");
+      return;
+    }
     setUploadingPosterId(openCallId);
     try {
       const res = await fetch(`/api/open-calls/${openCallId}/poster`, {
@@ -331,6 +378,11 @@ export default function GalleryPage() {
     <>
       <TopBar />
       <main style={{ maxWidth: 1000, margin: "0 auto", padding: "48px 40px" }}>
+        {adminReadOnly && (
+          <div style={{ marginBottom: 20, padding: "12px 14px", border: "1px solid #E8E3DB", background: "#FAF8F4", color: "#8A8580", fontFamily: F, fontSize: 11, letterSpacing: "0.04em" }}>
+            {lang === "ko" ? "관리자 미리보기 모드 (읽기 전용)" : "Admin preview mode (read-only)"}
+          </div>
+        )}
         {/* Header - Margiela Style */}
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 48 }}>
           <div>
