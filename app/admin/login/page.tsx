@@ -3,13 +3,17 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { F, S } from "@/lib/design";
+import { useLanguage } from "@/lib/useLanguage";
 
 export default function AdminLoginPage() {
   const router = useRouter();
+  const { lang } = useLanguage();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const tr = (en: string, ko: string, ja: string, fr: string) =>
+    lang === "ko" ? ko : lang === "ja" ? ja : lang === "fr" ? fr : en;
 
   async function handleLogin(e: React.FormEvent) {
     e.preventDefault();
@@ -26,13 +30,13 @@ export default function AdminLoginPage() {
       const data = await res.json();
 
       if (!res.ok || !data.ok) {
-        setError(data.error || "Login failed");
+        setError(data.error || tr("Login failed", "로그인 실패", "ログイン失敗", "Échec de connexion"));
         return;
       }
 
       router.push("/admin/outreach");
     } catch {
-      setError("Server error");
+      setError(tr("Server error", "서버 오류", "サーバーエラー", "Erreur serveur"));
     } finally {
       setLoading(false);
     }
@@ -68,7 +72,7 @@ export default function AdminLoginPage() {
               marginBottom: 16,
             }}
           >
-            ROB Administration
+            {tr("ROB Administration", "ROB 관리자", "ROB 管理", "Administration ROB")}
           </div>
           <h1
             style={{
@@ -79,7 +83,7 @@ export default function AdminLoginPage() {
               margin: 0,
             }}
           >
-            Admin Login
+            {tr("Admin Login", "관리자 로그인", "管理者ログイン", "Connexion Admin")}
           </h1>
           <p
             style={{
@@ -90,7 +94,7 @@ export default function AdminLoginPage() {
               marginTop: 12,
             }}
           >
-            Authorized personnel only
+            {tr("Authorized personnel only", "권한 있는 사용자만 접근 가능", "許可された担当者のみ", "Personnel autorisé uniquement")}
           </p>
         </div>
 
@@ -132,7 +136,7 @@ export default function AdminLoginPage() {
                 marginBottom: 8,
               }}
             >
-              Email
+              {tr("Email", "이메일", "メール", "Email")}
             </label>
             <input
               type="email"
@@ -167,14 +171,14 @@ export default function AdminLoginPage() {
                 marginBottom: 8,
               }}
             >
-              Password
+              {tr("Password", "비밀번호", "パスワード", "Mot de passe")}
             </label>
             <input
               type="password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               required
-              placeholder="Enter admin password"
+              placeholder={tr("Enter admin password", "관리자 비밀번호를 입력하세요", "管理者パスワードを入力", "Entrez le mot de passe admin")}
               style={{
                 width: "100%",
                 padding: "14px 16px",
@@ -206,7 +210,9 @@ export default function AdminLoginPage() {
               cursor: loading ? "not-allowed" : "pointer",
             }}
           >
-            {loading ? "Authenticating..." : "Sign In"}
+            {loading
+              ? tr("Authenticating...", "인증 중...", "認証中...", "Authentification...")
+              : tr("Sign In", "로그인", "ログイン", "Se connecter")}
           </button>
         </form>
 
@@ -224,7 +230,7 @@ export default function AdminLoginPage() {
               letterSpacing: "0.05em",
             }}
           >
-            &larr; Back to main site
+            &larr; {tr("Back to main site", "메인 사이트로 돌아가기", "メインサイトへ戻る", "Retour au site principal")}
           </button>
         </div>
       </div>

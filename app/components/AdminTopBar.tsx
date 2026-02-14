@@ -3,10 +3,14 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { F, S } from "@/lib/design";
+import { useLanguage } from "@/lib/useLanguage";
 
 export default function AdminTopBar() {
   const router = useRouter();
+  const { lang } = useLanguage();
   const [loggingOut, setLoggingOut] = useState(false);
+  const tr = (en: string, ko: string, ja: string, fr: string) =>
+    lang === "ko" ? ko : lang === "ja" ? ja : lang === "fr" ? fr : en;
 
   async function handleLogout() {
     setLoggingOut(true);
@@ -78,16 +82,16 @@ export default function AdminTopBar() {
                 border: "1px solid #8B7355",
               }}
             >
-              Admin
+              {tr("Admin", "관리자", "管理者", "Admin")}
             </span>
           </button>
         </div>
 
         {/* Nav */}
         <nav style={{ display: "flex", alignItems: "center", gap: 24 }}>
-          <NavLink onClick={() => router.push("/admin/outreach")} label="Dashboard" />
-          <NavLink onClick={() => router.push("/admin/users")} label="Users" />
-          <NavLink onClick={() => router.push("/")} label="View Site" />
+          <NavLink onClick={() => router.push("/admin/outreach")} label={tr("Dashboard", "대시보드", "ダッシュボード", "Tableau")} />
+          <NavLink onClick={() => router.push("/admin/users")} label={tr("Users", "가입자", "ユーザー", "Utilisateurs")} />
+          <NavLink onClick={() => router.push("/")} label={tr("View Site", "사이트 보기", "サイトを見る", "Voir le site")} />
 
           <div
             style={{
@@ -114,7 +118,7 @@ export default function AdminTopBar() {
               cursor: loggingOut ? "wait" : "pointer",
             }}
           >
-            {loggingOut ? "..." : "Logout"}
+            {loggingOut ? "..." : tr("Logout", "로그아웃", "ログアウト", "Déconnexion")}
           </button>
         </nav>
       </div>

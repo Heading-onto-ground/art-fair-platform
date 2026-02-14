@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import AdminTopBar from "@/app/components/AdminTopBar";
 import { CardSkeleton } from "@/app/components/Skeleton";
 import { F, S } from "@/lib/design";
+import { useLanguage } from "@/lib/useLanguage";
 
 type AdminUser = {
   id: string;
@@ -26,6 +27,7 @@ type Stats = {
 
 export default function AdminUsersPage() {
   const router = useRouter();
+  const { lang } = useLanguage();
   const [authenticated, setAuthenticated] = useState<boolean | null>(null);
   const [loading, setLoading] = useState(true);
   const [err, setErr] = useState<string | null>(null);
@@ -33,6 +35,8 @@ export default function AdminUsersPage() {
   const [stats, setStats] = useState<Stats | null>(null);
   const [roleFilter, setRoleFilter] = useState<"ALL" | "artist" | "gallery">("ALL");
   const [query, setQuery] = useState("");
+  const tr = (en: string, ko: string, ja: string, fr: string) =>
+    lang === "ko" ? ko : lang === "ja" ? ja : lang === "fr" ? fr : en;
 
   useEffect(() => {
     (async () => {
@@ -61,7 +65,7 @@ export default function AdminUsersPage() {
       setUsers(Array.isArray(data?.users) ? data.users : []);
       setStats(data?.stats ?? null);
     } catch (e: any) {
-      setErr(e?.message ?? "Failed to load users");
+      setErr(e?.message ?? tr("Failed to load users", "가입자 목록 로드 실패", "ユーザー読み込み失敗", "Échec du chargement des utilisateurs"));
       setUsers([]);
       setStats(null);
     } finally {
@@ -91,7 +95,7 @@ export default function AdminUsersPage() {
   const countryStats = useMemo(() => {
     const counts: Record<string, number> = {};
     for (const u of users) {
-      const key = (u.country || "").trim() || "Unknown";
+      const key = (u.country || "").trim() || tr("Unknown", "미지정", "不明", "Inconnu");
       counts[key] = (counts[key] || 0) + 1;
     }
     return Object.entries(counts)
@@ -152,10 +156,10 @@ export default function AdminUsersPage() {
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end", marginBottom: 28 }}>
           <div>
             <span style={{ fontFamily: F, fontSize: 10, letterSpacing: "0.2em", textTransform: "uppercase", color: "#8B7355" }}>
-              Admin
+              {tr("Admin", "관리자", "管理者", "Admin")}
             </span>
             <h1 style={{ fontFamily: S, fontSize: 36, fontWeight: 300, color: "#1A1A1A", marginTop: 8 }}>
-              Users
+              {tr("Users", "가입자", "ユーザー", "Utilisateurs")}
             </h1>
           </div>
           <div style={{ display: "flex", gap: 8 }}>
@@ -173,7 +177,7 @@ export default function AdminUsersPage() {
                 cursor: "pointer",
               }}
             >
-              Export CSV
+              {tr("Export CSV", "CSV 내보내기", "CSVエクスポート", "Exporter CSV")}
             </button>
             <button
               onClick={loadUsers}
@@ -189,7 +193,7 @@ export default function AdminUsersPage() {
                 cursor: "pointer",
               }}
             >
-              Refresh
+              {tr("Refresh", "새로고침", "更新", "Actualiser")}
             </button>
           </div>
         </div>
@@ -203,15 +207,15 @@ export default function AdminUsersPage() {
         ) : (
           <>
             <div style={{ display: "grid", gridTemplateColumns: "repeat(4, minmax(0, 1fr))", gap: 12, marginBottom: 20 }}>
-              <StatCard label="Total" value={stats?.total ?? users.length} />
-              <StatCard label="Artists" value={stats?.artists ?? users.filter((u) => u.role === "artist").length} />
-              <StatCard label="Galleries" value={stats?.galleries ?? users.filter((u) => u.role === "gallery").length} />
-              <StatCard label="With profile" value={stats?.withProfile ?? users.filter((u) => u.name !== "-").length} />
+              <StatCard label={tr("Total", "전체", "合計", "Total")} value={stats?.total ?? users.length} />
+              <StatCard label={tr("Artists", "작가", "アーティスト", "Artistes")} value={stats?.artists ?? users.filter((u) => u.role === "artist").length} />
+              <StatCard label={tr("Galleries", "갤러리", "ギャラリー", "Galeries")} value={stats?.galleries ?? users.filter((u) => u.role === "gallery").length} />
+              <StatCard label={tr("With profile", "프로필 보유", "プロフィール有り", "Avec profil")} value={stats?.withProfile ?? users.filter((u) => u.name !== "-").length} />
             </div>
 
             <div style={{ border: "1px solid #E5E0DB", background: "#FFFFFF", padding: 16, marginBottom: 16 }}>
               <div style={{ fontFamily: F, fontSize: 10, letterSpacing: "0.1em", textTransform: "uppercase", color: "#8A8580", marginBottom: 12 }}>
-                Top Countries
+                {tr("Top Countries", "국가별 상위", "上位の国", "Pays principaux")}
               </div>
               <div style={{ display: "grid", gap: 8 }}>
                 {countryStats.map((c) => (
@@ -232,7 +236,9 @@ export default function AdminUsersPage() {
                   </div>
                 ))}
                 {countryStats.length === 0 && (
-                  <div style={{ fontFamily: S, fontStyle: "italic", color: "#8A8580" }}>No country data</div>
+                  <div style={{ fontFamily: S, fontStyle: "italic", color: "#8A8580" }}>
+                    {tr("No country data", "국가 데이터 없음", "国データなし", "Aucune donnée pays")}
+                  </div>
                 )}
               </div>
             </div>
@@ -254,14 +260,23 @@ export default function AdminUsersPage() {
                     cursor: "pointer",
                   }}
                 >
-                  {r}
+                  {r === "ALL"
+                    ? tr("ALL", "전체", "すべて", "TOUT")
+                    : r === "artist"
+                      ? tr("artist", "작가", "アーティスト", "artiste")
+                      : tr("gallery", "갤러리", "ギャラリー", "galerie")}
                 </button>
               ))}
 
               <input
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
-                placeholder="Search email / name / country / city / profileId"
+                placeholder={tr(
+                  "Search email / name / country / city / profileId",
+                  "이메일 / 이름 / 국가 / 도시 / 프로필ID 검색",
+                  "メール / 名前 / 国 / 都市 / プロフィールID 検索",
+                  "Rechercher email / nom / pays / ville / profil"
+                )}
                 style={{
                   flex: "1 1 320px",
                   minWidth: 260,
@@ -277,11 +292,11 @@ export default function AdminUsersPage() {
 
             <div style={{ border: "1px solid #E5E0DB", background: "#FFFFFF" }}>
               <div style={{ display: "grid", gridTemplateColumns: "1.3fr 0.8fr 0.8fr 0.8fr 0.9fr", gap: 8, padding: "12px 14px", borderBottom: "1px solid #EDE7DE", fontFamily: F, fontSize: 10, letterSpacing: "0.08em", textTransform: "uppercase", color: "#8A8580" }}>
-                <div>Email / Name</div>
-                <div>Role</div>
-                <div>Location</div>
-                <div>Profile ID</div>
-                <div>Joined</div>
+                <div>{tr("Email / Name", "이메일 / 이름", "メール / 名前", "Email / Nom")}</div>
+                <div>{tr("Role", "역할", "役割", "Rôle")}</div>
+                <div>{tr("Location", "위치", "所在地", "Lieu")}</div>
+                <div>{tr("Profile ID", "프로필 ID", "プロフィールID", "ID profil")}</div>
+                <div>{tr("Joined", "가입일", "登録日", "Inscrit")}</div>
               </div>
 
               {filtered.map((u) => (
@@ -290,7 +305,11 @@ export default function AdminUsersPage() {
                     <div style={{ fontWeight: 500 }}>{u.email}</div>
                     <div style={{ color: "#8A8580", marginTop: 2 }}>{u.name || "-"}</div>
                   </div>
-                  <div style={{ textTransform: "uppercase", color: u.role === "artist" ? "#8B7355" : "#5A6A8B" }}>{u.role}</div>
+                  <div style={{ textTransform: "uppercase", color: u.role === "artist" ? "#8B7355" : "#5A6A8B" }}>
+                    {u.role === "artist"
+                      ? tr("artist", "작가", "アーティスト", "artiste")
+                      : tr("gallery", "갤러리", "ギャラリー", "galerie")}
+                  </div>
                   <div>{[u.city, u.country].filter(Boolean).join(", ") || "-"}</div>
                   <div>{u.profileId || "-"}</div>
                   <div style={{ color: "#6A6A6A" }}>{new Date(u.createdAt).toLocaleDateString()}</div>
@@ -299,7 +318,7 @@ export default function AdminUsersPage() {
 
               {filtered.length === 0 && (
                 <div style={{ padding: 24, textAlign: "center", fontFamily: S, fontStyle: "italic", color: "#8A8580" }}>
-                  No users found.
+                  {tr("No users found.", "가입자가 없습니다.", "ユーザーが見つかりません。", "Aucun utilisateur trouvé.")}
                 </div>
               )}
             </div>

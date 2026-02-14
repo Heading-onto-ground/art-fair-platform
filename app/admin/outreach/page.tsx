@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import AdminTopBar from "@/app/components/AdminTopBar";
 import { F, S } from "@/lib/design";
+import { useLanguage } from "@/lib/useLanguage";
 
 type ExternalApp = {
   id: string;
@@ -85,6 +86,7 @@ const GALLERY_TARGETS: { name: string; email: string; country: string; language:
 
 export default function OutreachPage() {
   const router = useRouter();
+  const { lang } = useLanguage();
   const [authenticated, setAuthenticated] = useState<boolean | null>(null);
   const [stats, setStats] = useState<OutreachStats | null>(null);
   const [records, setRecords] = useState<OutreachRecord[]>([]);
@@ -105,6 +107,8 @@ export default function OutreachPage() {
 
   // Single send form
   const [singleForm, setSingleForm] = useState({ to: "", galleryName: "", country: "한국", language: "en" });
+  const tr = (en: string, ko: string, ja: string, fr: string) =>
+    lang === "ko" ? ko : lang === "ja" ? ja : lang === "fr" ? fr : en;
 
   // Check admin auth
   useEffect(() => {
@@ -154,13 +158,13 @@ export default function OutreachPage() {
       });
       const data = await res.json();
       if (data.ok) {
-        setOutreachResults((prev) => ({ ...prev, [applicationId]: `Sent to ${data.email?.to}` }));
+        setOutreachResults((prev) => ({ ...prev, [applicationId]: `${tr("Sent to", "발송 완료:", "送信先:", "Envoyé à")} ${data.email?.to}` }));
         loadData();
       } else {
-        setOutreachResults((prev) => ({ ...prev, [applicationId]: `Failed: ${data.error}` }));
+        setOutreachResults((prev) => ({ ...prev, [applicationId]: `${tr("Failed", "실패", "失敗", "Échec")}: ${data.error}` }));
       }
     } catch {
-      setOutreachResults((prev) => ({ ...prev, [applicationId]: "Server error" }));
+      setOutreachResults((prev) => ({ ...prev, [applicationId]: tr("Server error", "서버 오류", "サーバーエラー", "Erreur serveur") }));
     }
     setSendingOutreach(null);
   }
@@ -176,9 +180,9 @@ export default function OutreachPage() {
         body: JSON.stringify({ action: "send_single", ...singleForm }),
       });
       const data = await res.json();
-      setSendResult(data.ok ? "Email sent successfully" : `Failed: ${data.error}`);
+      setSendResult(data.ok ? tr("Email sent successfully", "이메일 발송 완료", "メール送信完了", "Email envoyé") : `${tr("Failed", "실패", "失敗", "Échec")}: ${data.error}`);
       loadData();
-    } catch { setSendResult("Server error"); }
+    } catch { setSendResult(tr("Server error", "서버 오류", "サーバーエラー", "Erreur serveur")); }
     finally { setSending(false); }
   }
 
@@ -199,9 +203,9 @@ export default function OutreachPage() {
         }),
       });
       const data = await res.json();
-      setSendResult(`Batch complete: ${data.sent} sent, ${data.failed} failed`);
+      setSendResult(`${tr("Batch complete", "배치 완료", "一括完了", "Lot terminé")}: ${data.sent} ${tr("sent", "발송", "送信", "envoyé")}, ${data.failed} ${tr("failed", "실패", "失敗", "échoué")}`);
       loadData();
-    } catch { setSendResult("Server error"); }
+    } catch { setSendResult(tr("Server error", "서버 오류", "サーバーエラー", "Erreur serveur")); }
     finally { setSending(false); }
   }
 
@@ -211,8 +215,8 @@ export default function OutreachPage() {
     try {
       const res = await fetch("/api/cron/crawl-opencalls", { method: "POST" });
       const data = await res.json();
-      setCrawlResult(data.message || "Crawler completed");
-    } catch { setCrawlResult("Crawler failed"); }
+      setCrawlResult(data.message || tr("Crawler completed", "크롤러 완료", "クローラー完了", "Crawler terminé"));
+    } catch { setCrawlResult(tr("Crawler failed", "크롤러 실패", "クローラー失敗", "Échec du crawler")); }
     finally { setCrawling(false); }
   }
 
@@ -226,8 +230,8 @@ export default function OutreachPage() {
         body: JSON.stringify({ withinDays: 30 }),
       });
       const data = await res.json();
-      setRemindResult(data.message || "Reminders created");
-    } catch { setRemindResult("Failed"); }
+      setRemindResult(data.message || tr("Reminders created", "리마인더 생성 완료", "リマインダー作成完了", "Rappels créés"));
+    } catch { setRemindResult(tr("Failed", "실패", "失敗", "Échec")); }
     finally { setReminding(false); }
   }
 
@@ -239,7 +243,9 @@ export default function OutreachPage() {
   if (authenticated === null) {
     return (
       <main style={{ minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", background: "#FDFBF7" }}>
-        <p style={{ fontFamily: F, fontSize: 13, color: "#B0AAA2" }}>Authenticating...</p>
+        <p style={{ fontFamily: F, fontSize: 13, color: "#B0AAA2" }}>
+          {tr("Authenticating...", "인증 중...", "認証中...", "Authentification...")}
+        </p>
       </main>
     );
   }
@@ -251,41 +257,41 @@ export default function OutreachPage() {
       <AdminTopBar />
       <main style={{ maxWidth: 960, margin: "0 auto", padding: "56px 40px" }}>
         <div style={{ marginBottom: 48 }}>
-          <span style={{ fontFamily: F, fontSize: 10, fontWeight: 500, letterSpacing: "0.2em", textTransform: "uppercase", color: "#8B7355" }}>Admin</span>
-          <h1 style={{ fontFamily: S, fontSize: 42, fontWeight: 300, color: "#1A1A1A", marginTop: 8 }}>Growth Automation</h1>
+          <span style={{ fontFamily: F, fontSize: 10, fontWeight: 500, letterSpacing: "0.2em", textTransform: "uppercase", color: "#8B7355" }}>{tr("Admin", "관리자", "管理者", "Admin")}</span>
+          <h1 style={{ fontFamily: S, fontSize: 42, fontWeight: 300, color: "#1A1A1A", marginTop: 8 }}>{tr("Growth Automation", "성장 자동화", "成長自動化", "Automatisation Growth")}</h1>
           <p style={{ fontFamily: F, fontSize: 12, fontWeight: 300, color: "#8A8580", marginTop: 8 }}>
-            Manage outreach, crawlers, and automated notifications
+            {tr("Manage outreach, crawlers, and automated notifications", "아웃리치, 크롤러, 자동 알림을 관리하세요", "アウトリーチ・クローラー・自動通知を管理", "Gérez outreach, crawler et notifications automatiques")}
           </p>
         </div>
 
         {/* Stats Dashboard */}
         {stats && (
-          <Section number="01" title="Outreach Stats">
+          <Section number="01" title={tr("Outreach Stats", "아웃리치 통계", "アウトリーチ統計", "Statistiques outreach")}>
             <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 1, background: "#E8E3DB" }}>
-              <Stat value={stats.total} label="Total Sent" />
-              <Stat value={stats.sent} label="Delivered" />
-              <Stat value={stats.signedUp} label="Signed Up" />
-              <Stat value={`${stats.conversionRate}%`} label="Conversion" />
+              <Stat value={stats.total} label={tr("Total Sent", "총 발송", "総送信", "Total envoyé")} />
+              <Stat value={stats.sent} label={tr("Delivered", "도달", "配信済み", "Délivré")} />
+              <Stat value={stats.signedUp} label={tr("Signed Up", "가입", "登録", "Inscrits")} />
+              <Stat value={`${stats.conversionRate}%`} label={tr("Conversion", "전환율", "コンバージョン", "Conversion")} />
             </div>
           </Section>
         )}
 
         {/* External Applications — Artist interest in crawled open calls */}
-        <Section number="02" title="External Applications">
+        <Section number="02" title={tr("External Applications", "외부 지원서", "外部応募", "Candidatures externes")}>
           {extStats && (
             <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 1, background: "#E8E3DB", marginBottom: 24 }}>
-              <Stat value={extStats.total} label="Total" />
-              <Stat value={extStats.pending} label="Pending Outreach" />
-              <Stat value={extStats.sent} label="Outreach Sent" />
+              <Stat value={extStats.total} label={tr("Total", "전체", "合計", "Total")} />
+              <Stat value={extStats.pending} label={tr("Pending Outreach", "대기 중", "未送信", "Outreach en attente")} />
+              <Stat value={extStats.sent} label={tr("Outreach Sent", "발송 완료", "送信済み", "Outreach envoyé")} />
             </div>
           )}
           <p style={{ fontFamily: F, fontSize: 12, color: "#8A8580", marginBottom: 20 }}>
-            Artists interested in external open calls. Send outreach emails to invite galleries to ROB.
+            {tr("Artists interested in external open calls. Send outreach emails to invite galleries to ROB.", "외부 오픈콜 지원 작가 목록입니다. 갤러리에 ROB 초대 메일을 보낼 수 있습니다.", "外部オープンコール応募アーティスト一覧です。ROB招待メールを送信できます。", "Liste des artistes intéressés par des appels externes. Envoyez des emails d'invitation ROB.")}
           </p>
 
           {extApps.length === 0 ? (
             <p style={{ fontFamily: F, fontSize: 13, color: "#B0AAA2", textAlign: "center", padding: 24 }}>
-              No external applications yet. Artists will appear here when they apply to crawled open calls.
+              {tr("No external applications yet. Artists will appear here when they apply to crawled open calls.", "아직 외부 지원서가 없습니다. 크롤링된 오픈콜에 지원하면 여기에 표시됩니다.", "外部応募はまだありません。クロールしたオープンコールに応募すると表示されます。", "Aucune candidature externe pour le moment. Elles apparaîtront ici après candidature.")}
             </p>
           ) : (
             <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
@@ -299,7 +305,9 @@ export default function OutreachPage() {
                   <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 16 }}>
                     <div>
                       <div style={{ fontFamily: F, fontSize: 9, fontWeight: 600, letterSpacing: "0.1em", textTransform: "uppercase", color: app.outreachSent ? "#5A7A5A" : "#8B7355", marginBottom: 6 }}>
-                        {app.outreachSent ? "OUTREACH SENT" : "PENDING OUTREACH"}
+                        {app.outreachSent
+                          ? tr("OUTREACH SENT", "아웃리치 발송 완료", "送信済み", "OUTREACH ENVOYÉ")
+                          : tr("PENDING OUTREACH", "아웃리치 대기", "送信待ち", "OUTREACH EN ATTENTE")}
                       </div>
                       <div style={{ fontFamily: S, fontSize: 18, fontWeight: 400, color: "#1A1A1A" }}>
                         {app.galleryName}
@@ -318,8 +326,8 @@ export default function OutreachPage() {
 
                   {/* Open call theme */}
                   <div style={{ fontFamily: F, fontSize: 12, color: "#4A4A4A", marginBottom: 16, padding: "10px 14px", background: "#FAF8F4", borderLeft: "3px solid #E8E3DB" }}>
-                    Open Call: <strong>{app.openCallTheme}</strong>
-                    <br />Deadline: {app.openCallDeadline}
+                    {tr("Open Call", "오픈콜", "オープンコール", "Open Call")}: <strong>{app.openCallTheme}</strong>
+                    <br />{tr("Deadline", "마감일", "締切", "Date limite")}: {app.openCallDeadline}
                   </div>
 
                   {/* Artist info */}
@@ -342,7 +350,7 @@ export default function OutreachPage() {
                     {app.artistPortfolioUrl && (
                       <a href={app.artistPortfolioUrl} target="_blank" rel="noopener noreferrer"
                         style={{ fontFamily: F, fontSize: 10, color: "#8B7355", textDecoration: "underline", marginLeft: "auto" }}>
-                        View Portfolio
+                        {tr("View Portfolio", "포트폴리오 보기", "ポートフォリオを見る", "Voir le portfolio")}
                       </a>
                     )}
                   </div>
@@ -366,11 +374,13 @@ export default function OutreachPage() {
                           cursor: sendingOutreach === app.id ? "wait" : "pointer",
                         }}
                       >
-                        {sendingOutreach === app.id ? "Sending..." : `Send outreach to ${app.galleryName}`}
+                        {sendingOutreach === app.id
+                          ? tr("Sending...", "발송 중...", "送信中...", "Envoi...")
+                          : `${tr("Send outreach to", "아웃리치 보내기:", "送信先:", "Envoyer à")} ${app.galleryName}`}
                       </button>
                     ) : (
                       <span style={{ fontFamily: F, fontSize: 11, color: "#5A7A5A" }}>
-                        Sent {app.outreachSentAt ? new Date(app.outreachSentAt).toLocaleString() : ""}
+                        {tr("Sent", "발송됨", "送信済み", "Envoyé")} {app.outreachSentAt ? new Date(app.outreachSentAt).toLocaleString() : ""}
                       </span>
                     )}
                   </div>
@@ -390,9 +400,9 @@ export default function OutreachPage() {
         </Section>
 
         {/* Gallery Outreach */}
-        <Section number="03" title="Gallery Outreach">
+        <Section number="03" title={tr("Gallery Outreach", "갤러리 아웃리치", "ギャラリーアウトリーチ", "Outreach galerie")}>
           <p style={{ fontFamily: F, fontSize: 12, color: "#8A8580", marginBottom: 20 }}>
-            Send invitation emails to galleries worldwide. {GALLERY_TARGETS.length} galleries in database.
+            {tr("Send invitation emails to galleries worldwide.", "전 세계 갤러리에 초대 메일을 보냅니다.", "世界中のギャラリーに招待メールを送信します。", "Envoyez des invitations aux galeries du monde entier.")} {GALLERY_TARGETS.length} {tr("galleries in database.", "개 저장됨.", "件登録。", "galeries en base.")}
           </p>
 
           {/* Country filter + batch send */}
@@ -409,16 +419,20 @@ export default function OutreachPage() {
           </div>
 
           <button onClick={() => sendBatch(selectedCountry)} disabled={sending} style={btn(sending)}>
-            {sending ? "Sending..." : `Send to ${selectedCountry === "ALL" ? "all" : selectedCountry} galleries`}
+            {sending
+              ? tr("Sending...", "발송 중...", "送信中...", "Envoi...")
+              : `${tr("Send to", "다음으로 발송:", "送信先:", "Envoyer à")} ${selectedCountry === "ALL" ? tr("all", "전체", "すべて", "tous") : selectedCountry} ${tr("galleries", "갤러리", "ギャラリー", "galeries")}`}
           </button>
 
           {/* Single send */}
           <div style={{ marginTop: 28, padding: 24, border: "1px solid #E8E3DB", background: "#FAF8F4" }}>
-            <div style={{ fontFamily: F, fontSize: 10, fontWeight: 500, letterSpacing: "0.1em", textTransform: "uppercase", color: "#8B7355", marginBottom: 16 }}>Send to specific gallery</div>
+            <div style={{ fontFamily: F, fontSize: 10, fontWeight: 500, letterSpacing: "0.1em", textTransform: "uppercase", color: "#8B7355", marginBottom: 16 }}>
+              {tr("Send to specific gallery", "특정 갤러리에 발송", "特定ギャラリーへ送信", "Envoyer à une galerie spécifique")}
+            </div>
             <div style={{ display: "grid", gap: 12 }}>
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
-                <input value={singleForm.galleryName} onChange={(e) => setSingleForm((p) => ({ ...p, galleryName: e.target.value }))} placeholder="Gallery name" style={inp} />
-                <input value={singleForm.to} onChange={(e) => setSingleForm((p) => ({ ...p, to: e.target.value }))} placeholder="Email" style={inp} />
+                <input value={singleForm.galleryName} onChange={(e) => setSingleForm((p) => ({ ...p, galleryName: e.target.value }))} placeholder={tr("Gallery name", "갤러리 이름", "ギャラリー名", "Nom de galerie")} style={inp} />
+                <input value={singleForm.to} onChange={(e) => setSingleForm((p) => ({ ...p, to: e.target.value }))} placeholder={tr("Email", "이메일", "メール", "Email")} style={inp} />
               </div>
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
                 <select value={singleForm.country} onChange={(e) => setSingleForm((p) => ({ ...p, country: e.target.value }))} style={inp}>
@@ -426,33 +440,47 @@ export default function OutreachPage() {
                   <option value="미국">USA</option><option value="독일">Germany</option><option value="이탈리아">Italy</option><option value="스위스">Switzerland</option>
                 </select>
                 <select value={singleForm.language} onChange={(e) => setSingleForm((p) => ({ ...p, language: e.target.value }))} style={inp}>
-                  <option value="en">English</option><option value="ko">Korean</option><option value="ja">Japanese</option>
-                  <option value="fr">French</option><option value="de">German</option>
+                  <option value="en">{tr("English", "영어", "英語", "Anglais")}</option><option value="ko">{tr("Korean", "한국어", "韓国語", "Coréen")}</option><option value="ja">{tr("Japanese", "일본어", "日本語", "Japonais")}</option>
+                  <option value="fr">{tr("French", "프랑스어", "フランス語", "Français")}</option><option value="de">{tr("German", "독일어", "ドイツ語", "Allemand")}</option>
                 </select>
               </div>
               <button onClick={sendSingle} disabled={sending} style={btn(sending)}>
-                {sending ? "..." : "Send invitation"}
+                {sending ? "..." : tr("Send invitation", "초대 메일 보내기", "招待メール送信", "Envoyer invitation")}
               </button>
             </div>
           </div>
 
           {sendResult && (
-            <p style={{ marginTop: 16, fontFamily: F, fontSize: 12, color: sendResult.includes("success") || sendResult.includes("complete") ? "#5A7A5A" : "#8B4A4A" }}>
+            <p
+              style={{
+                marginTop: 16,
+                fontFamily: F,
+                fontSize: 12,
+                color:
+                  sendResult.includes("success") ||
+                  sendResult.includes("complete") ||
+                  sendResult.includes("완료") ||
+                  sendResult.includes("Envoy") ||
+                  sendResult.includes("送信")
+                    ? "#5A7A5A"
+                    : "#8B4A4A",
+              }}
+            >
               {sendResult}
             </p>
           )}
         </Section>
 
         {/* Open Call Crawler */}
-        <Section number="04" title="Open Call Crawler">
+        <Section number="04" title={tr("Open Call Crawler", "오픈콜 크롤러", "オープンコールクローラー", "Crawler Open Call")}>
           <p style={{ fontFamily: F, fontSize: 12, color: "#8A8580", marginBottom: 16 }}>
-            Automatically discover and import open calls from external sources.
+            {tr("Automatically discover and import open calls from external sources.", "외부 소스에서 오픈콜을 자동 수집/등록합니다.", "外部ソースからオープンコールを自動収集します。", "Découvre et importe automatiquement des open calls externes.")}
           </p>
           <div style={{ display: "grid", gap: 1, background: "#E8E3DB", marginBottom: 20 }}>
             {[
               { name: "e-flux", url: "e-flux.com", type: "RSS" },
-              { name: "artrabbit", url: "artrabbit.com", type: "Scrape" },
-              { name: "transartists", url: "transartists.org", type: "Scrape" },
+              { name: "artrabbit", url: "artrabbit.com", type: tr("Scrape", "스크랩", "スクレイプ", "Scraping") },
+              { name: "transartists", url: "transartists.org", type: tr("Scrape", "스크랩", "スクレイプ", "Scraping") },
             ].map((s) => (
               <div key={s.name} style={{ padding: "16px 20px", background: "#FFFFFF", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                 <div>
@@ -467,26 +495,28 @@ export default function OutreachPage() {
             ))}
           </div>
           <button onClick={runCrawler} disabled={crawling} style={btn(crawling)}>
-            {crawling ? "Crawling..." : "Run crawler now"}
+            {crawling ? tr("Crawling...", "수집 중...", "クロール中...", "Crawling...") : tr("Run crawler now", "지금 크롤러 실행", "今すぐ実行", "Lancer le crawler")}
           </button>
           {crawlResult && <p style={{ marginTop: 12, fontFamily: F, fontSize: 12, color: "#5A7A5A" }}>{crawlResult}</p>}
         </Section>
 
         {/* Deadline Reminders */}
-        <Section number="05" title="Deadline Reminders">
+        <Section number="05" title={tr("Deadline Reminders", "마감 리마인더", "締切リマインダー", "Rappels de deadline")}>
           <p style={{ fontFamily: F, fontSize: 12, color: "#8A8580", marginBottom: 16 }}>
-            Generate deadline reminder notifications for approaching open calls.
+            {tr("Generate deadline reminder notifications for approaching open calls.", "마감이 임박한 오픈콜 알림을 생성합니다.", "締切が近いオープンコールの通知を作成します。", "Génère des rappels pour les open calls proches de la date limite.")}
           </p>
           <button onClick={triggerDeadlineReminders} disabled={reminding} style={btn(reminding)}>
-            {reminding ? "Generating..." : "Send deadline reminders"}
+            {reminding ? tr("Generating...", "생성 중...", "生成中...", "Génération...") : tr("Send deadline reminders", "마감 리마인더 발송", "締切リマインダー送信", "Envoyer les rappels")}
           </button>
           {remindResult && <p style={{ marginTop: 12, fontFamily: F, fontSize: 12, color: "#5A7A5A" }}>{remindResult}</p>}
         </Section>
 
         {/* Recent Outreach Records */}
-        <Section number="06" title="Recent Outreach">
+        <Section number="06" title={tr("Recent Outreach", "최근 아웃리치", "最近のアウトリーチ", "Outreach récents")}>
           {records.length === 0 ? (
-            <p style={{ fontFamily: F, fontSize: 13, color: "#B0AAA2", textAlign: "center", padding: 24 }}>No outreach records yet</p>
+            <p style={{ fontFamily: F, fontSize: 13, color: "#B0AAA2", textAlign: "center", padding: 24 }}>
+              {tr("No outreach records yet", "아웃리치 기록이 없습니다", "アウトリーチ履歴なし", "Aucun historique outreach")}
+            </p>
           ) : (
             <div style={{ display: "grid", gap: 1, background: "#E8E3DB" }}>
               {records.slice(0, 20).map((r) => (
