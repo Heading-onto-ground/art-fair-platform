@@ -21,6 +21,15 @@ type OpenCall = {
 type Role = "artist" | "gallery";
 type MeResponse = { session: { userId: string; role: Role; email?: string } | null; profile: any | null };
 
+function hostFromUrl(url?: string): string {
+  if (!url) return "";
+  try {
+    return new URL(url).hostname.replace(/^www\./, "");
+  } catch {
+    return "";
+  }
+}
+
 async function fetchMe(): Promise<MeResponse | null> {
   try { const res = await fetch("/api/auth/me", { cache: "no-store" }); return (await res.json().catch(() => null)) as MeResponse | null; }
   catch { return null; }
@@ -250,6 +259,73 @@ export default function ArtistPage() {
                       {o.gallery}
                     </h3>
                     <p style={{ fontFamily: F, fontSize: 13, fontWeight: 300, color: "#8A8580", wordBreak: "break-word" }}>{o.theme}</p>
+                    <p
+                      style={{
+                        fontFamily: F,
+                        fontSize: 12,
+                        fontWeight: 300,
+                        color: "#6A6660",
+                        marginTop: 8,
+                        lineHeight: 1.6,
+                        display: "-webkit-box",
+                        WebkitLineClamp: 2,
+                        WebkitBoxOrient: "vertical",
+                        overflow: "hidden",
+                        wordBreak: "break-word",
+                      }}
+                    >
+                      {o.galleryDescription?.trim()
+                        ? o.galleryDescription
+                        : (lang === "ko"
+                          ? "상세 정보는 상세보기에서 확인할 수 있습니다."
+                          : lang === "ja"
+                            ? "詳細情報は詳細ページで確認できます。"
+                            : "More details are available on the detail page.")}
+                    </p>
+                    {(o.galleryWebsite || o.externalUrl) && (
+                      <div style={{ marginTop: 10, display: "flex", gap: 8, flexWrap: "wrap" }}>
+                        {o.galleryWebsite && (
+                          <a
+                            href={o.galleryWebsite}
+                            target="_blank"
+                            rel="noreferrer"
+                            onClick={(e) => e.stopPropagation()}
+                            style={{
+                              fontFamily: F,
+                              fontSize: 10,
+                              letterSpacing: "0.08em",
+                              textTransform: "uppercase",
+                              color: "#8B7355",
+                              textDecoration: "none",
+                              border: "1px solid #E8E3DB",
+                              padding: "6px 10px",
+                            }}
+                          >
+                            {hostFromUrl(o.galleryWebsite) || "Website"}
+                          </a>
+                        )}
+                        {o.externalUrl && (
+                          <a
+                            href={o.externalUrl}
+                            target="_blank"
+                            rel="noreferrer"
+                            onClick={(e) => e.stopPropagation()}
+                            style={{
+                              fontFamily: F,
+                              fontSize: 10,
+                              letterSpacing: "0.08em",
+                              textTransform: "uppercase",
+                              color: "#8A8580",
+                              textDecoration: "none",
+                              border: "1px solid #E8E3DB",
+                              padding: "6px 10px",
+                            }}
+                          >
+                            {lang === "ko" ? "원문 보기" : lang === "ja" ? "原文" : "Source"}
+                          </a>
+                        )}
+                      </div>
+                    )}
                   </div>
                   <div className="oc-card-right" style={{ textAlign: "right", flexShrink: 0, marginLeft: 24 }}>
                     <span style={{ fontFamily: F, fontSize: 9, fontWeight: 500, letterSpacing: "0.1em", textTransform: "uppercase", color: "#B0AAA2" }}>{t("deadline", lang)}</span>

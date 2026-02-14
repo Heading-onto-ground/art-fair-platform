@@ -20,6 +20,15 @@ async function fetchMe(): Promise<MeResponse | null> { try { const res = await f
 const inp: React.CSSProperties = { width: "100%", padding: "12px 14px", border: "1px solid #E8E3DB", background: "#FFFFFF", color: "#1A1A1A", fontFamily: F, fontSize: 13, outline: "none" };
 const btn = (disabled: boolean): React.CSSProperties => ({ padding: "14px 28px", border: "none", background: disabled ? "#E8E3DB" : "#1A1A1A", color: disabled ? "#8A8580" : "#FDFBF7", fontFamily: F, fontSize: 11, fontWeight: 500, letterSpacing: "0.1em", textTransform: "uppercase", cursor: disabled ? "not-allowed" : "pointer" });
 
+function hostFromUrl(url?: string): string {
+  if (!url) return "";
+  try {
+    return new URL(url).hostname.replace(/^www\./, "");
+  } catch {
+    return "";
+  }
+}
+
 export default function OpenCallDetailPage({ params }: { params: { id: string } }) {
   const router = useRouter();
   const { lang } = useLanguage();
@@ -121,6 +130,49 @@ export default function OpenCallDetailPage({ params }: { params: { id: string } 
             <h1 style={{ fontFamily: S, fontSize: 36, fontWeight: 400, color: "#1A1A1A", margin: "8px 0 0" }}>
               {openCall.gallery}
             </h1>
+
+            {(openCall.galleryWebsite || openCall.externalUrl) && (
+              <div style={{ marginTop: 12, display: "flex", gap: 8, flexWrap: "wrap" }}>
+                {openCall.galleryWebsite && (
+                  <a
+                    href={openCall.galleryWebsite}
+                    target="_blank"
+                    rel="noreferrer"
+                    style={{
+                      fontFamily: F,
+                      fontSize: 10,
+                      letterSpacing: "0.08em",
+                      textTransform: "uppercase",
+                      color: "#8B7355",
+                      textDecoration: "none",
+                      border: "1px solid #E8E3DB",
+                      padding: "6px 10px",
+                    }}
+                  >
+                    {hostFromUrl(openCall.galleryWebsite) || "Website"}
+                  </a>
+                )}
+                {openCall.externalUrl && (
+                  <a
+                    href={openCall.externalUrl}
+                    target="_blank"
+                    rel="noreferrer"
+                    style={{
+                      fontFamily: F,
+                      fontSize: 10,
+                      letterSpacing: "0.08em",
+                      textTransform: "uppercase",
+                      color: "#8A8580",
+                      textDecoration: "none",
+                      border: "1px solid #E8E3DB",
+                      padding: "6px 10px",
+                    }}
+                  >
+                    {lang === "ko" ? "원문 보기" : lang === "ja" ? "原文" : "Source"}
+                  </a>
+                )}
+              </div>
+            )}
 
             {openCall.galleryDescription && (
               <p style={{ fontFamily: F, fontSize: 13, color: "#8A8580", marginTop: 12, lineHeight: 1.7, fontWeight: 300 }}>
