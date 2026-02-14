@@ -10,7 +10,8 @@
     "postinstall": "prisma generate",
     "prisma:generate": "prisma generate",
     "prisma:migrate": "prisma migrate dev",
-    "seed": "npx tsx prisma/seed.ts"
+    "seed": "npx tsx prisma/seed.ts",
+    "import:opencalls": "npx tsx scripts/import-open-calls-from-csv.ts"
   },
   "dependencies": {
     "@prisma/adapter-pg": "^7.3.0",
