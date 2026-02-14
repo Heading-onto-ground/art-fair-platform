@@ -353,22 +353,14 @@ export default function ArtistPage() {
                         color: "#6A6660",
                         marginTop: 8,
                         lineHeight: 1.6,
-                        display: "-webkit-box",
-                        WebkitLineClamp: 2,
-                        WebkitBoxOrient: "vertical",
-                        overflow: "hidden",
                         wordBreak: "break-word",
                       }}
                     >
-                      {o.galleryDescription?.trim()
-                        ? (lang !== "en" && translatedById[o.id]?.galleryDescription && !showOriginalById[o.id]
-                          ? translatedById[o.id]?.galleryDescription
-                          : o.galleryDescription)
-                        : (lang === "ko"
-                          ? "상세 정보는 상세보기에서 확인할 수 있습니다."
-                          : lang === "ja"
-                            ? "詳細情報は詳細ページで確認できます。"
-                            : "More details are available on the detail page.")}
+                      {lang === "ko"
+                        ? `오픈콜 정보 · 마감 ${o.deadline} · ${o.isExternal ? "원문 사이트 지원" : "ROB 지원 가능"}`
+                        : lang === "ja"
+                          ? `オープンコール情報 · 締切 ${o.deadline} · ${o.isExternal ? "原文サイトで応募" : "ROBで応募可能"}`
+                          : `Open call info · Deadline ${o.deadline} · ${o.isExternal ? "Apply via source site" : "Apply via ROB"}`}
                     </p>
                     {(o.galleryWebsite || o.externalUrl) && (
                       <div style={{ marginTop: 10, display: "flex", gap: 8, flexWrap: "wrap" }}>
