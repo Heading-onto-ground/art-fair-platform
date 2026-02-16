@@ -319,12 +319,34 @@ export default function ArtistPage() {
         <div style={{ marginBottom: 36, border: "1px solid #E8E3DB", background: "#FFFFFF", padding: "clamp(20px, 3vw, 32px)" }}>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 16 }}>
             <div>
-              <span style={{ fontFamily: F, fontSize: 10, fontWeight: 500, letterSpacing: "0.2em", textTransform: "uppercase", color: "#8B7355" }}>
+              <Link
+                href="/community"
+                style={{
+                  fontFamily: F,
+                  fontSize: 10,
+                  fontWeight: 500,
+                  letterSpacing: "0.2em",
+                  textTransform: "uppercase",
+                  color: "#8B7355",
+                  textDecoration: "none",
+                }}
+              >
                 {t("artist_community", lang)}
-              </span>
-              <h2 style={{ fontFamily: S, fontSize: "clamp(20px, 4vw, 28px)", fontWeight: 300, color: "#1A1A1A", marginTop: 6, marginBottom: 4 }}>
-                {t("artist_community_title", lang)}
-              </h2>
+              </Link>
+              <Link href="/community" style={{ textDecoration: "none" }}>
+                <h2
+                  style={{
+                    fontFamily: S,
+                    fontSize: "clamp(20px, 4vw, 28px)",
+                    fontWeight: 300,
+                    color: "#1A1A1A",
+                    marginTop: 6,
+                    marginBottom: 4,
+                  }}
+                >
+                  {t("artist_community_title", lang)}
+                </h2>
+              </Link>
               <p style={{ fontFamily: F, fontSize: 12, fontWeight: 300, color: "#8A8580", maxWidth: 500 }}>
                 {t("artist_community_desc", lang)}
               </p>
