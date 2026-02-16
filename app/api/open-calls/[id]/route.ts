@@ -2,6 +2,14 @@ import { NextResponse } from "next/server";
 import { getOpenCallById } from "@/app/data/openCalls";
 import { getOpenCallValidationMap } from "@/lib/openCallValidation";
 
+function shouldHideByValidation(validation?: { status?: string; reason?: string | null }) {
+  if (!validation || validation.status !== "invalid") return false;
+  const reason = String(validation.reason || "").toLowerCase();
+  if (reason === "missing_or_invalid_url") return true;
+  if (reason.startsWith("http_")) return true;
+  return false;
+}
+
 export async function GET(
   _req: Request,
   { params }: { params: { id: string } }
@@ -14,7 +22,7 @@ export async function GET(
     if (openCall.isExternal) {
       const validationMap = await getOpenCallValidationMap([openCall.id]);
       const validation = validationMap.get(openCall.id);
-      if (validation?.status === "invalid") {
+      if (shouldHideByValidation(validation)) {
         return NextResponse.json({ error: "not found" }, { status: 404 });
       }
     }

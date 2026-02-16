@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import bcrypt from "bcryptjs";
 import type { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
-import { sendVerificationEmail, detectEmailLang } from "@/lib/email";
+import { sendVerificationEmail, sendWelcomeEmail, detectEmailLang } from "@/lib/email";
 import { createOrRefreshVerificationToken } from "@/lib/emailVerification";
 
 type Role = "artist" | "gallery";
@@ -33,6 +33,7 @@ export async function POST(req: Request) {
     const portfolioUrl = String(body?.portfolioUrl ?? "").trim();
     const address = String(body?.address ?? "").trim();
     const foundedYear = Number(body?.foundedYear ?? 0);
+    const lang = detectEmailLang(req.headers.get("accept-language"));
 
     if (role !== "artist" && role !== "gallery") {
       return NextResponse.json({ ok: false, error: "invalid role" }, { status: 400 });
@@ -106,6 +107,15 @@ export async function POST(req: Request) {
     });
 
     if (!EMAIL_VERIFICATION_REQUIRED) {
+      // When verification is disabled, send welcome mail immediately.
+      await sendWelcomeEmail({
+        to: email,
+        role,
+        name,
+        lang,
+      }).catch((e) => {
+        console.error("Welcome email send failed (non-fatal):", e);
+      });
       return NextResponse.json(
         { ok: true, requiresEmailVerification: false, verificationEmailSent: false, email },
         { status: 200 }
@@ -113,7 +123,6 @@ export async function POST(req: Request) {
     }
 
     // Send verification email (signup requires email verification before login)
-    const acceptLang = req.headers.get("accept-language");
     const { token } = await createOrRefreshVerificationToken({ email, role });
     const appUrl = process.env.NEXT_PUBLIC_APP_URL || "https://www.rob-roleofbridge.com";
     const verifyUrl = `${appUrl}/api/auth/verify?token=${encodeURIComponent(token)}&email=${encodeURIComponent(email)}&role=${encodeURIComponent(role)}`;
@@ -121,7 +130,7 @@ export async function POST(req: Request) {
       to: email,
       role,
       verifyUrl,
-      lang: detectEmailLang(acceptLang),
+      lang,
     });
 
     if (!sent.ok) {
