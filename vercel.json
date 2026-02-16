@@ -7,6 +7,10 @@
     {
       "path": "/api/cron/sync-gallery-directory",
       "schedule": "20 3 * * *"
+    },
+    {
+      "path": "/api/cron/validate-opencalls",
+      "schedule": "40 3 * * *"
     }
   ]
 }

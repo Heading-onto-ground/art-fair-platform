@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { createOpenCall, listOpenCalls } from "@/app/data/openCalls";
 import { getServerSession } from "@/lib/auth";
+import { getOpenCallValidationMap } from "@/lib/openCallValidation";
 
 function normalizeCountry(input: string) {
   const v = String(input || "").trim();
@@ -13,7 +14,16 @@ function normalizeCountry(input: string) {
 }
 
 export async function GET() {
-  const openCalls = (await listOpenCalls()).map((oc) => ({
+  const allOpenCalls = await listOpenCalls();
+  const validationMap = await getOpenCallValidationMap(allOpenCalls.map((oc) => oc.id));
+  const openCalls = allOpenCalls
+    .filter((oc) => {
+      // Only hide clearly invalid external entries. Keep internal and temporary-unreachable entries visible.
+      const validation = validationMap.get(oc.id);
+      if (!oc.isExternal) return true;
+      return validation?.status !== "invalid";
+    })
+    .map((oc) => ({
     ...oc,
     country: normalizeCountry(oc.country),
   }));

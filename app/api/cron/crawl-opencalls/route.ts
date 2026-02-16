@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { createOpenCall, listOpenCalls } from "@/app/data/openCalls";
 import { prisma } from "@/lib/prisma";
 import { syncGalleryEmailDirectory } from "@/lib/galleryEmailDirectory";
+import { validateExternalOpenCalls } from "@/lib/openCallValidation";
 
 export const dynamic = "force-dynamic";
 
@@ -502,6 +503,7 @@ async function runCrawlJob() {
   }
 
   const emailDirectory = await syncGalleryEmailDirectory();
+  const validation = await validateExternalOpenCalls();
 
   return {
     message: `Crawler completed. ${imported.length} new open calls imported.`,
@@ -509,6 +511,7 @@ async function runCrawlJob() {
     skipped: allCrawled.length - imported.length,
     cleaned,
     emailDirectory,
+    validation,
     sources: ["e-flux", "artrabbit", "transartists", "arthub-kr", "korean-art-blog"],
   };
 }
