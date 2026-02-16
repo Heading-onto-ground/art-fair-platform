@@ -52,37 +52,17 @@ type OutreachStats = {
   conversionRate: string;
 };
 
-// Pre-defined gallery targets for batch outreach
-const GALLERY_TARGETS: { name: string; email: string; country: string; language: string }[] = [
-  // Korea
-  { name: "Gallery Hyundai", email: "info@galleryhyundai.com", country: "한국", language: "ko" },
-  { name: "Kukje Gallery", email: "info@kukjegallery.com", country: "한국", language: "ko" },
-  { name: "PKM Gallery", email: "info@pkmgallery.com", country: "한국", language: "ko" },
-  { name: "Arario Gallery", email: "info@arariogallery.com", country: "한국", language: "ko" },
-  // Japan
-  { name: "SCAI The Bathhouse", email: "info@scaithebathhouse.com", country: "일본", language: "ja" },
-  { name: "Taka Ishii Gallery", email: "info@takaishiigallery.com", country: "일본", language: "ja" },
-  { name: "Perrotin Tokyo", email: "tokyo@perrotin.com", country: "일본", language: "ja" },
-  // UK
-  { name: "White Cube", email: "info@whitecube.com", country: "영국", language: "en" },
-  { name: "Lisson Gallery", email: "contact@lissongallery.com", country: "영국", language: "en" },
-  { name: "Victoria Miro", email: "info@victoria-miro.com", country: "영국", language: "en" },
-  // France
-  { name: "Galerie Perrotin", email: "info@perrotin.com", country: "프랑스", language: "fr" },
-  { name: "Galerie Thaddaeus Ropac", email: "paris@ropac.net", country: "프랑스", language: "fr" },
-  { name: "Galerie Templon", email: "info@templon.com", country: "프랑스", language: "fr" },
-  // USA
-  { name: "Pace Gallery", email: "info@pacegallery.com", country: "미국", language: "en" },
-  { name: "David Zwirner", email: "info@davidzwirner.com", country: "미국", language: "en" },
-  { name: "Hauser & Wirth", email: "newyork@hauserwirth.com", country: "미국", language: "en" },
-  // Germany
-  { name: "Sprüth Magers", email: "info@spruethmagers.com", country: "독일", language: "de" },
-  { name: "Esther Schipper", email: "office@estherschipper.com", country: "독일", language: "de" },
-  { name: "König Galerie", email: "info@koeniggalerie.com", country: "독일", language: "de" },
-  // Italy
-  { name: "Galleria Continua", email: "info@galleriacontinua.com", country: "이탈리아", language: "it" },
-  { name: "Alfonso Artiaco", email: "info@alfonsoartiaco.com", country: "이탈리아", language: "it" },
-];
+type EmailCountryCount = {
+  country: string;
+  count: number;
+};
+
+type GalleryEmailStats = {
+  total: number;
+  active: number;
+  blocked: number;
+  countries: EmailCountryCount[];
+};
 
 export default function OutreachPage() {
   const router = useRouter();
@@ -92,6 +72,7 @@ export default function OutreachPage() {
   const [records, setRecords] = useState<OutreachRecord[]>([]);
   const [loading, setLoading] = useState(true);
   const [sending, setSending] = useState(false);
+  const [syncingEmails, setSyncingEmails] = useState(false);
   const [sendResult, setSendResult] = useState<string | null>(null);
   const [selectedCountry, setSelectedCountry] = useState<string>("ALL");
   const [crawling, setCrawling] = useState(false);
@@ -104,6 +85,7 @@ export default function OutreachPage() {
   const [extStats, setExtStats] = useState<ExternalStats | null>(null);
   const [sendingOutreach, setSendingOutreach] = useState<string | null>(null);
   const [outreachResults, setOutreachResults] = useState<Record<string, string>>({});
+  const [emailStats, setEmailStats] = useState<GalleryEmailStats | null>(null);
 
   // Single send form
   const [singleForm, setSingleForm] = useState({ to: "", galleryName: "", country: "한국", language: "en" });
@@ -132,16 +114,19 @@ export default function OutreachPage() {
   async function loadData() {
     setLoading(true);
     try {
-      const [outreachRes, extRes] = await Promise.all([
+      const [outreachRes, extRes, emailRes] = await Promise.all([
         fetch("/api/outreach", { cache: "no-store" }),
         fetch("/api/admin/external-apps", { cache: "no-store" }),
+        fetch("/api/admin/gallery-emails", { cache: "no-store", credentials: "include" }),
       ]);
       const outreachData = await outreachRes.json();
       const extData = await extRes.json();
+      const emailData = await emailRes.json();
       setStats(outreachData.stats || null);
       setRecords(outreachData.records || []);
       setExtApps(extData.applications || []);
       setExtStats(extData.stats || null);
+      setEmailStats(emailData?.stats || null);
     } catch { }
     finally { setLoading(false); }
   }
@@ -189,24 +174,54 @@ export default function OutreachPage() {
   async function sendBatch(country: string) {
     setSending(true);
     setSendResult(null);
-    const targets = country === "ALL"
-      ? GALLERY_TARGETS
-      : GALLERY_TARGETS.filter((g) => g.country === country);
-
     try {
-      const res = await fetch("/api/outreach", {
+      const res = await fetch("/api/admin/gallery-emails", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
+        credentials: "include",
         body: JSON.stringify({
           action: "send_batch",
-          galleries: targets.map((g) => ({ to: g.email, galleryName: g.name, country: g.country, language: g.language })),
+          country,
+          limit: 500,
         }),
       });
       const data = await res.json();
-      setSendResult(`${tr("Batch complete", "배치 완료", "一括完了", "Lot terminé")}: ${data.sent} ${tr("sent", "발송", "送信", "envoyé")}, ${data.failed} ${tr("failed", "실패", "失敗", "échoué")}`);
+      if (!data?.ok) {
+        setSendResult(`${tr("Failed", "실패", "失敗", "Échec")}: ${data?.error || "unknown error"}`);
+      } else {
+        setSendResult(
+          `${tr("Batch complete", "배치 완료", "一括完了", "Lot terminé")}: ${data.sent} ${tr("sent", "발송", "送信", "envoyé")}, ${data.failed} ${tr("failed", "실패", "失敗", "échoué")}`
+        );
+      }
       loadData();
     } catch { setSendResult(tr("Server error", "서버 오류", "サーバーエラー", "Erreur serveur")); }
     finally { setSending(false); }
+  }
+
+  async function syncEmailDirectory() {
+    setSyncingEmails(true);
+    setSendResult(null);
+    try {
+      const res = await fetch("/api/admin/gallery-emails", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ action: "sync" }),
+      });
+      const data = await res.json();
+      if (!data?.ok) {
+        setSendResult(`${tr("Sync failed", "동기화 실패", "同期失敗", "Echec synchro")}: ${data?.error || "unknown error"}`);
+      } else {
+        setSendResult(
+          `${tr("Email directory synced", "이메일 디렉토리 동기화 완료", "メールディレクトリ同期完了", "Synchronisation email terminee")}: ${data.collected}`
+        );
+      }
+      loadData();
+    } catch {
+      setSendResult(tr("Server error", "서버 오류", "サーバーエラー", "Erreur serveur"));
+    } finally {
+      setSyncingEmails(false);
+    }
   }
 
   async function runCrawler() {
@@ -238,7 +253,7 @@ export default function OutreachPage() {
   const inp: React.CSSProperties = { width: "100%", padding: "14px 16px", background: "#FFFFFF", border: "1px solid #E8E3DB", color: "#1A1A1A", fontFamily: F, fontSize: 13, fontWeight: 400, outline: "none" };
   const btn = (disabled: boolean): React.CSSProperties => ({ padding: "12px 24px", border: "none", background: disabled ? "#E8E3DB" : "#1A1A1A", color: disabled ? "#8A8580" : "#FDFBF7", fontFamily: F, fontSize: 10, fontWeight: 500, letterSpacing: "0.1em", textTransform: "uppercase", cursor: disabled ? "not-allowed" : "pointer" });
 
-  const countries = ["ALL", "한국", "일본", "영국", "프랑스", "미국", "독일", "이탈리아"];
+  const countries = ["ALL", ...(emailStats?.countries || []).map((c) => c.country).filter(Boolean)];
 
   if (authenticated === null) {
     return (
@@ -402,13 +417,25 @@ export default function OutreachPage() {
         {/* Gallery Outreach */}
         <Section number="03" title={tr("Gallery Outreach", "갤러리 아웃리치", "ギャラリーアウトリーチ", "Outreach galerie")}>
           <p style={{ fontFamily: F, fontSize: 12, color: "#8A8580", marginBottom: 20 }}>
-            {tr("Send invitation emails to galleries worldwide.", "전 세계 갤러리에 초대 메일을 보냅니다.", "世界中のギャラリーに招待メールを送信します。", "Envoyez des invitations aux galeries du monde entier.")} {GALLERY_TARGETS.length} {tr("galleries in database.", "개 저장됨.", "件登録。", "galeries en base.")}
+            {tr("Send invitation emails to galleries from the email directory DB.", "이메일 디렉토리 DB에 저장된 갤러리로 초대 메일을 보냅니다.", "メールディレクトリDBに保存されたギャラリーへ招待メールを送信します。", "Envoyez des invitations depuis la base d'emails des galeries.")}{" "}
+            {(emailStats?.active || 0)} {tr("active emails.", "개 활성 이메일.", "件の有効メール。", "emails actifs.")}
           </p>
+
+          <div style={{ display: "flex", gap: 12, marginBottom: 20 }}>
+            <button onClick={syncEmailDirectory} disabled={syncingEmails} style={btn(syncingEmails)}>
+              {syncingEmails
+                ? tr("Syncing...", "동기화 중...", "同期中...", "Synchronisation...")
+                : tr("Sync Email Directory", "이메일 디렉토리 동기화", "メールディレクトリ同期", "Synchroniser la base email")}
+            </button>
+          </div>
 
           {/* Country filter + batch send */}
           <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 20 }}>
             {countries.map((c) => {
-              const count = c === "ALL" ? GALLERY_TARGETS.length : GALLERY_TARGETS.filter((g) => g.country === c).length;
+              const count =
+                c === "ALL"
+                  ? emailStats?.active || 0
+                  : emailStats?.countries?.find((x) => x.country === c)?.count || 0;
               return (
                 <button key={c} onClick={() => setSelectedCountry(c)}
                   style={{ padding: "8px 16px", border: c === selectedCountry ? "1px solid #1A1A1A" : "1px solid #E8E3DB", background: c === selectedCountry ? "#1A1A1A" : "transparent", color: c === selectedCountry ? "#FDFBF7" : "#8A8580", fontFamily: F, fontSize: 10, fontWeight: 500, letterSpacing: "0.08em", cursor: "pointer" }}>
@@ -481,6 +508,8 @@ export default function OutreachPage() {
               { name: "e-flux", url: "e-flux.com", type: "RSS" },
               { name: "artrabbit", url: "artrabbit.com", type: tr("Scrape", "스크랩", "スクレイプ", "Scraping") },
               { name: "transartists", url: "transartists.org", type: tr("Scrape", "스크랩", "スクレイプ", "Scraping") },
+              { name: "arthub-kr", url: "arthub.co.kr", type: tr("Scrape", "스크랩", "スクレイプ", "Scraping") },
+              { name: "korean-art-blog", url: "blog.naver.com", type: tr("Scrape", "스크랩", "スクレイプ", "Scraping") },
             ].map((s) => (
               <div key={s.name} style={{ padding: "16px 20px", background: "#FFFFFF", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                 <div>

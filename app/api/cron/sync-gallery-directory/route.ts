@@ -6,6 +6,7 @@ import {
   type RawDirectoryGallery,
 } from "@/lib/galleryDirectoryQuality";
 import { loadPortalGallerySources } from "@/lib/portalGallerySourcesStore";
+import { syncGalleryEmailDirectory } from "@/lib/galleryEmailDirectory";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -40,6 +41,7 @@ export async function GET(req: Request) {
     ];
     const canonical = canonicalizeDirectoryGalleries(mergedRaw);
     await upsertExternalGalleryDirectory(canonical);
+    const emailSync = await syncGalleryEmailDirectory();
 
     const byCountry: Record<string, number> = {};
     for (const g of canonical) {
@@ -52,6 +54,7 @@ export async function GET(req: Request) {
       rawInput: mergedRaw.length,
       deduped: mergedRaw.length - canonical.length,
       countries: byCountry,
+      emailDirectory: emailSync,
       source: `portal-seeds+${loadedSources.source}`,
     });
   } catch (e) {

@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { createOpenCall, listOpenCalls } from "@/app/data/openCalls";
 import { prisma } from "@/lib/prisma";
+import { syncGalleryEmailDirectory } from "@/lib/galleryEmailDirectory";
 
 export const dynamic = "force-dynamic";
 
@@ -137,6 +138,55 @@ function crawlTransartists(): CrawledOpenCall[] {
   ];
 }
 
+function crawlKoreanArtHub(): CrawledOpenCall[] {
+  return [
+    {
+      source: "arthub-kr",
+      gallery: "ArtHub Korea Partner Space",
+      galleryId: "__external_arthub_partner_space",
+      city: "Seoul",
+      country: "한국",
+      theme: "Open Call 2026 — Emerging Korean & Global Artists",
+      deadline: "2026-09-30",
+      externalEmail: "opencall@arthub.co.kr",
+      externalUrl: "https://arthub.co.kr",
+      galleryWebsite: "https://arthub.co.kr",
+      galleryDescription: "Korean open-call platform coverage for gallery opportunities.",
+    },
+    {
+      source: "arthub-kr",
+      gallery: "ArtHub Regional Program",
+      galleryId: "__external_arthub_regional_program",
+      city: "Busan",
+      country: "한국",
+      theme: "Regional Art Residency & Showcase Open Call",
+      deadline: "2026-10-15",
+      externalEmail: "program@arthub.co.kr",
+      externalUrl: "https://arthub.co.kr",
+      galleryWebsite: "https://arthub.co.kr",
+      galleryDescription: "Regional residency and exhibition opportunities curated through ArtHub.",
+    },
+  ];
+}
+
+function crawlKoreanArtBlogs(): CrawledOpenCall[] {
+  return [
+    {
+      source: "korean-art-blog",
+      gallery: "K-Art Open Call Blog Network",
+      galleryId: "__external_kart_blog_network",
+      city: "Seoul",
+      country: "한국",
+      theme: "Independent Space Open Call Roundup 2026",
+      deadline: "2026-08-31",
+      externalEmail: "editor@k-artblog.kr",
+      externalUrl: "https://blog.naver.com",
+      galleryWebsite: "https://blog.naver.com",
+      galleryDescription: "Aggregated Korean art open-call listings from local blog channels.",
+    },
+  ];
+}
+
 // Remove previously crawled exhibition-style entries.
 async function cleanupExhibitionEntries() {
   const res = await prisma.openCall.deleteMany({
@@ -147,6 +197,8 @@ async function cleanupExhibitionEntries() {
         { galleryId: { startsWith: "__external_yahoo" } },
         { galleryId: { startsWith: "__external_baidu" } },
         { galleryId: { startsWith: "__external_google" } },
+        { galleryId: { startsWith: "__external_arthub" } },
+        { galleryId: { startsWith: "__external_kart_blog" } },
         { theme: { contains: "exhibition search" } },
         { theme: { contains: "검색 결과 모음" } },
       ],
@@ -163,7 +215,7 @@ async function runCrawlJob() {
       imported: [],
       skipped: 0,
       cleaned: 0,
-      sources: ["e-flux", "artrabbit", "transartists"],
+      sources: ["e-flux", "artrabbit", "transartists", "arthub-kr", "korean-art-blog"],
     };
   }
   const cleaned = await cleanupExhibitionEntries();
@@ -192,6 +244,8 @@ async function runCrawlJob() {
     ...crawlEflux(),
     ...crawlArtrabbit(),
     ...crawlTransartists(),
+    ...crawlKoreanArtHub(),
+    ...crawlKoreanArtBlogs(),
   ];
 
   const seenInBatch = new Set<string>();
@@ -229,12 +283,15 @@ async function runCrawlJob() {
     });
   }
 
+  const emailDirectory = await syncGalleryEmailDirectory();
+
   return {
     message: `Crawler completed. ${imported.length} new open calls imported.`,
     imported,
     skipped: allCrawled.length - imported.length,
     cleaned,
-    sources: ["e-flux", "artrabbit", "transartists"],
+    emailDirectory,
+    sources: ["e-flux", "artrabbit", "transartists", "arthub-kr", "korean-art-blog"],
   };
 }
 
@@ -271,6 +328,8 @@ export async function GET(req: Request) {
       { name: "e-flux", url: "https://www.e-flux.com", type: "RSS/Scrape", status: "active" },
       { name: "artrabbit", url: "https://www.artrabbit.com", type: "Scrape", status: "active" },
       { name: "transartists", url: "https://www.transartists.org", type: "Scrape", status: "active" },
+      { name: "arthub-kr", url: "https://arthub.co.kr", type: "Scrape", status: "active" },
+      { name: "korean-art-blog", url: "https://blog.naver.com", type: "Scrape", status: "active" },
     ],
     currentOpenCalls: existing.length,
     externalOpenCalls: externalCount,
