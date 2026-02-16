@@ -19,6 +19,8 @@ type CrawledOpenCall = {
   galleryDescription: string;
 };
 
+const KR_OC_KEYWORDS = ["오픈콜", "공모", "레지던시", "지원", "open call", "residency", "call for artists"];
+
 function normalizeText(input: string) {
   return String(input || "")
     .trim()
@@ -55,6 +57,151 @@ function openCallKey(input: {
   const deadline = String(input.deadline || "").trim();
   if (host) return `h:${host}|d:${deadline}|t:${theme}`;
   return `g:${gallery}|c:${country}|city:${city}|d:${deadline}|t:${theme}`;
+}
+
+function toSlug(input: string) {
+  return normalizeText(input).replace(/\s+/g, "_").replace(/[^a-z0-9_]/g, "").slice(0, 80);
+}
+
+function stripHtml(input: string) {
+  return String(input || "")
+    .replace(/<script[\s\S]*?<\/script>/gi, " ")
+    .replace(/<style[\s\S]*?<\/style>/gi, " ")
+    .replace(/<[^>]+>/g, " ")
+    .replace(/&nbsp;/g, " ")
+    .replace(/&amp;/g, "&")
+    .replace(/&lt;/g, "<")
+    .replace(/&gt;/g, ">")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+function parseDateLike(input: string): string | null {
+  const s = String(input || "");
+  const m = s.match(/(20\d{2})[.\-/](\d{1,2})[.\-/](\d{1,2})/);
+  if (!m) return null;
+  const yyyy = m[1];
+  const mm = String(Number(m[2])).padStart(2, "0");
+  const dd = String(Number(m[3])).padStart(2, "0");
+  return `${yyyy}-${mm}-${dd}`;
+}
+
+function plusDays(base: Date, days: number): string {
+  const d = new Date(base.getTime() + days * 86400000);
+  const yyyy = d.getUTCFullYear();
+  const mm = String(d.getUTCMonth() + 1).padStart(2, "0");
+  const dd = String(d.getUTCDate()).padStart(2, "0");
+  return `${yyyy}-${mm}-${dd}`;
+}
+
+function absoluteUrl(base: string, href: string): string {
+  try {
+    return new URL(href, base).toString();
+  } catch {
+    return href;
+  }
+}
+
+async function fetchText(url: string, timeoutMs = 10000): Promise<string> {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), timeoutMs);
+  try {
+    const res = await fetch(url, {
+      signal: controller.signal,
+      headers: {
+        "user-agent": "ROB-OpenCall-Crawler/1.0 (+https://www.rob-roleofbridge.com)",
+        accept: "text/html,application/xml,text/xml;q=0.9,*/*;q=0.8",
+      },
+      cache: "no-store",
+    });
+    if (!res.ok) return "";
+    return await res.text();
+  } catch {
+    return "";
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
+function containsKoreanOpenCallKeyword(text: string) {
+  const t = normalizeText(text);
+  return KR_OC_KEYWORDS.some((k) => t.includes(normalizeText(k)));
+}
+
+function parseHtmlLinksAsOpenCalls(input: {
+  source: string;
+  html: string;
+  baseUrl: string;
+  country: string;
+  city: string;
+  galleryLabel: string;
+  email: string;
+}): CrawledOpenCall[] {
+  const rows: CrawledOpenCall[] = [];
+  const anchorRegex = /<a[^>]+href=["']([^"']+)["'][^>]*>([\s\S]*?)<\/a>/gi;
+  let m: RegExpExecArray | null;
+  while ((m = anchorRegex.exec(input.html)) && rows.length < 25) {
+    const hrefRaw = String(m[1] || "").trim();
+    const titleRaw = stripHtml(m[2] || "");
+    if (!hrefRaw || !titleRaw) continue;
+    if (!containsKoreanOpenCallKeyword(titleRaw)) continue;
+    const block = input.html.slice(Math.max(0, m.index - 220), Math.min(input.html.length, m.index + 420));
+    const deadline = parseDateLike(block) || plusDays(new Date(), 30);
+    const link = absoluteUrl(input.baseUrl, hrefRaw);
+    const slug = toSlug(`${input.source}_${titleRaw}_${link}`);
+    rows.push({
+      source: input.source,
+      gallery: input.galleryLabel,
+      galleryId: `__external_${input.source}_${slug}`,
+      city: input.city,
+      country: input.country,
+      theme: titleRaw.slice(0, 200),
+      deadline,
+      externalEmail: input.email,
+      externalUrl: link,
+      galleryWebsite: input.baseUrl,
+      galleryDescription: `${input.galleryLabel} curated open-call listing.`,
+    });
+  }
+  return rows;
+}
+
+function parseRssItemsAsOpenCalls(input: {
+  source: string;
+  xml: string;
+  country: string;
+  city: string;
+  galleryLabel: string;
+  email: string;
+  baseUrl: string;
+}): CrawledOpenCall[] {
+  const items = input.xml.match(/<item[\s\S]*?<\/item>/gi) || [];
+  const rows: CrawledOpenCall[] = [];
+  for (const item of items.slice(0, 30)) {
+    const title = stripHtml((item.match(/<title>([\s\S]*?)<\/title>/i) || [])[1] || "");
+    const link = stripHtml((item.match(/<link>([\s\S]*?)<\/link>/i) || [])[1] || "");
+    const desc = stripHtml((item.match(/<description>([\s\S]*?)<\/description>/i) || [])[1] || "");
+    const pubDate = stripHtml((item.match(/<pubDate>([\s\S]*?)<\/pubDate>/i) || [])[1] || "");
+    if (!title || !link) continue;
+    const mergedText = `${title} ${desc}`;
+    if (!containsKoreanOpenCallKeyword(mergedText)) continue;
+    const deadline = parseDateLike(mergedText) || parseDateLike(pubDate) || plusDays(new Date(), 45);
+    const slug = toSlug(`${input.source}_${title}_${link}`);
+    rows.push({
+      source: input.source,
+      gallery: input.galleryLabel,
+      galleryId: `__external_${input.source}_${slug}`,
+      city: input.city,
+      country: input.country,
+      theme: title.slice(0, 200),
+      deadline,
+      externalEmail: input.email,
+      externalUrl: link,
+      galleryWebsite: input.baseUrl,
+      galleryDescription: desc.slice(0, 300) || `${input.galleryLabel} RSS open-call listing.`,
+    });
+  }
+  return rows;
 }
 
 // Open-call sources only (no general exhibition scraping)
@@ -138,7 +285,7 @@ function crawlTransartists(): CrawledOpenCall[] {
   ];
 }
 
-function crawlKoreanArtHub(): CrawledOpenCall[] {
+function crawlKoreanArtHubFallback(): CrawledOpenCall[] {
   return [
     {
       source: "arthub-kr",
@@ -169,7 +316,7 @@ function crawlKoreanArtHub(): CrawledOpenCall[] {
   ];
 }
 
-function crawlKoreanArtBlogs(): CrawledOpenCall[] {
+function crawlKoreanArtBlogsFallback(): CrawledOpenCall[] {
   return [
     {
       source: "korean-art-blog",
@@ -187,6 +334,78 @@ function crawlKoreanArtBlogs(): CrawledOpenCall[] {
   ];
 }
 
+async function crawlKoreanArtHub(): Promise<CrawledOpenCall[]> {
+  const urls = String(process.env.CRAWL_ARTHUB_LIST_URLS || "https://arthub.co.kr")
+    .split(",")
+    .map((s) => s.trim())
+    .filter(Boolean);
+  const email = String(process.env.CRAWL_ARTHUB_CONTACT_EMAIL || "opencall@arthub.co.kr").trim();
+  const parsed: CrawledOpenCall[] = [];
+  for (const url of urls) {
+    const html = await fetchText(url);
+    if (!html) continue;
+    const rows = parseHtmlLinksAsOpenCalls({
+      source: "arthub_kr_live",
+      html,
+      baseUrl: url,
+      country: "한국",
+      city: "Seoul",
+      galleryLabel: "ArtHub Korea",
+      email,
+    });
+    parsed.push(...rows);
+  }
+  return parsed.length ? parsed : crawlKoreanArtHubFallback();
+}
+
+async function crawlKoreanArtBlogs(): Promise<CrawledOpenCall[]> {
+  const rssUrls = String(process.env.CRAWL_KR_BLOG_FEED_URLS || "")
+    .split(",")
+    .map((s) => s.trim())
+    .filter(Boolean);
+  const pageUrls = String(process.env.CRAWL_KR_BLOG_PAGE_URLS || "https://blog.naver.com")
+    .split(",")
+    .map((s) => s.trim())
+    .filter(Boolean);
+  const email = String(process.env.CRAWL_KR_BLOG_CONTACT_EMAIL || "editor@k-artblog.kr").trim();
+
+  const parsed: CrawledOpenCall[] = [];
+
+  for (const url of rssUrls) {
+    const xml = await fetchText(url);
+    if (!xml || !xml.includes("<item")) continue;
+    parsed.push(
+      ...parseRssItemsAsOpenCalls({
+        source: "korean_art_blog_rss",
+        xml,
+        country: "한국",
+        city: "Seoul",
+        galleryLabel: "Korean Art Blog",
+        email,
+        baseUrl: url,
+      })
+    );
+  }
+
+  for (const url of pageUrls) {
+    const html = await fetchText(url);
+    if (!html) continue;
+    parsed.push(
+      ...parseHtmlLinksAsOpenCalls({
+        source: "korean_art_blog_live",
+        html,
+        baseUrl: url,
+        country: "한국",
+        city: "Seoul",
+        galleryLabel: "Korean Art Blog",
+        email,
+      })
+    );
+  }
+
+  return parsed.length ? parsed : crawlKoreanArtBlogsFallback();
+}
+
 // Remove previously crawled exhibition-style entries.
 async function cleanupExhibitionEntries() {
   const res = await prisma.openCall.deleteMany({
@@ -197,8 +416,6 @@ async function cleanupExhibitionEntries() {
         { galleryId: { startsWith: "__external_yahoo" } },
         { galleryId: { startsWith: "__external_baidu" } },
         { galleryId: { startsWith: "__external_google" } },
-        { galleryId: { startsWith: "__external_arthub" } },
-        { galleryId: { startsWith: "__external_kart_blog" } },
         { theme: { contains: "exhibition search" } },
         { theme: { contains: "검색 결과 모음" } },
       ],
@@ -240,13 +457,14 @@ async function runCrawlJob() {
     )
   );
 
-  const allCrawled: CrawledOpenCall[] = [
-    ...crawlEflux(),
-    ...crawlArtrabbit(),
-    ...crawlTransartists(),
-    ...crawlKoreanArtHub(),
-    ...crawlKoreanArtBlogs(),
-  ];
+  const [eflux, artrabbit, transartists, arthubKr, krBlogs] = await Promise.all([
+    Promise.resolve(crawlEflux()),
+    Promise.resolve(crawlArtrabbit()),
+    Promise.resolve(crawlTransartists()),
+    crawlKoreanArtHub(),
+    crawlKoreanArtBlogs(),
+  ]);
+  const allCrawled: CrawledOpenCall[] = [...eflux, ...artrabbit, ...transartists, ...arthubKr, ...krBlogs];
 
   const seenInBatch = new Set<string>();
   const newCalls = allCrawled.filter((c) => {
