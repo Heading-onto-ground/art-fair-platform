@@ -9,6 +9,7 @@ import { CardSkeleton } from "@/app/components/Skeleton";
 import OpenCallPoster from "@/app/components/OpenCallPoster";
 import { useFetch } from "@/lib/useFetch";
 import { useLanguage } from "@/lib/useLanguage";
+import { useAutoLocale } from "@/lib/useAutoLocale";
 import { t } from "@/lib/translate";
 import { F, S } from "@/lib/design";
 
@@ -58,6 +59,7 @@ export default function ArtistPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { lang } = useLanguage();
+  const { country: autoCountry } = useAutoLocale();
   const isAdminView = searchParams.get("adminView") === "1";
   const [me, setMe] = useState<MeResponse | null>(null);
   const [adminReadOnly, setAdminReadOnly] = useState(false);
@@ -85,7 +87,9 @@ export default function ArtistPage() {
   >({});
   const [showOriginalById, setShowOriginalById] = useState<Record<string, boolean>>({});
   const [translatingById, setTranslatingById] = useState<Record<string, boolean>>({});
-  const preferredCountry = normalizeCountry((me?.profile?.country ?? "").trim());
+  const preferredCountry = normalizeCountry(
+    ((me?.profile?.country ?? "").trim() || (autoCountry ?? "").trim())
+  );
 
   function load() {
     mutateOc();
@@ -132,7 +136,7 @@ export default function ArtistPage() {
   // Dynamic country list from data
   const countries = useMemo(() => {
     const set = new Set(
-      openCalls.map((o) => (o.country ?? "").trim()).filter(Boolean)
+      openCalls.map((o) => normalizeCountry((o.country ?? "").trim())).filter(Boolean)
     );
     const ordered = Array.from(set);
     if (preferredCountry) {
@@ -147,7 +151,7 @@ export default function ArtistPage() {
 
   const filtered = useMemo(() => {
     if (countryFilter === "ALL") return openCalls;
-    return openCalls.filter((o) => (o.country ?? "").trim() === countryFilter);
+    return openCalls.filter((o) => normalizeCountry((o.country ?? "").trim()) === countryFilter);
   }, [openCalls, countryFilter]);
 
   const galleryCountries = useMemo(() => {
@@ -421,7 +425,9 @@ export default function ArtistPage() {
                       <div style={{ flex: 1, minWidth: 0 }}>
                         <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 10 }}>
                           <span style={{ fontFamily: S, fontSize: 18, fontWeight: 300, color: "#D4CEC4" }}>{String(index + 1).padStart(2, "0")}</span>
-                          <span style={{ fontFamily: F, fontSize: 10, fontWeight: 500, letterSpacing: "0.1em", textTransform: "uppercase", color: "#8B7355" }}>{o.country} / {o.city}</span>
+                          <span style={{ fontFamily: F, fontSize: 10, fontWeight: 500, letterSpacing: "0.1em", textTransform: "uppercase", color: "#8B7355" }}>
+                            {normalizeCountry(o.country)} / {o.city}
+                          </span>
                         </div>
                         <h3 style={{ fontFamily: S, fontSize: "clamp(18px, 3vw, 24px)", fontWeight: 400, color: "#1A1A1A", marginBottom: 6 }}>{o.gallery}</h3>
                         <p style={{ fontFamily: F, fontSize: 13, fontWeight: 300, color: "#8A8580", wordBreak: "break-word" }}>
