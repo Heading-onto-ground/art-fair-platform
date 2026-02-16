@@ -56,18 +56,31 @@ export async function createOrRefreshVerificationToken(input: {
 export async function getEmailVerificationState(input: { email: string; role: Role }) {
   await ensureEmailVerificationTable();
   const rows = (await prisma.$queryRawUnsafe(
-    `SELECT "verifiedAt", "expiresAt" FROM "EmailVerification" WHERE "email" = $1 AND "role" = $2 LIMIT 1;`,
+    `SELECT "verifiedAt", "expiresAt", "updatedAt" FROM "EmailVerification" WHERE "email" = $1 AND "role" = $2 LIMIT 1;`,
     input.email,
     input.role
-  )) as Array<{ verifiedAt: Date | null; expiresAt: Date }>;
+  )) as Array<{ verifiedAt: Date | null; expiresAt: Date; updatedAt: Date }>;
   if (rows.length === 0) {
-    return { exists: false, verified: false };
+    return {
+      exists: false,
+      verified: false,
+      expired: false,
+      expiresAt: null as Date | null,
+      updatedAt: null as Date | null,
+    };
   }
   const row = rows[0];
   // Once verified, login should remain allowed even after token expiry.
   // Expiry only matters for unverified tokens.
   const verified = !!row.verifiedAt;
-  return { exists: true, verified };
+  const expired = !verified && row.expiresAt.getTime() <= Date.now();
+  return {
+    exists: true,
+    verified,
+    expired,
+    expiresAt: row.expiresAt,
+    updatedAt: row.updatedAt,
+  };
 }
 
 export async function verifyByToken(input: { email: string; role: Role; token: string }) {

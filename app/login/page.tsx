@@ -75,14 +75,44 @@ export default function LoginPage() {
       if (!res.ok || !data?.ok) {
         if (data?.error === "email not verified") {
           setNeedsVerification(true);
-          setErr(
-            tr(
-              "Email is not verified. Please verify your email first.",
-              "이메일 인증이 완료되지 않았습니다. 먼저 이메일 인증을 해주세요.",
-              "メール認証が完了していません。先に認証してください。",
-              "Votre email n'est pas verifie. Veuillez d'abord verifier votre email."
-            )
-          );
+          if (data?.verificationReason === "expired") {
+            setErr(
+              tr(
+                "Verification link expired. We sent a new verification email automatically.",
+                "인증 링크가 만료되었습니다. 새 인증 메일을 자동으로 다시 보냈습니다.",
+                "認証リンクの有効期限が切れました。新しい認証メールを自動再送しました。",
+                "Le lien de verification a expire. Un nouvel email de verification a ete renvoye automatiquement."
+              )
+            );
+          } else {
+            setErr(
+              tr(
+                "Email is not verified. Please verify your email first.",
+                "이메일 인증이 완료되지 않았습니다. 먼저 이메일 인증을 해주세요.",
+                "メール認証が完了していません。先に認証してください。",
+                "Votre email n'est pas verifie. Veuillez d'abord verifier votre email."
+              )
+            );
+          }
+          if (data?.autoResent) {
+            setInfo(
+              tr(
+                "A new verification email was sent. Please open the latest email.",
+                "인증 메일을 새로 보냈습니다. 가장 최근 메일을 열어주세요.",
+                "認証メールを再送しました。最新メールを開いてください。",
+                "Un nouvel email de verification a ete envoye. Veuillez ouvrir le plus recent."
+              )
+            );
+          } else if (data?.resendError) {
+            setInfo(
+              tr(
+                "Could not auto-resend verification email. Please click 'Resend Verification Email'.",
+                "자동 재발송에 실패했습니다. 아래 '인증 메일 다시 보내기'를 눌러주세요.",
+                "自動再送に失敗しました。下の「認証メールを再送」を押してください。",
+                "Le renvoi automatique a echoue. Veuillez cliquer sur 'Renvoyer l'email de verification'."
+              )
+            );
+          }
         } else {
           setErr(data?.error ?? `Login failed (${res.status})`);
         }
