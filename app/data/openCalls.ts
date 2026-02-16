@@ -1,4 +1,5 @@
 import { prisma } from "@/lib/prisma";
+import { getOpenCallScheduleMap, upsertOpenCallSchedule } from "@/lib/openCallSchedule";
 
 export type OpenCall = {
   id: string;
@@ -8,6 +9,7 @@ export type OpenCall = {
   country: string;
   theme: string;
   deadline: string;
+  exhibitionDate?: string;
   posterImage?: string | null;
   createdAt: number;
   isExternal?: boolean;
@@ -45,6 +47,7 @@ function toOpenCall(row: any): OpenCall {
     country: row.country,
     theme: row.theme,
     deadline: row.deadline,
+    exhibitionDate: row.exhibitionDate ?? undefined,
     posterImage: row.posterImage ?? null,
     createdAt: row.createdAt instanceof Date ? row.createdAt.getTime() : Number(row.createdAt),
     isExternal: row.isExternal ?? false,
@@ -53,6 +56,19 @@ function toOpenCall(row: any): OpenCall {
     galleryWebsite: row.galleryWebsite ?? undefined,
     galleryDescription: row.galleryDescription ?? undefined,
   };
+}
+
+async function withSchedule(openCalls: OpenCall[]): Promise<OpenCall[]> {
+  if (openCalls.length === 0) return openCalls;
+  const map = await getOpenCallScheduleMap(openCalls.map((oc) => oc.id));
+  return openCalls.map((oc) => {
+    const schedule = map.get(oc.id);
+    if (!schedule?.exhibitionDate) return oc;
+    return {
+      ...oc,
+      exhibitionDate: schedule.exhibitionDate,
+    };
+  });
 }
 
 /** Seed open calls if DB is empty */
@@ -94,19 +110,21 @@ function seed() {
 export async function listOpenCalls(): Promise<OpenCall[]> {
   await seed();
   const rows = await prisma.openCall.findMany({ orderBy: { createdAt: "desc" } });
-  return rows.map(toOpenCall);
+  return withSchedule(rows.map(toOpenCall));
 }
 
 export async function listOpenCallsByGallery(galleryId: string): Promise<OpenCall[]> {
   await seed();
   const rows = await prisma.openCall.findMany({ where: { galleryId }, orderBy: { createdAt: "desc" } });
-  return rows.map(toOpenCall);
+  return withSchedule(rows.map(toOpenCall));
 }
 
 export async function getOpenCallById(id: string): Promise<OpenCall | null> {
   await seed();
   const row = await prisma.openCall.findUnique({ where: { id } });
-  return row ? toOpenCall(row) : null;
+  if (!row) return null;
+  const [openCall] = await withSchedule([toOpenCall(row)]);
+  return openCall ?? null;
 }
 
 export async function createOpenCall(input: {
@@ -116,6 +134,7 @@ export async function createOpenCall(input: {
   country: string;
   theme: string;
   deadline: string;
+  exhibitionDate?: string;
   posterImage?: string;
   isExternal?: boolean;
   externalEmail?: string;
@@ -139,7 +158,21 @@ export async function createOpenCall(input: {
       galleryDescription: input.galleryDescription,
     },
   });
-  return toOpenCall(row);
+  const created = toOpenCall(row);
+  const exhibitionDate = String(input.exhibitionDate || "").trim();
+  if (exhibitionDate) {
+    try {
+      await upsertOpenCallSchedule({
+        openCallId: created.id,
+        exhibitionDate,
+        applicationDeadline: created.deadline,
+      });
+      created.exhibitionDate = exhibitionDate;
+    } catch (e) {
+      console.error("OpenCallSchedule upsert error (non-fatal):", e);
+    }
+  }
+  return created;
 }
 
 export async function updateOpenCallPoster(id: string, posterImage: string | null): Promise<OpenCall | null> {

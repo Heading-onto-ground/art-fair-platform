@@ -15,7 +15,7 @@ import { F, S } from "@/lib/design";
 
 type OpenCall = {
   id: string; galleryId: string; gallery: string; city: string; country: string;
-  theme: string; deadline: string; posterImage?: string | null;
+  theme: string; exhibitionDate?: string; deadline: string; posterImage?: string | null;
   isExternal?: boolean; externalUrl?: string;
   galleryWebsite?: string; galleryDescription?: string;
 };
@@ -456,9 +456,15 @@ export default function ArtistPage() {
                           {lang !== "en" && translatedById[o.id]?.theme && !showOriginalById[o.id] ? translatedById[o.id]?.theme : o.theme}
                         </p>
                       </div>
-                      <div className="oc-card-right" style={{ textAlign: "right", flexShrink: 0, marginLeft: 24 }}>
-                        <span style={{ fontFamily: F, fontSize: 9, fontWeight: 500, letterSpacing: "0.1em", textTransform: "uppercase", color: "#B0AAA2" }}>{t("deadline", lang)}</span>
-                        <div style={{ fontFamily: S, fontSize: 18, fontWeight: 400, color: "#1A1A1A", marginTop: 4 }}>{o.deadline}</div>
+                      <div className="oc-card-right" style={{ textAlign: "right", flexShrink: 0, marginLeft: 24, minWidth: 140 }}>
+                        <span style={{ fontFamily: F, fontSize: 9, fontWeight: 500, letterSpacing: "0.1em", textTransform: "uppercase", color: "#B0AAA2" }}>
+                          {lang === "ko" ? "전시 날짜" : "Exhibition"}
+                        </span>
+                        <div style={{ fontFamily: S, fontSize: 16, fontWeight: 400, color: "#1A1A1A", marginTop: 4 }}>{o.exhibitionDate || "-"}</div>
+                        <span style={{ display: "block", marginTop: 8, fontFamily: F, fontSize: 9, fontWeight: 500, letterSpacing: "0.1em", textTransform: "uppercase", color: "#B0AAA2" }}>
+                          {lang === "ko" ? "지원 마감" : t("deadline", lang)}
+                        </span>
+                        <div style={{ fontFamily: S, fontSize: 16, fontWeight: 400, color: "#1A1A1A", marginTop: 4 }}>{o.deadline}</div>
                       </div>
                     </div>
                     <div className="oc-card-actions" style={{ marginTop: 16, display: "flex", gap: 10 }}>

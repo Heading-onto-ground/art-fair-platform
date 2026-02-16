@@ -14,7 +14,7 @@ import { F, S } from "@/lib/design";
 
 type OpenCall = {
   id: string; galleryId: string; gallery: string; city: string; country: string;
-  theme: string; deadline: string; posterImage?: string | null;
+  theme: string; deadline: string; exhibitionDate?: string; posterImage?: string | null;
   isExternal?: boolean; externalUrl?: string;
   galleryWebsite?: string; galleryDescription?: string;
 };
@@ -228,10 +228,10 @@ export default function OpenCallsPage() {
                       }}
                     >
                       {lang === "ko"
-                        ? `오픈콜 정보 · 마감 ${o.deadline} · ${o.isExternal ? "원문 사이트 지원" : "ROB 지원 가능"}`
+                        ? `오픈콜 정보 · 전시 ${o.exhibitionDate || "-"} · 지원 마감 ${o.deadline} · ${o.isExternal ? "원문 사이트 지원" : "ROB 지원 가능"}`
                         : lang === "ja"
-                          ? `オープンコール情報 · 締切 ${o.deadline} · ${o.isExternal ? "原文サイトで応募" : "ROBで応募可能"}`
-                          : `Open call info · Deadline ${o.deadline} · ${o.isExternal ? "Apply via source site" : "Apply via ROB"}`}
+                          ? `オープンコール情報 · 展示日 ${o.exhibitionDate || "-"} · 応募締切 ${o.deadline} · ${o.isExternal ? "原文サイトで応募" : "ROBで応募可能"}`
+                          : `Open call info · Exhibition ${o.exhibitionDate || "-"} · Deadline ${o.deadline} · ${o.isExternal ? "Apply via source site" : "Apply via ROB"}`}
                     </p>
                     {(o.galleryWebsite || o.externalUrl) && (
                       <div style={{ marginTop: 10, display: "flex", gap: 8, flexWrap: "wrap" }}>
@@ -305,7 +305,9 @@ export default function OpenCallsPage() {
                     )}
                   </div>
                   <div style={{ textAlign: "right", flexShrink: 0, marginLeft: 24 }}>
-                    <span style={{ fontFamily: F, fontSize: 9, fontWeight: 500, letterSpacing: "0.1em", textTransform: "uppercase", color: "#B0AAA2" }}>{t("deadline", lang)}</span>
+                    <span style={{ fontFamily: F, fontSize: 9, fontWeight: 500, letterSpacing: "0.1em", textTransform: "uppercase", color: "#B0AAA2" }}>
+                      {lang === "ko" ? "작가 지원 마감일" : t("deadline", lang)}
+                    </span>
                     <div style={{ fontFamily: S, fontSize: 18, fontWeight: 400, color: "#1A1A1A", marginTop: 4 }}>{o.deadline}</div>
                   </div>
                 </div>

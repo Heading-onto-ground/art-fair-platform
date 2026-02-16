@@ -11,7 +11,7 @@ import { F, S } from "@/lib/design";
 
 type Role = "artist" | "gallery";
 type MeResponse = { session: { userId: string; role: Role; email?: string } | null; profile: any | null };
-type OpenCall = { id: string; galleryId: string; gallery: string; city: string; country: string; theme: string; deadline: string; posterImage?: string | null; isExternal?: boolean; externalEmail?: string; externalUrl?: string; galleryWebsite?: string; galleryDescription?: string };
+type OpenCall = { id: string; galleryId: string; gallery: string; city: string; country: string; theme: string; exhibitionDate?: string; deadline: string; posterImage?: string | null; isExternal?: boolean; externalEmail?: string; externalUrl?: string; galleryWebsite?: string; galleryDescription?: string };
 type Application = { id: string; openCallId: string; galleryId: string; artistId: string; artistName: string; artistEmail: string; artistCountry: string; artistCity: string; artistPortfolioUrl?: string; message?: string; status: "submitted" | "reviewing" | "accepted" | "rejected"; shippingStatus: "pending" | "shipped" | "received" | "inspected" | "exhibited"; shippingNote?: string; shippingCarrier?: string; trackingNumber?: string; trackingUrl?: string; createdAt: number; updatedAt: number };
 
 async function fetchMe(): Promise<MeResponse | null> { try { const res = await fetch("/api/auth/me", { cache: "no-store", credentials: "include" }); return (await res.json().catch(() => null)) as MeResponse | null; } catch { return null; } }
@@ -197,7 +197,16 @@ export default function OpenCallDetailPage({ params }: { params: { id: string } 
               </div>
 
               <div>
-                <span style={{ fontFamily: F, fontSize: 10, fontWeight: 500, letterSpacing: "0.1em", color: "#B0AAA2", textTransform: "uppercase" }}>{t("deadline", lang)}</span>
+                <span style={{ fontFamily: F, fontSize: 10, fontWeight: 500, letterSpacing: "0.1em", color: "#B0AAA2", textTransform: "uppercase" }}>
+                  {lang === "ko" ? "전시 날짜" : "Exhibition date"}
+                </span>
+                <div style={{ fontFamily: S, fontSize: 22, fontWeight: 400, color: "#1A1A1A", marginTop: 4 }}>{openCall.exhibitionDate || "-"}</div>
+              </div>
+
+              <div>
+                <span style={{ fontFamily: F, fontSize: 10, fontWeight: 500, letterSpacing: "0.1em", color: "#B0AAA2", textTransform: "uppercase" }}>
+                  {lang === "ko" ? "작가 지원 마감일" : t("deadline", lang)}
+                </span>
                 <div style={{ fontFamily: S, fontSize: 22, fontWeight: 400, color: "#1A1A1A", marginTop: 4 }}>{openCall.deadline}</div>
               </div>
 

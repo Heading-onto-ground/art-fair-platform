@@ -30,6 +30,7 @@ type OpenCall = {
   city: string;
   country: string;
   theme: string;
+  exhibitionDate?: string;
   deadline: string;
   posterImage?: string | null;
   createdAt: number;
@@ -83,6 +84,7 @@ export default function GalleryPage() {
     city: "",
     country: "한국",
     theme: "",
+    exhibitionDate: "",
     deadline: "",
   });
   const [ocPosterPreview, setOcPosterPreview] = useState<string | null>(null);
@@ -294,6 +296,7 @@ export default function GalleryPage() {
         city: ocForm.city.trim(),
         country: ocForm.country.trim(),
         theme: ocForm.theme.trim(),
+        exhibitionDate: ocForm.exhibitionDate.trim(),
         deadline: ocForm.deadline.trim(),
       };
       if (ocPosterData) payload.posterImage = ocPosterData;
@@ -308,7 +311,7 @@ export default function GalleryPage() {
         throw new Error(data?.error ?? `Failed to create (${res.status})`);
       }
       setOpenCalls((p) => [data.openCall as OpenCall, ...p]);
-      setOcForm((p) => ({ ...p, city: "", country: "", theme: "", deadline: "" }));
+      setOcForm((p) => ({ ...p, city: "", country: "", theme: "", exhibitionDate: "", deadline: "" }));
       setOcPosterPreview(null);
       setOcPosterData(null);
       setOcMsg("Open call published successfully");
@@ -569,9 +572,15 @@ export default function GalleryPage() {
               style={inputStyle}
             />
             <input
+              value={ocForm.exhibitionDate}
+              onChange={(e) => setOcForm((p) => ({ ...p, exhibitionDate: e.target.value }))}
+              placeholder={lang === "ko" ? "전시 날짜 (YYYY-MM-DD)" : "Exhibition date (YYYY-MM-DD)"}
+              style={inputStyle}
+            />
+            <input
               value={ocForm.deadline}
               onChange={(e) => setOcForm((p) => ({ ...p, deadline: e.target.value }))}
-              placeholder="Deadline (YYYY-MM-DD)"
+              placeholder={lang === "ko" ? "작가 지원 마감일 (YYYY-MM-DD)" : "Artist application deadline (YYYY-MM-DD)"}
               style={inputStyle}
             />
             <button
@@ -663,7 +672,10 @@ export default function GalleryPage() {
                           : o.theme}
                       </h3>
                       <p style={{ fontFamily: F, fontSize: 11, color: "#8A8A8A", marginTop: 6 }}>
-                        {lang === "ko" ? "마감" : "Deadline"}: {o.deadline}
+                        {lang === "ko" ? "전시 날짜" : "Exhibition date"}: {o.exhibitionDate || "-"}
+                      </p>
+                      <p style={{ fontFamily: F, fontSize: 11, color: "#8A8A8A", marginTop: 4 }}>
+                        {lang === "ko" ? "작가 지원 마감일" : "Artist deadline"}: {o.deadline}
                       </p>
                       {lang !== "en" && (
                         <button

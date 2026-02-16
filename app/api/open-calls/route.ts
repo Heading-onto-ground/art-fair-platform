@@ -48,9 +48,9 @@ export async function POST(req: Request) {
   }
 
   const body = await req.json().catch(() => ({}));
-  const { gallery, city, country, theme, deadline, posterImage } = body ?? {};
+  const { gallery, city, country, theme, deadline, exhibitionDate, posterImage } = body ?? {};
 
-  if (!gallery || !city || !country || !theme || !deadline) {
+  if (!gallery || !city || !country || !theme || !exhibitionDate || !deadline) {
     return NextResponse.json({ error: "Missing fields" }, { status: 400 });
   }
   const normalizedCountry = normalizeCountry(String(country).trim());
@@ -67,6 +67,7 @@ export async function POST(req: Request) {
       country: normalizedCountry,
       theme: String(theme).trim(),
       deadline: String(deadline).trim(),
+      exhibitionDate: String(exhibitionDate || "").trim() || undefined,
       posterImage: posterImage && typeof posterImage === "string" && posterImage.startsWith("data:image/") ? posterImage : undefined,
     });
 

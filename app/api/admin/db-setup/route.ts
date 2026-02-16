@@ -14,6 +14,7 @@ CREATE TABLE IF NOT EXISTS "OpenCall" (
   "city" TEXT NOT NULL,
   "country" TEXT NOT NULL,
   "theme" TEXT NOT NULL,
+  "exhibitionDate" TEXT,
   "deadline" TEXT NOT NULL,
   "isExternal" BOOLEAN NOT NULL DEFAULT false,
   "externalEmail" TEXT,
@@ -27,6 +28,10 @@ CREATE TABLE IF NOT EXISTS "OpenCall" (
 CREATE INDEX IF NOT EXISTS "OpenCall_country_idx" ON "OpenCall"("country");
 CREATE INDEX IF NOT EXISTS "OpenCall_galleryId_idx" ON "OpenCall"("galleryId");
 CREATE INDEX IF NOT EXISTS "OpenCall_isExternal_idx" ON "OpenCall"("isExternal");
+DO $$ BEGIN
+  ALTER TABLE "OpenCall" ADD COLUMN IF NOT EXISTS "exhibitionDate" TEXT;
+EXCEPTION WHEN others THEN NULL;
+END $$;
 
 -- Update Application table with new columns
 DO $$ BEGIN

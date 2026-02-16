@@ -92,6 +92,7 @@ model OpenCall {
   city               String
   country            String
   theme              String
+  exhibitionDate     String?
   deadline           String
   posterImage        String?  // Base64 data URI for poster/banner
   isExternal         Boolean  @default(false)
