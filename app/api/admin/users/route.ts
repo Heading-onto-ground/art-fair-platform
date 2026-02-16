@@ -98,3 +98,58 @@ export async function GET() {
   }
 }
 
+export async function DELETE(req: Request) {
+  try {
+    const admin = getAdminSession();
+    if (!admin) {
+      return NextResponse.json({ error: "unauthorized" }, { status: 401 });
+    }
+
+    const body = await req.json().catch(() => null);
+    const userIds = Array.isArray(body?.userIds)
+      ? body.userIds.map((v: unknown) => String(v || "").trim()).filter(Boolean)
+      : [];
+
+    if (userIds.length === 0) {
+      return NextResponse.json({ error: "userIds required" }, { status: 400 });
+    }
+    if (userIds.length > 200) {
+      return NextResponse.json({ error: "too many users at once (max 200)" }, { status: 400 });
+    }
+
+    // Safety guard: if a platform user exists with same email as current admin, don't delete it.
+    const protectedUser = await prisma.user.findFirst({
+      where: { email: admin.email.toLowerCase().trim() },
+      select: { id: true },
+    });
+    const safeIds = protectedUser
+      ? userIds.filter((id: string) => id !== protectedUser.id)
+      : userIds;
+
+    if (safeIds.length === 0) {
+      return NextResponse.json({ ok: true, deletedUsers: 0, skippedProtected: userIds.length });
+    }
+
+    const [deletedArtistProfiles, deletedGalleryProfiles, deletedUsers] = await prisma.$transaction([
+      prisma.artistProfile.deleteMany({ where: { userId: { in: safeIds } } }),
+      prisma.galleryProfile.deleteMany({ where: { userId: { in: safeIds } } }),
+      prisma.user.deleteMany({ where: { id: { in: safeIds } } }),
+    ]);
+
+    return NextResponse.json(
+      {
+        ok: true,
+        requested: userIds.length,
+        deletedUsers: deletedUsers.count,
+        deletedArtistProfiles: deletedArtistProfiles.count,
+        deletedGalleryProfiles: deletedGalleryProfiles.count,
+        skippedProtected: userIds.length - safeIds.length,
+      },
+      { status: 200 }
+    );
+  } catch (e) {
+    console.error("DELETE /api/admin/users failed:", e);
+    return NextResponse.json({ error: "server error" }, { status: 500 });
+  }
+}
+

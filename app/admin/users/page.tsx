@@ -35,6 +35,8 @@ export default function AdminUsersPage() {
   const [stats, setStats] = useState<Stats | null>(null);
   const [roleFilter, setRoleFilter] = useState<"ALL" | "artist" | "gallery">("ALL");
   const [query, setQuery] = useState("");
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [deleting, setDeleting] = useState(false);
   const tr = (en: string, ko: string, ja: string, fr: string) =>
     lang === "ko" ? ko : lang === "ja" ? ja : lang === "fr" ? fr : en;
 
@@ -64,6 +66,7 @@ export default function AdminUsersPage() {
       if (!res.ok) throw new Error(data?.error ?? `HTTP ${res.status}`);
       setUsers(Array.isArray(data?.users) ? data.users : []);
       setStats(data?.stats ?? null);
+      setSelectedIds(new Set());
     } catch (e: any) {
       setErr(e?.message ?? tr("Failed to load users", "가입자 목록 로드 실패", "ユーザー読み込み失敗", "Échec du chargement des utilisateurs"));
       setUsers([]);
@@ -105,6 +108,79 @@ export default function AdminUsersPage() {
   }, [users]);
 
   const maxCountryCount = countryStats[0]?.count ?? 1;
+  const selectedCount = selectedIds.size;
+  const allFilteredSelected =
+    filtered.length > 0 && filtered.every((u) => selectedIds.has(u.id));
+
+  function toggleSelectOne(userId: string) {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(userId)) next.delete(userId);
+      else next.add(userId);
+      return next;
+    });
+  }
+
+  function toggleSelectFiltered() {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (allFilteredSelected) {
+        filtered.forEach((u) => next.delete(u.id));
+      } else {
+        filtered.forEach((u) => next.add(u.id));
+      }
+      return next;
+    });
+  }
+
+  async function deleteSelectedUsers() {
+    if (selectedCount === 0 || deleting) return;
+    const ok = window.confirm(
+      tr(
+        `Delete ${selectedCount} selected users? This cannot be undone.`,
+        `선택된 ${selectedCount}명의 가입자를 삭제하시겠습니까? 이 작업은 되돌릴 수 없습니다.`,
+        `選択した ${selectedCount} 人のユーザーを削除しますか？この操作は元に戻せません。`,
+        `Supprimer ${selectedCount} utilisateurs selectionnes ? Cette action est irreversible.`
+      )
+    );
+    if (!ok) return;
+
+    setDeleting(true);
+    setErr(null);
+    try {
+      const res = await fetch("/api/admin/users", {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ userIds: Array.from(selectedIds) }),
+      });
+      const data = await res.json().catch(() => null);
+      if (!res.ok || !data?.ok) {
+        throw new Error(
+          data?.error ??
+            tr(
+              "Failed to delete users",
+              "가입자 삭제 실패",
+              "ユーザー削除失敗",
+              "Echec de suppression des utilisateurs"
+            )
+        );
+      }
+      await loadUsers();
+    } catch (e: any) {
+      setErr(
+        e?.message ??
+          tr(
+            "Failed to delete users",
+            "가입자 삭제 실패",
+            "ユーザー削除失敗",
+            "Echec de suppression des utilisateurs"
+          )
+      );
+    } finally {
+      setDeleting(false);
+    }
+  }
 
   function downloadCsv() {
     const header = [
@@ -163,6 +239,30 @@ export default function AdminUsersPage() {
             </h1>
           </div>
           <div style={{ display: "flex", gap: 8 }}>
+            <button
+              onClick={deleteSelectedUsers}
+              disabled={selectedCount === 0 || deleting}
+              style={{
+                padding: "10px 18px",
+                border: "1px solid #8B3A3A",
+                background: selectedCount === 0 || deleting ? "#F7EFEF" : "#8B3A3A",
+                color: selectedCount === 0 || deleting ? "#B99191" : "#FFFFFF",
+                fontFamily: F,
+                fontSize: 10,
+                letterSpacing: "0.1em",
+                textTransform: "uppercase",
+                cursor: selectedCount === 0 || deleting ? "not-allowed" : "pointer",
+              }}
+            >
+              {deleting
+                ? "..."
+                : tr(
+                    `Delete Selected (${selectedCount})`,
+                    `선택 삭제 (${selectedCount})`,
+                    `選択削除 (${selectedCount})`,
+                    `Supprimer (${selectedCount})`
+                  )}
+            </button>
             <button
               onClick={downloadCsv}
               style={{
@@ -291,7 +391,15 @@ export default function AdminUsersPage() {
             </div>
 
             <div style={{ border: "1px solid #E5E0DB", background: "#FFFFFF" }}>
-              <div style={{ display: "grid", gridTemplateColumns: "1.3fr 0.8fr 0.8fr 0.8fr 0.9fr", gap: 8, padding: "12px 14px", borderBottom: "1px solid #EDE7DE", fontFamily: F, fontSize: 10, letterSpacing: "0.08em", textTransform: "uppercase", color: "#8A8580" }}>
+              <div style={{ display: "grid", gridTemplateColumns: "40px 1.3fr 0.8fr 0.8fr 0.8fr 0.9fr", gap: 8, padding: "12px 14px", borderBottom: "1px solid #EDE7DE", fontFamily: F, fontSize: 10, letterSpacing: "0.08em", textTransform: "uppercase", color: "#8A8580" }}>
+                <div>
+                  <input
+                    type="checkbox"
+                    checked={allFilteredSelected}
+                    onChange={toggleSelectFiltered}
+                    aria-label={tr("Select all filtered users", "필터된 가입자 전체 선택", "絞り込みユーザーを全選択", "Selectionner tous les utilisateurs filtres")}
+                  />
+                </div>
                 <div>{tr("Email / Name", "이메일 / 이름", "メール / 名前", "Email / Nom")}</div>
                 <div>{tr("Role", "역할", "役割", "Rôle")}</div>
                 <div>{tr("Location", "위치", "所在地", "Lieu")}</div>
@@ -300,7 +408,15 @@ export default function AdminUsersPage() {
               </div>
 
               {filtered.map((u) => (
-                <div key={u.id} style={{ display: "grid", gridTemplateColumns: "1.3fr 0.8fr 0.8fr 0.8fr 0.9fr", gap: 8, padding: "12px 14px", borderBottom: "1px solid #F1ECE4", fontFamily: F, fontSize: 12, color: "#1A1A1A" }}>
+                <div key={u.id} style={{ display: "grid", gridTemplateColumns: "40px 1.3fr 0.8fr 0.8fr 0.8fr 0.9fr", gap: 8, padding: "12px 14px", borderBottom: "1px solid #F1ECE4", fontFamily: F, fontSize: 12, color: "#1A1A1A" }}>
+                  <div>
+                    <input
+                      type="checkbox"
+                      checked={selectedIds.has(u.id)}
+                      onChange={() => toggleSelectOne(u.id)}
+                      aria-label={tr("Select user", "가입자 선택", "ユーザー選択", "Selectionner l'utilisateur")}
+                    />
+                  </div>
                   <div>
                     <div style={{ fontWeight: 500 }}>{u.email}</div>
                     <div style={{ color: "#8A8580", marginTop: 2 }}>{u.name || "-"}</div>
