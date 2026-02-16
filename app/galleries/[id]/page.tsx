@@ -178,6 +178,10 @@ export default function GalleryPublicPage() {
 
   async function contactGalleryByName() {
     if (!profile?.userId) return;
+    if (String(profile.userId).startsWith("__external_")) {
+      setContactError("이 갤러리는 외부 오픈콜 소스입니다. 카드의 원문 링크를 통해 직접 지원해주세요.");
+      return;
+    }
     setContactError(null);
     setContacting(true);
     try {

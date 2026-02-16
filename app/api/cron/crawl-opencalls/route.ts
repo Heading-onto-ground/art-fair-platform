@@ -118,6 +118,16 @@ async function cleanupExhibitionEntries() {
 }
 
 async function runCrawlJob() {
+  const enabled = (process.env.CRAWL_OPENCALLS_ENABLED || "1") !== "0";
+  if (!enabled) {
+    return {
+      message: "Crawler disabled by CRAWL_OPENCALLS_ENABLED=0",
+      imported: [],
+      skipped: 0,
+      cleaned: 0,
+      sources: ["e-flux", "artrabbit", "transartists"],
+    };
+  }
   const cleaned = await cleanupExhibitionEntries();
   const existingOpenCalls = await listOpenCalls();
   const existingIds = new Set(existingOpenCalls.map((oc) => oc.galleryId));
