@@ -35,6 +35,7 @@ export default function ArtistsPage() {
   const [hasAutoSelectedCountry, setHasAutoSelectedCountry] = useState(false);
   const [query, setQuery] = useState("");
   const [favorites, setFavorites] = useState<Record<string, boolean>>({});
+  const [isGalleryViewer, setIsGalleryViewer] = useState(false);
 
   function load() {
     mutate();
@@ -51,9 +52,11 @@ export default function ArtistsPage() {
       .then((r) => r.json())
       .then((data: MeResponse) => {
         setPreferredCountry((data?.profile?.country ?? "").trim());
+        setIsGalleryViewer(data?.session?.role === "gallery");
       })
       .catch(() => {
         setPreferredCountry("");
+        setIsGalleryViewer(false);
       });
   }, []);
 
@@ -319,6 +322,21 @@ export default function ArtistsPage() {
                         border: "1px solid #ECEAE6",
                       }}>
                         {getYearsActive(a.startedYear)}
+                      </span>
+                    )}
+                    {isGalleryViewer && (
+                      <span style={{
+                        fontFamily: F,
+                        fontSize: 9,
+                        fontWeight: 500,
+                        letterSpacing: "0.08em",
+                        textTransform: "uppercase",
+                        color: a.portfolioUrl ? "#2E6B45" : "#8A8580",
+                        background: a.portfolioUrl ? "#EDF7F1" : "#F5F3F0",
+                        padding: "4px 10px",
+                        border: `1px solid ${a.portfolioUrl ? "#D6EAD8" : "#ECEAE6"}`,
+                      }}>
+                        {a.portfolioUrl ? "Portfolio Uploaded" : "No Portfolio"}
                       </span>
                     )}
                   </div>
