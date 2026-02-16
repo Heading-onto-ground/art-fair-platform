@@ -89,7 +89,7 @@ export async function POST(req: Request) {
     const { token } = await createOrRefreshVerificationToken({ email, role });
     const appUrl = process.env.NEXT_PUBLIC_APP_URL || "https://www.rob-roleofbridge.com";
     const verifyUrl = `${appUrl}/api/auth/verify?token=${encodeURIComponent(token)}&email=${encodeURIComponent(email)}&role=${encodeURIComponent(role)}`;
-    sendVerificationEmail({
+    const sent = await sendVerificationEmail({
       to: email,
       role,
       verifyUrl,
@@ -100,12 +100,25 @@ export async function POST(req: Request) {
           : acceptLang.startsWith("fr")
             ? "fr"
             : "en",
-    }).catch((e) => {
-      console.error("Verification email send failed (non-fatal):", e);
     });
 
+    if (!sent.ok) {
+      console.error("Verification email send failed:", sent.error || "unknown error");
+      return NextResponse.json(
+        {
+          ok: true,
+          requiresEmailVerification: true,
+          verificationEmailSent: false,
+          email,
+          error: "verification email send failed",
+          details: sent.error || "failed to send verification email",
+        },
+        { status: 200 }
+      );
+    }
+
     return NextResponse.json(
-      { ok: true, requiresEmailVerification: true, email },
+      { ok: true, requiresEmailVerification: true, verificationEmailSent: true, email },
       { status: 200 }
     );
   } catch (e: any) {

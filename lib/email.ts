@@ -356,6 +356,10 @@ export async function sendVerificationEmail(input: VerificationEmailInput): Prom
   const html = buildVerificationHtml(input, lang);
 
   if (!RESEND_API_KEY) {
+    const isProduction = process.env.NODE_ENV === "production";
+    if (isProduction) {
+      return { ok: false, error: "RESEND_API_KEY is not configured" };
+    }
     console.log("═══════════════════════════════════════════════");
     console.log("📧 VERIFICATION EMAIL (No RESEND_API_KEY set)");
     console.log(`   TO: ${input.to}`);

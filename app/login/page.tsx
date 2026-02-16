@@ -138,14 +138,34 @@ export default function LoginPage() {
       const data = await res.json().catch(() => null);
       if (!res.ok || !data?.ok) { setErr(data?.error ?? `Signup failed (${res.status})`); return; }
       if (data?.requiresEmailVerification) {
-        setInfo(
-          tr(
-            "Signup complete. Please check your email and verify your account before login.",
-            "가입이 완료되었습니다. 로그인 전에 이메일 인증을 완료해주세요.",
-            "登録が完了しました。ログイン前にメール認証を完了してください。",
-            "Inscription terminee. Veuillez verifier votre email avant de vous connecter."
-          )
-        );
+        if (data?.verificationEmailSent === false) {
+          setNeedsVerification(true);
+          setErr(
+            tr(
+              "Signup completed, but verification email could not be sent automatically.",
+              "가입은 완료되었지만 인증 메일 자동 발송에 실패했습니다.",
+              "登録は完了しましたが、認証メールの自動送信に失敗しました。",
+              "L'inscription est terminee, mais l'envoi automatique de l'email de verification a echoue."
+            )
+          );
+          setInfo(
+            tr(
+              "Please click 'Resend Verification Email' below.",
+              "아래 '인증 메일 다시 보내기' 버튼을 눌러주세요.",
+              "下の「認証メールを再送」ボタンを押してください。",
+              "Veuillez cliquer sur « Renvoyer l'email de verification » ci-dessous."
+            )
+          );
+        } else {
+          setInfo(
+            tr(
+              "Signup complete. Please check your email and verify your account before login.",
+              "가입이 완료되었습니다. 로그인 전에 이메일 인증을 완료해주세요.",
+              "登録が完了しました。ログイン前にメール認証を完了してください。",
+              "Inscription terminee. Veuillez verifier votre email avant de vous connecter."
+            )
+          );
+        }
         setMode("login");
         setPassword("");
         return;
