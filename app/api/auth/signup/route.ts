@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
-import { createUser, upsertArtistProfile, upsertGalleryProfile } from "@/lib/auth";
-import { sendVerificationEmail } from "@/lib/email";
+import bcrypt from "bcryptjs";
+import type { Prisma } from "@prisma/client";
+import { prisma } from "@/lib/prisma";
+import { sendVerificationEmail, detectEmailLang } from "@/lib/email";
 import { createOrRefreshVerificationToken } from "@/lib/emailVerification";
 
 type Role = "artist" | "gallery";
@@ -61,29 +63,47 @@ export async function POST(req: Request) {
       }
     }
 
-    const user = await createUser({ email, role, password });
+    await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
+      const existing = await tx.user.findUnique({
+        where: { email },
+        select: { id: true },
+      });
+      if (existing) throw new Error("user exists");
 
-    // create empty profile
-    if (role === "artist") {
-      await upsertArtistProfile(user.id, {
-        email,
-        artistId,
-        name,
-        startedYear,
-        genre,
-        instagram,
-        portfolioUrl,
+      const created = await tx.user.create({
+        data: {
+          email,
+          role,
+          passwordHash: bcrypt.hashSync(password, 10),
+        },
       });
-    } else {
-      await upsertGalleryProfile(user.id, {
-        email,
-        galleryId,
-        name,
-        address,
-        foundedYear,
-        instagram,
-      });
-    }
+
+      if (role === "artist") {
+        await tx.artistProfile.create({
+          data: {
+            userId: created.id,
+            artistId,
+            name,
+            startedYear,
+            genre,
+            instagram: instagram || undefined,
+            portfolioUrl: portfolioUrl || undefined,
+          },
+        });
+      } else {
+        await tx.galleryProfile.create({
+          data: {
+            userId: created.id,
+            galleryId,
+            name,
+            address,
+            foundedYear,
+            instagram: instagram || undefined,
+          },
+        });
+      }
+
+    });
 
     if (!EMAIL_VERIFICATION_REQUIRED) {
       return NextResponse.json(
@@ -93,7 +113,7 @@ export async function POST(req: Request) {
     }
 
     // Send verification email (signup requires email verification before login)
-    const acceptLang = req.headers.get("accept-language") || "en";
+    const acceptLang = req.headers.get("accept-language");
     const { token } = await createOrRefreshVerificationToken({ email, role });
     const appUrl = process.env.NEXT_PUBLIC_APP_URL || "https://www.rob-roleofbridge.com";
     const verifyUrl = `${appUrl}/api/auth/verify?token=${encodeURIComponent(token)}&email=${encodeURIComponent(email)}&role=${encodeURIComponent(role)}`;
@@ -101,13 +121,7 @@ export async function POST(req: Request) {
       to: email,
       role,
       verifyUrl,
-      lang: acceptLang.startsWith("ko")
-        ? "ko"
-        : acceptLang.startsWith("ja")
-          ? "ja"
-          : acceptLang.startsWith("fr")
-            ? "fr"
-            : "en",
+      lang: detectEmailLang(acceptLang),
     });
 
     if (!sent.ok) {

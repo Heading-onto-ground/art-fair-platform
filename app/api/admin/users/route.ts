@@ -130,6 +130,14 @@ export async function DELETE(req: Request) {
       return NextResponse.json({ ok: true, deletedUsers: 0, skippedProtected: userIds.length });
     }
 
+    const targetUsers: Array<{ email: string }> = await prisma.user.findMany({
+      where: { id: { in: safeIds } },
+      select: { email: true },
+    });
+    const targetEmails = targetUsers
+      .map((u: { email: string }) => String(u.email || "").trim().toLowerCase())
+      .filter(Boolean);
+
     const [
       deletedNotifications,
       deletedCommunityLikes,
@@ -164,6 +172,20 @@ export async function DELETE(req: Request) {
       prisma.user.deleteMany({ where: { id: { in: safeIds } } }),
     ]);
 
+    // Best-effort cleanup for legacy/raw EmailVerification table.
+    let deletedEmailVerifications = 0;
+    if (targetEmails.length > 0) {
+      try {
+        const count = await prisma.$executeRawUnsafe(
+          `DELETE FROM "EmailVerification" WHERE "email" = ANY($1::text[])`,
+          targetEmails
+        );
+        deletedEmailVerifications = Number(count || 0);
+      } catch {
+        // Ignore when table does not exist yet in some environments.
+      }
+    }
+
     return NextResponse.json(
       {
         ok: true,
@@ -179,6 +201,7 @@ export async function DELETE(req: Request) {
         deletedApplications: deletedApplications.count,
         deletedArtistProfiles: deletedArtistProfiles.count,
         deletedGalleryProfiles: deletedGalleryProfiles.count,
+        deletedEmailVerifications,
         skippedProtected: userIds.length - safeIds.length,
       },
       { status: 200 }

@@ -34,12 +34,16 @@ export type VerificationEmailInput = {
   lang?: "en" | "ko" | "ja" | "fr";
 };
 
-function normalizeLang(lang?: string): "en" | "ko" | "ja" | "fr" {
+export function detectEmailLang(lang?: string | null): "en" | "ko" | "ja" | "fr" {
   const v = String(lang || "").toLowerCase();
   if (v.startsWith("ko")) return "ko";
   if (v.startsWith("ja")) return "ja";
   if (v.startsWith("fr")) return "fr";
   return "en";
+}
+
+function normalizeLang(lang?: string | null): "en" | "ko" | "ja" | "fr" {
+  return detectEmailLang(lang);
 }
 
 function buildWelcomeSubject(role: "artist" | "gallery", lang: "en" | "ko" | "ja" | "fr"): string {

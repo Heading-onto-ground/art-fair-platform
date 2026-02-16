@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { findUserByEmailRole, verifyPassword, createSignedSessionValue } from "@/lib/auth";
 import { createOrRefreshVerificationToken, getEmailVerificationState } from "@/lib/emailVerification";
-import { sendVerificationEmail } from "@/lib/email";
+import { sendVerificationEmail, detectEmailLang } from "@/lib/email";
 
 type Role = "artist" | "gallery";
 
@@ -76,18 +76,12 @@ export async function POST(req: Request) {
             });
             const appUrl = process.env.NEXT_PUBLIC_APP_URL || "https://www.rob-roleofbridge.com";
             const verifyUrl = `${appUrl}/api/auth/verify?token=${encodeURIComponent(token)}&email=${encodeURIComponent(email.toLowerCase())}&role=${encodeURIComponent(role)}`;
-            const acceptLang = req.headers.get("accept-language") || "en";
+            const acceptLang = req.headers.get("accept-language");
             const sent = await sendVerificationEmail({
               to: email.toLowerCase(),
               role,
               verifyUrl,
-              lang: acceptLang.startsWith("ko")
-                ? "ko"
-                : acceptLang.startsWith("ja")
-                  ? "ja"
-                  : acceptLang.startsWith("fr")
-                    ? "fr"
-                    : "en",
+              lang: detectEmailLang(acceptLang),
             });
             autoResent = !!sent.ok;
             if (!sent.ok) resendError = sent.error || "failed to send verification email";

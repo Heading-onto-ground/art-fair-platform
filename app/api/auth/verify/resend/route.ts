@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { findUserByEmailRole } from "@/lib/auth";
-import { sendVerificationEmail } from "@/lib/email";
+import { sendVerificationEmail, detectEmailLang } from "@/lib/email";
 import { createOrRefreshVerificationToken, getEmailVerificationState } from "@/lib/emailVerification";
 
 export const runtime = "nodejs";
@@ -43,13 +43,7 @@ export async function POST(req: Request) {
       to: email,
       role,
       verifyUrl,
-      lang: lang.startsWith("ko")
-        ? "ko"
-        : lang.startsWith("ja")
-          ? "ja"
-          : lang.startsWith("fr")
-            ? "fr"
-            : "en",
+      lang: detectEmailLang(lang),
     });
     if (!sent.ok) {
       return NextResponse.json(
