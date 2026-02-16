@@ -34,7 +34,7 @@ export default function AdminLoginPage() {
         return;
       }
 
-      router.push("/admin/outreach");
+      router.push("/admin");
     } catch {
       setError(tr("Server error", "서버 오류", "サーバーエラー", "Erreur serveur"));
     } finally {
