@@ -18,6 +18,44 @@ type CrawledOpenCall = {
   galleryDescription: string;
 };
 
+function normalizeText(input: string) {
+  return String(input || "")
+    .trim()
+    .toLowerCase()
+    .replace(/&/g, " and ")
+    .replace(/[^a-z0-9\u3131-\uD79D\u3040-\u30ff\u4e00-\u9faf\s-]/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+function hostFromUrl(url?: string) {
+  if (!url) return "";
+  try {
+    return new URL(url).hostname.replace(/^www\./, "").toLowerCase().trim();
+  } catch {
+    return "";
+  }
+}
+
+function openCallKey(input: {
+  gallery: string;
+  country: string;
+  city: string;
+  theme: string;
+  deadline: string;
+  externalUrl?: string;
+  galleryWebsite?: string;
+}) {
+  const host = hostFromUrl(input.externalUrl || input.galleryWebsite);
+  const gallery = normalizeText(input.gallery);
+  const country = normalizeText(input.country);
+  const city = normalizeText(input.city);
+  const theme = normalizeText(input.theme);
+  const deadline = String(input.deadline || "").trim();
+  if (host) return `h:${host}|d:${deadline}|t:${theme}`;
+  return `g:${gallery}|c:${country}|city:${city}|d:${deadline}|t:${theme}`;
+}
+
 // Open-call sources only (no general exhibition scraping)
 function crawlEflux(): CrawledOpenCall[] {
   return [
@@ -136,6 +174,19 @@ async function runCrawlJob() {
       .map((oc) => oc.externalUrl || "")
       .filter(Boolean)
   );
+  const existingKeys = new Set(
+    existingOpenCalls.map((oc) =>
+      openCallKey({
+        gallery: oc.gallery,
+        country: oc.country,
+        city: oc.city,
+        theme: oc.theme,
+        deadline: oc.deadline,
+        externalUrl: oc.externalUrl,
+        galleryWebsite: oc.galleryWebsite,
+      })
+    )
+  );
 
   const allCrawled: CrawledOpenCall[] = [
     ...crawlEflux(),
@@ -143,9 +194,14 @@ async function runCrawlJob() {
     ...crawlTransartists(),
   ];
 
+  const seenInBatch = new Set<string>();
   const newCalls = allCrawled.filter((c) => {
-    if (existingIds.has(c.galleryId)) return false;
+    const key = openCallKey(c);
+    if (existingKeys.has(key)) return false;
+    if (seenInBatch.has(key)) return false;
+    if (existingIds.has(c.galleryId) && (!c.externalUrl || existingUrls.has(c.externalUrl))) return false;
     if (c.externalUrl && existingUrls.has(c.externalUrl)) return false;
+    seenInBatch.add(key);
     return true;
   });
 

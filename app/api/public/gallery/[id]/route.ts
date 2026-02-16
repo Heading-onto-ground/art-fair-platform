@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { getProfileByUserId } from "@/lib/auth";
 import { getExhibitionsByGalleryId } from "@/app/data/exhibitions";
 import { listOpenCalls } from "@/app/data/openCalls";
+import { getExternalGalleryDirectoryById } from "@/lib/externalGalleryDirectory";
 
 export async function GET(
   _req: Request,
@@ -13,7 +14,29 @@ export async function GET(
 
     // ✅ gallery 프로필만 노출
     if (!profile || profile.role !== "gallery") {
-      // Fallback: external gallery from crawled open calls
+      // Fallback #1: external gallery directory
+      const ext = await getExternalGalleryDirectoryById(id);
+      if (ext) {
+        const pseudoProfile = {
+          id: `external-directory-${id}`,
+          userId: id,
+          role: "gallery" as const,
+          email: ext.externalEmail || "",
+          name: ext.name,
+          country: ext.country,
+          city: ext.city,
+          website: ext.website || "",
+          bio: ext.bio || "",
+          createdAt: new Date(ext.createdAt).getTime(),
+          updatedAt: new Date(ext.updatedAt).getTime(),
+        };
+        return NextResponse.json(
+          { ok: true, profile: pseudoProfile, exhibitions: [] },
+          { status: 200 }
+        );
+      }
+
+      // Fallback #2: external gallery from crawled open calls
       const openCalls = await listOpenCalls();
       const externalCalls = openCalls.filter(
         (oc) => oc.isExternal && oc.galleryId === id

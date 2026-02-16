@@ -18,6 +18,7 @@ export default function AdminTopBar() {
     lang === "ko" ? ko : lang === "ja" ? ja : lang === "fr" ? fr : en;
   const isDashboardActive = pathname === "/admin/outreach";
   const isUsersActive = pathname === "/admin/users";
+  const isSourcesActive = pathname === "/admin/sources";
   const isArtistDashboardPreview = pathname === "/artist" && isAdminView;
   const isArtistProfilePreview = pathname === "/artist/me" && isAdminView;
   const isGalleryDashboardPreview = pathname === "/gallery" && isAdminView;
@@ -123,6 +124,7 @@ export default function AdminTopBar() {
         <nav style={{ display: "flex", alignItems: "center", gap: 18 }}>
           <NavLink onClick={() => router.push("/admin/outreach")} label={tr("Dashboard", "대시보드", "ダッシュボード", "Tableau")} active={isDashboardActive} />
           <NavLink onClick={() => router.push("/admin/users")} label={tr("Users", "가입자", "ユーザー", "Utilisateurs")} active={isUsersActive} />
+          <NavLink onClick={() => router.push("/admin/sources")} label={tr("Sources", "소스", "ソース", "Sources")} active={isSourcesActive} />
           <div ref={previewRef} style={{ position: "relative" }}>
             <button
               onClick={() => setPreviewOpen((p) => !p)}

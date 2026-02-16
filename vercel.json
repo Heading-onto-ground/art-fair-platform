@@ -3,6 +3,10 @@
     {
       "path": "/api/cron/crawl-opencalls",
       "schedule": "10 3 * * *"
+    },
+    {
+      "path": "/api/cron/sync-gallery-directory",
+      "schedule": "20 3 * * *"
     }
   ]
 }

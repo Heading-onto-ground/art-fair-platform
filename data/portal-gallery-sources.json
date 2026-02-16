@@ -1,0 +1,129 @@
+[
+  {
+    "name": "Kukje Gallery",
+    "country": "한국",
+    "city": "Seoul",
+    "website": "https://www.kukjegallery.com",
+    "sourcePortal": "Naver"
+  },
+  {
+    "name": "Gallery Hyundai",
+    "country": "한국",
+    "city": "Seoul",
+    "website": "https://www.galleryhyundai.com",
+    "sourcePortal": "Naver"
+  },
+  {
+    "name": "PKM Gallery",
+    "country": "한국",
+    "city": "Seoul",
+    "website": "https://www.pkmgallery.com",
+    "sourcePortal": "Naver"
+  },
+  {
+    "name": "Johyun Gallery",
+    "country": "한국",
+    "city": "Busan",
+    "website": "https://www.johyungallery.com",
+    "sourcePortal": "Naver"
+  },
+  {
+    "name": "Taka Ishii Gallery",
+    "country": "일본",
+    "city": "Tokyo",
+    "website": "https://www.takaishiigallery.com",
+    "sourcePortal": "Yahoo Japan"
+  },
+  {
+    "name": "Tomio Koyama Gallery",
+    "country": "일본",
+    "city": "Tokyo",
+    "website": "https://www.tomiokoyamagallery.com",
+    "sourcePortal": "Yahoo Japan"
+  },
+  {
+    "name": "Lisson Gallery",
+    "country": "영국",
+    "city": "London",
+    "website": "https://www.lissongallery.com",
+    "sourcePortal": "Google"
+  },
+  {
+    "name": "White Cube",
+    "country": "영국",
+    "city": "London",
+    "website": "https://www.whitecube.com",
+    "sourcePortal": "Google"
+  },
+  {
+    "name": "Perrotin",
+    "country": "프랑스",
+    "city": "Paris",
+    "website": "https://www.perrotin.com",
+    "sourcePortal": "Google"
+  },
+  {
+    "name": "Galerie Kamel Mennour",
+    "country": "프랑스",
+    "city": "Paris",
+    "website": "https://www.kamelmennour.com",
+    "sourcePortal": "Google"
+  },
+  {
+    "name": "Gagosian",
+    "country": "미국",
+    "city": "New York",
+    "website": "https://gagosian.com",
+    "sourcePortal": "Google"
+  },
+  {
+    "name": "David Zwirner",
+    "country": "미국",
+    "city": "New York",
+    "website": "https://www.davidzwirner.com",
+    "sourcePortal": "Google"
+  },
+  {
+    "name": "Sprüth Magers",
+    "country": "독일",
+    "city": "Berlin",
+    "website": "https://www.spruethmagers.com",
+    "sourcePortal": "Google"
+  },
+  {
+    "name": "König Galerie",
+    "country": "독일",
+    "city": "Berlin",
+    "website": "https://www.koeniggalerie.com",
+    "sourcePortal": "Google"
+  },
+  {
+    "name": "Massimo De Carlo",
+    "country": "이탈리아",
+    "city": "Milan",
+    "website": "https://www.massimodecarlo.com",
+    "sourcePortal": "Google"
+  },
+  {
+    "name": "ShanghART Gallery",
+    "country": "중국",
+    "city": "Shanghai",
+    "website": "https://www.shanghartgallery.com",
+    "sourcePortal": "Baidu"
+  },
+  {
+    "name": "Galerie Eva Presenhuber",
+    "country": "스위스",
+    "city": "Zurich",
+    "website": "https://www.presenhuber.com",
+    "sourcePortal": "Google"
+  },
+  {
+    "name": "Roslyn Oxley9 Gallery",
+    "country": "호주",
+    "city": "Sydney",
+    "website": "https://www.roslynoxley9.com.au",
+    "sourcePortal": "Google"
+  }
+]
+
