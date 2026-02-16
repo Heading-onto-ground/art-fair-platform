@@ -18,6 +18,15 @@ type OpenCall = {
   isExternal?: boolean; externalUrl?: string;
   galleryWebsite?: string; galleryDescription?: string;
 };
+type Gallery = {
+  userId: string;
+  name: string;
+  email: string;
+  country: string;
+  city: string;
+  profileImage?: string | null;
+  foundedYear?: number;
+};
 type Role = "artist" | "gallery";
 type MeResponse = { session: { userId: string; role: Role; email?: string } | null; profile: any | null };
 
@@ -44,14 +53,21 @@ export default function ArtistPage() {
   const [adminReadOnly, setAdminReadOnly] = useState(false);
   const [ready, setReady] = useState(false);
   const { data: ocData, error: ocError, isLoading: ocLoading, mutate: mutateOc } = useFetch<{ openCalls: OpenCall[] }>(ready ? "/api/open-calls" : null);
+  const { data: galleryData, error: galleryError, isLoading: galleryLoading, mutate: mutateGalleries } =
+    useFetch<{ galleries: Gallery[] }>(ready ? "/api/public/galleries" : null);
   const { data: appData, mutate: mutateApps } = useFetch<{ applications: { openCallId: string }[] }>(ready && !adminReadOnly ? "/api/applications" : null);
   const openCalls = ocData?.openCalls ?? [];
+  const galleries = galleryData?.galleries ?? [];
   const appliedIds = useMemo(() => new Set<string>((appData?.applications ?? []).map((a) => a.openCallId)), [appData]);
   const loading = ocLoading;
   const error = ocError?.message ?? null;
   const [contactingId, setContactingId] = useState<string | null>(null);
   const [contactError, setContactError] = useState<string | null>(null);
+  const [activeTab, setActiveTab] = useState<"open-calls" | "galleries">("open-calls");
   const [countryFilter, setCountryFilter] = useState<string>("ALL");
+  const [galleryCountryFilter, setGalleryCountryFilter] = useState<string>("ALL");
+  const [galleryCityFilter, setGalleryCityFilter] = useState<string>("ALL");
+  const [galleryQuery, setGalleryQuery] = useState("");
   const [applyingId, setApplyingId] = useState<string | null>(null);
   const [hasAutoSelectedCountry, setHasAutoSelectedCountry] = useState(false);
   const [translatedById, setTranslatedById] = useState<
@@ -63,6 +79,7 @@ export default function ArtistPage() {
 
   function load() {
     mutateOc();
+    mutateGalleries();
     if (!adminReadOnly) mutateApps();
   }
 
@@ -122,6 +139,38 @@ export default function ArtistPage() {
     if (countryFilter === "ALL") return openCalls;
     return openCalls.filter((o) => (o.country ?? "").trim() === countryFilter);
   }, [openCalls, countryFilter]);
+
+  const galleryCountries = useMemo(() => {
+    const set = new Set(galleries.map((g) => (g.country ?? "").trim()).filter(Boolean));
+    return ["ALL", ...Array.from(set)];
+  }, [galleries]);
+
+  const galleryCities = useMemo(() => {
+    const scoped =
+      galleryCountryFilter === "ALL"
+        ? galleries
+        : galleries.filter((g) => (g.country ?? "").trim() === galleryCountryFilter);
+    const set = new Set(scoped.map((g) => (g.city ?? "").trim()).filter(Boolean));
+    return ["ALL", ...Array.from(set)];
+  }, [galleries, galleryCountryFilter]);
+
+  useEffect(() => {
+    if (!galleryCities.includes(galleryCityFilter)) setGalleryCityFilter("ALL");
+  }, [galleryCities, galleryCityFilter]);
+
+  const filteredGalleries = useMemo(() => {
+    const q = galleryQuery.trim().toLowerCase();
+    return galleries.filter((g) => {
+      if (galleryCountryFilter !== "ALL" && (g.country ?? "").trim() !== galleryCountryFilter) return false;
+      if (galleryCityFilter !== "ALL" && (g.city ?? "").trim() !== galleryCityFilter) return false;
+      if (!q) return true;
+      return (
+        (g.name || "").toLowerCase().includes(q) ||
+        (g.email || "").toLowerCase().includes(q) ||
+        (g.city || "").toLowerCase().includes(q)
+      );
+    });
+  }, [galleries, galleryCountryFilter, galleryCityFilter, galleryQuery]);
 
   useEffect(() => {
     if (hasAutoSelectedCountry) return;
@@ -292,180 +341,189 @@ export default function ArtistPage() {
           </div>
         </div>
 
-        {/* Country tabs - dynamic */}
-        <div className="country-tabs" style={{ display: "flex", gap: 0, marginBottom: 32, overflowX: "auto", borderBottom: "1px solid #E8E3DB", WebkitOverflowScrolling: "touch" }}>
-          {countries.map((c, i) => {
-            const active = c === countryFilter;
-            return (
-              <button key={c} onClick={() => setCountryFilter(c)} style={{ padding: "14px 20px", border: "none", borderBottom: active ? "1px solid #1A1A1A" : "1px solid transparent", background: "transparent", fontFamily: F, fontSize: 10, fontWeight: 500, letterSpacing: "0.08em", textTransform: "uppercase", color: active ? "#1A1A1A" : "#B0AAA2", cursor: "pointer", marginBottom: -1, whiteSpace: "nowrap", transition: "all 0.3s" }}>
-                {c}
-              </button>
-            );
-          })}
+        {/* View tabs */}
+        <div style={{ display: "flex", gap: 8, marginBottom: 18 }}>
+          <button
+            onClick={() => setActiveTab("open-calls")}
+            style={{
+              padding: "10px 16px",
+              border: activeTab === "open-calls" ? "1px solid #1A1A1A" : "1px solid #E8E3DB",
+              background: activeTab === "open-calls" ? "#1A1A1A" : "#FFFFFF",
+              color: activeTab === "open-calls" ? "#FFFFFF" : "#8A8580",
+              fontFamily: F,
+              fontSize: 10,
+              letterSpacing: "0.08em",
+              textTransform: "uppercase",
+              cursor: "pointer",
+            }}
+          >
+            {lang === "ko" ? "오픈콜 탭" : lang === "ja" ? "オープンコール" : "Open Calls"}
+          </button>
+          <button
+            onClick={() => setActiveTab("galleries")}
+            style={{
+              padding: "10px 16px",
+              border: activeTab === "galleries" ? "1px solid #1A1A1A" : "1px solid #E8E3DB",
+              background: activeTab === "galleries" ? "#1A1A1A" : "#FFFFFF",
+              color: activeTab === "galleries" ? "#FFFFFF" : "#8A8580",
+              fontFamily: F,
+              fontSize: 10,
+              letterSpacing: "0.08em",
+              textTransform: "uppercase",
+              cursor: "pointer",
+            }}
+          >
+            {lang === "ko" ? "갤러리 목록 탭" : lang === "ja" ? "ギャラリー一覧" : "Gallery List"}
+          </button>
         </div>
 
-        {/* Content */}
-        {loading ? (
-          <div style={{ padding: "clamp(20px, 3vw, 48px)" }}>
-            <CardSkeleton count={5} />
-          </div>
-        ) : error ? (
-          <div style={{ padding: 20, border: "1px solid rgba(139,74,74,0.2)", background: "rgba(139,74,74,0.04)", color: "#8B4A4A", fontFamily: F, fontSize: 12 }}>
-            {error}
-          </div>
-        ) : (
-          <div style={{ display: "grid", gap: 1, background: "#E8E3DB" }}>
-            {filtered.map((o, index) => (
-              <div key={o.id} onClick={() => router.push(`/open-calls/${o.id}`)} style={{ background: "#FFFFFF", padding: "clamp(20px, 3vw, 32px) clamp(16px, 3vw, 36px)", cursor: "pointer", transition: "background 0.3s" }}
-                onMouseEnter={(e) => { e.currentTarget.style.background = "#FAF8F4"; }}
-                onMouseLeave={(e) => { e.currentTarget.style.background = "#FFFFFF"; }}>
-                <div className="oc-card-inner" style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 20 }}>
-                  {/* Poster Image */}
-                  <OpenCallPoster
-                    className="oc-poster"
-                    posterImage={o.posterImage}
-                    gallery={o.gallery}
-                    theme={o.theme}
-                    city={o.city}
-                    country={o.country}
-                    deadline={o.deadline}
-                    width={100}
-                    height={134}
-                  />
-                  <div style={{ flex: 1, minWidth: 0 }}>
-                    <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 10 }}>
-                      <span style={{ fontFamily: S, fontSize: 18, fontWeight: 300, color: "#D4CEC4" }}>{String(index + 1).padStart(2, "0")}</span>
-                      <span style={{ fontFamily: F, fontSize: 10, fontWeight: 500, letterSpacing: "0.1em", textTransform: "uppercase", color: "#8B7355" }}>{o.country} / {o.city}</span>
-                    </div>
-                    <h3 style={{ fontFamily: S, fontSize: "clamp(18px, 3vw, 24px)", fontWeight: 400, color: "#1A1A1A", marginBottom: 6 }}>
-                      {o.gallery}
-                    </h3>
-                    <p style={{ fontFamily: F, fontSize: 13, fontWeight: 300, color: "#8A8580", wordBreak: "break-word" }}>
-                      {lang !== "en" && translatedById[o.id]?.theme && !showOriginalById[o.id]
-                        ? translatedById[o.id]?.theme
-                        : o.theme}
-                    </p>
-                    <p
-                      style={{
-                        fontFamily: F,
-                        fontSize: 12,
-                        fontWeight: 300,
-                        color: "#6A6660",
-                        marginTop: 8,
-                        lineHeight: 1.6,
-                        wordBreak: "break-word",
-                      }}
-                    >
-                      {lang === "ko"
-                        ? `오픈콜 정보 · 마감 ${o.deadline} · ${o.isExternal ? "원문 사이트 지원" : "ROB 지원 가능"}`
-                        : lang === "ja"
-                          ? `オープンコール情報 · 締切 ${o.deadline} · ${o.isExternal ? "原文サイトで応募" : "ROBで応募可能"}`
-                          : `Open call info · Deadline ${o.deadline} · ${o.isExternal ? "Apply via source site" : "Apply via ROB"}`}
-                    </p>
-                    {(o.galleryWebsite || o.externalUrl) && (
-                      <div style={{ marginTop: 10, display: "flex", gap: 8, flexWrap: "wrap" }}>
-                        {lang !== "en" && (
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              toggleTranslation(o);
-                            }}
-                            disabled={!!translatingById[o.id]}
-                            style={{
-                              fontFamily: F,
-                              fontSize: 10,
-                              letterSpacing: "0.08em",
-                              textTransform: "uppercase",
-                              color: "#8A8580",
-                              border: "1px solid #E8E3DB",
-                              padding: "6px 10px",
-                              background: "#FFFFFF",
-                              cursor: translatingById[o.id] ? "wait" : "pointer",
-                            }}
-                          >
-                            {translatingById[o.id]
-                              ? "..."
-                              : showOriginalById[o.id]
-                                ? t("oc_show_translation", lang)
-                                : t("oc_show_original", lang)}
-                          </button>
-                        )}
-                        {o.galleryWebsite && (
-                          <a
-                            href={o.galleryWebsite}
-                            target="_blank"
-                            rel="noreferrer"
-                            onClick={(e) => e.stopPropagation()}
-                            style={{
-                              fontFamily: F,
-                              fontSize: 10,
-                              letterSpacing: "0.08em",
-                              textTransform: "uppercase",
-                              color: "#8B7355",
-                              textDecoration: "none",
-                              border: "1px solid #E8E3DB",
-                              padding: "6px 10px",
-                            }}
-                          >
-                            {hostFromUrl(o.galleryWebsite) || "Website"}
-                          </a>
-                        )}
-                        {o.externalUrl && (
-                          <a
-                            href={o.externalUrl}
-                            target="_blank"
-                            rel="noreferrer"
-                            onClick={(e) => e.stopPropagation()}
-                            style={{
-                              fontFamily: F,
-                              fontSize: 10,
-                              letterSpacing: "0.08em",
-                              textTransform: "uppercase",
-                              color: "#8A8580",
-                              textDecoration: "none",
-                              border: "1px solid #E8E3DB",
-                              padding: "6px 10px",
-                            }}
-                          >
-                            {t("oc_source", lang)}
-                          </a>
-                        )}
-                      </div>
-                    )}
-                  </div>
-                  <div className="oc-card-right" style={{ textAlign: "right", flexShrink: 0, marginLeft: 24 }}>
-                    <span style={{ fontFamily: F, fontSize: 9, fontWeight: 500, letterSpacing: "0.1em", textTransform: "uppercase", color: "#B0AAA2" }}>{t("deadline", lang)}</span>
-                    <div style={{ fontFamily: S, fontSize: 18, fontWeight: 400, color: "#1A1A1A", marginTop: 4 }}>{o.deadline}</div>
-                  </div>
-                </div>
-
-                <div className="oc-card-actions" style={{ marginTop: 16, display: "flex", gap: 10 }}>
-                  {adminReadOnly ? (
-                    <span style={{ padding: "10px 20px", border: "1px solid #E8E3DB", color: "#8A8580", fontFamily: F, fontSize: 10, fontWeight: 500, letterSpacing: "0.08em", textTransform: "uppercase" }}>
-                      {lang === "ko" ? "읽기 전용" : "Read-only"}
-                    </span>
-                  ) : appliedIds.has(o.id) ? (
-                    <span style={{ padding: "10px 20px", border: "1px solid #5A7A5A", color: "#5A7A5A", fontFamily: F, fontSize: 10, fontWeight: 500, letterSpacing: "0.08em", textTransform: "uppercase" }}>{t("applied", lang)}</span>
-                  ) : (
-                    <button onClick={(e) => { e.stopPropagation(); applyToOpenCall(o.id, o.galleryId); }} disabled={applyingId === o.id}
-                      style={{ padding: "10px 20px", border: "none", background: "#1A1A1A", color: "#FDFBF7", fontFamily: F, fontSize: 10, fontWeight: 500, letterSpacing: "0.08em", textTransform: "uppercase", cursor: "pointer" }}>
-                      {applyingId === o.id ? "..." : t("apply", lang)}
-                    </button>
-                  )}
-                  <button onClick={(e) => { e.stopPropagation(); router.push(`/open-calls/${o.id}`); }}
-                    style={{ padding: "10px 20px", border: "1px solid #E8E3DB", background: "transparent", color: "#8A8580", fontFamily: F, fontSize: 10, fontWeight: 500, letterSpacing: "0.08em", textTransform: "uppercase", cursor: "pointer" }}>
-                    {t("details", lang)}
+        {activeTab === "open-calls" ? (
+          <>
+            {/* Country tabs - dynamic */}
+            <div className="country-tabs" style={{ display: "flex", gap: 0, marginBottom: 32, overflowX: "auto", borderBottom: "1px solid #E8E3DB", WebkitOverflowScrolling: "touch" }}>
+              {countries.map((c) => {
+                const active = c === countryFilter;
+                return (
+                  <button key={c} onClick={() => setCountryFilter(c)} style={{ padding: "14px 20px", border: "none", borderBottom: active ? "1px solid #1A1A1A" : "1px solid transparent", background: "transparent", fontFamily: F, fontSize: 10, fontWeight: 500, letterSpacing: "0.08em", textTransform: "uppercase", color: active ? "#1A1A1A" : "#B0AAA2", cursor: "pointer", marginBottom: -1, whiteSpace: "nowrap", transition: "all 0.3s" }}>
+                    {c}
                   </button>
-                </div>
-              </div>
-            ))}
+                );
+              })}
+            </div>
 
-            {filtered.length === 0 && (
-              <div style={{ background: "#FFFFFF", padding: 48, textAlign: "center" }}>
-                <p style={{ fontFamily: S, fontSize: 18, fontStyle: "italic", color: "#B0AAA2" }}>{t("artist_no_open_calls", lang)}</p>
+            {/* Open-call content */}
+            {loading ? (
+              <div style={{ padding: "clamp(20px, 3vw, 48px)" }}>
+                <CardSkeleton count={5} />
+              </div>
+            ) : error ? (
+              <div style={{ padding: 20, border: "1px solid rgba(139,74,74,0.2)", background: "rgba(139,74,74,0.04)", color: "#8B4A4A", fontFamily: F, fontSize: 12 }}>
+                {error}
+              </div>
+            ) : (
+              <div style={{ display: "grid", gap: 1, background: "#E8E3DB" }}>
+                {filtered.map((o, index) => (
+                  <div key={o.id} onClick={() => router.push(`/open-calls/${o.id}`)} style={{ background: "#FFFFFF", padding: "clamp(20px, 3vw, 32px) clamp(16px, 3vw, 36px)", cursor: "pointer", transition: "background 0.3s" }}
+                    onMouseEnter={(e) => { e.currentTarget.style.background = "#FAF8F4"; }}
+                    onMouseLeave={(e) => { e.currentTarget.style.background = "#FFFFFF"; }}>
+                    <div className="oc-card-inner" style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 20 }}>
+                      <OpenCallPoster className="oc-poster" posterImage={o.posterImage} gallery={o.gallery} theme={o.theme} city={o.city} country={o.country} deadline={o.deadline} width={100} height={134} />
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 10 }}>
+                          <span style={{ fontFamily: S, fontSize: 18, fontWeight: 300, color: "#D4CEC4" }}>{String(index + 1).padStart(2, "0")}</span>
+                          <span style={{ fontFamily: F, fontSize: 10, fontWeight: 500, letterSpacing: "0.1em", textTransform: "uppercase", color: "#8B7355" }}>{o.country} / {o.city}</span>
+                        </div>
+                        <h3 style={{ fontFamily: S, fontSize: "clamp(18px, 3vw, 24px)", fontWeight: 400, color: "#1A1A1A", marginBottom: 6 }}>{o.gallery}</h3>
+                        <p style={{ fontFamily: F, fontSize: 13, fontWeight: 300, color: "#8A8580", wordBreak: "break-word" }}>
+                          {lang !== "en" && translatedById[o.id]?.theme && !showOriginalById[o.id] ? translatedById[o.id]?.theme : o.theme}
+                        </p>
+                      </div>
+                      <div className="oc-card-right" style={{ textAlign: "right", flexShrink: 0, marginLeft: 24 }}>
+                        <span style={{ fontFamily: F, fontSize: 9, fontWeight: 500, letterSpacing: "0.1em", textTransform: "uppercase", color: "#B0AAA2" }}>{t("deadline", lang)}</span>
+                        <div style={{ fontFamily: S, fontSize: 18, fontWeight: 400, color: "#1A1A1A", marginTop: 4 }}>{o.deadline}</div>
+                      </div>
+                    </div>
+                    <div className="oc-card-actions" style={{ marginTop: 16, display: "flex", gap: 10 }}>
+                      {adminReadOnly ? (
+                        <span style={{ padding: "10px 20px", border: "1px solid #E8E3DB", color: "#8A8580", fontFamily: F, fontSize: 10, fontWeight: 500, letterSpacing: "0.08em", textTransform: "uppercase" }}>
+                          {lang === "ko" ? "읽기 전용" : "Read-only"}
+                        </span>
+                      ) : appliedIds.has(o.id) ? (
+                        <span style={{ padding: "10px 20px", border: "1px solid #5A7A5A", color: "#5A7A5A", fontFamily: F, fontSize: 10, fontWeight: 500, letterSpacing: "0.08em", textTransform: "uppercase" }}>{t("applied", lang)}</span>
+                      ) : (
+                        <button onClick={(e) => { e.stopPropagation(); applyToOpenCall(o.id, o.galleryId); }} disabled={applyingId === o.id}
+                          style={{ padding: "10px 20px", border: "none", background: "#1A1A1A", color: "#FDFBF7", fontFamily: F, fontSize: 10, fontWeight: 500, letterSpacing: "0.08em", textTransform: "uppercase", cursor: "pointer" }}>
+                          {applyingId === o.id ? "..." : t("apply", lang)}
+                        </button>
+                      )}
+                      <button onClick={(e) => { e.stopPropagation(); router.push(`/open-calls/${o.id}`); }}
+                        style={{ padding: "10px 20px", border: "1px solid #E8E3DB", background: "transparent", color: "#8A8580", fontFamily: F, fontSize: 10, fontWeight: 500, letterSpacing: "0.08em", textTransform: "uppercase", cursor: "pointer" }}>
+                        {t("details", lang)}
+                      </button>
+                    </div>
+                  </div>
+                ))}
+                {filtered.length === 0 && (
+                  <div style={{ background: "#FFFFFF", padding: 48, textAlign: "center" }}>
+                    <p style={{ fontFamily: S, fontSize: 18, fontStyle: "italic", color: "#B0AAA2" }}>{t("artist_no_open_calls", lang)}</p>
+                  </div>
+                )}
               </div>
             )}
-          </div>
+          </>
+        ) : (
+          <>
+            {/* Gallery list filters */}
+            <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 14 }}>
+              {galleryCountries.map((c) => (
+                <button key={c} onClick={() => { setGalleryCountryFilter(c); setGalleryCityFilter("ALL"); }}
+                  style={{ padding: "8px 12px", border: c === galleryCountryFilter ? "1px solid #1A1A1A" : "1px solid #E8E3DB", background: c === galleryCountryFilter ? "#1A1A1A" : "#FFFFFF", color: c === galleryCountryFilter ? "#FFFFFF" : "#8A8580", fontFamily: F, fontSize: 10, letterSpacing: "0.08em", textTransform: "uppercase", cursor: "pointer" }}>
+                  {c}
+                </button>
+              ))}
+            </div>
+            <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 14 }}>
+              {galleryCities.map((c) => (
+                <button key={c} onClick={() => setGalleryCityFilter(c)}
+                  style={{ padding: "7px 12px", border: c === galleryCityFilter ? "1px solid #8B7355" : "1px solid #E8E3DB", background: c === galleryCityFilter ? "rgba(139,115,85,0.08)" : "#FFFFFF", color: c === galleryCityFilter ? "#8B7355" : "#8A8580", fontFamily: F, fontSize: 10, letterSpacing: "0.08em", textTransform: "uppercase", cursor: "pointer" }}>
+                  {c}
+                </button>
+              ))}
+            </div>
+            <div style={{ marginBottom: 20 }}>
+              <input
+                value={galleryQuery}
+                onChange={(e) => setGalleryQuery(e.target.value)}
+                placeholder={lang === "ko" ? "갤러리명/이메일/도시 검색..." : lang === "ja" ? "ギャラリー名/メール/都市を検索..." : "Search gallery name/email/city..."}
+                style={{ width: "100%", maxWidth: 420, padding: "12px 14px", border: "1px solid #E8E3DB", background: "#FFFFFF", fontFamily: F, fontSize: 12, color: "#1A1A1A", outline: "none" }}
+              />
+            </div>
+
+            {galleryLoading ? (
+              <div style={{ padding: "clamp(20px, 3vw, 48px)" }}>
+                <CardSkeleton count={5} />
+              </div>
+            ) : galleryError ? (
+              <div style={{ padding: 20, border: "1px solid rgba(139,74,74,0.2)", background: "rgba(139,74,74,0.04)", color: "#8B4A4A", fontFamily: F, fontSize: 12 }}>
+                {galleryError.message}
+              </div>
+            ) : (
+              <div style={{ display: "grid", gap: 1, background: "#E8E3DB" }}>
+                {filteredGalleries.map((g, idx) => (
+                  <div key={g.userId} onClick={() => router.push(`/galleries/${encodeURIComponent(g.userId)}`)}
+                    style={{ background: "#FFFFFF", padding: "18px 20px", cursor: "pointer" }}
+                    onMouseEnter={(e) => { e.currentTarget.style.background = "#FAF8F4"; }}
+                    onMouseLeave={(e) => { e.currentTarget.style.background = "#FFFFFF"; }}>
+                    <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 16 }}>
+                      <div>
+                        <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 6 }}>
+                          <span style={{ fontFamily: S, fontSize: 16, color: "#D4CEC4" }}>{String(idx + 1).padStart(2, "0")}</span>
+                          <span style={{ fontFamily: F, fontSize: 10, letterSpacing: "0.08em", textTransform: "uppercase", color: "#8B7355" }}>
+                            {[g.country, g.city].filter(Boolean).join(" / ")}
+                          </span>
+                        </div>
+                        <h3 style={{ fontFamily: S, fontSize: 22, fontWeight: 400, color: "#1A1A1A", margin: 0 }}>{g.name}</h3>
+                        <p style={{ fontFamily: F, fontSize: 11, color: "#8A8580", marginTop: 6 }}>{g.email}</p>
+                      </div>
+                      <button
+                        onClick={(e) => { e.stopPropagation(); router.push(`/galleries/${encodeURIComponent(g.userId)}`); }}
+                        style={{ padding: "9px 14px", border: "1px solid #E8E3DB", background: "#FFFFFF", color: "#8A8580", fontFamily: F, fontSize: 10, textTransform: "uppercase", letterSpacing: "0.08em", cursor: "pointer" }}
+                      >
+                        {lang === "ko" ? "상세 보기" : lang === "ja" ? "詳細" : "View"}
+                      </button>
+                    </div>
+                  </div>
+                ))}
+                {filteredGalleries.length === 0 && (
+                  <div style={{ background: "#FFFFFF", padding: 48, textAlign: "center" }}>
+                    <p style={{ fontFamily: S, fontSize: 18, fontStyle: "italic", color: "#B0AAA2" }}>
+                      {lang === "ko" ? "조건에 맞는 갤러리가 없습니다." : lang === "ja" ? "条件に合うギャラリーがありません。" : "No galleries found."}
+                    </p>
+                  </div>
+                )}
+              </div>
+            )}
+          </>
         )}
 
         {contactError && (
