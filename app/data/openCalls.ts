@@ -102,24 +102,44 @@ async function ensureSeeded() {
 
 // Kick off seeding (non-blocking)
 let _seedPromise: Promise<void> | null = null;
+let _openCallColumnsEnsured = false;
+
+async function ensureOpenCallColumns() {
+  if (_openCallColumnsEnsured) return;
+  try {
+    // Backward-compatible guard for environments where the new column
+    // was not added yet, preventing runtime 500s on list/find queries.
+    await prisma.$executeRawUnsafe(
+      `ALTER TABLE "OpenCall" ADD COLUMN IF NOT EXISTS "exhibitionDate" TEXT;`
+    );
+    _openCallColumnsEnsured = true;
+  } catch (e) {
+    // Keep non-fatal to avoid blocking startup in restricted environments.
+    console.error("OpenCall schema ensure error (non-fatal):", e);
+  }
+}
+
 function seed() {
   if (!_seedPromise) _seedPromise = ensureSeeded();
   return _seedPromise;
 }
 
 export async function listOpenCalls(): Promise<OpenCall[]> {
+  await ensureOpenCallColumns();
   await seed();
   const rows = await prisma.openCall.findMany({ orderBy: { createdAt: "desc" } });
   return withSchedule(rows.map(toOpenCall));
 }
 
 export async function listOpenCallsByGallery(galleryId: string): Promise<OpenCall[]> {
+  await ensureOpenCallColumns();
   await seed();
   const rows = await prisma.openCall.findMany({ where: { galleryId }, orderBy: { createdAt: "desc" } });
   return withSchedule(rows.map(toOpenCall));
 }
 
 export async function getOpenCallById(id: string): Promise<OpenCall | null> {
+  await ensureOpenCallColumns();
   await seed();
   const row = await prisma.openCall.findUnique({ where: { id } });
   if (!row) return null;
@@ -142,6 +162,7 @@ export async function createOpenCall(input: {
   galleryWebsite?: string;
   galleryDescription?: string;
 }): Promise<OpenCall> {
+  await ensureOpenCallColumns();
   const row = await prisma.openCall.create({
     data: {
       galleryId: input.galleryId,
@@ -177,6 +198,7 @@ export async function createOpenCall(input: {
 
 export async function updateOpenCallPoster(id: string, posterImage: string | null): Promise<OpenCall | null> {
   try {
+    await ensureOpenCallColumns();
     const row = await prisma.openCall.update({
       where: { id },
       data: { posterImage },
