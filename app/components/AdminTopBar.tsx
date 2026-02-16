@@ -16,6 +16,7 @@ export default function AdminTopBar() {
   const isAdminView = searchParams.get("adminView") === "1";
   const tr = (en: string, ko: string, ja: string, fr: string) =>
     lang === "ko" ? ko : lang === "ja" ? ja : lang === "fr" ? fr : en;
+  const isHomeActive = pathname === "/admin";
   const isDashboardActive = pathname === "/admin/outreach";
   const isUsersActive = pathname === "/admin/users";
   const isSourcesActive = pathname === "/admin/sources";
@@ -81,7 +82,7 @@ export default function AdminTopBar() {
         {/* Logo + Admin label */}
         <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
           <button
-            onClick={() => router.push("/admin/outreach")}
+            onClick={() => router.push("/admin")}
             style={{
               background: "transparent",
               border: "none",
@@ -122,6 +123,7 @@ export default function AdminTopBar() {
 
         {/* Nav */}
         <nav style={{ display: "flex", alignItems: "center", gap: 18 }}>
+          <NavLink onClick={() => router.push("/admin")} label={tr("Home", "홈", "ホーム", "Accueil")} active={isHomeActive} />
           <NavLink onClick={() => router.push("/admin/outreach")} label={tr("Dashboard", "대시보드", "ダッシュボード", "Tableau")} active={isDashboardActive} />
           <NavLink onClick={() => router.push("/admin/users")} label={tr("Users", "가입자", "ユーザー", "Utilisateurs")} active={isUsersActive} />
           <NavLink onClick={() => router.push("/admin/sources")} label={tr("Sources", "소스", "ソース", "Sources")} active={isSourcesActive} />
