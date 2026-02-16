@@ -50,6 +50,85 @@ function normalizeCountry(input: string): string {
   return v;
 }
 
+function normalizeCityKey(input: string): string {
+  return String(input || "").trim().toLowerCase();
+}
+
+function localizeCityLabel(city: string, lang: string): string {
+  const key = normalizeCityKey(city);
+  if (!key) return city;
+
+  const koMap: Record<string, string> = {
+    seoul: "서울",
+    tokyo: "도쿄",
+    london: "런던",
+    paris: "파리",
+    "new york": "뉴욕",
+    busan: "부산",
+    "los angeles": "로스앤젤레스",
+    berlin: "베를린",
+    "san gimignano": "산지미냐노",
+    milan: "밀라노",
+    beijing: "베이징",
+    shanghai: "상하이",
+    zurich: "취리히",
+    sydney: "시드니",
+    melbourne: "멜버른",
+    osaka: "오사카",
+    kyoto: "교토",
+    glasgow: "글래스고",
+    manchester: "맨체스터",
+    lyon: "리옹",
+    chicago: "시카고",
+    munich: "뮌헨",
+    venice: "베네치아",
+    basel: "바젤",
+    sapporo: "삿포로",
+    savannah: "서배너",
+    vienna: "비엔나",
+    kassel: "카셀",
+    "san francisco": "샌프란시스코",
+    dallas: "댈러스",
+    miami: "마이애미",
+    seattle: "시애틀",
+    houston: "휴스턴",
+  };
+
+  const jaMap: Record<string, string> = {
+    seoul: "ソウル",
+    tokyo: "東京",
+    london: "ロンドン",
+    paris: "パリ",
+    "new york": "ニューヨーク",
+    busan: "釜山",
+    "los angeles": "ロサンゼルス",
+    berlin: "ベルリン",
+    milan: "ミラノ",
+    beijing: "北京",
+    shanghai: "上海",
+    zurich: "チューリッヒ",
+    sydney: "シドニー",
+    melbourne: "メルボルン",
+    osaka: "大阪",
+    kyoto: "京都",
+    chicago: "シカゴ",
+    munich: "ミュンヘン",
+    venice: "ヴェネツィア",
+    basel: "バーゼル",
+    sapporo: "札幌",
+    vienna: "ウィーン",
+    "san francisco": "サンフランシスコ",
+    dallas: "ダラス",
+    miami: "マイアミ",
+    seattle: "シアトル",
+    houston: "ヒューストン",
+  };
+
+  if (lang === "ko") return koMap[key] || city;
+  if (lang === "ja") return jaMap[key] || city;
+  return city;
+}
+
 async function fetchMe(): Promise<MeResponse | null> {
   try { const res = await fetch("/api/auth/me", { cache: "no-store" }); return (await res.json().catch(() => null)) as MeResponse | null; }
   catch { return null; }
@@ -157,6 +236,16 @@ export default function ArtistPage() {
   const galleryCountries = useMemo(() => {
     const set = new Set(galleries.map((g) => (g.country ?? "").trim()).filter(Boolean));
     return ["ALL", ...Array.from(set)];
+  }, [galleries]);
+
+  const galleryCountryCounts = useMemo(() => {
+    const counts: Record<string, number> = { ALL: galleries.length };
+    galleries.forEach((g) => {
+      const c = String(g.country || "").trim();
+      if (!c) return;
+      counts[c] = (counts[c] || 0) + 1;
+    });
+    return counts;
   }, [galleries]);
 
   const galleryCities = useMemo(() => {
@@ -501,8 +590,11 @@ export default function ArtistPage() {
             <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 14 }}>
               {galleryCountries.map((c) => (
                 <button key={c} onClick={() => { setGalleryCountryFilter(c); setGalleryCityFilter("ALL"); }}
-                  style={{ padding: "8px 12px", border: c === galleryCountryFilter ? "1px solid #1A1A1A" : "1px solid #E8E3DB", background: c === galleryCountryFilter ? "#1A1A1A" : "#FFFFFF", color: c === galleryCountryFilter ? "#FFFFFF" : "#8A8580", fontFamily: F, fontSize: 10, letterSpacing: "0.08em", textTransform: "uppercase", cursor: "pointer" }}>
+                  style={{ padding: "8px 12px", border: c === galleryCountryFilter ? "1px solid #1A1A1A" : "1px solid #E8E3DB", background: c === galleryCountryFilter ? "#1A1A1A" : "#FFFFFF", color: c === galleryCountryFilter ? "#FFFFFF" : "#8A8580", fontFamily: F, fontSize: 10, letterSpacing: "0.08em", textTransform: "uppercase", cursor: "pointer", display: "flex", alignItems: "center", gap: 8 }}>
                   {c}
+                  <span style={{ fontSize: 9, opacity: 0.75, padding: "2px 6px", background: c === galleryCountryFilter ? "rgba(255,255,255,0.2)" : "#F5F0EB" }}>
+                    {galleryCountryCounts[c] || 0}
+                  </span>
                 </button>
               ))}
             </div>
@@ -510,7 +602,7 @@ export default function ArtistPage() {
               {galleryCities.map((c) => (
                 <button key={c} onClick={() => setGalleryCityFilter(c)}
                   style={{ padding: "7px 12px", border: c === galleryCityFilter ? "1px solid #8B7355" : "1px solid #E8E3DB", background: c === galleryCityFilter ? "rgba(139,115,85,0.08)" : "#FFFFFF", color: c === galleryCityFilter ? "#8B7355" : "#8A8580", fontFamily: F, fontSize: 10, letterSpacing: "0.08em", textTransform: "uppercase", cursor: "pointer" }}>
-                  {c}
+                  {c === "ALL" ? c : localizeCityLabel(c, lang)}
                 </button>
               ))}
             </div>
@@ -543,7 +635,7 @@ export default function ArtistPage() {
                         <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 6 }}>
                           <span style={{ fontFamily: S, fontSize: 16, color: "#D4CEC4" }}>{String(idx + 1).padStart(2, "0")}</span>
                           <span style={{ fontFamily: F, fontSize: 10, letterSpacing: "0.08em", textTransform: "uppercase", color: "#8B7355" }}>
-                            {[g.country, g.city].filter(Boolean).join(" / ")}
+                            [g.country, localizeCityLabel(g.city || "", lang)].filter(Boolean).join(" / ")
                           </span>
                         </div>
                         <h3 style={{ fontFamily: S, fontSize: 22, fontWeight: 400, color: "#1A1A1A", margin: 0 }}>{g.name}</h3>
