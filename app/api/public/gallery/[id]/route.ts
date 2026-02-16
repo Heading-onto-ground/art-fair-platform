@@ -4,6 +4,21 @@ import { getExhibitionsByGalleryId } from "@/app/data/exhibitions";
 import { listOpenCalls } from "@/app/data/openCalls";
 import { getExternalGalleryDirectoryById } from "@/lib/externalGalleryDirectory";
 
+function hostFromUrl(url?: string) {
+  if (!url) return "";
+  try {
+    return new URL(url).hostname.replace(/^www\./, "").toLowerCase().trim();
+  } catch {
+    return "";
+  }
+}
+
+function inferredEmailFromWebsite(website?: string) {
+  const host = hostFromUrl(website);
+  if (!host || !host.includes(".")) return "";
+  return `info@${host}`;
+}
+
 export async function GET(
   _req: Request,
   { params }: { params: { id: string } }
@@ -21,7 +36,7 @@ export async function GET(
           id: `external-directory-${id}`,
           userId: id,
           role: "gallery" as const,
-          email: ext.externalEmail || "",
+          email: ext.externalEmail || inferredEmailFromWebsite(ext.website || undefined) || "",
           name: ext.name,
           country: ext.country,
           city: ext.city,
@@ -52,7 +67,7 @@ export async function GET(
         id: `external-${id}`,
         userId: id,
         role: "gallery" as const,
-        email: latest.externalEmail || "",
+        email: latest.externalEmail || inferredEmailFromWebsite(latest.galleryWebsite || undefined) || "",
         name: latest.gallery,
         country: latest.country,
         city: latest.city,

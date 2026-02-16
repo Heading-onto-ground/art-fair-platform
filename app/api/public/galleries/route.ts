@@ -2,8 +2,19 @@ import { NextResponse } from "next/server";
 import { listGalleryProfiles } from "@/lib/auth";
 import { listOpenCalls } from "@/app/data/openCalls";
 import { listExternalGalleryDirectory } from "@/lib/externalGalleryDirectory";
+import { listGalleryEmailDirectory } from "@/lib/galleryEmailDirectory";
 
 export const dynamic = "force-dynamic";
+
+function normalizeCountry(input: string) {
+  const v = String(input || "").trim();
+  if (!v) return v;
+  const compact = v.replace(/\s+/g, "").toLowerCase();
+  if (compact === "대한민국" || compact === "한국" || compact === "southkorea" || compact === "republicofkorea") {
+    return "한국";
+  }
+  return v;
+}
 
 function normalizeText(input: string) {
   return String(input || "")
@@ -24,6 +35,16 @@ function hostFromUrl(url?: string) {
   }
 }
 
+function isValidEmail(input: string) {
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(input || "").trim());
+}
+
+function inferredEmailFromWebsite(website?: string) {
+  const host = hostFromUrl(website);
+  if (!host || !host.includes(".")) return "";
+  return `info@${host}`;
+}
+
 function matchKey(input: {
   name: string;
   country: string;
@@ -37,11 +58,44 @@ function matchKey(input: {
 
 export async function GET() {
   try {
-    const [internalGalleries, openCalls, externalDirectory] = await Promise.all([
+    const [internalGalleries, openCalls, externalDirectory, emailDirectory] = await Promise.all([
       listGalleryProfiles(),
       listOpenCalls(),
       listExternalGalleryDirectory(),
+      listGalleryEmailDirectory({ activeOnly: true, limit: 5000 }),
     ]);
+
+    const emailByGalleryId = new Map<string, string>();
+    const emailByHost = new Map<string, string>();
+    const emailByNcc = new Map<string, string>();
+    for (const row of emailDirectory) {
+      const email = String(row.email || "").trim().toLowerCase();
+      if (!isValidEmail(email)) continue;
+      if (row.galleryId) emailByGalleryId.set(row.galleryId, email);
+      const host = hostFromUrl(row.website || undefined);
+      if (host && !emailByHost.has(host)) emailByHost.set(host, email);
+      const ncc = `ncc:${normalizeText(row.galleryName)}|${normalizeText(row.country || "")}|${normalizeText(row.city || "")}`;
+      if (!emailByNcc.has(ncc)) emailByNcc.set(ncc, email);
+    }
+
+    function resolveEmail(input: {
+      explicit?: string;
+      galleryId?: string;
+      website?: string;
+      name: string;
+      country: string;
+      city: string;
+    }) {
+      const explicit = String(input.explicit || "").trim().toLowerCase();
+      if (isValidEmail(explicit)) return explicit;
+      if (input.galleryId && emailByGalleryId.has(input.galleryId)) return String(emailByGalleryId.get(input.galleryId));
+      const host = hostFromUrl(input.website);
+      if (host && emailByHost.has(host)) return String(emailByHost.get(host));
+      const ncc = `ncc:${normalizeText(input.name)}|${normalizeText(input.country)}|${normalizeText(input.city)}`;
+      if (emailByNcc.has(ncc)) return String(emailByNcc.get(ncc));
+      const inferred = inferredEmailFromWebsite(input.website);
+      return inferred || "";
+    }
 
     const internalIds = new Set(internalGalleries.map((g) => g.userId));
     const externalMap = new Map<
@@ -64,15 +118,22 @@ export async function GET() {
       if (!ext.galleryId || internalIds.has(ext.galleryId)) continue;
       const key = matchKey({
         name: ext.name,
-        country: ext.country,
+        country: normalizeCountry(ext.country),
         city: ext.city,
         website: ext.website || undefined,
       });
       externalMap.set(key, {
         userId: ext.galleryId,
         name: ext.name,
-        email: ext.externalEmail || "",
-        country: ext.country,
+        email: resolveEmail({
+          explicit: ext.externalEmail || undefined,
+          galleryId: ext.galleryId,
+          website: ext.website || undefined,
+          name: ext.name,
+          country: normalizeCountry(ext.country),
+          city: ext.city,
+        }),
+        country: normalizeCountry(ext.country),
         city: ext.city,
         website: ext.website || undefined,
         bio: ext.bio || undefined,
@@ -88,8 +149,15 @@ export async function GET() {
       const candidate = {
         userId: oc.galleryId,
         name: oc.gallery,
-        email: oc.externalEmail || "",
-        country: oc.country,
+        email: resolveEmail({
+          explicit: oc.externalEmail || undefined,
+          galleryId: oc.galleryId,
+          website: oc.galleryWebsite || undefined,
+          name: oc.gallery,
+          country: normalizeCountry(oc.country),
+          city: oc.city,
+        }),
+        country: normalizeCountry(oc.country),
         city: oc.city,
         website: oc.galleryWebsite,
         bio: oc.galleryDescription,
@@ -111,8 +179,22 @@ export async function GET() {
       }
     }
 
+    const internalNormalized = internalGalleries.map((g) => {
+      const country = normalizeCountry((g as { country?: string }).country || "");
+      const city = String((g as { city?: string }).city || "");
+      const name = String((g as { name?: string }).name || "");
+      const website = String((g as { website?: string }).website || "");
+      const userId = String((g as { userId?: string }).userId || "");
+      const explicit = String((g as { email?: string }).email || "");
+      return {
+        ...g,
+        country,
+        email: resolveEmail({ explicit, galleryId: userId, website, name, country, city }),
+      };
+    });
+
     const galleries = [
-      ...internalGalleries,
+      ...internalNormalized,
       ...Array.from(externalMap.values()).sort((a, b) => {
         if (b.qualityScore !== a.qualityScore) return b.qualityScore - a.qualityScore;
         if (b.updatedAt !== a.updatedAt) return b.updatedAt - a.updatedAt;

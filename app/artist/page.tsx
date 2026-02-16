@@ -39,6 +39,16 @@ function hostFromUrl(url?: string): string {
   }
 }
 
+function normalizeCountry(input: string): string {
+  const v = String(input || "").trim();
+  if (!v) return v;
+  const compact = v.replace(/\s+/g, "").toLowerCase();
+  if (compact === "대한민국" || compact === "한국" || compact === "southkorea" || compact === "republicofkorea") {
+    return "한국";
+  }
+  return v;
+}
+
 async function fetchMe(): Promise<MeResponse | null> {
   try { const res = await fetch("/api/auth/me", { cache: "no-store" }); return (await res.json().catch(() => null)) as MeResponse | null; }
   catch { return null; }
@@ -75,7 +85,7 @@ export default function ArtistPage() {
   >({});
   const [showOriginalById, setShowOriginalById] = useState<Record<string, boolean>>({});
   const [translatingById, setTranslatingById] = useState<Record<string, boolean>>({});
-  const preferredCountry = (me?.profile?.country ?? "").trim();
+  const preferredCountry = normalizeCountry((me?.profile?.country ?? "").trim());
 
   function load() {
     mutateOc();

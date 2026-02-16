@@ -2,8 +2,21 @@ import { NextResponse } from "next/server";
 import { createOpenCall, listOpenCalls } from "@/app/data/openCalls";
 import { getServerSession } from "@/lib/auth";
 
+function normalizeCountry(input: string) {
+  const v = String(input || "").trim();
+  if (!v) return v;
+  const compact = v.replace(/\s+/g, "").toLowerCase();
+  if (compact === "대한민국" || compact === "한국" || compact === "southkorea" || compact === "republicofkorea") {
+    return "한국";
+  }
+  return v;
+}
+
 export async function GET() {
-  const openCalls = await listOpenCalls();
+  const openCalls = (await listOpenCalls()).map((oc) => ({
+    ...oc,
+    country: normalizeCountry(oc.country),
+  }));
   const res = NextResponse.json({ openCalls });
   res.headers.set("Cache-Control", "public, s-maxage=15, stale-while-revalidate=120");
   return res;
@@ -21,8 +34,9 @@ export async function POST(req: Request) {
   if (!gallery || !city || !country || !theme || !deadline) {
     return NextResponse.json({ error: "Missing fields" }, { status: 400 });
   }
+  const normalizedCountry = normalizeCountry(String(country).trim());
   const allowedCountries = new Set(["한국", "일본", "영국", "프랑스", "미국", "독일", "이탈리아", "중국", "스위스", "호주"]);
-  if (!allowedCountries.has(String(country).trim())) {
+  if (!allowedCountries.has(normalizedCountry)) {
     return NextResponse.json({ error: "invalid country" }, { status: 400 });
   }
 
@@ -31,7 +45,7 @@ export async function POST(req: Request) {
       galleryId: session.userId,
       gallery: String(gallery).trim(),
       city: String(city).trim(),
-      country: String(country).trim(),
+      country: normalizedCountry,
       theme: String(theme).trim(),
       deadline: String(deadline).trim(),
       posterImage: posterImage && typeof posterImage === "string" && posterImage.startsWith("data:image/") ? posterImage : undefined,
