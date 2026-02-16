@@ -3,6 +3,7 @@ import { listGalleryProfiles } from "@/lib/auth";
 import { listOpenCalls } from "@/app/data/openCalls";
 import { listExternalGalleryDirectory } from "@/lib/externalGalleryDirectory";
 import { listGalleryEmailDirectory } from "@/lib/galleryEmailDirectory";
+import { PORTAL_GALLERY_SEEDS } from "@/lib/portalGallerySeeds";
 
 export const dynamic = "force-dynamic";
 
@@ -113,7 +114,38 @@ export async function GET() {
       }
     >();
 
-    // 1) External directory (portal-seeded) has priority base entries.
+    // 1) Seed fallback: make portal seeds visible immediately even
+    // before sync jobs populate ExternalGalleryDirectory in production.
+    for (const seed of PORTAL_GALLERY_SEEDS) {
+      if (!seed.galleryId || internalIds.has(seed.galleryId)) continue;
+      const normalizedCountry = normalizeCountry(seed.country);
+      const key = matchKey({
+        name: seed.name,
+        country: normalizedCountry,
+        city: seed.city,
+        website: seed.website || undefined,
+      });
+      externalMap.set(key, {
+        userId: seed.galleryId,
+        name: seed.name,
+        email: resolveEmail({
+          explicit: seed.externalEmail || undefined,
+          galleryId: seed.galleryId,
+          website: seed.website || undefined,
+          name: seed.name,
+          country: normalizedCountry,
+          city: seed.city,
+        }),
+        country: normalizedCountry,
+        city: seed.city,
+        website: seed.website || undefined,
+        bio: seed.bio || undefined,
+        qualityScore: 30 + (seed.website ? 10 : 0),
+        updatedAt: Date.now(),
+      });
+    }
+
+    // 2) External directory (already synced/quality-scored) has priority base entries.
     for (const ext of externalDirectory) {
       if (!ext.galleryId || internalIds.has(ext.galleryId)) continue;
       const key = matchKey({
@@ -142,7 +174,7 @@ export async function GET() {
       });
     }
 
-    // 2) External open-call derived entries refresh/complete missing data.
+    // 3) External open-call derived entries refresh/complete missing data.
     for (const oc of openCalls) {
       if (!oc.isExternal) continue;
       if (!oc.galleryId || internalIds.has(oc.galleryId)) continue;
