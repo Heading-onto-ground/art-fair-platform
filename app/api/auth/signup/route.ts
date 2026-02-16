@@ -7,6 +7,7 @@ type Role = "artist" | "gallery";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
+const EMAIL_VERIFICATION_REQUIRED = (process.env.EMAIL_VERIFICATION_REQUIRED || "1") !== "0";
 
 export async function POST(req: Request) {
   try {
@@ -82,6 +83,13 @@ export async function POST(req: Request) {
         foundedYear,
         instagram,
       });
+    }
+
+    if (!EMAIL_VERIFICATION_REQUIRED) {
+      return NextResponse.json(
+        { ok: true, requiresEmailVerification: false, verificationEmailSent: false, email },
+        { status: 200 }
+      );
     }
 
     // Send verification email (signup requires email verification before login)

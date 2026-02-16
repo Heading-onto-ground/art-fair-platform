@@ -106,10 +106,10 @@ export default function LoginPage() {
           } else if (data?.resendError) {
             setInfo(
               tr(
-                "Could not auto-resend verification email. Please click 'Resend Verification Email'.",
-                "자동 재발송에 실패했습니다. 아래 '인증 메일 다시 보내기'를 눌러주세요.",
-                "自動再送に失敗しました。下の「認証メールを再送」を押してください。",
-                "Le renvoi automatique a echoue. Veuillez cliquer sur 'Renvoyer l'email de verification'."
+                `Could not auto-resend verification email (${String(data?.resendError)}). Please click 'Resend Verification Email'.`,
+                `자동 재발송에 실패했습니다 (${String(data?.resendError)}). 아래 '인증 메일 다시 보내기'를 눌러주세요.`,
+                `自動再送に失敗しました (${String(data?.resendError)})。下の「認証メールを再送」を押してください。`,
+                `Le renvoi automatique a echoue (${String(data?.resendError)}). Veuillez cliquer sur 'Renvoyer l'email de verification'.`
               )
             );
           }
@@ -142,10 +142,10 @@ export default function LoginPage() {
           setNeedsVerification(true);
           setErr(
             tr(
-              "Signup completed, but verification email could not be sent automatically.",
-              "가입은 완료되었지만 인증 메일 자동 발송에 실패했습니다.",
-              "登録は完了しましたが、認証メールの自動送信に失敗しました。",
-              "L'inscription est terminee, mais l'envoi automatique de l'email de verification a echoue."
+              `Signup completed, but verification email could not be sent automatically (${String(data?.details || data?.error || "unknown")}).`,
+              `가입은 완료되었지만 인증 메일 자동 발송에 실패했습니다 (${String(data?.details || data?.error || "unknown")}).`,
+              `登録は完了しましたが、認証メールの自動送信に失敗しました (${String(data?.details || data?.error || "unknown")})。`,
+              `L'inscription est terminee, mais l'envoi automatique de l'email de verification a echoue (${String(data?.details || data?.error || "unknown")}).`
             )
           );
           setInfo(
@@ -170,7 +170,17 @@ export default function LoginPage() {
         setPassword("");
         return;
       }
-      await gotoByServerSession();
+      setInfo(
+        tr(
+          "Signup complete. Please sign in.",
+          "가입이 완료되었습니다. 로그인해주세요.",
+          "登録が完了しました。ログインしてください。",
+          "Inscription terminee. Veuillez vous connecter."
+        )
+      );
+      setMode("login");
+      setPassword("");
+      return;
     } catch { setErr(t("login_server_error", lang)); }
     finally { setLoading(false); }
   };
