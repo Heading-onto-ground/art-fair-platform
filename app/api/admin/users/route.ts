@@ -130,7 +130,35 @@ export async function DELETE(req: Request) {
       return NextResponse.json({ ok: true, deletedUsers: 0, skippedProtected: userIds.length });
     }
 
-    const [deletedArtistProfiles, deletedGalleryProfiles, deletedUsers] = await prisma.$transaction([
+    const [
+      deletedNotifications,
+      deletedCommunityLikes,
+      deletedCommunityComments,
+      deletedCommunityPosts,
+      deletedMessagesBySender,
+      deletedChatRooms,
+      deletedOpenCalls,
+      deletedApplications,
+      deletedArtistProfiles,
+      deletedGalleryProfiles,
+      deletedUsers,
+    ] = await prisma.$transaction([
+      prisma.notification.deleteMany({ where: { userId: { in: safeIds } } }),
+      prisma.communityLike.deleteMany({ where: { userId: { in: safeIds } } }),
+      prisma.communityComment.deleteMany({ where: { authorId: { in: safeIds } } }),
+      prisma.communityPost.deleteMany({ where: { authorId: { in: safeIds } } }),
+      prisma.message.deleteMany({ where: { senderId: { in: safeIds } } }),
+      prisma.chatRoom.deleteMany({
+        where: {
+          OR: [{ artistId: { in: safeIds } }, { galleryId: { in: safeIds } }],
+        },
+      }),
+      prisma.openCall.deleteMany({ where: { galleryId: { in: safeIds } } }),
+      prisma.application.deleteMany({
+        where: {
+          OR: [{ artistId: { in: safeIds } }, { galleryId: { in: safeIds } }],
+        },
+      }),
       prisma.artistProfile.deleteMany({ where: { userId: { in: safeIds } } }),
       prisma.galleryProfile.deleteMany({ where: { userId: { in: safeIds } } }),
       prisma.user.deleteMany({ where: { id: { in: safeIds } } }),
@@ -141,6 +169,14 @@ export async function DELETE(req: Request) {
         ok: true,
         requested: userIds.length,
         deletedUsers: deletedUsers.count,
+        deletedNotifications: deletedNotifications.count,
+        deletedCommunityLikes: deletedCommunityLikes.count,
+        deletedCommunityComments: deletedCommunityComments.count,
+        deletedCommunityPosts: deletedCommunityPosts.count,
+        deletedMessagesBySender: deletedMessagesBySender.count,
+        deletedChatRooms: deletedChatRooms.count,
+        deletedOpenCalls: deletedOpenCalls.count,
+        deletedApplications: deletedApplications.count,
         deletedArtistProfiles: deletedArtistProfiles.count,
         deletedGalleryProfiles: deletedGalleryProfiles.count,
         skippedProtected: userIds.length - safeIds.length,
