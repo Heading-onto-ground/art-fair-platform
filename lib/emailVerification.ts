@@ -64,9 +64,10 @@ export async function getEmailVerificationState(input: { email: string; role: Ro
     return { exists: false, verified: false };
   }
   const row = rows[0];
+  // Once verified, login should remain allowed even after token expiry.
+  // Expiry only matters for unverified tokens.
   const verified = !!row.verifiedAt;
-  const notExpired = row.expiresAt.getTime() > Date.now();
-  return { exists: true, verified: verified && notExpired };
+  return { exists: true, verified };
 }
 
 export async function verifyByToken(input: { email: string; role: Role; token: string }) {
