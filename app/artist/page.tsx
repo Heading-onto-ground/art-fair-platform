@@ -50,6 +50,53 @@ function normalizeCountry(input: string): string {
   return v;
 }
 
+function continentFromCountry(countryInput: string): string {
+  const country = normalizeCountry(countryInput);
+  const asia = new Set(["한국", "일본", "중국"]);
+  const europe = new Set(["영국", "프랑스", "독일", "이탈리아", "스위스"]);
+  const northAmerica = new Set(["미국", "캐나다", "멕시코"]);
+  const southAmerica = new Set(["브라질", "아르헨티나", "칠레", "콜롬비아", "페루"]);
+  const africa = new Set(["남아프리카공화국", "나이지리아", "케냐", "모로코", "이집트", "가나", "세네갈"]);
+  const oceania = new Set(["호주", "뉴질랜드"]);
+  const middleEast = new Set(["아랍에미리트", "사우디아라비아", "카타르", "이스라엘", "터키"]);
+
+  if (asia.has(country)) return "ASIA";
+  if (europe.has(country)) return "EUROPE";
+  if (northAmerica.has(country)) return "NORTH_AMERICA";
+  if (southAmerica.has(country)) return "SOUTH_AMERICA";
+  if (africa.has(country)) return "AFRICA";
+  if (oceania.has(country)) return "OCEANIA";
+  if (middleEast.has(country)) return "MIDDLE_EAST";
+  return "OTHER";
+}
+
+function localizeContinentLabel(continent: string, lang: string): string {
+  if (continent === "ALL") return "ALL";
+  const ko: Record<string, string> = {
+    ASIA: "아시아",
+    EUROPE: "유럽",
+    NORTH_AMERICA: "북미",
+    SOUTH_AMERICA: "남미",
+    AFRICA: "아프리카",
+    OCEANIA: "오세아니아",
+    MIDDLE_EAST: "중동",
+    OTHER: "기타",
+  };
+  const ja: Record<string, string> = {
+    ASIA: "アジア",
+    EUROPE: "ヨーロッパ",
+    NORTH_AMERICA: "北米",
+    SOUTH_AMERICA: "南米",
+    AFRICA: "アフリカ",
+    OCEANIA: "オセアニア",
+    MIDDLE_EAST: "中東",
+    OTHER: "その他",
+  };
+  if (lang === "ko") return ko[continent] || continent;
+  if (lang === "ja") return ja[continent] || continent;
+  return continent.replace(/_/g, " ");
+}
+
 function normalizeCityKey(input: string): string {
   return String(input || "").trim().toLowerCase();
 }
@@ -156,6 +203,7 @@ export default function ArtistPage() {
   const [contactError, setContactError] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<"open-calls" | "galleries">("open-calls");
   const [countryFilter, setCountryFilter] = useState<string>("ALL");
+  const [galleryContinentFilter, setGalleryContinentFilter] = useState<string>("ALL");
   const [galleryCountryFilter, setGalleryCountryFilter] = useState<string>("ALL");
   const [galleryCityFilter, setGalleryCityFilter] = useState<string>("ALL");
   const [galleryQuery, setGalleryQuery] = useState("");
@@ -233,37 +281,73 @@ export default function ArtistPage() {
     return openCalls.filter((o) => normalizeCountry((o.country ?? "").trim()) === countryFilter);
   }, [openCalls, countryFilter]);
 
-  const galleryCountries = useMemo(() => {
-    const set = new Set(galleries.map((g) => (g.country ?? "").trim()).filter(Boolean));
+  const galleryContinents = useMemo(() => {
+    const set = new Set(galleries.map((g) => continentFromCountry(g.country || "")).filter(Boolean));
     return ["ALL", ...Array.from(set)];
   }, [galleries]);
 
-  const galleryCountryCounts = useMemo(() => {
+  const galleryContinentCounts = useMemo(() => {
     const counts: Record<string, number> = { ALL: galleries.length };
     galleries.forEach((g) => {
+      const continent = continentFromCountry(g.country || "");
+      counts[continent] = (counts[continent] || 0) + 1;
+    });
+    return counts;
+  }, [galleries]);
+
+  const galleryCountries = useMemo(() => {
+    const scoped =
+      galleryContinentFilter === "ALL"
+        ? galleries
+        : galleries.filter((g) => continentFromCountry(g.country || "") === galleryContinentFilter);
+    const set = new Set(scoped.map((g) => (g.country ?? "").trim()).filter(Boolean));
+    return ["ALL", ...Array.from(set)];
+  }, [galleries, galleryContinentFilter]);
+
+  const galleryCountryCounts = useMemo(() => {
+    const scoped =
+      galleryContinentFilter === "ALL"
+        ? galleries
+        : galleries.filter((g) => continentFromCountry(g.country || "") === galleryContinentFilter);
+    const counts: Record<string, number> = { ALL: scoped.length };
+    scoped.forEach((g) => {
       const c = String(g.country || "").trim();
       if (!c) return;
       counts[c] = (counts[c] || 0) + 1;
     });
     return counts;
-  }, [galleries]);
+  }, [galleries, galleryContinentFilter]);
 
   const galleryCities = useMemo(() => {
+    const byContinent =
+      galleryContinentFilter === "ALL"
+        ? galleries
+        : galleries.filter((g) => continentFromCountry(g.country || "") === galleryContinentFilter);
     const scoped =
       galleryCountryFilter === "ALL"
-        ? galleries
-        : galleries.filter((g) => (g.country ?? "").trim() === galleryCountryFilter);
+        ? byContinent
+        : byContinent.filter((g) => (g.country ?? "").trim() === galleryCountryFilter);
     const set = new Set(scoped.map((g) => (g.city ?? "").trim()).filter(Boolean));
     return ["ALL", ...Array.from(set)];
-  }, [galleries, galleryCountryFilter]);
+  }, [galleries, galleryContinentFilter, galleryCountryFilter]);
 
   useEffect(() => {
     if (!galleryCities.includes(galleryCityFilter)) setGalleryCityFilter("ALL");
   }, [galleryCities, galleryCityFilter]);
 
+  useEffect(() => {
+    if (!galleryContinents.includes(galleryContinentFilter)) setGalleryContinentFilter("ALL");
+  }, [galleryContinents, galleryContinentFilter]);
+
   const filteredGalleries = useMemo(() => {
     const q = galleryQuery.trim().toLowerCase();
     return galleries.filter((g) => {
+      if (
+        galleryContinentFilter !== "ALL" &&
+        continentFromCountry(g.country || "") !== galleryContinentFilter
+      ) {
+        return false;
+      }
       if (galleryCountryFilter !== "ALL" && (g.country ?? "").trim() !== galleryCountryFilter) return false;
       if (galleryCityFilter !== "ALL" && (g.city ?? "").trim() !== galleryCityFilter) return false;
       if (!q) return true;
@@ -273,7 +357,7 @@ export default function ArtistPage() {
         (g.city || "").toLowerCase().includes(q)
       );
     });
-  }, [galleries, galleryCountryFilter, galleryCityFilter, galleryQuery]);
+  }, [galleries, galleryContinentFilter, galleryCountryFilter, galleryCityFilter, galleryQuery]);
 
   useEffect(() => {
     if (hasAutoSelectedCountry) return;
@@ -587,6 +671,33 @@ export default function ArtistPage() {
         ) : (
           <>
             {/* Gallery list filters */}
+            <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 10 }}>
+              {galleryContinents.map((c) => (
+                <button
+                  key={c}
+                  onClick={() => { setGalleryContinentFilter(c); setGalleryCountryFilter("ALL"); setGalleryCityFilter("ALL"); }}
+                  style={{
+                    padding: "8px 12px",
+                    border: c === galleryContinentFilter ? "1px solid #1A1A1A" : "1px solid #E8E3DB",
+                    background: c === galleryContinentFilter ? "#1A1A1A" : "#FFFFFF",
+                    color: c === galleryContinentFilter ? "#FFFFFF" : "#8A8580",
+                    fontFamily: F,
+                    fontSize: 10,
+                    letterSpacing: "0.08em",
+                    textTransform: "uppercase",
+                    cursor: "pointer",
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 8,
+                  }}
+                >
+                  {localizeContinentLabel(c, lang)}
+                  <span style={{ fontSize: 9, opacity: 0.75, padding: "2px 6px", background: c === galleryContinentFilter ? "rgba(255,255,255,0.2)" : "#F5F0EB" }}>
+                    {galleryContinentCounts[c] || 0}
+                  </span>
+                </button>
+              ))}
+            </div>
             <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 14 }}>
               {galleryCountries.map((c) => (
                 <button key={c} onClick={() => { setGalleryCountryFilter(c); setGalleryCityFilter("ALL"); }}
