@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useMemo, useState, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { useLanguage } from "@/lib/useLanguage";
 import { useAutoLocale } from "@/lib/useAutoLocale";
@@ -136,26 +136,41 @@ export default function TopBar() {
 
   const session = me?.session;
 
-  const artistLinks = [
-    { path: "/artist/me", label: t("nav_profile", lang) },
-    { path: "/open-calls", label: t("nav_open_calls", lang) },
-    { path: "/galleries", label: t("nav_galleries", lang) },
-    { path: "/community", label: t("nav_community", lang) },
-    { path: "/shipments", label: t("nav_shipments", lang) },
-    { path: "/chat", label: t("nav_messages", lang) },
-  ];
+  const artistLinks = useMemo(
+    () => [
+      { path: "/artist/me", label: t("nav_profile", lang) },
+      { path: "/open-calls", label: t("nav_open_calls", lang) },
+      { path: "/galleries", label: t("nav_galleries", lang) },
+      { path: "/community", label: t("nav_community", lang) },
+      { path: "/shipments", label: t("nav_shipments", lang) },
+      { path: "/chat", label: t("nav_messages", lang) },
+    ],
+    [lang]
+  );
 
-  const galleryLinks = [
-    { path: "/gallery/me", label: t("nav_profile", lang) },
-    { path: "/artists", label: t("nav_artists", lang) },
-    { path: "/galleries", label: t("nav_galleries", lang) },
-    { path: "/gallery", label: t("nav_my_calls", lang) },
-    { path: "/shipments", label: t("nav_shipments", lang) },
-    { path: "/chat", label: t("nav_messages", lang) },
-    { path: "/admin/outreach", label: t("nav_growth", lang) },
-  ];
+  const galleryLinks = useMemo(
+    () => [
+      { path: "/gallery/me", label: t("nav_profile", lang) },
+      { path: "/artists", label: t("nav_artists", lang) },
+      { path: "/galleries", label: t("nav_galleries", lang) },
+      { path: "/gallery", label: t("nav_my_calls", lang) },
+      { path: "/shipments", label: t("nav_shipments", lang) },
+      { path: "/chat", label: t("nav_messages", lang) },
+      { path: "/admin/outreach", label: t("nav_growth", lang) },
+    ],
+    [lang]
+  );
 
-  const navLinks = session?.role === "artist" ? artistLinks : session?.role === "gallery" ? galleryLinks : [];
+  const navLinks = useMemo(
+    () => (session?.role === "artist" ? artistLinks : session?.role === "gallery" ? galleryLinks : []),
+    [session?.role, artistLinks, galleryLinks]
+  );
+
+  useEffect(() => {
+    for (const link of navLinks) {
+      router.prefetch(link.path);
+    }
+  }, [router, navLinks]);
 
   return (
     <>

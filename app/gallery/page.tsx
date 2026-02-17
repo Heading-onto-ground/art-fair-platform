@@ -41,6 +41,7 @@ type Application = {
   openCallId: string;
   artistId: string;
   artistName: string;
+  artistPortfolioUrl?: string;
   status: "submitted" | "reviewing" | "accepted" | "rejected";
   createdAt: number;
 };
@@ -203,18 +204,20 @@ export default function GalleryPage() {
       }));
 
       try {
-        const list = await loadChats({
-          "x-user-id": m!.session!.userId,
-          "x-user-role": m!.session!.role,
-        });
+        const [list, allOCs, apps, inv, tpl] = await Promise.all([
+          loadChats({
+            "x-user-id": m!.session!.userId,
+            "x-user-role": m!.session!.role,
+          }),
+          loadOpenCalls(),
+          loadApplications(),
+          loadInvites(),
+          loadTemplates(),
+        ]);
         setRooms(list);
-        const allOCs = await loadOpenCalls();
         setOpenCalls(allOCs.filter((o) => o.galleryId === m!.session!.userId));
-        const apps = await loadApplications();
         setApplications(apps);
-        const inv = await loadInvites();
         setInvites(inv);
-        const tpl = await loadTemplates();
         setTemplates(tpl);
       } catch (e: any) {
         setErr(e?.message ?? "Failed to load chats");
@@ -243,15 +246,17 @@ export default function GalleryPage() {
     if (!session) return;
     setErr(null);
     try {
-      const list = await loadChats(headers as Record<string, string>);
+      const [list, allOCs, apps, inv, tpl] = await Promise.all([
+        loadChats(headers as Record<string, string>),
+        loadOpenCalls(),
+        loadApplications(),
+        loadInvites(),
+        loadTemplates(),
+      ]);
       setRooms(list);
-      const allOCs = await loadOpenCalls();
       setOpenCalls(allOCs.filter((o) => o.galleryId === session.userId));
-      const apps = await loadApplications();
       setApplications(apps);
-      const inv = await loadInvites();
       setInvites(inv);
-      const tpl = await loadTemplates();
       setTemplates(tpl);
     } catch (e: any) {
       setErr(e?.message ?? "Failed to load chats");
@@ -876,10 +881,51 @@ export default function GalleryPage() {
                         <div style={{ fontFamily: F, fontSize: 10, color: "#B0B0B0", letterSpacing: "0.1em", textTransform: "uppercase", marginBottom: 6 }}>
                           {String(idx + 1).padStart(2, "0")} · {new Date(a.createdAt).toLocaleDateString()}
                         </div>
-                        <div style={{ fontFamily: S, fontSize: 18, color: "#1A1A1A" }}>{a.artistName || a.artistId}</div>
+                        <button
+                          onClick={() => router.push(`/artists/${encodeURIComponent(a.artistId)}`)}
+                          style={{
+                            border: "none",
+                            background: "transparent",
+                            padding: 0,
+                            margin: 0,
+                            fontFamily: S,
+                            fontSize: 18,
+                            color: "#1A1A1A",
+                            cursor: "pointer",
+                            textAlign: "left",
+                            textDecoration: "underline",
+                            textUnderlineOffset: "3px",
+                          }}
+                        >
+                          {a.artistName || a.artistId}
+                        </button>
+                        <div style={{ fontFamily: F, fontSize: 10, color: "#8A8A8A", marginTop: 4 }}>
+                          ID: {a.artistId}
+                        </div>
                         <div style={{ fontFamily: F, fontSize: 11, color: "#8A8A8A", marginTop: 4 }}>
                           {openCallThemeById[a.openCallId] || a.openCallId}
                         </div>
+                        {a.artistPortfolioUrl && (
+                          <a
+                            href={a.artistPortfolioUrl}
+                            target="_blank"
+                            rel="noreferrer"
+                            style={{
+                              display: "inline-block",
+                              marginTop: 8,
+                              padding: "6px 10px",
+                              border: "1px solid #E8E3DB",
+                              color: "#4A4A4A",
+                              fontFamily: F,
+                              fontSize: 10,
+                              letterSpacing: "0.08em",
+                              textTransform: "uppercase",
+                              textDecoration: "none",
+                            }}
+                          >
+                            Portfolio PDF
+                          </a>
+                        )}
                       </div>
                       <div style={{ fontFamily: F, fontSize: 10, letterSpacing: "0.08em", textTransform: "uppercase", color: a.status === "submitted" ? "#8B3A3A" : "#8A8A8A" }}>
                         {a.status}
