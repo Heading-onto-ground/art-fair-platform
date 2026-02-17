@@ -25,6 +25,46 @@ export type Application = {
   updatedAt: number;
 };
 
+let _applicationColumnsEnsured = false;
+
+async function ensureApplicationColumns() {
+  if (_applicationColumnsEnsured) return;
+  try {
+    // Backward-compatible guard for environments with older Application schema.
+    await prisma.$executeRawUnsafe(
+      `ALTER TABLE "Application" ADD COLUMN IF NOT EXISTS "artistName" TEXT NOT NULL DEFAULT '';`
+    );
+    await prisma.$executeRawUnsafe(
+      `ALTER TABLE "Application" ADD COLUMN IF NOT EXISTS "artistEmail" TEXT NOT NULL DEFAULT '';`
+    );
+    await prisma.$executeRawUnsafe(
+      `ALTER TABLE "Application" ADD COLUMN IF NOT EXISTS "artistCountry" TEXT NOT NULL DEFAULT '';`
+    );
+    await prisma.$executeRawUnsafe(
+      `ALTER TABLE "Application" ADD COLUMN IF NOT EXISTS "artistCity" TEXT NOT NULL DEFAULT '';`
+    );
+    await prisma.$executeRawUnsafe(
+      `ALTER TABLE "Application" ADD COLUMN IF NOT EXISTS "artistPortfolioUrl" TEXT;`
+    );
+    await prisma.$executeRawUnsafe(
+      `ALTER TABLE "Application" ADD COLUMN IF NOT EXISTS "isExternal" BOOLEAN NOT NULL DEFAULT false;`
+    );
+    await prisma.$executeRawUnsafe(
+      `ALTER TABLE "Application" ADD COLUMN IF NOT EXISTS "outreachSent" BOOLEAN NOT NULL DEFAULT false;`
+    );
+    await prisma.$executeRawUnsafe(
+      `ALTER TABLE "Application" ADD COLUMN IF NOT EXISTS "outreachSentAt" TIMESTAMP(3);`
+    );
+    await prisma.$executeRawUnsafe(
+      `ALTER TABLE "Application" ADD COLUMN IF NOT EXISTS "outreachNote" TEXT;`
+    );
+    _applicationColumnsEnsured = true;
+  } catch (e) {
+    // Keep non-fatal; route-level errors will capture hard failures.
+    console.error("Application schema ensure error (non-fatal):", e);
+  }
+}
+
 function toApp(row: any): Application {
   return {
     id: row.id,
@@ -53,26 +93,31 @@ function toApp(row: any): Application {
 }
 
 export async function listApplications(): Promise<Application[]> {
+  await ensureApplicationColumns();
   const rows = await prisma.application.findMany({ orderBy: { createdAt: "desc" } });
   return rows.map(toApp);
 }
 
 export async function listApplicationsByOpenCall(openCallId: string): Promise<Application[]> {
+  await ensureApplicationColumns();
   const rows = await prisma.application.findMany({ where: { openCallId }, orderBy: { createdAt: "desc" } });
   return rows.map(toApp);
 }
 
 export async function listApplicationsByArtist(artistId: string): Promise<Application[]> {
+  await ensureApplicationColumns();
   const rows = await prisma.application.findMany({ where: { artistId }, orderBy: { createdAt: "desc" } });
   return rows.map(toApp);
 }
 
 export async function findApplication(openCallId: string, artistId: string): Promise<Application | null> {
+  await ensureApplicationColumns();
   const row = await prisma.application.findUnique({ where: { openCallId_artistId: { openCallId, artistId } } });
   return row ? toApp(row) : null;
 }
 
 export async function getApplicationById(id: string): Promise<Application | null> {
+  await ensureApplicationColumns();
   const row = await prisma.application.findUnique({ where: { id } });
   return row ? toApp(row) : null;
 }
@@ -88,6 +133,7 @@ export async function createApplication(input: {
   artistPortfolioUrl?: string;
   message?: string;
 }): Promise<Application> {
+  await ensureApplicationColumns();
   const row = await prisma.application.create({
     data: {
       openCallId: input.openCallId,
@@ -115,6 +161,7 @@ export async function updateApplicationShipping(
   }
 ): Promise<Application | null> {
   try {
+    await ensureApplicationColumns();
     const row = await prisma.application.update({
       where: { id },
       data: {
@@ -136,6 +183,7 @@ export async function updateApplicationStatus(
   status: "submitted" | "reviewing" | "accepted" | "rejected"
 ): Promise<Application | null> {
   try {
+    await ensureApplicationColumns();
     const row = await prisma.application.update({ where: { id }, data: { status } });
     return toApp(row);
   } catch {
@@ -144,17 +192,20 @@ export async function updateApplicationStatus(
 }
 
 export async function listExternalApplications(): Promise<Application[]> {
+  await ensureApplicationColumns();
   const rows = await prisma.application.findMany({ where: { isExternal: true }, orderBy: { createdAt: "desc" } });
   return rows.map(toApp);
 }
 
 export async function listPendingOutreach(): Promise<Application[]> {
+  await ensureApplicationColumns();
   const rows = await prisma.application.findMany({ where: { isExternal: true, outreachSent: false }, orderBy: { createdAt: "desc" } });
   return rows.map(toApp);
 }
 
 export async function markOutreachSent(id: string, note?: string): Promise<Application | null> {
   try {
+    await ensureApplicationColumns();
     const row = await prisma.application.update({
       where: { id },
       data: { outreachSent: true, outreachSentAt: new Date(), outreachNote: note },
@@ -167,6 +218,7 @@ export async function markOutreachSent(id: string, note?: string): Promise<Appli
 
 export async function setApplicationExternal(id: string): Promise<void> {
   try {
+    await ensureApplicationColumns();
     await prisma.application.update({ where: { id }, data: { isExternal: true } });
   } catch { /* ignore */ }
 }
