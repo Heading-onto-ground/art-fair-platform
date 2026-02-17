@@ -19,6 +19,31 @@ function inferredEmailFromWebsite(website?: string) {
   return `info@${host}`;
 }
 
+function isTokenLike(value: string) {
+  const v = String(value || "").trim();
+  if (!v) return false;
+  if (!/^[a-z0-9]{6,}$/i.test(v)) return false;
+  return /[a-z]/i.test(v) && /\d/.test(v);
+}
+
+function isLikelyInvalidInternalGalleryProfile(profile: any) {
+  const nowYear = new Date().getFullYear();
+  const foundedYear = Number(profile?.foundedYear || 0);
+  if (foundedYear && (foundedYear < 1500 || foundedYear > nowYear + 1)) return true;
+
+  const name = String(profile?.name || "").trim();
+  const city = String(profile?.city || "").trim();
+  const website = String(profile?.website || "").trim();
+  const bio = String(profile?.bio || "").trim();
+  const address = String(profile?.address || "").trim();
+  const instagram = String(profile?.instagram || "").trim();
+
+  if (isTokenLike(name) && !city && !website && !bio && (isTokenLike(address) || isTokenLike(instagram))) {
+    return true;
+  }
+  return false;
+}
+
 export async function GET(
   _req: Request,
   { params }: { params: { id: string } }
@@ -28,7 +53,7 @@ export async function GET(
     const profile = await getProfileByUserId(id);
 
     // ✅ gallery 프로필만 노출
-    if (!profile || profile.role !== "gallery") {
+    if (!profile || profile.role !== "gallery" || isLikelyInvalidInternalGalleryProfile(profile)) {
       // Fallback #1: external gallery directory
       const ext = await getExternalGalleryDirectoryById(id);
       if (ext) {

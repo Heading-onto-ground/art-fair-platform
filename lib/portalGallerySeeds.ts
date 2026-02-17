@@ -1378,16 +1378,6 @@ export const PORTAL_GALLERY_SEEDS: PortalGallerySeed[] = [
     sourcePortal: "Baidu",
     sourceUrl: "https://www.shanghartgallery.com",
   },
-  {
-    galleryId: "__ext_dir_longmarch_beijing",
-    name: "Long March Space",
-    country: "중국",
-    city: "Beijing",
-    website: "https://www.longmarchspace.com",
-    bio: "Contemporary gallery and project space in Beijing.",
-    sourcePortal: "Baidu",
-    sourceUrl: "https://www.longmarchspace.com",
-  },
 
   // Switzerland
   {

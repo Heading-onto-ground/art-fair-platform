@@ -13,6 +13,14 @@ function normalizeCountry(input: string) {
   return v;
 }
 
+function normalizeCity(input: string) {
+  const v = String(input || "").trim();
+  if (!v) return v;
+  const lower = v.toLowerCase();
+  if (lower === "seould" || lower === "seoul d") return "Seoul";
+  return v;
+}
+
 function shouldHideByValidation(validation?: { status?: string; reason?: string | null }) {
   if (!validation || validation.status !== "invalid") return false;
   const reason = String(validation.reason || "").toLowerCase();
@@ -35,6 +43,7 @@ export async function GET() {
     .map((oc) => ({
     ...oc,
     country: normalizeCountry(oc.country),
+    city: normalizeCity(oc.city),
   }));
   const res = NextResponse.json({ openCalls });
   res.headers.set("Cache-Control", "public, s-maxage=15, stale-while-revalidate=120");
@@ -63,7 +72,7 @@ export async function POST(req: Request) {
     const created = await createOpenCall({
       galleryId: session.userId,
       gallery: String(gallery).trim(),
-      city: String(city).trim(),
+      city: normalizeCity(String(city).trim()),
       country: normalizedCountry,
       theme: String(theme).trim(),
       deadline: String(deadline).trim(),

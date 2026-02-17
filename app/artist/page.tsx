@@ -101,6 +101,78 @@ function normalizeCityKey(input: string): string {
   return String(input || "").trim().toLowerCase();
 }
 
+function normalizeDirectoryCity(countryInput: string, cityInput: string): string {
+  const country = normalizeCountry(countryInput);
+  const city = String(cityInput || "").trim();
+  if (!city) return "";
+
+  const lower = city.toLowerCase();
+  const alias: Record<string, string> = {
+    seould: "Seoul",
+    "new york city": "New York",
+    manhattan: "New York",
+    brooklyn: "New York",
+    queens: "New York",
+    bronx: "New York",
+    "los angeles county": "Los Angeles",
+    "city of los angeles": "Los Angeles",
+    "city of seoul": "Seoul",
+    "city of london": "London",
+    "royal borough of kensington and chelsea": "London",
+    "london borough of southwark": "London",
+    "london borough of richmond upon thames": "London",
+    "london borough of wandsworth": "London",
+    "8th arrondissement of paris": "Paris",
+    "7th arrondissement of paris": "Paris",
+    "6th arrondissement of paris": "Paris",
+    "3rd arrondissement of paris": "Paris",
+    "1st arrondissement of paris": "Paris",
+    "18th arrondissement of paris": "Paris",
+    "14th arrondissement of paris": "Paris",
+    "11th arrondissement of paris": "Paris",
+    "10th arrondissement of paris": "Paris",
+    shinjuku: "Tokyo",
+    roppongi: "Tokyo",
+    "minami-aoyama": "Tokyo",
+    ginza: "Tokyo",
+    "sakyō-ku": "Kyoto",
+    "nakagyō ward": "Kyoto",
+    "roma capitale": "Rome",
+    victoria: "Melbourne",
+    southbank: "Melbourne",
+  };
+  if (alias[lower]) return alias[lower];
+
+  if (country === "중국") {
+    const chinaMajor = [
+      "shanghai",
+      "beijing",
+      "guangzhou",
+      "shenzhen",
+      "chengdu",
+      "hangzhou",
+      "nanjing",
+      "wuhan",
+      "chongqing",
+      "tianjin",
+      "xi'an",
+      "xian",
+      "suzhou",
+      "qingdao",
+      "xiamen",
+    ];
+    const hit = chinaMajor.find((c) => lower === c || lower.startsWith(`${c} `));
+    if (hit === "xian" || hit === "xi'an") return "Xi'an";
+    if (hit) return hit.charAt(0).toUpperCase() + hit.slice(1);
+    return "";
+  }
+
+  if (/\b(county|borough|arrondissement|municipality|ward|territory|province|state|capitale)\b/i.test(lower)) {
+    return "";
+  }
+  return city;
+}
+
 function localizeCityLabel(city: string, lang: string): string {
   const key = normalizeCityKey(city);
   if (!key) return city;
@@ -206,6 +278,8 @@ export default function ArtistPage() {
   const [galleryContinentFilter, setGalleryContinentFilter] = useState<string>("ALL");
   const [galleryCountryFilter, setGalleryCountryFilter] = useState<string>("ALL");
   const [galleryCityFilter, setGalleryCityFilter] = useState<string>("ALL");
+  const [showAllGalleryCities, setShowAllGalleryCities] = useState(false);
+  const [galleryPage, setGalleryPage] = useState(1);
   const [galleryQuery, setGalleryQuery] = useState("");
   const [applyingId, setApplyingId] = useState<string | null>(null);
   const [hasAutoSelectedCountry, setHasAutoSelectedCountry] = useState(false);
@@ -327,13 +401,26 @@ export default function ArtistPage() {
       galleryCountryFilter === "ALL"
         ? byContinent
         : byContinent.filter((g) => (g.country ?? "").trim() === galleryCountryFilter);
-    const set = new Set(scoped.map((g) => (g.city ?? "").trim()).filter(Boolean));
-    return ["ALL", ...Array.from(set)];
+    const counts = new Map<string, number>();
+    for (const g of scoped) {
+      const city = normalizeDirectoryCity(g.country || "", g.city || "");
+      if (!city) continue;
+      counts.set(city, (counts.get(city) || 0) + 1);
+    }
+    const topCities = Array.from(counts.entries())
+      .sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]))
+      .slice(0, 30)
+      .map(([city]) => city);
+    return ["ALL", ...topCities];
   }, [galleries, galleryContinentFilter, galleryCountryFilter]);
 
   useEffect(() => {
     if (!galleryCities.includes(galleryCityFilter)) setGalleryCityFilter("ALL");
   }, [galleryCities, galleryCityFilter]);
+
+  useEffect(() => {
+    setShowAllGalleryCities(false);
+  }, [galleryContinentFilter, galleryCountryFilter]);
 
   useEffect(() => {
     if (!galleryContinents.includes(galleryContinentFilter)) setGalleryContinentFilter("ALL");
@@ -349,15 +436,42 @@ export default function ArtistPage() {
         return false;
       }
       if (galleryCountryFilter !== "ALL" && (g.country ?? "").trim() !== galleryCountryFilter) return false;
-      if (galleryCityFilter !== "ALL" && (g.city ?? "").trim() !== galleryCityFilter) return false;
+      if (
+        galleryCityFilter !== "ALL" &&
+        normalizeDirectoryCity(g.country || "", g.city || "") !== galleryCityFilter
+      ) {
+        return false;
+      }
       if (!q) return true;
       return (
         (g.name || "").toLowerCase().includes(q) ||
         (g.email || "").toLowerCase().includes(q) ||
+        normalizeDirectoryCity(g.country || "", g.city || "").toLowerCase().includes(q) ||
         (g.city || "").toLowerCase().includes(q)
       );
     });
   }, [galleries, galleryContinentFilter, galleryCountryFilter, galleryCityFilter, galleryQuery]);
+
+  const galleryPageSize = 10;
+  const galleryTotalPages = Math.max(1, Math.ceil(filteredGalleries.length / galleryPageSize));
+  const pagedGalleries = useMemo(() => {
+    const start = (galleryPage - 1) * galleryPageSize;
+    return filteredGalleries.slice(start, start + galleryPageSize);
+  }, [filteredGalleries, galleryPage]);
+
+  useEffect(() => {
+    if (galleryPage > galleryTotalPages) setGalleryPage(galleryTotalPages);
+  }, [galleryPage, galleryTotalPages]);
+
+  useEffect(() => {
+    setGalleryPage(1);
+  }, [galleryContinentFilter, galleryCountryFilter, galleryCityFilter, galleryQuery]);
+
+  const visibleGalleryCities = useMemo(() => {
+    const limit = 12;
+    if (showAllGalleryCities) return galleryCities;
+    return galleryCities.slice(0, limit);
+  }, [galleryCities, showAllGalleryCities]);
 
   useEffect(() => {
     if (hasAutoSelectedCountry) return;
@@ -709,14 +823,36 @@ export default function ArtistPage() {
                 </button>
               ))}
             </div>
-            <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 14 }}>
-              {galleryCities.map((c) => (
+            <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 10 }}>
+              {visibleGalleryCities.map((c) => (
                 <button key={c} onClick={() => setGalleryCityFilter(c)}
                   style={{ padding: "7px 12px", border: c === galleryCityFilter ? "1px solid #8B7355" : "1px solid #E8E3DB", background: c === galleryCityFilter ? "rgba(139,115,85,0.08)" : "#FFFFFF", color: c === galleryCityFilter ? "#8B7355" : "#8A8580", fontFamily: F, fontSize: 10, letterSpacing: "0.08em", textTransform: "uppercase", cursor: "pointer" }}>
                   {c === "ALL" ? c : localizeCityLabel(c, lang)}
                 </button>
               ))}
             </div>
+            {galleryCities.length > 12 && (
+              <div style={{ marginBottom: 14 }}>
+                <button
+                  onClick={() => setShowAllGalleryCities((v) => !v)}
+                  style={{
+                    padding: "6px 12px",
+                    border: "1px solid #E8E3DB",
+                    background: "#FFFFFF",
+                    color: "#8A8580",
+                    fontFamily: F,
+                    fontSize: 10,
+                    letterSpacing: "0.08em",
+                    textTransform: "uppercase",
+                    cursor: "pointer",
+                  }}
+                >
+                  {showAllGalleryCities
+                    ? (lang === "ko" ? "접기" : lang === "ja" ? "折りたたむ" : "Collapse")
+                    : (lang === "ko" ? "도시 더보기" : lang === "ja" ? "都市をもっと見る" : "More Cities")}
+                </button>
+              </div>
+            )}
             <div style={{ marginBottom: 20 }}>
               <input
                 value={galleryQuery}
@@ -736,7 +872,7 @@ export default function ArtistPage() {
               </div>
             ) : (
               <div style={{ display: "grid", gap: 1, background: "#E8E3DB" }}>
-                {filteredGalleries.map((g, idx) => (
+                {pagedGalleries.map((g, idx) => (
                   <div key={g.userId} onClick={() => router.push(`/galleries/${encodeURIComponent(g.userId)}`)}
                     style={{ background: "#FFFFFF", padding: "18px 20px", cursor: "pointer" }}
                     onMouseEnter={(e) => { e.currentTarget.style.background = "#FAF8F4"; }}
@@ -744,9 +880,9 @@ export default function ArtistPage() {
                     <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 16 }}>
                       <div>
                         <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 6 }}>
-                          <span style={{ fontFamily: S, fontSize: 16, color: "#D4CEC4" }}>{String(idx + 1).padStart(2, "0")}</span>
+                          <span style={{ fontFamily: S, fontSize: 16, color: "#D4CEC4" }}>{String((galleryPage - 1) * galleryPageSize + idx + 1).padStart(2, "0")}</span>
                           <span style={{ fontFamily: F, fontSize: 10, letterSpacing: "0.08em", textTransform: "uppercase", color: "#8B7355" }}>
-                            [g.country, localizeCityLabel(g.city || "", lang)].filter(Boolean).join(" / ")
+                            {[g.country, localizeCityLabel(normalizeDirectoryCity(g.country || "", g.city || ""), lang)].filter(Boolean).join(" / ")}
                           </span>
                         </div>
                         <h3 style={{ fontFamily: S, fontSize: 22, fontWeight: 400, color: "#1A1A1A", margin: 0 }}>{g.name}</h3>
@@ -768,6 +904,53 @@ export default function ArtistPage() {
                     </p>
                   </div>
                 )}
+              </div>
+            )}
+            {!galleryLoading && !galleryError && filteredGalleries.length > 0 && (
+              <div style={{ marginTop: 14, display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10 }}>
+                <span style={{ fontFamily: F, fontSize: 10, color: "#8A8580", letterSpacing: "0.06em", textTransform: "uppercase" }}>
+                  {lang === "ko"
+                    ? `${galleryPage} / ${galleryTotalPages} 페이지`
+                    : lang === "ja"
+                      ? `${galleryPage} / ${galleryTotalPages} ページ`
+                      : `Page ${galleryPage} / ${galleryTotalPages}`}
+                </span>
+                <div style={{ display: "flex", gap: 8 }}>
+                  <button
+                    onClick={() => setGalleryPage((p) => Math.max(1, p - 1))}
+                    disabled={galleryPage <= 1}
+                    style={{
+                      padding: "8px 12px",
+                      border: "1px solid #E8E3DB",
+                      background: "#FFFFFF",
+                      color: galleryPage <= 1 ? "#C8C2B9" : "#8A8580",
+                      fontFamily: F,
+                      fontSize: 10,
+                      letterSpacing: "0.08em",
+                      textTransform: "uppercase",
+                      cursor: galleryPage <= 1 ? "default" : "pointer",
+                    }}
+                  >
+                    {lang === "ko" ? "이전" : lang === "ja" ? "前へ" : "Prev"}
+                  </button>
+                  <button
+                    onClick={() => setGalleryPage((p) => Math.min(galleryTotalPages, p + 1))}
+                    disabled={galleryPage >= galleryTotalPages}
+                    style={{
+                      padding: "8px 12px",
+                      border: "1px solid #E8E3DB",
+                      background: "#FFFFFF",
+                      color: galleryPage >= galleryTotalPages ? "#C8C2B9" : "#8A8580",
+                      fontFamily: F,
+                      fontSize: 10,
+                      letterSpacing: "0.08em",
+                      textTransform: "uppercase",
+                      cursor: galleryPage >= galleryTotalPages ? "default" : "pointer",
+                    }}
+                  >
+                    {lang === "ko" ? "다음" : lang === "ja" ? "次へ" : "Next"}
+                  </button>
+                </div>
               </div>
             )}
           </>

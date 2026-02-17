@@ -18,12 +18,84 @@ type Gallery = {
   updatedAt?: number;
 };
 
+function normalizeDirectoryCity(countryInput: string, cityInput: string): string {
+  const country = String(countryInput || "").trim();
+  const city = String(cityInput || "").trim();
+  if (!city) return "";
+  const lower = city.toLowerCase();
+
+  const alias: Record<string, string> = {
+    seould: "Seoul",
+    "new york city": "New York",
+    manhattan: "New York",
+    brooklyn: "New York",
+    queens: "New York",
+    bronx: "New York",
+    "los angeles county": "Los Angeles",
+    "city of los angeles": "Los Angeles",
+    "city of london": "London",
+    "royal borough of kensington and chelsea": "London",
+    "london borough of southwark": "London",
+    "london borough of richmond upon thames": "London",
+    "london borough of wandsworth": "London",
+    "8th arrondissement of paris": "Paris",
+    "7th arrondissement of paris": "Paris",
+    "6th arrondissement of paris": "Paris",
+    "3rd arrondissement of paris": "Paris",
+    "1st arrondissement of paris": "Paris",
+    "18th arrondissement of paris": "Paris",
+    "14th arrondissement of paris": "Paris",
+    "11th arrondissement of paris": "Paris",
+    "10th arrondissement of paris": "Paris",
+    shinjuku: "Tokyo",
+    roppongi: "Tokyo",
+    "minami-aoyama": "Tokyo",
+    ginza: "Tokyo",
+    "sakyō-ku": "Kyoto",
+    "nakagyō ward": "Kyoto",
+    "roma capitale": "Rome",
+    victoria: "Melbourne",
+    southbank: "Melbourne",
+  };
+  if (alias[lower]) return alias[lower];
+
+  if (country === "중국") {
+    const chinaMajor = [
+      "shanghai",
+      "beijing",
+      "guangzhou",
+      "shenzhen",
+      "chengdu",
+      "hangzhou",
+      "nanjing",
+      "wuhan",
+      "chongqing",
+      "tianjin",
+      "xi'an",
+      "xian",
+      "suzhou",
+      "qingdao",
+      "xiamen",
+    ];
+    const hit = chinaMajor.find((c) => lower === c || lower.startsWith(`${c} `));
+    if (hit === "xian" || hit === "xi'an") return "Xi'an";
+    if (hit) return hit.charAt(0).toUpperCase() + hit.slice(1);
+    return "";
+  }
+
+  if (/\b(county|borough|arrondissement|municipality|ward|territory|province|state|capitale)\b/i.test(lower)) {
+    return "";
+  }
+  return city;
+}
+
 export default function GalleriesPage() {
   const router = useRouter();
   const { data, error, isLoading, mutate } = useFetch<{ galleries: Gallery[] }>("/api/public/galleries");
   const galleries = data?.galleries ?? [];
   const [country, setCountry] = useState<string>("ALL");
   const [city, setCity] = useState<string>("ALL");
+  const [showAllCityTabs, setShowAllCityTabs] = useState(false);
   const [query, setQuery] = useState("");
   const [favorites, setFavorites] = useState<Record<string, boolean>>({});
 
@@ -60,13 +132,17 @@ export default function GalleriesPage() {
     const scoped = country === "ALL"
       ? galleries
       : galleries.filter((g) => (g.country ?? "").trim() === country);
-    const cities = scoped.map((g) => (g.city ?? "").trim()).filter(Boolean);
-    const uniqueCities = Array.from(new Set(cities)).sort((a, b) => {
-      const countA = scoped.filter((g) => (g.city ?? "").trim() === a).length;
-      const countB = scoped.filter((g) => (g.city ?? "").trim() === b).length;
-      return countB - countA;
-    });
-    return ["ALL", ...uniqueCities];
+    const counts = new Map<string, number>();
+    for (const g of scoped) {
+      const normalized = normalizeDirectoryCity(g.country ?? "", g.city ?? "");
+      if (!normalized) continue;
+      counts.set(normalized, (counts.get(normalized) || 0) + 1);
+    }
+    const topCities = Array.from(counts.entries())
+      .sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]))
+      .slice(0, 30)
+      .map(([c]) => c);
+    return ["ALL", ...topCities];
   }, [galleries, country]);
 
   const cityCounts = useMemo(() => {
@@ -75,7 +151,7 @@ export default function GalleriesPage() {
       : galleries.filter((g) => (g.country ?? "").trim() === country);
     const counts: Record<string, number> = { ALL: scoped.length };
     scoped.forEach((g) => {
-      const c = (g.city ?? "").trim();
+      const c = normalizeDirectoryCity(g.country ?? "", g.city ?? "");
       if (c) counts[c] = (counts[c] || 0) + 1;
     });
     return counts;
@@ -85,15 +161,30 @@ export default function GalleriesPage() {
     if (!cityTabs.includes(city)) setCity("ALL");
   }, [cityTabs, city]);
 
+  useEffect(() => {
+    setShowAllCityTabs(false);
+  }, [country]);
+
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
     return galleries.filter((g) => {
       if (country !== "ALL" && (g.country ?? "").trim() !== country) return false;
-      if (city !== "ALL" && (g.city ?? "").trim() !== city) return false;
+      if (city !== "ALL" && normalizeDirectoryCity(g.country ?? "", g.city ?? "") !== city) return false;
       if (!q) return true;
-      return g.name.toLowerCase().includes(q) || g.email.toLowerCase().includes(q) || g.city.toLowerCase().includes(q);
+      return (
+        g.name.toLowerCase().includes(q) ||
+        g.email.toLowerCase().includes(q) ||
+        normalizeDirectoryCity(g.country ?? "", g.city ?? "").toLowerCase().includes(q) ||
+        g.city.toLowerCase().includes(q)
+      );
     });
   }, [galleries, country, city, query]);
+
+  const visibleCityTabs = useMemo(() => {
+    const limit = 12;
+    if (showAllCityTabs) return cityTabs;
+    return cityTabs.slice(0, limit);
+  }, [cityTabs, showAllCityTabs]);
 
   function getYearsSince(year?: number): string {
     if (!year || year <= 0) return "";
@@ -185,8 +276,8 @@ export default function GalleriesPage() {
         </div>
 
         {/* City Sub Tabs */}
-        <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 28 }}>
-          {cityTabs.map((c) => (
+        <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 10 }}>
+          {visibleCityTabs.map((c) => (
             <button
               key={c}
               onClick={() => setCity(c)}
@@ -213,6 +304,26 @@ export default function GalleriesPage() {
             </button>
           ))}
         </div>
+        {cityTabs.length > 12 && (
+          <div style={{ marginBottom: 28 }}>
+            <button
+              onClick={() => setShowAllCityTabs((v) => !v)}
+              style={{
+                padding: "7px 12px",
+                border: "1px solid #EDE7DD",
+                background: "#FFFFFF",
+                color: "#6A6A6A",
+                fontFamily: F,
+                fontSize: 10,
+                letterSpacing: "0.08em",
+                textTransform: "uppercase",
+                cursor: "pointer",
+              }}
+            >
+              {showAllCityTabs ? "접기" : "도시 더보기"}
+            </button>
+          </div>
+        )}
 
         {/* Search */}
         <div style={{ marginBottom: 32 }}>
@@ -328,7 +439,7 @@ export default function GalleriesPage() {
                         padding: "4px 10px",
                         border: "1px solid #EDE6DA",
                       }}>
-                        {[g.city, g.country].filter(Boolean).join(", ")}
+                        {[normalizeDirectoryCity(g.country ?? "", g.city ?? ""), g.country].filter(Boolean).join(", ")}
                       </span>
                     )}
                     {getYearsSince(g.foundedYear) && (

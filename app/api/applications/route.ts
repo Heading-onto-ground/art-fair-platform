@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
-import { getServerSession, getProfileByUserId } from "@/lib/auth";
-import { getOpenCallById, listOpenCallsByGallery } from "@/app/data/openCalls";
+import { getServerSession, getProfileByUserId, listGalleryProfiles } from "@/lib/auth";
+import { getOpenCallById, listOpenCalls, listOpenCallsByGallery } from "@/app/data/openCalls";
 import {
   createApplication,
   findApplication,
@@ -13,6 +13,29 @@ import { createNotification } from "@/app/data/notifications";
 import { sendApplicationEmail } from "@/lib/email";
 
 export const dynamic = "force-dynamic";
+
+function normalizeLoose(value: string | undefined | null) {
+  return String(value ?? "").trim().toLowerCase();
+}
+
+async function getGalleryOwnerAliases(session: { userId: string; email?: string }) {
+  const profile = await getProfileByUserId(session.userId);
+  const profileGalleryId =
+    profile && (profile as any).role === "gallery" ? String((profile as any).galleryId ?? "") : "";
+  const profileName =
+    profile && (profile as any).role === "gallery" ? String((profile as any).name ?? "") : "";
+
+  const aliases = new Set<string>();
+  if (session.userId) aliases.add(session.userId);
+  if (session.email) aliases.add(session.email);
+  if (profileGalleryId) aliases.add(profileGalleryId);
+  if (profileName) aliases.add(profileName);
+  return {
+    aliases,
+    normalizedAliases: new Set(Array.from(aliases).map((v) => normalizeLoose(v)).filter(Boolean)),
+    profileName,
+  };
+}
 
 export async function GET(req: Request) {
   try {
@@ -34,9 +57,16 @@ export async function GET(req: Request) {
     }
 
     if (session.role === "gallery") {
+      const { aliases, normalizedAliases, profileName } = await getGalleryOwnerAliases(session);
       if (openCallId) {
         const openCall = await getOpenCallById(openCallId);
-        if (!openCall || openCall.galleryId !== session.userId) {
+        const isOwner =
+          !!openCall &&
+          (aliases.has(openCall.galleryId) ||
+            normalizedAliases.has(normalizeLoose(openCall.galleryId)) ||
+            (profileName &&
+              normalizeLoose(openCall.gallery) === normalizeLoose(profileName)));
+        if (!openCall || !isOwner) {
           return NextResponse.json({ error: "forbidden" }, { status: 403 });
         }
         return NextResponse.json({
@@ -44,7 +74,19 @@ export async function GET(req: Request) {
         });
       }
 
-      const galleryOpenCalls = await listOpenCallsByGallery(session.userId);
+      const directGalleryOpenCalls = await listOpenCallsByGallery(session.userId);
+      const allOpenCalls = await listOpenCalls();
+      const byAlias = allOpenCalls.filter((oc) => {
+        if (aliases.has(oc.galleryId)) return true;
+        if (normalizedAliases.has(normalizeLoose(oc.galleryId))) return true;
+        if (profileName && normalizeLoose(oc.gallery) === normalizeLoose(profileName)) return true;
+        return false;
+      });
+      const mergedMap = new Map<string, (typeof allOpenCalls)[number]>();
+      for (const oc of [...directGalleryOpenCalls, ...byAlias]) {
+        mergedMap.set(oc.id, oc);
+      }
+      const galleryOpenCalls = Array.from(mergedMap.values());
       const all: any[] = [];
       for (const oc of galleryOpenCalls) {
         const list = await listApplicationsByOpenCall(oc.id);
@@ -118,19 +160,40 @@ export async function POST(req: Request) {
 
     if (!openCall.isExternal) {
       // 내부 갤러리에게 알림 생성
-      await createNotification({
-        userId: openCall.galleryId,
-        type: "new_application",
-        title: "NEW APPLICATION",
-        message: `${profile.name ?? session.userId} applied to "${openCall.theme}"`,
-        link: `/gallery?openCallId=${openCallId}`,
-        data: {
-          applicationId: created.id,
-          openCallId,
-          artistId: session.userId,
-          artistName: profile.name ?? session.userId,
-        },
-      });
+      const targetIds = new Set<string>([openCall.galleryId]);
+      try {
+        const galleryProfiles = await listGalleryProfiles();
+        const normalizedGalleryName = normalizeLoose(openCall.gallery);
+        for (const gp of galleryProfiles) {
+          const matchByGalleryId =
+            normalizeLoose(gp.userId) === normalizeLoose(openCall.galleryId) ||
+            normalizeLoose(gp.galleryId) === normalizeLoose(openCall.galleryId);
+          const matchByName =
+            !!normalizedGalleryName &&
+            normalizeLoose(gp.name) === normalizedGalleryName;
+          if (matchByGalleryId || matchByName) {
+            targetIds.add(gp.userId);
+            if (gp.galleryId) targetIds.add(gp.galleryId);
+          }
+        }
+      } catch {
+        // non-blocking
+      }
+      for (const targetId of targetIds) {
+        await createNotification({
+          userId: targetId,
+          type: "new_application",
+          title: "NEW APPLICATION",
+          message: `${profile.name ?? session.userId} applied to "${openCall.theme}"`,
+          link: `/gallery?openCallId=${openCallId}`,
+          data: {
+            applicationId: created.id,
+            openCallId,
+            artistId: session.userId,
+            artistName: profile.name ?? session.userId,
+          },
+        });
+      }
     } else {
       // 외부 오픈콜 → 갤러리에 자동 아웃리치 이메일 발송
       const artistName = profile.name ?? session.userId;
