@@ -32,7 +32,13 @@ function shouldHideByValidation(validation?: { status?: string; reason?: string 
 
 export async function GET() {
   const allOpenCalls = await listOpenCalls();
-  const validationMap = await getOpenCallValidationMap(allOpenCalls.map((oc) => oc.id));
+  let validationMap = new Map<string, { status?: string; reason?: string | null }>();
+  try {
+    validationMap = await getOpenCallValidationMap(allOpenCalls.map((oc) => oc.id));
+  } catch (validationError) {
+    // Validation lookup is best-effort; keep API available on infra mismatch.
+    console.error("open-call validation map load failed (non-blocking):", validationError);
+  }
   const openCalls = allOpenCalls
     .filter((oc) => {
       // Only hide clearly invalid external entries. Keep internal and temporary-unreachable entries visible.

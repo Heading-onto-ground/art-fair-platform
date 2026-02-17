@@ -20,10 +20,15 @@ export async function GET(
       return NextResponse.json({ error: "not found" }, { status: 404 });
     }
     if (openCall.isExternal) {
-      const validationMap = await getOpenCallValidationMap([openCall.id]);
-      const validation = validationMap.get(openCall.id);
-      if (shouldHideByValidation(validation)) {
-        return NextResponse.json({ error: "not found" }, { status: 404 });
+      try {
+        const validationMap = await getOpenCallValidationMap([openCall.id]);
+        const validation = validationMap.get(openCall.id);
+        if (shouldHideByValidation(validation)) {
+          return NextResponse.json({ error: "not found" }, { status: 404 });
+        }
+      } catch (validationError) {
+        // Validation infra should never block open call detail rendering.
+        console.error("open-call validation check failed (non-blocking):", validationError);
       }
     }
     return NextResponse.json({ openCall });
