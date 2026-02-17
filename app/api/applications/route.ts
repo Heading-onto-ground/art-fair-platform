@@ -180,19 +180,28 @@ export async function POST(req: Request) {
         // non-blocking
       }
       for (const targetId of targetIds) {
-        await createNotification({
-          userId: targetId,
-          type: "new_application",
-          title: "NEW APPLICATION",
-          message: `${profile.name ?? session.userId} applied to "${openCall.theme}"`,
-          link: `/gallery?openCallId=${openCallId}`,
-          data: {
-            applicationId: created.id,
+        try {
+          await createNotification({
+            userId: targetId,
+            type: "new_application",
+            title: "NEW APPLICATION",
+            message: `${profile.name ?? session.userId} applied to "${openCall.theme}"`,
+            link: `/gallery?openCallId=${openCallId}`,
+            data: {
+              applicationId: created.id,
+              openCallId,
+              artistId: session.userId,
+              artistName: profile.name ?? session.userId,
+            },
+          });
+        } catch (notifErr) {
+          // Do not fail artist application when notification fanout fails.
+          console.error("createNotification failed (non-blocking):", {
+            targetId,
             openCallId,
-            artistId: session.userId,
-            artistName: profile.name ?? session.userId,
-          },
-        });
+            error: notifErr,
+          });
+        }
       }
     } else {
       // 외부 오픈콜 → 갤러리에 자동 아웃리치 이메일 발송
