@@ -36,6 +36,15 @@ type OpenCall = {
   createdAt: number;
 };
 
+type Application = {
+  id: string;
+  openCallId: string;
+  artistId: string;
+  artistName: string;
+  status: "submitted" | "reviewing" | "accepted" | "rejected";
+  createdAt: number;
+};
+
 type Invite = {
   id: string;
   galleryId: string;
@@ -68,11 +77,13 @@ export default function GalleryPage() {
   const searchParams = useSearchParams();
   const { lang } = useLanguage();
   const isAdminView = searchParams.get("adminView") === "1";
+  const createMode = searchParams.get("create") === "1";
   const [adminReadOnly, setAdminReadOnly] = useState(false);
 
   const [me, setMe] = useState<MeResponse | null>(null);
   const [rooms, setRooms] = useState<ChatRoom[]>([]);
   const [openCalls, setOpenCalls] = useState<OpenCall[]>([]);
+  const [applications, setApplications] = useState<Application[]>([]);
   const [invites, setInvites] = useState<Invite[]>([]);
   const [templates, setTemplates] = useState<InviteTemplates | null>(null);
   const [tplSaving, setTplSaving] = useState(false);
@@ -128,6 +139,13 @@ export default function GalleryPage() {
     return Array.isArray(data?.invites) ? (data.invites as Invite[]) : [];
   }
 
+  async function loadApplications() {
+    const res = await fetch("/api/applications", { cache: "no-store" });
+    const data = await res.json().catch(() => null);
+    if (!res.ok) throw new Error(data?.error ?? `HTTP ${res.status}`);
+    return Array.isArray(data?.applications) ? (data.applications as Application[]) : [];
+  }
+
   async function loadTemplates() {
     const res = await fetch("/api/gallery/invite-templates", { cache: "no-store" });
     const data = await res.json().catch(() => null);
@@ -154,6 +172,7 @@ export default function GalleryPage() {
           } finally {
             setRooms([]);
             setInvites([]);
+            setApplications([]);
             setTemplates(null);
             setLoading(false);
           }
@@ -188,6 +207,8 @@ export default function GalleryPage() {
         setRooms(list);
         const allOCs = await loadOpenCalls();
         setOpenCalls(allOCs.filter((o) => o.galleryId === m!.session!.userId));
+        const apps = await loadApplications();
+        setApplications(apps);
         const inv = await loadInvites();
         setInvites(inv);
         const tpl = await loadTemplates();
@@ -196,6 +217,7 @@ export default function GalleryPage() {
         setErr(e?.message ?? "Failed to load chats");
         setRooms([]);
         setOpenCalls([]);
+        setApplications([]);
         setInvites([]);
         setTemplates(null);
       } finally {
@@ -222,6 +244,8 @@ export default function GalleryPage() {
       setRooms(list);
       const allOCs = await loadOpenCalls();
       setOpenCalls(allOCs.filter((o) => o.galleryId === session.userId));
+      const apps = await loadApplications();
+      setApplications(apps);
       const inv = await loadInvites();
       setInvites(inv);
       const tpl = await loadTemplates();
@@ -230,6 +254,7 @@ export default function GalleryPage() {
       setErr(e?.message ?? "Failed to load chats");
       setRooms([]);
       setOpenCalls([]);
+      setApplications([]);
       setInvites([]);
       setTemplates(null);
     }
@@ -409,6 +434,34 @@ export default function GalleryPage() {
     })();
   }, [openCalls, lang, translatedThemeById]);
 
+  const applicantCountByOpenCall = useMemo(() => {
+    const map: Record<string, number> = {};
+    for (const a of applications) {
+      map[a.openCallId] = (map[a.openCallId] || 0) + 1;
+    }
+    return map;
+  }, [applications]);
+
+  const newApplicantCountByOpenCall = useMemo(() => {
+    const map: Record<string, number> = {};
+    for (const a of applications) {
+      if (a.status !== "submitted") continue;
+      map[a.openCallId] = (map[a.openCallId] || 0) + 1;
+    }
+    return map;
+  }, [applications]);
+
+  const totalNewApplicants = useMemo(
+    () => applications.filter((a) => a.status === "submitted").length,
+    [applications]
+  );
+
+  const openCallThemeById = useMemo(() => {
+    const map: Record<string, string> = {};
+    for (const o of openCalls) map[o.id] = o.theme;
+    return map;
+  }, [openCalls]);
+
   if (loading) {
     return (
       <>
@@ -468,23 +521,50 @@ export default function GalleryPage() {
             >
               Signed in: {session?.userId}
             </p>
+            <p style={{ fontFamily: F, fontSize: 11, color: "#8A8A8A", marginTop: 8 }}>
+              {lang === "ko"
+                ? `신규 지원자 ${totalNewApplicants}명`
+                : lang === "ja"
+                  ? `新規応募 ${totalNewApplicants}件`
+                  : `New applicants: ${totalNewApplicants}`}
+            </p>
           </div>
-          <button
-            onClick={refresh}
-            style={{
-              padding: "10px 20px",
-              border: "1px solid #E5E0DB",
-              background: "transparent",
-              color: "#4A4A4A",
-              fontFamily: F,
-              fontSize: 10,
-              letterSpacing: "0.1em",
-              textTransform: "uppercase",
-              cursor: "pointer",
-            }}
-          >
-            {t("refresh", lang)}
-          </button>
+          <div style={{ display: "flex", gap: 10 }}>
+            <button
+              onClick={() => router.push(createMode ? "/gallery" : "/gallery?create=1")}
+              style={{
+                padding: "10px 20px",
+                border: "1px solid #1A1A1A",
+                background: "#1A1A1A",
+                color: "#FFFFFF",
+                fontFamily: F,
+                fontSize: 10,
+                letterSpacing: "0.1em",
+                textTransform: "uppercase",
+                cursor: "pointer",
+              }}
+            >
+              {createMode
+                ? (lang === "ko" ? "대시보드로" : lang === "ja" ? "ダッシュボードへ" : "Back to dashboard")
+                : (lang === "ko" ? "오픈콜 만들기" : lang === "ja" ? "オープンコール作成" : "Create Open Call")}
+            </button>
+            <button
+              onClick={refresh}
+              style={{
+                padding: "10px 20px",
+                border: "1px solid #E5E0DB",
+                background: "transparent",
+                color: "#4A4A4A",
+                fontFamily: F,
+                fontSize: 10,
+                letterSpacing: "0.1em",
+                textTransform: "uppercase",
+                cursor: "pointer",
+              }}
+            >
+              {t("refresh", lang)}
+            </button>
+          </div>
         </div>
 
         {err && (
@@ -504,6 +584,7 @@ export default function GalleryPage() {
         )}
 
         {/* Create Open Call Section */}
+        {createMode ? (
         <Section number="01" title={t("gallery_create_oc", lang)}>
           <div style={{ display: "grid", gap: 16 }}>
             {/* Poster Image Upload — prominent */}
@@ -608,6 +689,35 @@ export default function GalleryPage() {
             )}
           </div>
         </Section>
+        ) : (
+          <Section number="01" title={lang === "ko" ? "오픈콜" : lang === "ja" ? "オープンコール" : "Open Calls"}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
+              <p style={{ fontFamily: F, fontSize: 12, color: "#8A8A8A" }}>
+                {lang === "ko"
+                  ? "오픈콜 생성은 버튼을 눌러 작성 페이지로 이동하세요."
+                  : lang === "ja"
+                    ? "オープンコール作成はボタンから作成画面に移動してください。"
+                    : "Use the button to move to the open call creation view."}
+              </p>
+              <button
+                onClick={() => router.push("/gallery?create=1")}
+                style={{
+                  padding: "10px 18px",
+                  border: "1px solid #1A1A1A",
+                  background: "#1A1A1A",
+                  color: "#FFFFFF",
+                  fontFamily: F,
+                  fontSize: 10,
+                  letterSpacing: "0.1em",
+                  textTransform: "uppercase",
+                  cursor: "pointer",
+                }}
+              >
+                {lang === "ko" ? "오픈콜 만들기" : lang === "ja" ? "作成する" : "Create"}
+              </button>
+            </div>
+          </Section>
+        )}
 
         {/* My Open Calls Section */}
         <Section number="02" title={t("gallery_my_oc", lang)}>
@@ -677,6 +787,12 @@ export default function GalleryPage() {
                       <p style={{ fontFamily: F, fontSize: 11, color: "#8A8A8A", marginTop: 4 }}>
                         {lang === "ko" ? "작가 지원 마감일" : "Artist deadline"}: {o.deadline}
                       </p>
+                      <p style={{ fontFamily: F, fontSize: 11, color: "#8A8A8A", marginTop: 4 }}>
+                        {lang === "ko" ? "지원자" : lang === "ja" ? "応募者" : "Applicants"}: {applicantCountByOpenCall[o.id] || 0}
+                        {newApplicantCountByOpenCall[o.id]
+                          ? ` · ${lang === "ko" ? "신규" : lang === "ja" ? "新規" : "new"} ${newApplicantCountByOpenCall[o.id]}`
+                          : ""}
+                      </p>
                       {lang !== "en" && (
                         <button
                           onClick={(e) => {
@@ -712,8 +828,40 @@ export default function GalleryPage() {
           )}
         </Section>
 
+        {/* Applications Section */}
+        <Section number="03" title={lang === "ko" ? "지원자 현황" : lang === "ja" ? "応募者一覧" : "Applications"}>
+          {applications.length === 0 ? (
+            <EmptyState>{lang === "ko" ? "아직 지원자가 없습니다." : lang === "ja" ? "まだ応募者がいません。" : "No applicants yet."}</EmptyState>
+          ) : (
+            <div style={{ display: "grid", gap: 1, background: "#E5E0DB" }}>
+              {applications
+                .slice()
+                .sort((a, b) => b.createdAt - a.createdAt)
+                .slice(0, 20)
+                .map((a, idx) => (
+                  <div key={a.id} style={{ padding: 20, background: "#FFFFFF" }}>
+                    <div style={{ display: "flex", justifyContent: "space-between", gap: 12, flexWrap: "wrap" }}>
+                      <div>
+                        <div style={{ fontFamily: F, fontSize: 10, color: "#B0B0B0", letterSpacing: "0.1em", textTransform: "uppercase", marginBottom: 6 }}>
+                          {String(idx + 1).padStart(2, "0")} · {new Date(a.createdAt).toLocaleDateString()}
+                        </div>
+                        <div style={{ fontFamily: S, fontSize: 18, color: "#1A1A1A" }}>{a.artistName || a.artistId}</div>
+                        <div style={{ fontFamily: F, fontSize: 11, color: "#8A8A8A", marginTop: 4 }}>
+                          {openCallThemeById[a.openCallId] || a.openCallId}
+                        </div>
+                      </div>
+                      <div style={{ fontFamily: F, fontSize: 10, letterSpacing: "0.08em", textTransform: "uppercase", color: a.status === "submitted" ? "#8B3A3A" : "#8A8A8A" }}>
+                        {a.status}
+                      </div>
+                    </div>
+                  </div>
+                ))}
+            </div>
+          )}
+        </Section>
+
         {/* Chats Section */}
-        <Section number="03" title={t("gallery_messages", lang)}>
+        <Section number="04" title={t("gallery_messages", lang)}>
           {rooms.length === 0 ? (
             <EmptyState>{t("gallery_no_chats", lang)}</EmptyState>
           ) : (
@@ -760,7 +908,7 @@ export default function GalleryPage() {
         </Section>
 
         {/* Invites Section */}
-        <Section number="04" title={t("gallery_invites", lang)}>
+        <Section number="05" title={t("gallery_invites", lang)}>
           {invites.length === 0 ? (
             <EmptyState>{t("gallery_no_invites", lang)}</EmptyState>
           ) : (
@@ -798,7 +946,7 @@ export default function GalleryPage() {
         </Section>
 
         {/* Templates Section */}
-        <Section number="05" title={t("gallery_templates", lang)}>
+        <Section number="06" title={t("gallery_templates", lang)}>
           {!templates ? (
             <EmptyState>Loading templates...</EmptyState>
           ) : (
