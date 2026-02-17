@@ -18,6 +18,16 @@ function normalizeLoose(value: string | undefined | null) {
   return String(value ?? "").trim().toLowerCase();
 }
 
+function sanitizePortfolioForApplication(value?: string) {
+  const v = String(value || "").trim();
+  if (!v) return undefined;
+  // Uploaded portfolio can be a large data URI; avoid copying huge payload into Application row.
+  if (v.startsWith("data:")) return undefined;
+  // Keep a conservative cap for legacy DB schemas with short text/varchar columns.
+  if (v.length > 2000) return undefined;
+  return v;
+}
+
 async function getGalleryOwnerAliases(session: { userId: string; email?: string }) {
   const profile = await getProfileByUserId(session.userId);
   const profileGalleryId =
@@ -103,12 +113,15 @@ export async function GET(req: Request) {
 }
 
 export async function POST(req: Request) {
+  let stage = "init";
   try {
+    stage = "session";
     const session = getServerSession();
     if (!session || session.role !== "artist") {
       return NextResponse.json({ error: "unauthorized" }, { status: 401 });
     }
 
+    stage = "parse_body";
     const body = await req.json().catch(() => ({}));
     const openCallId = String(body?.openCallId ?? "").trim();
     const message = String(body?.message ?? "").trim();
@@ -117,16 +130,19 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "missing openCallId" }, { status: 400 });
     }
 
+    stage = "get_open_call";
     const openCall = await getOpenCallById(openCallId);
     if (!openCall) {
       return NextResponse.json({ error: "open call not found" }, { status: 404 });
     }
 
+    stage = "find_existing";
     const existing = await findApplication(openCallId, session.userId);
     if (existing) {
       return NextResponse.json({ application: existing }, { status: 200 });
     }
 
+    stage = "get_artist_profile";
     const profile = await getProfileByUserId(session.userId);
     if (!profile || profile.role !== "artist") {
       return NextResponse.json(
@@ -141,6 +157,7 @@ export async function POST(req: Request) {
       );
     }
 
+    stage = "create_application";
     const created = await createApplication({
       openCallId,
       galleryId: openCall.galleryId,
@@ -149,7 +166,7 @@ export async function POST(req: Request) {
       artistEmail: profile.email ?? session.userId,
       artistCountry: profile.country ?? "",
       artistCity: profile.city ?? "",
-      artistPortfolioUrl: profile.portfolioUrl,
+      artistPortfolioUrl: sanitizePortfolioForApplication(profile.portfolioUrl),
       message: message || undefined,
     });
 
@@ -282,8 +299,9 @@ ${platformUrl}
     return NextResponse.json({
       application: created,
     }, { status: 201 });
-  } catch (e) {
-    console.error("POST /api/applications failed:", e);
+  } catch (e: any) {
+    const detail = String(e?.message || e || "").slice(0, 400);
+    console.error("POST /api/applications failed:", { stage, detail, error: e });
     return NextResponse.json({ error: "server error" }, { status: 500 });
   }
 }
