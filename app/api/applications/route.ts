@@ -101,6 +101,42 @@ async function createApplicationLegacyFallback(input: {
   };
 }
 
+async function findApplicationLegacyFallback(openCallId: string, artistId: string) {
+  try {
+    const rows = (await prisma.$queryRawUnsafe(
+      `
+      SELECT *
+      FROM "Application"
+      WHERE "openCallId" = $1 AND "artistId" = $2
+      ORDER BY "createdAt" DESC
+      LIMIT 1
+      `,
+      openCallId,
+      artistId
+    )) as any[];
+    const row = rows?.[0];
+    if (!row) return null;
+    return {
+      id: row.id,
+      openCallId: row.openCallId,
+      galleryId: row.galleryId,
+      artistId: row.artistId,
+      artistName: row.artistName ?? "",
+      artistEmail: row.artistEmail ?? "",
+      artistCountry: row.artistCountry ?? "",
+      artistCity: row.artistCity ?? "",
+      artistPortfolioUrl: row.artistPortfolioUrl ?? undefined,
+      message: row.message ?? undefined,
+      status: (row.status ?? "submitted") as "submitted" | "reviewing" | "accepted" | "rejected",
+      shippingStatus: (row.shippingStatus ?? "pending") as "pending" | "shipped" | "received" | "inspected" | "exhibited",
+      createdAt: row.createdAt ? new Date(row.createdAt).getTime() : Date.now(),
+      updatedAt: row.updatedAt ? new Date(row.updatedAt).getTime() : Date.now(),
+    };
+  } catch {
+    return null;
+  }
+}
+
 async function getGalleryOwnerAliases(session: { userId: string; email?: string }) {
   const profile = await getProfileByUserId(session.userId);
   const profileGalleryId =
@@ -251,14 +287,36 @@ export async function POST(req: Request) {
     let created: any;
     try {
       created = await createApplication(createInput);
-    } catch (createErr) {
+    } catch (createErr: any) {
       console.error("createApplication failed; trying legacy fallback:", { openCallId, artistId: session.userId, error: createErr });
-      created = await createApplicationLegacyFallback(createInput);
+      try {
+        created = await createApplicationLegacyFallback(createInput);
+      } catch (fallbackErr: any) {
+        const msg = String(createErr?.message || "").toLowerCase();
+        const fallbackMsg = String(fallbackErr?.message || "").toLowerCase();
+        const maybeDuplicate =
+          msg.includes("unique") ||
+          msg.includes("duplicate") ||
+          fallbackMsg.includes("unique") ||
+          fallbackMsg.includes("duplicate");
+        if (maybeDuplicate) {
+          const existed = (await findApplication(openCallId, session.userId).catch(() => null))
+            ?? (await findApplicationLegacyFallback(openCallId, session.userId));
+          if (existed) {
+            return NextResponse.json({ application: existed }, { status: 200 });
+          }
+        }
+        throw fallbackErr;
+      }
     }
 
     // Mark external flag on the application
     if (openCall.isExternal) {
-      await setApplicationExternal(created.id);
+      try {
+        await setApplicationExternal(created.id);
+      } catch (externalFlagErr) {
+        console.error("setApplicationExternal failed (non-blocking):", externalFlagErr);
+      }
     }
 
     if (!openCall.isExternal) {
@@ -361,25 +419,33 @@ ${platformUrl}
         console.error("Auto-outreach email error (non-blocking):", emailErr);
       }
 
-      // 발송 기록 마킹
-      await markOutreachSent(created.id, `Auto-sent to ${openCall.externalEmail}`);
+      try {
+        // 발송 기록 마킹
+        await markOutreachSent(created.id, `Auto-sent to ${openCall.externalEmail}`);
+      } catch (markErr) {
+        console.error("markOutreachSent failed (non-blocking):", markErr);
+      }
 
-      // 어드민에게도 기록 알림
-      await createNotification({
-        userId: "ROB_ADMIN",
-        type: "new_application",
-        title: "AUTO OUTREACH SENT",
-        message: `${artistName} applied to "${openCall.theme}" at ${openCall.gallery}. Outreach email auto-sent to ${openCall.externalEmail}.`,
-        link: `/admin/outreach`,
-        data: {
-          applicationId: created.id,
-          openCallId,
-          galleryName: openCall.gallery,
-          galleryEmail: openCall.externalEmail,
-          artistName,
-          autoSent: true,
-        },
-      });
+      try {
+        // 어드민에게도 기록 알림
+        await createNotification({
+          userId: "ROB_ADMIN",
+          type: "new_application",
+          title: "AUTO OUTREACH SENT",
+          message: `${artistName} applied to "${openCall.theme}" at ${openCall.gallery}. Outreach email auto-sent to ${openCall.externalEmail}.`,
+          link: `/admin/outreach`,
+          data: {
+            applicationId: created.id,
+            openCallId,
+            galleryName: openCall.gallery,
+            galleryEmail: openCall.externalEmail,
+            artistName,
+            autoSent: true,
+          },
+        });
+      } catch (adminNotifErr) {
+        console.error("admin createNotification failed (non-blocking):", adminNotifErr);
+      }
     }
 
     return NextResponse.json({
