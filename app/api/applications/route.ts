@@ -11,6 +11,7 @@ import {
 } from "@/app/data/applications";
 import { createNotification } from "@/app/data/notifications";
 import { sendApplicationEmail } from "@/lib/email";
+import { prisma } from "@/lib/prisma";
 
 export const dynamic = "force-dynamic";
 
@@ -26,6 +27,78 @@ function sanitizePortfolioForApplication(value?: string) {
   // Keep a conservative cap for legacy DB schemas with short text/varchar columns.
   if (v.length > 2000) return undefined;
   return v;
+}
+
+async function createApplicationLegacyFallback(input: {
+  openCallId: string;
+  galleryId: string;
+  artistId: string;
+  artistName: string;
+  artistEmail: string;
+  artistCountry: string;
+  artistCity: string;
+  artistPortfolioUrl?: string;
+  message?: string;
+}) {
+  const cols = (await prisma.$queryRawUnsafe(
+    `
+      SELECT column_name
+      FROM information_schema.columns
+      WHERE table_schema = 'public' AND table_name = 'Application'
+    `
+  )) as Array<{ column_name: string }>;
+  const colSet = new Set(cols.map((c) => String(c.column_name)));
+
+  const values: any[] = [];
+  const insertCols: string[] = [];
+  const push = (column: string, value: any) => {
+    insertCols.push(`"${column}"`);
+    values.push(value);
+  };
+
+  // Prisma cuid() is client-side. For raw SQL fallback we provide an ID explicitly.
+  const generatedId = `app_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 10)}`;
+  if (colSet.has("id")) push("id", generatedId);
+  if (colSet.has("openCallId")) push("openCallId", input.openCallId);
+  if (colSet.has("galleryId")) push("galleryId", input.galleryId);
+  if (colSet.has("artistId")) push("artistId", input.artistId);
+  if (colSet.has("artistName")) push("artistName", input.artistName);
+  if (colSet.has("artistEmail")) push("artistEmail", input.artistEmail);
+  if (colSet.has("artistCountry")) push("artistCountry", input.artistCountry);
+  if (colSet.has("artistCity")) push("artistCity", input.artistCity);
+  if (colSet.has("artistPortfolioUrl")) push("artistPortfolioUrl", input.artistPortfolioUrl ?? null);
+  if (colSet.has("message")) push("message", input.message ?? null);
+  if (colSet.has("status")) push("status", "submitted");
+  if (colSet.has("shippingStatus")) push("shippingStatus", "pending");
+  if (colSet.has("createdAt")) push("createdAt", new Date());
+  if (colSet.has("updatedAt")) push("updatedAt", new Date());
+
+  if (insertCols.length < 4) {
+    throw new Error("Application fallback insert aborted: insufficient compatible columns");
+  }
+
+  const placeholders = values.map((_, i) => `$${i + 1}`).join(", ");
+  await prisma.$executeRawUnsafe(
+    `INSERT INTO "Application" (${insertCols.join(", ")}) VALUES (${placeholders})`,
+    ...values
+  );
+
+  return {
+    id: generatedId,
+    openCallId: input.openCallId,
+    galleryId: input.galleryId,
+    artistId: input.artistId,
+    artistName: input.artistName,
+    artistEmail: input.artistEmail,
+    artistCountry: input.artistCountry,
+    artistCity: input.artistCity,
+    artistPortfolioUrl: input.artistPortfolioUrl,
+    message: input.message,
+    status: "submitted" as const,
+    shippingStatus: "pending" as const,
+    createdAt: Date.now(),
+    updatedAt: Date.now(),
+  };
 }
 
 async function getGalleryOwnerAliases(session: { userId: string; email?: string }) {
@@ -137,7 +210,13 @@ export async function POST(req: Request) {
     }
 
     stage = "find_existing";
-    const existing = await findApplication(openCallId, session.userId);
+    let existing = null;
+    try {
+      existing = await findApplication(openCallId, session.userId);
+    } catch (existingErr) {
+      // Legacy schema mismatch should not block first-time submit flow.
+      console.error("findApplication failed (non-blocking):", { openCallId, artistId: session.userId, error: existingErr });
+    }
     if (existing) {
       return NextResponse.json({ application: existing }, { status: 200 });
     }
@@ -158,7 +237,7 @@ export async function POST(req: Request) {
     }
 
     stage = "create_application";
-    const created = await createApplication({
+    const createInput = {
       openCallId,
       galleryId: openCall.galleryId,
       artistId: session.userId,
@@ -168,7 +247,14 @@ export async function POST(req: Request) {
       artistCity: profile.city ?? "",
       artistPortfolioUrl: sanitizePortfolioForApplication(profile.portfolioUrl),
       message: message || undefined,
-    });
+    };
+    let created: any;
+    try {
+      created = await createApplication(createInput);
+    } catch (createErr) {
+      console.error("createApplication failed; trying legacy fallback:", { openCallId, artistId: session.userId, error: createErr });
+      created = await createApplicationLegacyFallback(createInput);
+    }
 
     // Mark external flag on the application
     if (openCall.isExternal) {
