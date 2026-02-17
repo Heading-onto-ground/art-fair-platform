@@ -1,8 +1,6 @@
 // app/api/profile/upload/route.ts
 import { NextResponse } from "next/server";
 import { getServerSession, upsertArtistProfile } from "@/lib/auth";
-import path from "path";
-import fs from "fs/promises";
 
 export async function POST(req: Request) {
   try {
@@ -18,29 +16,28 @@ export async function POST(req: Request) {
       return NextResponse.json({ ok: false, error: "file missing" }, { status: 400 });
     }
 
-    // PDF만 허용
-    if (file.type !== "application/pdf") {
+    const isPdfMime =
+      file.type === "application/pdf" ||
+      file.type === "application/x-pdf" ||
+      file.type === "application/acrobat" ||
+      file.type === "applications/vnd.pdf";
+    const hasPdfExtension = file.name.toLowerCase().endsWith(".pdf");
+    if (!isPdfMime && !hasPdfExtension) {
       return NextResponse.json({ ok: false, error: "only pdf allowed" }, { status: 400 });
     }
 
-    // 저장 경로 준비
+    // Keep upload size conservative to prevent oversized DB payloads.
+    const maxBytes = 5 * 1024 * 1024;
+    if (file.size > maxBytes) {
+      return NextResponse.json({ ok: false, error: "file too large (max 5MB)" }, { status: 400 });
+    }
+
     const bytes = await file.arrayBuffer();
     const buffer = Buffer.from(bytes);
-
-    const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, "_");
-    const filename = `${session.userId}_${Date.now()}_${safeName}`;
-
-    const uploadDir = path.join(process.cwd(), "public", "uploads");
-    await fs.mkdir(uploadDir, { recursive: true });
-
-    const fullPath = path.join(uploadDir, filename);
-    await fs.writeFile(fullPath, buffer);
-
-    const portfolioUrl = `/uploads/${filename}`;
+    const portfolioUrl = `data:application/pdf;base64,${buffer.toString("base64")}`;
 
     // 프로필에 저장
     const profile = await upsertArtistProfile(session.userId, {
-      email: session.email,
       portfolioUrl,
     });
 

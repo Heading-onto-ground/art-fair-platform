@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import TopBar from "@/app/components/TopBar";
 import { CardSkeleton } from "@/app/components/Skeleton";
@@ -78,7 +78,9 @@ export default function GalleryPage() {
   const { lang } = useLanguage();
   const isAdminView = searchParams.get("adminView") === "1";
   const createMode = searchParams.get("create") === "1";
+  const targetOpenCallId = String(searchParams.get("openCallId") || "").trim();
   const [adminReadOnly, setAdminReadOnly] = useState(false);
+  const openCallItemRefs = useRef<Record<string, HTMLDivElement | null>>({});
 
   const [me, setMe] = useState<MeResponse | null>(null);
   const [rooms, setRooms] = useState<ChatRoom[]>([]);
@@ -106,6 +108,7 @@ export default function GalleryPage() {
   const [translatedThemeById, setTranslatedThemeById] = useState<Record<string, string>>({});
   const [showOriginalById, setShowOriginalById] = useState<Record<string, boolean>>({});
   const [translatingById, setTranslatingById] = useState<Record<string, boolean>>({});
+  const [focusedOpenCallId, setFocusedOpenCallId] = useState<string | null>(null);
 
   const session = me?.session;
 
@@ -434,6 +437,18 @@ export default function GalleryPage() {
     })();
   }, [openCalls, lang, translatedThemeById]);
 
+  useEffect(() => {
+    if (!targetOpenCallId || openCalls.length === 0) return;
+    if (!openCalls.some((o) => o.id === targetOpenCallId)) return;
+    setFocusedOpenCallId(targetOpenCallId);
+    const el = openCallItemRefs.current[targetOpenCallId];
+    if (el) {
+      el.scrollIntoView({ behavior: "smooth", block: "center" });
+    }
+    const timer = window.setTimeout(() => setFocusedOpenCallId((prev) => (prev === targetOpenCallId ? null : prev)), 4200);
+    return () => window.clearTimeout(timer);
+  }, [targetOpenCallId, openCalls]);
+
   const applicantCountByOpenCall = useMemo(() => {
     const map: Record<string, number> = {};
     for (const a of applications) {
@@ -728,10 +743,14 @@ export default function GalleryPage() {
               {openCalls.map((o, index) => (
                 <div
                   key={o.id}
+                  ref={(el) => {
+                    openCallItemRefs.current[o.id] = el;
+                  }}
                   style={{
                     textAlign: "left",
                     padding: 24,
-                    background: "#FFFFFF",
+                    background: focusedOpenCallId === o.id ? "#FFF8EF" : "#FFFFFF",
+                    border: focusedOpenCallId === o.id ? "1px solid #E8C79A" : "1px solid transparent",
                     transition: "background 0.3s ease",
                   }}
                 >
@@ -787,6 +806,11 @@ export default function GalleryPage() {
                       <p style={{ fontFamily: F, fontSize: 11, color: "#8A8A8A", marginTop: 4 }}>
                         {lang === "ko" ? "작가 지원 마감일" : "Artist deadline"}: {o.deadline}
                       </p>
+                      {targetOpenCallId && targetOpenCallId === o.id && (
+                        <p style={{ fontFamily: F, fontSize: 10, color: "#8B7355", marginTop: 8, letterSpacing: "0.06em", textTransform: "uppercase" }}>
+                          {lang === "ko" ? "알림으로 선택된 오픈콜" : lang === "ja" ? "通知から選択されたオープンコール" : "Selected from notification"}
+                        </p>
+                      )}
                       <p style={{ fontFamily: F, fontSize: 11, color: "#8A8A8A", marginTop: 4 }}>
                         {lang === "ko" ? "지원자" : lang === "ja" ? "応募者" : "Applicants"}: {applicantCountByOpenCall[o.id] || 0}
                         {newApplicantCountByOpenCall[o.id]
@@ -839,7 +863,14 @@ export default function GalleryPage() {
                 .sort((a, b) => b.createdAt - a.createdAt)
                 .slice(0, 20)
                 .map((a, idx) => (
-                  <div key={a.id} style={{ padding: 20, background: "#FFFFFF" }}>
+                  <div
+                    key={a.id}
+                    style={{
+                      padding: 20,
+                      background: targetOpenCallId && a.openCallId === targetOpenCallId ? "#FFF8EF" : "#FFFFFF",
+                      border: targetOpenCallId && a.openCallId === targetOpenCallId ? "1px solid #E8C79A" : "1px solid transparent",
+                    }}
+                  >
                     <div style={{ display: "flex", justifyContent: "space-between", gap: 12, flexWrap: "wrap" }}>
                       <div>
                         <div style={{ fontFamily: F, fontSize: 10, color: "#B0B0B0", letterSpacing: "0.1em", textTransform: "uppercase", marginBottom: 6 }}>
