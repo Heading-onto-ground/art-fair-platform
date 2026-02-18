@@ -101,6 +101,11 @@ export default function PublicArtistPage() {
 
   async function openPortfolio(url?: string) {
     setPortfolioError(null);
+    const userId = String(profile?.userId || "").trim();
+    if (userId) {
+      window.location.assign(`/api/artist-portfolio/${encodeURIComponent(userId)}`);
+      return;
+    }
     const v = String(url || "").trim();
     if (!v) return;
     if (/^data:/i.test(v)) {
@@ -125,6 +130,16 @@ export default function PublicArtistPage() {
 
   async function downloadPortfolio(url?: string, filename = "portfolio.pdf") {
     setPortfolioError(null);
+    const userId = String(profile?.userId || "").trim();
+    if (userId) {
+      const a = document.createElement("a");
+      a.href = `/api/artist-portfolio/${encodeURIComponent(userId)}`;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      return;
+    }
     const v = String(url || "").trim();
     if (!v) return;
     if (v.startsWith("data:")) {
