@@ -193,6 +193,7 @@ export default function TopBar() {
       { path: "/community", label: t("nav_community", lang) },
       { path: "/shipments", label: t("nav_shipments", lang) },
       { path: "/chat", label: t("nav_messages", lang) },
+      { path: "/about", label: "ABOUT" },
     ],
     [lang]
   );
@@ -206,6 +207,7 @@ export default function TopBar() {
       { path: "/shipments", label: t("nav_shipments", lang) },
       { path: "/chat", label: t("nav_messages", lang) },
       { path: "/admin/outreach", label: t("nav_growth", lang) },
+      { path: "/about", label: "ABOUT" },
     ],
     [lang]
   );
@@ -321,6 +323,24 @@ export default function TopBar() {
                   <option key={l.code} value={l.code}>{l.name}</option>
                 ))}
               </select>
+              <button
+                onClick={() => router.push("/about")}
+                style={{
+                  padding: "8px 12px",
+                  border: "1px solid #E8E3DB",
+                  background: "transparent",
+                  color: "#4A4A4A",
+                  fontFamily: F,
+                  fontSize: 10,
+                  fontWeight: 500,
+                  letterSpacing: "0.08em",
+                  textTransform: "uppercase",
+                  cursor: "pointer",
+                  marginRight: 8,
+                }}
+              >
+                About
+              </button>
               <button onClick={() => router.push("/login")} style={{ padding: "10px 28px", border: "1px solid #1A1A1A", background: "transparent", color: "#1A1A1A", fontFamily: F, fontSize: 10, fontWeight: 500, letterSpacing: "0.1em", textTransform: "uppercase", cursor: "pointer" }}
                 onMouseEnter={(e) => { e.currentTarget.style.background = "#1A1A1A"; e.currentTarget.style.color = "#FDFBF7"; }}
                 onMouseLeave={(e) => { e.currentTarget.style.background = "transparent"; e.currentTarget.style.color = "#1A1A1A"; }}>
@@ -475,6 +495,25 @@ export default function TopBar() {
           </div>
         ) : (
           <div style={{ padding: "16px 24px" }}>
+            <button
+              onClick={() => navigate("/about")}
+              style={{
+                width: "100%",
+                padding: "12px",
+                border: "1px solid #E8E3DB",
+                background: "transparent",
+                color: "#4A4A4A",
+                fontFamily: F,
+                fontSize: 10,
+                fontWeight: 500,
+                letterSpacing: "0.09em",
+                textTransform: "uppercase",
+                cursor: "pointer",
+                marginBottom: 8,
+              }}
+            >
+              About
+            </button>
             <button
               onClick={() => navigate("/login")}
               style={{

@@ -140,6 +140,14 @@ export default function Home() {
       <footer style={{ padding: "40px 24px", textAlign: "center", borderTop: "1px solid #E8E3DB" }}>
         <div style={{ fontFamily: S, fontSize: 20, fontWeight: 400, color: "#1A1A1A", marginBottom: 4 }}>ROB</div>
         <div style={{ fontFamily: F, fontSize: 9, fontWeight: 500, letterSpacing: "0.2em", textTransform: "uppercase", color: "#B0AAA2", marginBottom: 16 }}>Role of Bridge</div>
+        <div style={{ display: "flex", justifyContent: "center", gap: 16, marginBottom: 12 }}>
+          <Link href="/about" style={{ fontFamily: F, fontSize: 11, color: "#8B7355", textDecoration: "underline" }}>
+            About
+          </Link>
+          <a href="https://instagram.com/1wh13" target="_blank" rel="noreferrer" style={{ fontFamily: F, fontSize: 11, color: "#8B7355", textDecoration: "underline" }}>
+            @1wh13
+          </a>
+        </div>
         <div style={{ fontFamily: F, fontSize: 10, letterSpacing: "0.08em", color: "#D4CEC4" }}>© 2026 Global Art Platform</div>
       </footer>
 

@@ -102,6 +102,16 @@ export default function AdminHomePage() {
       ),
       href: "/artist?adminView=1",
     },
+    {
+      title: tr("About Editor", "소개 편집", "About編集", "Edition About"),
+      description: tr(
+        "Edit About page text and founder image.",
+        "About 페이지 텍스트와 창립자 이미지를 수정합니다.",
+        "Aboutページのテキストと創設者画像を編集します。",
+        "Modifiez les textes About et l'image du fondateur."
+      ),
+      href: "/admin/about",
+    },
   ];
 
   return (
