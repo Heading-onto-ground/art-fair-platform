@@ -97,6 +97,61 @@ export default function PublicArtistPage() {
   const [showBioTranslation, setShowBioTranslation] = useState(false);
   const [translatingBio, setTranslatingBio] = useState(false);
 
+  function dataUriToBlobUrl(dataUri: string): string | null {
+    const m = dataUri.match(/^data:([^;,]+)?(?:;[^,]*)?,(.+)$/i);
+    if (!m?.[2]) return null;
+    const mime = String(m[1] || "application/octet-stream");
+    const payload = String(m[2] || "");
+    const isBase64 = /;base64,/i.test(dataUri);
+    try {
+      const bytes = isBase64
+        ? Uint8Array.from(atob(payload), (c) => c.charCodeAt(0))
+        : new TextEncoder().encode(decodeURIComponent(payload));
+      const blob = new Blob([bytes], { type: mime });
+      return URL.createObjectURL(blob);
+    } catch {
+      return null;
+    }
+  }
+
+  function openPortfolio(url?: string) {
+    const v = String(url || "").trim();
+    if (!v) return;
+    if (v.startsWith("data:")) {
+      const blobUrl = dataUriToBlobUrl(v);
+      if (!blobUrl) return;
+      window.open(blobUrl, "_blank", "noopener,noreferrer");
+      window.setTimeout(() => URL.revokeObjectURL(blobUrl), 60000);
+      return;
+    }
+    window.open(v, "_blank", "noopener,noreferrer");
+  }
+
+  function downloadPortfolio(url?: string, filename = "portfolio.pdf") {
+    const v = String(url || "").trim();
+    if (!v) return;
+    if (v.startsWith("data:")) {
+      const blobUrl = dataUriToBlobUrl(v);
+      if (!blobUrl) return;
+      const a = document.createElement("a");
+      a.href = blobUrl;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      window.setTimeout(() => URL.revokeObjectURL(blobUrl), 60000);
+      return;
+    }
+    const a = document.createElement("a");
+    a.href = v;
+    a.target = "_blank";
+    a.rel = "noreferrer";
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+  }
+
   async function translateBio() {
     if (!profile?.bio) return;
     if (translatedBio) {
@@ -433,9 +488,11 @@ export default function PublicArtistPage() {
                 {profile?.portfolioUrl ? (
                   <div style={{ marginTop: 8, display: "flex", gap: 8, flexWrap: "wrap" }}>
                     <a
-                      href={`/api/public/artist/${encodeURIComponent(profile.userId)}?view=portfolio`}
-                      target="_blank"
-                      rel="noreferrer"
+                      href="#"
+                      onClick={(e) => {
+                        e.preventDefault();
+                        openPortfolio(profile.portfolioUrl);
+                      }}
                       style={{
                         padding: "8px 10px",
                         borderRadius: 12,
@@ -450,8 +507,11 @@ export default function PublicArtistPage() {
                     </a>
 
                     <a
-                      href={`/api/public/artist/${encodeURIComponent(profile.userId)}?view=portfolio`}
-                      download
+                      href="#"
+                      onClick={(e) => {
+                        e.preventDefault();
+                        downloadPortfolio(profile.portfolioUrl, `${profile.name || "artist"}-portfolio.pdf`);
+                      }}
                       style={{
                         padding: "8px 10px",
                         borderRadius: 12,
