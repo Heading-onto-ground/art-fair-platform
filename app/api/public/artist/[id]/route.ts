@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
 import { getProfileByUserId } from "@/lib/auth";
 
+export const dynamic = "force-dynamic";
+
 function decodeDataUri(dataUri: string): { mime: string; bytes: Buffer } | null {
   const m = dataUri.match(/^data:([^;,]+)?(?:;[^,]*)?,(.+)$/i);
   if (!m?.[2]) return null;
