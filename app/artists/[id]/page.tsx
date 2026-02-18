@@ -97,49 +97,54 @@ export default function PublicArtistPage() {
   const [showBioTranslation, setShowBioTranslation] = useState(false);
   const [translatingBio, setTranslatingBio] = useState(false);
   const [portfolioViewerUrl, setPortfolioViewerUrl] = useState<string | null>(null);
+  const [portfolioError, setPortfolioError] = useState<string | null>(null);
 
-  function dataUriToBlobUrl(dataUri: string): string | null {
-    const m = dataUri.match(/^data:([^;,]+)?(?:;[^,]*)?,(.+)$/i);
-    if (!m?.[2]) return null;
-    const mime = String(m[1] || "application/octet-stream");
-    const payload = String(m[2] || "");
-    const isBase64 = /;base64,/i.test(dataUri);
-    try {
-      const bytes = isBase64
-        ? Uint8Array.from(atob(payload), (c) => c.charCodeAt(0))
-        : new TextEncoder().encode(decodeURIComponent(payload));
-      const blob = new Blob([bytes], { type: mime });
-      return URL.createObjectURL(blob);
-    } catch {
-      return null;
-    }
-  }
-
-  function openPortfolio(url?: string) {
+  async function openPortfolio(url?: string) {
+    setPortfolioError(null);
     const v = String(url || "").trim();
     if (!v) return;
     if (v.startsWith("data:")) {
-      const blobUrl = dataUriToBlobUrl(v);
-      if (!blobUrl) return;
-      setPortfolioViewerUrl(blobUrl);
+      try {
+        // `fetch(data:...)` is more robust than manual atob for large base64 payloads.
+        const res = await fetch(v);
+        const blob = await res.blob();
+        if (!blob || blob.size === 0) {
+          setPortfolioError("포트폴리오를 불러오지 못했습니다.");
+          return;
+        }
+        const blobUrl = URL.createObjectURL(blob);
+        setPortfolioViewerUrl(blobUrl);
+      } catch {
+        setPortfolioError("포트폴리오 열기에 실패했습니다.");
+      }
       return;
     }
     window.open(v, "_blank", "noopener,noreferrer");
   }
 
-  function downloadPortfolio(url?: string, filename = "portfolio.pdf") {
+  async function downloadPortfolio(url?: string, filename = "portfolio.pdf") {
+    setPortfolioError(null);
     const v = String(url || "").trim();
     if (!v) return;
     if (v.startsWith("data:")) {
-      const blobUrl = dataUriToBlobUrl(v);
-      if (!blobUrl) return;
-      const a = document.createElement("a");
-      a.href = blobUrl;
-      a.download = filename;
-      document.body.appendChild(a);
-      a.click();
-      a.remove();
-      window.setTimeout(() => URL.revokeObjectURL(blobUrl), 60000);
+      try {
+        const res = await fetch(v);
+        const blob = await res.blob();
+        if (!blob || blob.size === 0) {
+          setPortfolioError("포트폴리오를 불러오지 못했습니다.");
+          return;
+        }
+        const blobUrl = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = blobUrl;
+        a.download = filename;
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        window.setTimeout(() => URL.revokeObjectURL(blobUrl), 60000);
+      } catch {
+        setPortfolioError("포트폴리오 다운로드에 실패했습니다.");
+      }
       return;
     }
     const a = document.createElement("a");
@@ -525,6 +530,11 @@ export default function PublicArtistPage() {
                   </div>
                 ) : (
                   <div style={{ marginTop: 8, opacity: 0.7 }}>No portfolio uploaded</div>
+                )}
+                {portfolioError && (
+                  <div style={{ marginTop: 8, color: "#8B4A4A", fontSize: 12, fontFamily: F }}>
+                    {portfolioError}
+                  </div>
                 )}
               </div>
             </div>
