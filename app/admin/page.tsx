@@ -112,6 +112,16 @@ export default function AdminHomePage() {
       ),
       href: "/admin/about",
     },
+    {
+      title: tr("Security", "보안", "セキュリティ", "Securite"),
+      description: tr(
+        "Apply Supabase RLS hardening and permission cleanup.",
+        "Supabase RLS 강화 및 권한 정리를 적용합니다.",
+        "Supabase RLS強化と権限クリーンアップを適用します。",
+        "Appliquez le renforcement RLS et le nettoyage des droits Supabase."
+      ),
+      href: "/admin/security",
+    },
   ];
 
   return (
