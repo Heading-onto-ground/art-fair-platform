@@ -122,6 +122,16 @@ export default function AdminHomePage() {
       ),
       href: "/admin/security",
     },
+    {
+      title: tr("Mail", "메일", "メール", "Mail"),
+      description: tr(
+        "Send direct emails from admin with reply-to support.",
+        "관리자에서 회신 주소를 포함해 직접 메일을 발송합니다.",
+        "管理画面から返信先付きで直接メールを送信します。",
+        "Envoyez des emails directs depuis l'admin avec adresse de reponse."
+      ),
+      href: "/admin/mail",
+    },
   ];
 
   return (

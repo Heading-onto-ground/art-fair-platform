@@ -22,6 +22,7 @@ export default function AdminTopBar() {
   const isSourcesActive = pathname === "/admin/sources";
   const isAboutActive = pathname === "/admin/about";
   const isSecurityActive = pathname === "/admin/security";
+  const isMailActive = pathname === "/admin/mail";
   const isArtistDashboardPreview = pathname === "/artist" && isAdminView;
   const isArtistProfilePreview = pathname === "/artist/me" && isAdminView;
   const isGalleryDashboardPreview = pathname === "/gallery" && isAdminView;
@@ -131,6 +132,7 @@ export default function AdminTopBar() {
           <NavLink onClick={() => router.push("/admin/sources")} label={tr("Sources", "소스", "ソース", "Sources")} active={isSourcesActive} />
           <NavLink onClick={() => router.push("/admin/about")} label={tr("About", "소개", "About", "About")} active={isAboutActive} />
           <NavLink onClick={() => router.push("/admin/security")} label={tr("Security", "보안", "セキュリティ", "Securite")} active={isSecurityActive} />
+          <NavLink onClick={() => router.push("/admin/mail")} label={tr("Mail", "메일", "メール", "Mail")} active={isMailActive} />
           <div ref={previewRef} style={{ position: "relative" }}>
             <button
               onClick={() => setPreviewOpen((p) => !p)}

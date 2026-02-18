@@ -144,6 +144,12 @@ export default function Home() {
           <Link href="/about" style={{ fontFamily: F, fontSize: 11, color: "#8B7355", textDecoration: "underline" }}>
             About
           </Link>
+          <a
+            href="mailto:contact@rob-roleofbridge.com"
+            style={{ fontFamily: F, fontSize: 11, color: "#8B7355", textDecoration: "underline" }}
+          >
+            contact@rob-roleofbridge.com
+          </a>
           <a href="https://instagram.com/1wh13" target="_blank" rel="noreferrer" style={{ fontFamily: F, fontSize: 11, color: "#8B7355", textDecoration: "underline" }}>
             @1wh13
           </a>

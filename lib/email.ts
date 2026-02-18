@@ -397,3 +397,62 @@ export async function sendVerificationEmail(input: VerificationEmailInput): Prom
     return { ok: false, error: e?.message || "Verification email send failed" };
   }
 }
+
+export type PlatformEmailInput = {
+  to: string;
+  subject: string;
+  text: string;
+  html?: string;
+  replyTo?: string;
+};
+
+export async function sendPlatformEmail(input: PlatformEmailInput): Promise<{ ok: boolean; error?: string }> {
+  const to = String(input.to || "").trim();
+  const subject = String(input.subject || "").trim();
+  const text = String(input.text || "").trim();
+  const html = String(input.html || "").trim() || undefined;
+  const replyTo = String(input.replyTo || "").trim() || undefined;
+
+  if (!to || !subject || !text) {
+    return { ok: false, error: "missing email fields" };
+  }
+
+  if (!RESEND_API_KEY) {
+    const isProduction = process.env.NODE_ENV === "production";
+    if (isProduction) {
+      return { ok: false, error: "RESEND_API_KEY is not configured" };
+    }
+    console.log("═══════════════════════════════════════════════");
+    console.log("📧 PLATFORM EMAIL (No RESEND_API_KEY set)");
+    console.log(`   TO: ${to}`);
+    console.log(`   SUBJECT: ${subject}`);
+    if (replyTo) console.log(`   REPLY-TO: ${replyTo}`);
+    console.log("═══════════════════════════════════════════════");
+    return { ok: true };
+  }
+
+  try {
+    const res = await fetch("https://api.resend.com/emails", {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${RESEND_API_KEY}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        from: `${PLATFORM_NAME} <${FROM_EMAIL}>`,
+        to: [to],
+        subject,
+        text,
+        html: html || undefined,
+        reply_to: replyTo,
+      }),
+    });
+    const result = await res.json().catch(() => ({}));
+    if (!res.ok) {
+      return { ok: false, error: result?.message || "Failed to send email" };
+    }
+    return { ok: true };
+  } catch (e: any) {
+    return { ok: false, error: e?.message || "Email send failed" };
+  }
+}
