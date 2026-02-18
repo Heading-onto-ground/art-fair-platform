@@ -907,7 +907,7 @@ export default function GalleryPage() {
                         </div>
                         {a.artistPortfolioUrl && (
                           <a
-                            href={a.artistPortfolioUrl}
+                            href={`/api/public/artist/${encodeURIComponent(a.artistId)}/portfolio`}
                             target="_blank"
                             rel="noreferrer"
                             style={{
