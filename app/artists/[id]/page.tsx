@@ -103,7 +103,7 @@ export default function PublicArtistPage() {
     setPortfolioError(null);
     const v = String(url || "").trim();
     if (!v) return;
-    if (v.startsWith("data:")) {
+    if (/^data:/i.test(v)) {
       try {
         // `fetch(data:...)` is more robust than manual atob for large base64 payloads.
         const res = await fetch(v);
@@ -119,7 +119,8 @@ export default function PublicArtistPage() {
       }
       return;
     }
-    window.open(v, "_blank", "noopener,noreferrer");
+    // Always use in-page viewer to avoid popup/new-tab blocking policies.
+    setPortfolioViewerUrl(v);
   }
 
   async function downloadPortfolio(url?: string, filename = "portfolio.pdf") {
@@ -509,8 +510,7 @@ export default function PublicArtistPage() {
                       📄 Open PDF
                     </button>
 
-                    <a
-                      href="#"
+                    <button
                       onClick={(e) => {
                         e.preventDefault();
                         downloadPortfolio(profile.portfolioUrl, `${profile.name || "artist"}-portfolio.pdf`);
@@ -523,10 +523,11 @@ export default function PublicArtistPage() {
                         fontWeight: 900,
                         textDecoration: "none",
                         color: "#111",
+                        cursor: "pointer",
                       }}
                     >
                       ⬇️ Download
-                    </a>
+                    </button>
                   </div>
                 ) : (
                   <div style={{ marginTop: 8, opacity: 0.7 }}>No portfolio uploaded</div>
