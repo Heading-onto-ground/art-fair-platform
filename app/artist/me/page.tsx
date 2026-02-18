@@ -41,7 +41,7 @@ export default function ArtistMePage() {
           return;
         }
       }
-      const res = await fetch("/api/auth/me", { cache: "no-store" });
+      const res = await fetch("/api/auth/me", { cache: "default", credentials: "include" });
       const data = (await res.json()) as MeResponse;
       setMe(data);
       if (!data.session) { router.push("/login"); return; }
@@ -64,8 +64,8 @@ export default function ArtistMePage() {
   useEffect(() => { loadMe(); }, [isAdminView]);
   useEffect(() => { if (!me?.session || adminReadOnly) return; loadApplications(); loadInvites(); }, [me?.session?.userId, adminReadOnly]);
 
-  const loadApplications = async () => { const [appsRes, ocRes] = await Promise.all([fetch("/api/applications", { cache: "no-store", credentials: "include" }), fetch("/api/open-calls", { cache: "no-store" })]); const appsJson = await appsRes.json().catch(() => null); const ocJson = await ocRes.json().catch(() => null); const map: Record<string, OpenCall> = {}; for (const oc of ocJson?.openCalls ?? []) map[oc.id] = oc; setOpenCallMap(map); setApplications(appsJson?.applications ?? []); };
-  const loadInvites = async () => { const res = await fetch("/api/artist/invites", { cache: "no-store", credentials: "include" }); const data = await res.json().catch(() => null); if (res.ok) setInvites(data?.invites ?? []); };
+  const loadApplications = async () => { const [appsRes, ocRes] = await Promise.all([fetch("/api/applications", { cache: "default", credentials: "include" }), fetch("/api/open-calls", { cache: "default" })]); const appsJson = await appsRes.json().catch(() => null); const ocJson = await ocRes.json().catch(() => null); const map: Record<string, OpenCall> = {}; for (const oc of ocJson?.openCalls ?? []) map[oc.id] = oc; setOpenCallMap(map); setApplications(appsJson?.applications ?? []); };
+  const loadInvites = async () => { const res = await fetch("/api/artist/invites", { cache: "default", credentials: "include" }); const data = await res.json().catch(() => null); if (res.ok) setInvites(data?.invites ?? []); };
   const updateInviteStatus = async (id: string, status: string) => { if (adminReadOnly) return; const res = await fetch("/api/artist/invites", { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ id, status }) }); const data = await res.json().catch(() => null); if (res.ok && data?.invite) setInvites((p) => p.map((i) => (i.id === id ? data.invite : i))); };
 
   const canSave = useMemo(() => name.trim() && artistId.trim() && startedYear.trim() && genre.trim() && country.trim() && city.trim(), [name, artistId, startedYear, genre, country, city]);

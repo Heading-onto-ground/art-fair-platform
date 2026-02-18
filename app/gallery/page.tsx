@@ -66,7 +66,7 @@ type InviteTemplates = {
 
 async function fetchMe(): Promise<MeResponse | null> {
   try {
-    const res = await fetch("/api/auth/me", { cache: "no-store" });
+    const res = await fetch("/api/auth/me?lite=1", { cache: "default", credentials: "include" });
     return (await res.json().catch(() => null)) as MeResponse | null;
   } catch {
     return null;
@@ -122,14 +122,14 @@ export default function GalleryPage() {
   }, [session]);
 
   async function loadChats(h: Record<string, string>) {
-    const res = await fetch("/api/chats", { headers: h, cache: "no-store" });
+    const res = await fetch("/api/chats", { headers: h, cache: "default" });
     const data = await res.json().catch(() => null);
     if (!res.ok) throw new Error(data?.error ?? `HTTP ${res.status}`);
     return Array.isArray(data?.rooms) ? (data.rooms as ChatRoom[]) : [];
   }
 
   async function loadOpenCalls() {
-    const res = await fetch("/api/open-calls", { cache: "no-store" });
+    const res = await fetch("/api/open-calls", { cache: "default" });
     const data = await res.json().catch(() => null);
     if (!res.ok) throw new Error(data?.error ?? `HTTP ${res.status}`);
     const all = Array.isArray(data?.openCalls) ? (data.openCalls as OpenCall[]) : [];
@@ -137,21 +137,21 @@ export default function GalleryPage() {
   }
 
   async function loadInvites() {
-    const res = await fetch("/api/gallery/invites", { cache: "no-store" });
+    const res = await fetch("/api/gallery/invites", { cache: "default", credentials: "include" });
     const data = await res.json().catch(() => null);
     if (!res.ok) throw new Error(data?.error ?? `HTTP ${res.status}`);
     return Array.isArray(data?.invites) ? (data.invites as Invite[]) : [];
   }
 
   async function loadApplications() {
-    const res = await fetch("/api/applications", { cache: "no-store" });
+    const res = await fetch("/api/applications", { cache: "default", credentials: "include" });
     const data = await res.json().catch(() => null);
     if (!res.ok) throw new Error(data?.error ?? `HTTP ${res.status}`);
     return Array.isArray(data?.applications) ? (data.applications as Application[]) : [];
   }
 
   async function loadTemplates() {
-    const res = await fetch("/api/gallery/invite-templates", { cache: "no-store" });
+    const res = await fetch("/api/gallery/invite-templates", { cache: "default", credentials: "include" });
     const data = await res.json().catch(() => null);
     if (!res.ok) throw new Error(data?.error ?? `HTTP ${res.status}`);
     return (data?.templates ?? null) as InviteTemplates | null;

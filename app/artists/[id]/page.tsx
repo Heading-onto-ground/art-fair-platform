@@ -206,7 +206,7 @@ export default function PublicArtistPage() {
 
     try {
       const res = await fetch(`/api/public/artist/${encodeURIComponent(id)}`, {
-        cache: "no-store",
+        cache: "default",
       });
 
       const json = (await res.json().catch(() => null)) as PublicArtistResponse | null;
@@ -233,12 +233,12 @@ export default function PublicArtistPage() {
 
   useEffect(() => {
     (async () => {
-      const res = await fetch("/api/auth/me", { cache: "no-store", credentials: "include" });
+      const res = await fetch("/api/auth/me?lite=1", { cache: "default", credentials: "include" });
       const data = (await res.json().catch(() => null)) as MeResponse | null;
       setMe(data);
 
       if (data?.session?.role === "gallery") {
-        const ocRes = await fetch("/api/open-calls", { cache: "no-store" });
+        const ocRes = await fetch("/api/open-calls", { cache: "default" });
         const ocData = await ocRes.json().catch(() => null);
         const all = Array.isArray(ocData?.openCalls) ? ocData.openCalls : [];
         const mine = all.filter((o: OpenCall) => o.galleryId === data.session!.userId);
