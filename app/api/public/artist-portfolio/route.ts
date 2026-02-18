@@ -46,7 +46,7 @@ export async function GET(req: Request) {
         decoded.mime.includes("pdf") || decoded.mime === "application/octet-stream"
           ? "application/pdf"
           : decoded.mime;
-      return new NextResponse(decoded.bytes, {
+      return new NextResponse(new Uint8Array(decoded.bytes), {
         status: 200,
         headers: {
           "Content-Type": contentType,

@@ -6,6 +6,7 @@ import Link from "next/link";
 import TopBar from "@/app/components/TopBar";
 import { useLanguage } from "@/lib/useLanguage";
 import { LANGUAGE_NAMES, type SupportedLang } from "@/lib/translateApi";
+import { F } from "@/lib/design";
 
 type ArtistProfile = {
   id: string;
