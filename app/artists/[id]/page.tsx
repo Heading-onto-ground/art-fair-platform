@@ -97,56 +97,17 @@ export default function PublicArtistPage() {
   const [showBioTranslation, setShowBioTranslation] = useState(false);
   const [translatingBio, setTranslatingBio] = useState(false);
 
-  function dataUriToBlobUrl(dataUri: string): string | null {
-    const m = dataUri.match(/^data:([^;,]+)?(?:;[^,]*)?,(.+)$/i);
-    if (!m?.[2]) return null;
-    const mime = String(m[1] || "application/octet-stream");
-    const payload = String(m[2] || "");
-    const isBase64 = /;base64,/i.test(dataUri);
-    try {
-      const bytes = isBase64
-        ? Uint8Array.from(atob(payload), (c) => c.charCodeAt(0))
-        : new TextEncoder().encode(decodeURIComponent(payload));
-      const blob = new Blob([bytes], { type: mime });
-      return URL.createObjectURL(blob);
-    } catch {
-      return null;
-    }
+  function openPortfolio(userId?: string) {
+    const id = String(userId || "").trim();
+    if (!id) return;
+    window.location.assign(`/api/portfolio?id=${encodeURIComponent(id)}`);
   }
 
-  function openPortfolio(url?: string) {
-    const v = String(url || "").trim();
-    if (!v) return;
-    if (v.startsWith("data:")) {
-      const blobUrl = dataUriToBlobUrl(v);
-      if (!blobUrl) return;
-      // Use same-tab navigation to avoid popup/new-tab blocking policies.
-      window.location.assign(blobUrl);
-      window.setTimeout(() => URL.revokeObjectURL(blobUrl), 120000);
-      return;
-    }
-    window.location.assign(v);
-  }
-
-  function downloadPortfolio(url?: string, filename = "portfolio.pdf") {
-    const v = String(url || "").trim();
-    if (!v) return;
-    if (v.startsWith("data:")) {
-      const blobUrl = dataUriToBlobUrl(v);
-      if (!blobUrl) return;
-      const a = document.createElement("a");
-      a.href = blobUrl;
-      a.download = filename;
-      document.body.appendChild(a);
-      a.click();
-      a.remove();
-      window.setTimeout(() => URL.revokeObjectURL(blobUrl), 60000);
-      return;
-    }
+  function downloadPortfolio(userId?: string, filename = "portfolio.pdf") {
+    const id = String(userId || "").trim();
+    if (!id) return;
     const a = document.createElement("a");
-    a.href = v;
-    a.target = "_blank";
-    a.rel = "noreferrer";
+    a.href = `/api/portfolio?id=${encodeURIComponent(id)}`;
     a.download = filename;
     document.body.appendChild(a);
     a.click();
@@ -491,7 +452,7 @@ export default function PublicArtistPage() {
                     <button
                       onClick={(e) => {
                         e.preventDefault();
-                        openPortfolio(profile.portfolioUrl);
+                        openPortfolio(profile.userId);
                       }}
                       style={{
                         padding: "8px 10px",
@@ -511,7 +472,7 @@ export default function PublicArtistPage() {
                       href="#"
                       onClick={(e) => {
                         e.preventDefault();
-                        downloadPortfolio(profile.portfolioUrl, `${profile.name || "artist"}-portfolio.pdf`);
+                        downloadPortfolio(profile.userId, `${profile.name || "artist"}-portfolio.pdf`);
                       }}
                       style={{
                         padding: "8px 10px",

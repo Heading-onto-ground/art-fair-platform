@@ -286,7 +286,7 @@ export default function OpenCallDetailPage({ params }: { params: { id: string } 
                         <div style={{ marginTop: 16, display: "flex", gap: 8, flexWrap: "wrap" }}>
                           {a.artistPortfolioUrl && (
                             <a
-                              href={`/api/public/artist/${encodeURIComponent(a.artistId)}?view=portfolio`}
+                              href={`/api/portfolio?id=${encodeURIComponent(a.artistId)}`}
                               target="_blank"
                               rel="noreferrer"
                               style={{ padding: "8px 16px", background: "#1A1A1A", color: "#FFF", fontFamily: F, fontWeight: 500, textDecoration: "none", fontSize: 10, letterSpacing: "0.08em", textTransform: "uppercase" }}
