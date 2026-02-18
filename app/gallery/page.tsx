@@ -482,6 +482,17 @@ export default function GalleryPage() {
     return map;
   }, [openCalls]);
 
+  useEffect(() => {
+    // Prefetch likely next navigations to reduce transition latency.
+    for (const o of openCalls.slice(0, 8)) {
+      router.prefetch(`/open-calls/${o.id}`);
+    }
+    for (const a of applications.slice(0, 12)) {
+      if (!a.artistId) continue;
+      router.prefetch(`/artists/${encodeURIComponent(a.artistId)}`);
+    }
+  }, [router, openCalls, applications]);
+
   if (loading) {
     return (
       <>
