@@ -52,6 +52,28 @@ async function countApiTableGrants() {
   return Number(rows?.[0]?.count ?? 0);
 }
 
+async function countSchemaUsageGrants() {
+  const rows = (await prisma.$queryRawUnsafe(`
+    SELECT COUNT(*)::bigint AS count
+    FROM pg_namespace n
+    JOIN pg_roles r ON r.rolname IN ('anon', 'authenticated')
+    WHERE n.nspname = 'public'
+      AND has_schema_privilege(r.rolname, n.oid, 'USAGE')
+  `)) as CountRow[];
+  return Number(rows?.[0]?.count ?? 0);
+}
+
+async function countFunctionExecuteGrants() {
+  const rows = (await prisma.$queryRawUnsafe(`
+    SELECT COUNT(*)::bigint AS count
+    FROM information_schema.routine_privileges
+    WHERE specific_schema = 'public'
+      AND grantee IN ('anon', 'authenticated')
+      AND privilege_type = 'EXECUTE'
+  `)) as CountRow[];
+  return Number(rows?.[0]?.count ?? 0);
+}
+
 async function runSecurityHardening() {
   // 1) Enable RLS for all public tables (except prisma migration metadata).
   await prisma.$executeRawUnsafe(`
@@ -84,6 +106,11 @@ async function runSecurityHardening() {
     END $$;
   `);
 
+  // 3) Revoke schema usage from API roles.
+  await prisma.$executeRawUnsafe(`
+    REVOKE USAGE ON SCHEMA public FROM anon, authenticated;
+  `);
+
   // 3) Revoke sequence usage too, to avoid insert/id leaks through defaults.
   await prisma.$executeRawUnsafe(`
     DO $$
@@ -99,7 +126,13 @@ async function runSecurityHardening() {
     END $$;
   `);
 
-  // 4) Ensure each table has an explicit deny-all policy for API roles.
+  // 4) Revoke execute on all public routines/functions.
+  await prisma.$executeRawUnsafe(`
+    REVOKE EXECUTE ON ALL FUNCTIONS IN SCHEMA public FROM anon, authenticated;
+    REVOKE EXECUTE ON ALL ROUTINES IN SCHEMA public FROM anon, authenticated;
+  `);
+
+  // 5) Ensure each table has an explicit deny-all policy for API roles.
   // This removes "RLS enabled but no policy" style warnings and documents intent clearly.
   await prisma.$executeRawUnsafe(`
     DO $$
@@ -130,6 +163,13 @@ async function runSecurityHardening() {
       END LOOP;
     END $$;
   `);
+
+  // 6) Default privileges hardening for future objects.
+  await prisma.$executeRawUnsafe(`
+    ALTER DEFAULT PRIVILEGES IN SCHEMA public REVOKE ALL ON TABLES FROM anon, authenticated;
+    ALTER DEFAULT PRIVILEGES IN SCHEMA public REVOKE ALL ON SEQUENCES FROM anon, authenticated;
+    ALTER DEFAULT PRIVILEGES IN SCHEMA public REVOKE ALL ON FUNCTIONS FROM anon, authenticated;
+  `);
 }
 
 export async function POST() {
@@ -143,6 +183,8 @@ export async function POST() {
       rlsDisabledTables: await countRlsDisabledTables(),
       rlsEnabledNoPolicyTables: await countRlsEnabledNoPolicyTables(),
       apiTableGrants: await countApiTableGrants(),
+      schemaUsageGrants: await countSchemaUsageGrants(),
+      functionExecuteGrants: await countFunctionExecuteGrants(),
     };
 
     await runSecurityHardening();
@@ -151,6 +193,8 @@ export async function POST() {
       rlsDisabledTables: await countRlsDisabledTables(),
       rlsEnabledNoPolicyTables: await countRlsEnabledNoPolicyTables(),
       apiTableGrants: await countApiTableGrants(),
+      schemaUsageGrants: await countSchemaUsageGrants(),
+      functionExecuteGrants: await countFunctionExecuteGrants(),
     };
 
     return NextResponse.json(
@@ -178,6 +222,8 @@ export async function GET() {
       rlsDisabledTables: await countRlsDisabledTables(),
       rlsEnabledNoPolicyTables: await countRlsEnabledNoPolicyTables(),
       apiTableGrants: await countApiTableGrants(),
+      schemaUsageGrants: await countSchemaUsageGrants(),
+      functionExecuteGrants: await countFunctionExecuteGrants(),
     };
     return NextResponse.json({ ok: true, status }, { status: 200 });
   } catch (e) {

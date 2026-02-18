@@ -10,6 +10,8 @@ type Status = {
   rlsDisabledTables: number;
   rlsEnabledNoPolicyTables: number;
   apiTableGrants: number;
+  schemaUsageGrants: number;
+  functionExecuteGrants: number;
 };
 
 export default function AdminSecurityPage() {
@@ -63,7 +65,7 @@ export default function AdminSecurityPage() {
       const data = await res.json().catch(() => null);
       if (!res.ok || !data?.ok) throw new Error(data?.error || "failed to apply");
       setMessage(
-        `Applied. RLS disabled: ${data.before.rlsDisabledTables} -> ${data.after.rlsDisabledTables}, no-policy tables: ${data.before.rlsEnabledNoPolicyTables} -> ${data.after.rlsEnabledNoPolicyTables}, API grants: ${data.before.apiTableGrants} -> ${data.after.apiTableGrants}`
+        `Applied. RLS disabled: ${data.before.rlsDisabledTables} -> ${data.after.rlsDisabledTables}, no-policy tables: ${data.before.rlsEnabledNoPolicyTables} -> ${data.after.rlsEnabledNoPolicyTables}, API table grants: ${data.before.apiTableGrants} -> ${data.after.apiTableGrants}, schema usage grants: ${data.before.schemaUsageGrants} -> ${data.after.schemaUsageGrants}, function execute grants: ${data.before.functionExecuteGrants} -> ${data.after.functionExecuteGrants}`
       );
       await loadStatus();
     } catch (e: any) {
@@ -107,7 +109,7 @@ export default function AdminSecurityPage() {
             <div
               style={{
                 display: "grid",
-                gridTemplateColumns: "repeat(3, minmax(0, 1fr))",
+                gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))",
                 gap: 12,
                 marginTop: 14,
                 marginBottom: 16,
@@ -119,6 +121,8 @@ export default function AdminSecurityPage() {
                 value={status?.rlsEnabledNoPolicyTables ?? 0}
               />
               <Metric label="API Table Grants (anon/authenticated)" value={status?.apiTableGrants ?? 0} />
+              <Metric label="Schema Usage Grants" value={status?.schemaUsageGrants ?? 0} />
+              <Metric label="Function Execute Grants" value={status?.functionExecuteGrants ?? 0} />
             </div>
 
             <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
