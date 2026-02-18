@@ -120,11 +120,12 @@ export default function PublicArtistPage() {
     if (v.startsWith("data:")) {
       const blobUrl = dataUriToBlobUrl(v);
       if (!blobUrl) return;
-      window.open(blobUrl, "_blank", "noopener,noreferrer");
-      window.setTimeout(() => URL.revokeObjectURL(blobUrl), 60000);
+      // Use same-tab navigation to avoid popup/new-tab blocking policies.
+      window.location.assign(blobUrl);
+      window.setTimeout(() => URL.revokeObjectURL(blobUrl), 120000);
       return;
     }
-    window.open(v, "_blank", "noopener,noreferrer");
+    window.location.assign(v);
   }
 
   function downloadPortfolio(url?: string, filename = "portfolio.pdf") {
@@ -487,8 +488,7 @@ export default function PublicArtistPage() {
 
                 {profile?.portfolioUrl ? (
                   <div style={{ marginTop: 8, display: "flex", gap: 8, flexWrap: "wrap" }}>
-                    <a
-                      href="#"
+                    <button
                       onClick={(e) => {
                         e.preventDefault();
                         openPortfolio(profile.portfolioUrl);
@@ -501,10 +501,11 @@ export default function PublicArtistPage() {
                         color: "#fff",
                         fontWeight: 900,
                         textDecoration: "none",
+                        cursor: "pointer",
                       }}
                     >
                       📄 Open PDF
-                    </a>
+                    </button>
 
                     <a
                       href="#"
