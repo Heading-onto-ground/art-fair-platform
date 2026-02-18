@@ -23,13 +23,54 @@ type Notification = {
   createdAt: number;
 };
 
-async function fetchMe(): Promise<MeResponse | null> {
+const ME_CACHE_KEY = "afp_topbar_me_v1";
+const ME_CACHE_TTL_MS = 30_000;
+
+function readCachedMe(): MeResponse | null {
+  if (typeof window === "undefined") return null;
   try {
-    const res = await fetch("/api/auth/me", {
-      cache: "no-store",
+    const raw = sessionStorage.getItem(ME_CACHE_KEY);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw) as { ts: number; data: MeResponse };
+    if (!parsed?.ts || !parsed?.data) return null;
+    if (Date.now() - parsed.ts > ME_CACHE_TTL_MS) return null;
+    return parsed.data;
+  } catch {
+    return null;
+  }
+}
+
+function writeCachedMe(data: MeResponse | null) {
+  if (typeof window === "undefined" || !data) return;
+  try {
+    sessionStorage.setItem(ME_CACHE_KEY, JSON.stringify({ ts: Date.now(), data }));
+  } catch {
+    // ignore cache errors
+  }
+}
+
+function clearCachedMe() {
+  if (typeof window === "undefined") return;
+  try {
+    sessionStorage.removeItem(ME_CACHE_KEY);
+  } catch {
+    // ignore cache errors
+  }
+}
+
+async function fetchMe(options?: { preferCache?: boolean }): Promise<MeResponse | null> {
+  if (options?.preferCache) {
+    const cached = readCachedMe();
+    if (cached) return cached;
+  }
+  try {
+    const res = await fetch("/api/auth/me?lite=1", {
+      cache: "default",
       credentials: "include",
     });
-    return (await res.json().catch(() => null)) as MeResponse | null;
+    const data = (await res.json().catch(() => null)) as MeResponse | null;
+    if (data) writeCachedMe(data);
+    return data;
   } catch {
     return null;
   }
@@ -52,7 +93,14 @@ export default function TopBar() {
 
   useEffect(() => {
     setMounted(true);
-    (async () => { const m = await fetchMe(); setMe(m); })();
+    const cached = readCachedMe();
+    if (cached) {
+      setMe(cached);
+    }
+    (async () => {
+      const m = await fetchMe({ preferCache: !cached });
+      if (m) setMe(m);
+    })();
   }, []);
 
   useEffect(() => {
@@ -125,7 +173,8 @@ export default function TopBar() {
 
   async function logout() {
     await fetch("/api/auth/logout", { method: "POST", credentials: "include" });
-    const m = await fetchMe(); setMe(m);
+    clearCachedMe();
+    const m = await fetchMe({ preferCache: false }); setMe(m);
     router.push("/login"); router.refresh();
   }
 
