@@ -2,14 +2,14 @@ import { NextResponse } from "next/server";
 import bcrypt from "bcryptjs";
 import type { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
-import { sendVerificationEmail, sendWelcomeEmail, detectEmailLang } from "@/lib/email";
+import { sendVerificationEmail, detectEmailLang } from "@/lib/email";
 import { createOrRefreshVerificationToken } from "@/lib/emailVerification";
 
 type Role = "artist" | "gallery";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
-const EMAIL_VERIFICATION_REQUIRED = (process.env.EMAIL_VERIFICATION_REQUIRED || "1") !== "0";
+const EMAIL_VERIFICATION_REQUIRED = true;
 
 export async function POST(req: Request) {
   try {
@@ -105,22 +105,6 @@ export async function POST(req: Request) {
       }
 
     });
-
-    if (!EMAIL_VERIFICATION_REQUIRED) {
-      // When verification is disabled, send welcome mail immediately.
-      await sendWelcomeEmail({
-        to: email,
-        role,
-        name,
-        lang,
-      }).catch((e) => {
-        console.error("Welcome email send failed (non-fatal):", e);
-      });
-      return NextResponse.json(
-        { ok: true, requiresEmailVerification: false, verificationEmailSent: false, email },
-        { status: 200 }
-      );
-    }
 
     // Send verification email (signup requires email verification before login)
     const { token } = await createOrRefreshVerificationToken({ email, role });

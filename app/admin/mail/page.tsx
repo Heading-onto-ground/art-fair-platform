@@ -12,6 +12,18 @@ export default function AdminMailPage() {
   const [authenticated, setAuthenticated] = useState<boolean | null>(null);
   const [sending, setSending] = useState(false);
   const [result, setResult] = useState<string | null>(null);
+  const [logs, setLogs] = useState<
+    Array<{
+      id: string;
+      emailType: string;
+      toEmail: string;
+      subject: string;
+      status: string;
+      error?: string | null;
+      createdAt: number;
+    }>
+  >([]);
+  const [loadingLogs, setLoadingLogs] = useState(false);
   const [templateId, setTemplateId] = useState("custom");
   const [form, setForm] = useState({
     to: "",
@@ -89,12 +101,29 @@ export default function AdminMailPage() {
           return;
         }
         setAuthenticated(true);
+        await loadLogs();
       } catch {
         setAuthenticated(false);
         router.replace("/admin/login");
       }
     })();
   }, [router]);
+
+  async function loadLogs() {
+    setLoadingLogs(true);
+    try {
+      const res = await fetch("/api/admin/mail-logs?limit=60", {
+        cache: "no-store",
+        credentials: "include",
+      });
+      const data = await res.json().catch(() => null);
+      if (res.ok && data?.ok && Array.isArray(data.logs)) {
+        setLogs(data.logs);
+      }
+    } finally {
+      setLoadingLogs(false);
+    }
+  }
 
   async function sendMail() {
     if (!form.to.trim() || !form.subject.trim() || !form.message.trim()) {
@@ -114,6 +143,7 @@ export default function AdminMailPage() {
       if (!res.ok || !data?.ok) throw new Error(data?.error || "send failed");
       setResult(tr("Email sent successfully.", "이메일 발송 완료.", "メールを送信しました。", "Email envoye avec succes."));
       setForm((p) => ({ ...p, subject: "", message: "" }));
+      await loadLogs();
     } catch (e: any) {
       setResult(e?.message || tr("Failed to send email.", "이메일 발송 실패.", "メール送信に失敗しました。", "Echec de l'envoi de l'email."));
     } finally {
@@ -228,6 +258,63 @@ export default function AdminMailPage() {
 
             {result ? <span style={{ fontFamily: F, fontSize: 12, color: "#6A6A6A" }}>{result}</span> : null}
           </div>
+        </div>
+
+        <div style={{ border: "1px solid #E8E3DB", background: "#FFFFFF", padding: 18, marginTop: 14 }}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10 }}>
+            <div style={{ fontFamily: F, fontSize: 10, letterSpacing: "0.1em", textTransform: "uppercase", color: "#8A8580" }}>
+              {tr("Recent Email Logs", "최근 메일 로그", "最近のメールログ", "Logs email recents")}
+            </div>
+            <button
+              onClick={loadLogs}
+              disabled={loadingLogs}
+              style={{
+                border: "1px solid #E8E3DB",
+                background: "transparent",
+                color: "#4A4A4A",
+                fontFamily: F,
+                fontSize: 10,
+                padding: "6px 10px",
+                cursor: loadingLogs ? "wait" : "pointer",
+              }}
+            >
+              {loadingLogs ? "..." : tr("Refresh", "새로고침", "更新", "Actualiser")}
+            </button>
+          </div>
+          {logs.length === 0 ? (
+            <div style={{ fontFamily: F, fontSize: 12, color: "#B0AAA2", padding: "8px 0" }}>
+              {tr("No logs yet.", "아직 로그가 없습니다.", "ログがありません。", "Aucun log pour le moment.")}
+            </div>
+          ) : (
+            <div style={{ display: "grid", gap: 6 }}>
+              {logs.slice(0, 20).map((log) => (
+                <div
+                  key={log.id}
+                  style={{
+                    border: "1px solid #F0EBE3",
+                    background: "#FAF8F4",
+                    padding: "10px 12px",
+                    display: "grid",
+                    gap: 4,
+                  }}
+                >
+                  <div style={{ display: "flex", justifyContent: "space-between", gap: 10 }}>
+                    <span style={{ fontFamily: F, fontSize: 11, color: "#1A1A1A" }}>
+                      {log.emailType} · {log.toEmail}
+                    </span>
+                    <span style={{ fontFamily: F, fontSize: 10, color: "#8A8580" }}>
+                      {new Date(log.createdAt).toLocaleString()}
+                    </span>
+                  </div>
+                  <div style={{ fontFamily: F, fontSize: 11, color: "#4A4A4A" }}>{log.subject}</div>
+                  <div style={{ fontFamily: F, fontSize: 10, color: log.status === "failed" ? "#8B4A4A" : "#5A7A5A" }}>
+                    {log.status}
+                    {log.error ? ` · ${log.error}` : ""}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
       </main>
     </>

@@ -44,11 +44,13 @@ export async function POST(req: NextRequest) {
     `;
 
     const sent = await sendPlatformEmail({
+      emailType: "contact_form",
       to: CONTACT_EMAIL,
       subject: composedSubject,
       text,
       html,
       replyTo: email,
+      meta: { name, fromEmail: email },
     });
     if (!sent.ok) {
       return NextResponse.json({ error: sent.error || "send failed" }, { status: 500 });

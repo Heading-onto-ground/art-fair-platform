@@ -1,5 +1,6 @@
 // Email sending utility using Resend
 // Set RESEND_API_KEY in .env.local to enable email sending
+import { logEmailEvent } from "@/lib/emailLog";
 
 const RESEND_API_KEY = process.env.RESEND_API_KEY || "";
 const FROM_EMAIL = process.env.FROM_EMAIL || "onboarding@resend.dev";
@@ -47,75 +48,34 @@ function normalizeLang(lang?: string | null): "en" | "ko" | "ja" | "fr" {
 }
 
 function buildWelcomeSubject(role: "artist" | "gallery", lang: "en" | "ko" | "ja" | "fr"): string {
-  const roleLabel =
-    lang === "ko" ? (role === "artist" ? "아티스트" : "갤러리")
-    : lang === "ja" ? (role === "artist" ? "アーティスト" : "ギャラリー")
-    : lang === "fr" ? (role === "artist" ? "artiste" : "galerie")
-    : role;
-
-  if (lang === "ko") return `ROB 가입을 환영합니다 — ${roleLabel} 계정이 생성되었습니다`;
-  if (lang === "ja") return `ROBへようこそ — ${roleLabel}アカウントを作成しました`;
-  if (lang === "fr") return `Bienvenue sur ROB — Votre compte ${roleLabel} est créé`;
-  return `Welcome to ROB — Your ${roleLabel} account is ready`;
+  return "Thank you for joining ROB — A message from the CEO";
 }
 
 function buildWelcomeText(input: WelcomeEmailInput, lang: "en" | "ko" | "ja" | "fr"): string {
-  const name = input.name?.trim() || (lang === "ko" ? "회원님" : lang === "ja" ? "ユーザー様" : lang === "fr" ? "membre" : "there");
-  const dashboardPath = input.role === "artist" ? "/artist" : "/gallery";
-  const dashboardUrl = `${PLATFORM_URL}${dashboardPath}`;
-
-  if (lang === "ko") {
-    return `
-안녕하세요 ${name},
-
-ROB(Role of Bridge)에 가입해주셔서 감사합니다.
-${input.role === "artist" ? "아티스트" : "갤러리"} 계정이 정상적으로 생성되었습니다.
-
-지금 바로 시작하기:
-${dashboardUrl}
-
-ROB 팀 드림
-`.trim();
-  }
-
-  if (lang === "ja") {
-    return `
-${name} 様
-
-ROB（Role of Bridge）にご登録いただきありがとうございます。
-${input.role === "artist" ? "アーティスト" : "ギャラリー"}アカウントの作成が完了しました。
-
-こちらから開始できます:
-${dashboardUrl}
-
-ROB Team
-`.trim();
-  }
-
-  if (lang === "fr") {
-    return `
-Bonjour ${name},
-
-Merci d'avoir rejoint ROB (Role of Bridge).
-Votre compte ${input.role === "artist" ? "artiste" : "galerie"} est prêt.
-
-Commencer maintenant :
-${dashboardUrl}
-
-L'équipe ROB
-`.trim();
-  }
-
   return `
-Hi ${name},
+Hello,
 
-Thanks for joining ROB (Role of Bridge).
-Your ${input.role} account has been created successfully.
+This is the CEO of ROB; role of bridge, a global art open call and artist community platform.
 
-Get started:
-${dashboardUrl}
+Thank you sincerely for joining and being part of this platform in its early stages. We truly hope ROB can support and accompany you in your artistic journey.
 
-The ROB Team
+Your feedback is always welcome. As the official platform email is still being set up, I am reaching out through my personal email to express my gratitude. Please feel free to share any thoughts, suggestions, or hopes you may have for the platform.
+
+Thank you once again.
+
+Warm regards,
+CEO
+ROB; role of bridge
+
+
+안녕하세요, 글로벌 아트 공모전 + 아티스트 커뮤니티 플랫폼 ROB; role of bridge 의 CEO 입니다.
+이제 막 시작된 이 플랫폼에 참여해주셔서 정말 감사합니다.
+아티스트 분들의 작업 여정에 도움이 되고 싶습니다.
+피드백은 언제나 환영입니다.
+아직은 이 플랫폼의 공식 이메일이 만들어지기 전이라서,
+개인 이메일로 감사 인사 드립니다. 플랫폼 에 바라는 점 편하게 메일 주세요.
+
+다시 한 번 감사드립니다!
 `.trim();
 }
 
@@ -266,49 +226,20 @@ Sent via ROB — Role of Bridge (Global Art Network)
 }
 
 export async function sendApplicationEmail(data: ArtistApplicationEmail): Promise<{ ok: boolean; error?: string }> {
-  // API 키가 없으면 콘솔 로그만 남기고 성공 반환
-  if (!RESEND_API_KEY) {
-    console.log("═══════════════════════════════════════════════");
-    console.log("📧 EMAIL WOULD BE SENT (No RESEND_API_KEY set)");
-    console.log(`   TO: ${data.galleryEmail}`);
-    console.log(`   GALLERY: ${data.galleryName}`);
-    console.log(`   OPEN CALL: ${data.openCallTheme}`);
-    console.log(`   ARTIST: ${data.artistName} (${data.artistEmail})`);
-    console.log(`   PORTFOLIO: ${data.portfolioUrl || "N/A"}`);
-    console.log("═══════════════════════════════════════════════");
-    return { ok: true };
-  }
-
-  try {
-    const res = await fetch("https://api.resend.com/emails", {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${RESEND_API_KEY}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        from: `${PLATFORM_NAME} <${FROM_EMAIL}>`,
-        to: [data.galleryEmail],
-        subject: `[ROB] New Application: ${data.artistName} → "${data.openCallTheme}"`,
-        html: buildApplicationEmailHtml(data),
-        text: buildApplicationEmailText(data),
-        reply_to: data.artistEmail,
-      }),
-    });
-
-    const result = await res.json();
-
-    if (!res.ok) {
-      console.error("Resend API error:", result);
-      return { ok: false, error: result?.message || "Failed to send email" };
-    }
-
-    console.log(`📧 Email sent to ${data.galleryEmail} (ID: ${result.id})`);
-    return { ok: true };
-  } catch (error: any) {
-    console.error("Email send failed:", error);
-    return { ok: false, error: error?.message || "Email send failed" };
-  }
+  return sendPlatformEmail({
+    emailType: "application_notification",
+    to: data.galleryEmail,
+    subject: `[ROB] New Application: ${data.artistName} → "${data.openCallTheme}"`,
+    html: buildApplicationEmailHtml(data),
+    text: buildApplicationEmailText(data),
+    replyTo: data.artistEmail,
+    meta: {
+      galleryName: data.galleryName,
+      openCallTheme: data.openCallTheme,
+      artistName: data.artistName,
+      artistEmail: data.artistEmail,
+    },
+  });
 }
 
 export async function sendWelcomeEmail(input: WelcomeEmailInput): Promise<{ ok: boolean; error?: string }> {
@@ -316,41 +247,18 @@ export async function sendWelcomeEmail(input: WelcomeEmailInput): Promise<{ ok: 
   const subject = buildWelcomeSubject(input.role, lang);
   const text = buildWelcomeText(input, lang);
   const html = buildWelcomeHtml(input, lang);
-
-  if (!RESEND_API_KEY) {
-    console.log("═══════════════════════════════════════════════");
-    console.log("📧 WELCOME EMAIL (No RESEND_API_KEY set)");
-    console.log(`   TO: ${input.to}`);
-    console.log(`   ROLE: ${input.role}`);
-    console.log(`   LANG: ${lang}`);
-    console.log(`   SUBJECT: ${subject}`);
-    console.log("═══════════════════════════════════════════════");
-    return { ok: true };
-  }
-
-  try {
-    const res = await fetch("https://api.resend.com/emails", {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${RESEND_API_KEY}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        from: `${PLATFORM_NAME} <${FROM_EMAIL}>`,
-        to: [input.to],
-        subject,
-        html,
-        text,
-      }),
-    });
-    const result = await res.json().catch(() => ({}));
-    if (!res.ok) {
-      return { ok: false, error: result?.message || "Failed to send welcome email" };
-    }
-    return { ok: true };
-  } catch (e: any) {
-    return { ok: false, error: e?.message || "Welcome email send failed" };
-  }
+  return sendPlatformEmail({
+    emailType: "welcome",
+    to: input.to,
+    subject,
+    html,
+    text,
+    meta: {
+      role: input.role,
+      lang,
+      name: input.name || "",
+    },
+  });
 }
 
 export async function sendVerificationEmail(input: VerificationEmailInput): Promise<{ ok: boolean; error?: string }> {
@@ -358,68 +266,62 @@ export async function sendVerificationEmail(input: VerificationEmailInput): Prom
   const subject = buildVerificationSubject(lang);
   const text = buildVerificationText(input, lang);
   const html = buildVerificationHtml(input, lang);
-
-  if (!RESEND_API_KEY) {
-    const isProduction = process.env.NODE_ENV === "production";
-    if (isProduction) {
-      return { ok: false, error: "RESEND_API_KEY is not configured" };
-    }
-    console.log("═══════════════════════════════════════════════");
-    console.log("📧 VERIFICATION EMAIL (No RESEND_API_KEY set)");
-    console.log(`   TO: ${input.to}`);
-    console.log(`   ROLE: ${input.role}`);
-    console.log(`   LINK: ${input.verifyUrl}`);
-    console.log("═══════════════════════════════════════════════");
-    return { ok: true };
-  }
-
-  try {
-    const res = await fetch("https://api.resend.com/emails", {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${RESEND_API_KEY}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        from: `${PLATFORM_NAME} <${FROM_EMAIL}>`,
-        to: [input.to],
-        subject,
-        html,
-        text,
-      }),
-    });
-    const result = await res.json().catch(() => ({}));
-    if (!res.ok) {
-      return { ok: false, error: result?.message || "Failed to send verification email" };
-    }
-    return { ok: true };
-  } catch (e: any) {
-    return { ok: false, error: e?.message || "Verification email send failed" };
-  }
+  return sendPlatformEmail({
+    emailType: "verification",
+    to: input.to,
+    subject,
+    html,
+    text,
+    meta: {
+      role: input.role,
+      lang,
+      verifyUrl: input.verifyUrl,
+    },
+  });
 }
 
 export type PlatformEmailInput = {
+  emailType?: string;
   to: string;
   subject: string;
   text: string;
   html?: string;
   replyTo?: string;
+  meta?: Record<string, unknown>;
 };
 
 export async function sendPlatformEmail(input: PlatformEmailInput): Promise<{ ok: boolean; error?: string }> {
+  const emailType = String(input.emailType || "generic").trim() || "generic";
   const to = String(input.to || "").trim();
   const subject = String(input.subject || "").trim();
   const text = String(input.text || "").trim();
   const html = String(input.html || "").trim() || undefined;
   const replyTo = String(input.replyTo || "").trim() || undefined;
+  const meta = input.meta || {};
 
   if (!to || !subject || !text) {
+    await logEmailEvent({
+      emailType,
+      toEmail: to || "-",
+      subject: subject || "-",
+      status: "failed",
+      error: "missing email fields",
+      meta,
+    });
     return { ok: false, error: "missing email fields" };
   }
 
   if (!RESEND_API_KEY) {
     const isProduction = process.env.NODE_ENV === "production";
     if (isProduction) {
+      await logEmailEvent({
+        emailType,
+        toEmail: to,
+        subject,
+        status: "failed",
+        error: "RESEND_API_KEY is not configured",
+        meta,
+      });
       return { ok: false, error: "RESEND_API_KEY is not configured" };
     }
     console.log("═══════════════════════════════════════════════");
@@ -428,6 +330,13 @@ export async function sendPlatformEmail(input: PlatformEmailInput): Promise<{ ok
     console.log(`   SUBJECT: ${subject}`);
     if (replyTo) console.log(`   REPLY-TO: ${replyTo}`);
     console.log("═══════════════════════════════════════════════");
+    await logEmailEvent({
+      emailType,
+      toEmail: to,
+      subject,
+      status: "simulated",
+      meta,
+    });
     return { ok: true };
   }
 
@@ -449,10 +358,35 @@ export async function sendPlatformEmail(input: PlatformEmailInput): Promise<{ ok
     });
     const result = await res.json().catch(() => ({}));
     if (!res.ok) {
-      return { ok: false, error: result?.message || "Failed to send email" };
+      const error = result?.message || "Failed to send email";
+      await logEmailEvent({
+        emailType,
+        toEmail: to,
+        subject,
+        status: "failed",
+        error,
+        meta: { ...meta, providerResponse: result },
+      });
+      return { ok: false, error };
     }
+    await logEmailEvent({
+      emailType,
+      toEmail: to,
+      subject,
+      status: "sent",
+      meta: { ...meta, providerId: result?.id || null },
+    });
     return { ok: true };
   } catch (e: any) {
-    return { ok: false, error: e?.message || "Email send failed" };
+    const error = e?.message || "Email send failed";
+    await logEmailEvent({
+      emailType,
+      toEmail: to,
+      subject,
+      status: "failed",
+      error,
+      meta,
+    });
+    return { ok: false, error };
   }
 }

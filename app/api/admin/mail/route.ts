@@ -39,11 +39,15 @@ export async function POST(req: NextRequest) {
     `;
 
     const sent = await sendPlatformEmail({
+      emailType: "admin_manual",
       to,
       subject,
       text,
       html,
       replyTo: replyTo || undefined,
+      meta: {
+        adminEmail: admin.email,
+      },
     });
     if (!sent.ok) {
       return NextResponse.json({ error: sent.error || "send failed" }, { status: 500 });

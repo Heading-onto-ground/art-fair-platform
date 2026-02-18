@@ -8,7 +8,7 @@ type Role = "artist" | "gallery";
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 const RESEND_COOLDOWN_MS = 2 * 60 * 1000;
-const EMAIL_VERIFICATION_REQUIRED = (process.env.EMAIL_VERIFICATION_REQUIRED || "1") !== "0";
+const EMAIL_VERIFICATION_REQUIRED = true;
 
 export async function GET() {
   const hasDb = !!process.env.DATABASE_URL;
