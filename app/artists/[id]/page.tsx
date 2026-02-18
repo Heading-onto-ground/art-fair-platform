@@ -96,18 +96,54 @@ export default function PublicArtistPage() {
   const [translatedBio, setTranslatedBio] = useState<string | null>(null);
   const [showBioTranslation, setShowBioTranslation] = useState(false);
   const [translatingBio, setTranslatingBio] = useState(false);
+  const [portfolioViewerUrl, setPortfolioViewerUrl] = useState<string | null>(null);
 
-  function openPortfolio(userId?: string) {
-    const id = String(userId || "").trim();
-    if (!id) return;
-    window.location.assign(`/api/portfolio?id=${encodeURIComponent(id)}`);
+  function dataUriToBlobUrl(dataUri: string): string | null {
+    const m = dataUri.match(/^data:([^;,]+)?(?:;[^,]*)?,(.+)$/i);
+    if (!m?.[2]) return null;
+    const mime = String(m[1] || "application/octet-stream");
+    const payload = String(m[2] || "");
+    const isBase64 = /;base64,/i.test(dataUri);
+    try {
+      const bytes = isBase64
+        ? Uint8Array.from(atob(payload), (c) => c.charCodeAt(0))
+        : new TextEncoder().encode(decodeURIComponent(payload));
+      const blob = new Blob([bytes], { type: mime });
+      return URL.createObjectURL(blob);
+    } catch {
+      return null;
+    }
   }
 
-  function downloadPortfolio(userId?: string, filename = "portfolio.pdf") {
-    const id = String(userId || "").trim();
-    if (!id) return;
+  function openPortfolio(url?: string) {
+    const v = String(url || "").trim();
+    if (!v) return;
+    if (v.startsWith("data:")) {
+      const blobUrl = dataUriToBlobUrl(v);
+      if (!blobUrl) return;
+      setPortfolioViewerUrl(blobUrl);
+      return;
+    }
+    window.open(v, "_blank", "noopener,noreferrer");
+  }
+
+  function downloadPortfolio(url?: string, filename = "portfolio.pdf") {
+    const v = String(url || "").trim();
+    if (!v) return;
+    if (v.startsWith("data:")) {
+      const blobUrl = dataUriToBlobUrl(v);
+      if (!blobUrl) return;
+      const a = document.createElement("a");
+      a.href = blobUrl;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      window.setTimeout(() => URL.revokeObjectURL(blobUrl), 60000);
+      return;
+    }
     const a = document.createElement("a");
-    a.href = `/api/portfolio?id=${encodeURIComponent(id)}`;
+    a.href = v;
     a.download = filename;
     document.body.appendChild(a);
     a.click();
@@ -452,7 +488,7 @@ export default function PublicArtistPage() {
                     <button
                       onClick={(e) => {
                         e.preventDefault();
-                        openPortfolio(profile.userId);
+                        openPortfolio(profile.portfolioUrl);
                       }}
                       style={{
                         padding: "8px 10px",
@@ -472,7 +508,7 @@ export default function PublicArtistPage() {
                       href="#"
                       onClick={(e) => {
                         e.preventDefault();
-                        downloadPortfolio(profile.userId, `${profile.name || "artist"}-portfolio.pdf`);
+                        downloadPortfolio(profile.portfolioUrl, `${profile.name || "artist"}-portfolio.pdf`);
                       }}
                       style={{
                         padding: "8px 10px",
@@ -589,6 +625,30 @@ export default function PublicArtistPage() {
             <div style={{ marginTop: 14, fontSize: 12, opacity: 0.7 }}>
               Updated:{" "}
               {profile?.updatedAt ? new Date(profile.updatedAt).toLocaleString() : "-"}
+            </div>
+          </div>
+        )}
+
+        {portfolioViewerUrl && (
+          <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.55)", zIndex: 1200, display: "flex", alignItems: "center", justifyContent: "center", padding: 24 }}>
+            <div style={{ width: "min(1080px, 96vw)", height: "min(86vh, 900px)", background: "#fff", borderRadius: 14, overflow: "hidden", display: "grid", gridTemplateRows: "52px 1fr" }}>
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "0 14px", borderBottom: "1px solid #EEE", fontFamily: F }}>
+                <span style={{ fontSize: 12, color: "#666" }}>Portfolio Preview</span>
+                <button
+                  onClick={() => {
+                    const url = portfolioViewerUrl;
+                    setPortfolioViewerUrl(null);
+                    window.setTimeout(() => {
+                      if (!url) return;
+                      try { URL.revokeObjectURL(url); } catch {}
+                    }, 0);
+                  }}
+                  style={{ border: "1px solid #DDD", background: "#FFF", padding: "6px 10px", cursor: "pointer", borderRadius: 8 }}
+                >
+                  Close
+                </button>
+              </div>
+              <iframe src={portfolioViewerUrl} style={{ width: "100%", height: "100%", border: "none" }} title="Artist portfolio preview" />
             </div>
           </div>
         )}
