@@ -3,11 +3,17 @@ import { getProfileByUserId } from "@/lib/auth";
 
 export const dynamic = "force-dynamic";
 
-function decodeDataUriPdf(dataUri: string): Buffer | null {
-  const m = dataUri.match(/^data:application\/pdf;base64,(.+)$/i);
-  if (!m?.[1]) return null;
+function decodeDataUri(dataUri: string): { mime: string; bytes: Buffer } | null {
+  const m = dataUri.match(/^data:([^;,]+)?(?:;[^,]*)?,(.+)$/i);
+  if (!m?.[2]) return null;
+  const mime = String(m[1] || "application/octet-stream").toLowerCase();
+  const payload = String(m[2] || "");
+  const isBase64 = /;base64,/i.test(dataUri);
   try {
-    return Buffer.from(m[1], "base64");
+    const bytes = isBase64
+      ? Buffer.from(payload, "base64")
+      : Buffer.from(decodeURIComponent(payload), "utf8");
+    return { mime, bytes };
   } catch {
     return null;
   }
@@ -33,16 +39,20 @@ export async function GET(
       return NextResponse.json({ error: "portfolio not found" }, { status: 404 });
     }
 
-    // Handle legacy uploaded data URI PDFs safely for browsers.
-    if (portfolioUrl.startsWith("data:application/pdf;base64,")) {
-      const bytes = decodeDataUriPdf(portfolioUrl);
-      if (!bytes) {
+    // Handle data URI portfolios safely for browsers (avoid about:blank#blocked).
+    if (portfolioUrl.startsWith("data:")) {
+      const decoded = decodeDataUri(portfolioUrl);
+      if (!decoded) {
         return NextResponse.json({ error: "invalid portfolio data" }, { status: 400 });
       }
-      return new NextResponse(bytes, {
+      const contentType =
+        decoded.mime.includes("pdf") || decoded.mime === "application/octet-stream"
+          ? "application/pdf"
+          : decoded.mime;
+      return new NextResponse(decoded.bytes, {
         status: 200,
         headers: {
-          "Content-Type": "application/pdf",
+          "Content-Type": contentType,
           "Content-Disposition": `inline; filename="portfolio-${id}.pdf"`,
           "Cache-Control": "public, max-age=60, stale-while-revalidate=300",
         },
