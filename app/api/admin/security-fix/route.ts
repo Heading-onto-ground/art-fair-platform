@@ -21,6 +21,26 @@ async function countRlsDisabledTables() {
   return Number(rows?.[0]?.count ?? 0);
 }
 
+async function countRlsEnabledNoPolicyTables() {
+  const rows = (await prisma.$queryRawUnsafe(`
+    SELECT COUNT(*)::bigint AS count
+    FROM pg_tables t
+    JOIN pg_class c ON c.relname = t.tablename
+    JOIN pg_namespace n ON n.oid = c.relnamespace AND n.nspname = t.schemaname
+    WHERE t.schemaname = 'public'
+      AND t.tablename <> '_prisma_migrations'
+      AND c.relkind = 'r'
+      AND c.relrowsecurity = true
+      AND NOT EXISTS (
+        SELECT 1
+        FROM pg_policies p
+        WHERE p.schemaname = 'public'
+          AND p.tablename = t.tablename
+      )
+  `)) as CountRow[];
+  return Number(rows?.[0]?.count ?? 0);
+}
+
 async function countApiTableGrants() {
   const rows = (await prisma.$queryRawUnsafe(`
     SELECT COUNT(*)::bigint AS count
@@ -78,6 +98,38 @@ async function runSecurityHardening() {
       END LOOP;
     END $$;
   `);
+
+  // 4) Ensure each table has an explicit deny-all policy for API roles.
+  // This removes "RLS enabled but no policy" style warnings and documents intent clearly.
+  await prisma.$executeRawUnsafe(`
+    DO $$
+    DECLARE t RECORD;
+    DECLARE p RECORD;
+    BEGIN
+      FOR t IN
+        SELECT tablename
+        FROM pg_tables
+        WHERE schemaname = 'public'
+          AND tablename <> '_prisma_migrations'
+      LOOP
+        -- Drop old managed deny policy if it exists.
+        FOR p IN
+          SELECT policyname
+          FROM pg_policies
+          WHERE schemaname = 'public'
+            AND tablename = t.tablename
+            AND policyname = '__afp_deny_api_roles'
+        LOOP
+          EXECUTE format('DROP POLICY %I ON public.%I;', p.policyname, t.tablename);
+        END LOOP;
+
+        EXECUTE format(
+          'CREATE POLICY "__afp_deny_api_roles" ON public.%I FOR ALL TO anon, authenticated USING (false) WITH CHECK (false);',
+          t.tablename
+        );
+      END LOOP;
+    END $$;
+  `);
 }
 
 export async function POST() {
@@ -89,6 +141,7 @@ export async function POST() {
 
     const before = {
       rlsDisabledTables: await countRlsDisabledTables(),
+      rlsEnabledNoPolicyTables: await countRlsEnabledNoPolicyTables(),
       apiTableGrants: await countApiTableGrants(),
     };
 
@@ -96,6 +149,7 @@ export async function POST() {
 
     const after = {
       rlsDisabledTables: await countRlsDisabledTables(),
+      rlsEnabledNoPolicyTables: await countRlsEnabledNoPolicyTables(),
       apiTableGrants: await countApiTableGrants(),
     };
 
@@ -122,6 +176,7 @@ export async function GET() {
     }
     const status = {
       rlsDisabledTables: await countRlsDisabledTables(),
+      rlsEnabledNoPolicyTables: await countRlsEnabledNoPolicyTables(),
       apiTableGrants: await countApiTableGrants(),
     };
     return NextResponse.json({ ok: true, status }, { status: 200 });

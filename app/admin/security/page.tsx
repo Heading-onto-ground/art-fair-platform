@@ -8,6 +8,7 @@ import { F, S } from "@/lib/design";
 
 type Status = {
   rlsDisabledTables: number;
+  rlsEnabledNoPolicyTables: number;
   apiTableGrants: number;
 };
 
@@ -62,7 +63,7 @@ export default function AdminSecurityPage() {
       const data = await res.json().catch(() => null);
       if (!res.ok || !data?.ok) throw new Error(data?.error || "failed to apply");
       setMessage(
-        `Applied. RLS disabled tables: ${data.before.rlsDisabledTables} -> ${data.after.rlsDisabledTables}, API grants: ${data.before.apiTableGrants} -> ${data.after.apiTableGrants}`
+        `Applied. RLS disabled: ${data.before.rlsDisabledTables} -> ${data.after.rlsDisabledTables}, no-policy tables: ${data.before.rlsEnabledNoPolicyTables} -> ${data.after.rlsEnabledNoPolicyTables}, API grants: ${data.before.apiTableGrants} -> ${data.after.apiTableGrants}`
       );
       await loadStatus();
     } catch (e: any) {
@@ -106,13 +107,17 @@ export default function AdminSecurityPage() {
             <div
               style={{
                 display: "grid",
-                gridTemplateColumns: "repeat(2, minmax(0, 1fr))",
+                gridTemplateColumns: "repeat(3, minmax(0, 1fr))",
                 gap: 12,
                 marginTop: 14,
                 marginBottom: 16,
               }}
             >
               <Metric label="RLS Disabled Tables" value={status?.rlsDisabledTables ?? 0} />
+              <Metric
+                label="RLS Enabled (No Policy)"
+                value={status?.rlsEnabledNoPolicyTables ?? 0}
+              />
               <Metric label="API Table Grants (anon/authenticated)" value={status?.apiTableGrants ?? 0} />
             </div>
 
