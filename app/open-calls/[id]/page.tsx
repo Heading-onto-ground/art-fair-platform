@@ -284,7 +284,16 @@ export default function OpenCallDetailPage({ params }: { params: { id: string } 
                         {a.message && <div style={{ fontFamily: F, marginTop: 12, fontSize: 13, color: "#4A4A4A", padding: 12, background: "#FFF", border: "1px solid #E8E3DB", fontWeight: 300 }}>{a.message}</div>}
                         <div style={{ fontFamily: F, marginTop: 12, fontSize: 11, color: "#B0AAA2" }}>{t("status", lang)}: {a.status} &middot; {t("oc_shipping", lang)}: {a.shippingStatus}</div>
                         <div style={{ marginTop: 16, display: "flex", gap: 8, flexWrap: "wrap" }}>
-                          {a.artistPortfolioUrl && <a href={a.artistPortfolioUrl} target="_blank" rel="noreferrer" style={{ padding: "8px 16px", background: "#1A1A1A", color: "#FFF", fontFamily: F, fontWeight: 500, textDecoration: "none", fontSize: 10, letterSpacing: "0.08em", textTransform: "uppercase" }}>{t("oc_portfolio", lang)}</a>}
+                          {a.artistPortfolioUrl && (
+                            <a
+                              href={`/api/public/artist/${encodeURIComponent(a.artistId)}/portfolio`}
+                              target="_blank"
+                              rel="noreferrer"
+                              style={{ padding: "8px 16px", background: "#1A1A1A", color: "#FFF", fontFamily: F, fontWeight: 500, textDecoration: "none", fontSize: 10, letterSpacing: "0.08em", textTransform: "uppercase" }}
+                            >
+                              {t("oc_portfolio", lang)}
+                            </a>
+                          )}
                           <button onClick={() => updateAppStatus(a.id, "reviewing")} disabled={statusUpdatingId === a.id} style={{ padding: "8px 14px", border: "1px solid #E8E3DB", background: "transparent", color: "#8A8580", fontFamily: F, fontSize: 10, cursor: "pointer" }}>{t("oc_reviewing", lang)}</button>
                           <button onClick={() => updateAppStatus(a.id, "accepted")} disabled={statusUpdatingId === a.id} style={{ padding: "8px 14px", border: "none", background: "#5A7A5A", color: "#FFF", fontFamily: F, fontSize: 10, cursor: "pointer" }}>{t("oc_accept", lang)}</button>
                           <button onClick={() => updateAppStatus(a.id, "rejected")} disabled={statusUpdatingId === a.id} style={{ padding: "8px 14px", border: "1px solid #8B4A4A", background: "transparent", color: "#8B4A4A", fontFamily: F, fontSize: 10, cursor: "pointer" }}>{t("oc_reject", lang)}</button>

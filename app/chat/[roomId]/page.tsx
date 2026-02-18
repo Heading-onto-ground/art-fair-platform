@@ -68,7 +68,16 @@ export default function ChatRoomPage({ params }: { params: { roomId: string } })
             {artistProfile.bio && <div style={{ fontFamily: F, marginTop: 8, color: "#4A4A4A", fontSize: 13, fontWeight: 300, lineHeight: 1.6 }}>{artistProfile.bio}</div>}
             <div style={{ marginTop: 12, display: "flex", gap: 12 }}>
               {artistProfile.website && <a href={artistProfile.website} target="_blank" rel="noreferrer" style={{ fontFamily: F, color: "#8B7355", fontWeight: 500, textDecoration: "none", fontSize: 11 }}>Website →</a>}
-              {artistProfile.portfolioUrl ? <a href={artistProfile.portfolioUrl} target="_blank" rel="noreferrer" style={{ padding: "8px 16px", background: "#1A1A1A", color: "#FFF", fontFamily: F, fontWeight: 500, textDecoration: "none", fontSize: 10, letterSpacing: "0.08em", textTransform: "uppercase" }}>View Portfolio</a> : <span style={{ fontFamily: F, fontSize: 11, color: "#B0AAA2" }}>No portfolio</span>}
+              {artistProfile.portfolioUrl ? (
+                <a
+                  href={`/api/public/artist/${encodeURIComponent(artistProfile.userId)}/portfolio`}
+                  target="_blank"
+                  rel="noreferrer"
+                  style={{ padding: "8px 16px", background: "#1A1A1A", color: "#FFF", fontFamily: F, fontWeight: 500, textDecoration: "none", fontSize: 10, letterSpacing: "0.08em", textTransform: "uppercase" }}
+                >
+                  View Portfolio
+                </a>
+              ) : <span style={{ fontFamily: F, fontSize: 11, color: "#B0AAA2" }}>No portfolio</span>}
             </div>
           </div>
         )}
