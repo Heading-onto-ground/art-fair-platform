@@ -70,7 +70,7 @@ export default function ChatRoomPage({ params }: { params: { roomId: string } })
               {artistProfile.website && <a href={artistProfile.website} target="_blank" rel="noreferrer" style={{ fontFamily: F, color: "#8B7355", fontWeight: 500, textDecoration: "none", fontSize: 11 }}>Website →</a>}
               {artistProfile.portfolioUrl ? (
                 <a
-                  href={`/api/public/artist/${encodeURIComponent(artistProfile.userId)}/portfolio`}
+                  href={`/api/public/artist-portfolio?id=${encodeURIComponent(artistProfile.userId)}`}
                   target="_blank"
                   rel="noreferrer"
                   style={{ padding: "8px 16px", background: "#1A1A1A", color: "#FFF", fontFamily: F, fontWeight: 500, textDecoration: "none", fontSize: 10, letterSpacing: "0.08em", textTransform: "uppercase" }}

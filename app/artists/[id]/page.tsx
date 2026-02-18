@@ -433,7 +433,7 @@ export default function PublicArtistPage() {
                 {profile?.portfolioUrl ? (
                   <div style={{ marginTop: 8, display: "flex", gap: 8, flexWrap: "wrap" }}>
                     <a
-                      href={`/api/public/artist/${encodeURIComponent(profile.userId)}/portfolio`}
+                      href={`/api/public/artist-portfolio?id=${encodeURIComponent(profile.userId)}`}
                       target="_blank"
                       rel="noreferrer"
                       style={{
@@ -450,7 +450,7 @@ export default function PublicArtistPage() {
                     </a>
 
                     <a
-                      href={`/api/public/artist/${encodeURIComponent(profile.userId)}/portfolio`}
+                      href={`/api/public/artist-portfolio?id=${encodeURIComponent(profile.userId)}`}
                       download
                       style={{
                         padding: "8px 10px",
