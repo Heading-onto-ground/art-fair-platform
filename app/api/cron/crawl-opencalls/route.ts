@@ -196,6 +196,19 @@ function containsKoreanOpenCallKeyword(text: string) {
   return KR_OC_KEYWORDS.some((k) => t.includes(normalizeText(k)));
 }
 
+function looksLikeKoreanRssOpenCall(input: { title: string; category: string; desc: string }) {
+  const merged = `${input.title} ${input.category} ${input.desc}`;
+  const title = normalizeText(input.title);
+  const category = normalizeText(input.category);
+  const desc = normalizeText(input.desc);
+  if (title.includes(normalizeText("신규전시")) || category.includes(normalizeText("신규전시"))) return false;
+  if (title.includes(normalizeText("공지사항")) || category.includes(normalizeText("공지사항"))) return false;
+  if (containsKoreanOpenCallKeyword(merged)) return true;
+  if (desc.includes(normalizeText("접수일정")) || desc.includes(normalizeText("지원사업"))) return true;
+  if (desc.includes(normalizeText("주관")) && desc.includes(normalizeText("홈페이지"))) return true;
+  return false;
+}
+
 function parseHtmlLinksAsOpenCalls(input: {
   source: string;
   html: string;
@@ -254,7 +267,7 @@ function parseRssItemsAsOpenCalls(input: {
     const pubDate = stripHtml(stripCdata((item.match(/<pubDate>([\s\S]*?)<\/pubDate>/i) || [])[1] || ""));
     if (!title || !link) continue;
     const mergedText = `${title} ${category} ${desc}`;
-    if (!containsKoreanOpenCallKeyword(mergedText)) continue;
+    if (!looksLikeKoreanRssOpenCall({ title, category, desc })) continue;
     const deadline = parseDeadlineFlexible(mergedText) || parseDeadlineFlexible(pubDate) || parseDateFromPubDate(pubDate);
     if (!deadline) continue;
     const slug = toSlug(`${input.source}_${title}_${link}`);
