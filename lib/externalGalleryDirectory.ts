@@ -64,7 +64,7 @@ export async function ensureExternalGalleryDirectoryTable() {
 
 export async function upsertExternalGalleryDirectory(items: CanonicalDirectoryGallery[]) {
   await ensureExternalGalleryDirectoryTable();
-  const rows = items
+  const normalizedRows = items
     .map((item) => {
       const galleryId = String(item.galleryId || "").trim();
       // Keep nullable to avoid unique-index conflicts across heterogeneous source merges.
@@ -89,6 +89,12 @@ export async function upsertExternalGalleryDirectory(items: CanonicalDirectoryGa
       };
     })
     .filter((x): x is NonNullable<typeof x> => !!x);
+
+  const byGalleryId = new Map<string, (typeof normalizedRows)[number]>();
+  for (const row of normalizedRows) {
+    byGalleryId.set(row.galleryId, row);
+  }
+  const rows = Array.from(byGalleryId.values());
 
   const batchSize = 120;
   for (let i = 0; i < rows.length; i += batchSize) {
