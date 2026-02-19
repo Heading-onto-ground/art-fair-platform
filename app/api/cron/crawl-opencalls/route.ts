@@ -20,7 +20,7 @@ type CrawledOpenCall = {
   galleryDescription: string;
 };
 
-const KR_OC_KEYWORDS = ["오픈콜", "공모", "레지던시", "지원", "open call", "residency", "call for artists"];
+const KR_OC_KEYWORDS = ["오픈콜", "공모", "모집", "레지던시", "지원", "open call", "residency", "call for artists"];
 
 function normalizeText(input: string) {
   return String(input || "")
@@ -77,9 +77,16 @@ function stripHtml(input: string) {
     .trim();
 }
 
+function stripCdata(input: string) {
+  return String(input || "")
+    .replace(/<!\[CDATA\[/gi, "")
+    .replace(/\]\]>/g, "")
+    .trim();
+}
+
 function parseDateLike(input: string): string | null {
   const s = String(input || "");
-  const m = s.match(/(20\d{2})[.\-/](\d{1,2})[.\-/](\d{1,2})/);
+  const m = s.match(/(20\d{2})\s*[.\-/]\s*(\d{1,2})\s*[.\-/]\s*(\d{1,2})/);
   if (!m) return null;
   const yyyy = m[1];
   const mm = String(Number(m[2])).padStart(2, "0");
@@ -88,7 +95,7 @@ function parseDateLike(input: string): string | null {
 }
 
 function parseDateRangeEndLike(input: string): string | null {
-  const all = Array.from(String(input || "").matchAll(/(20\d{2})[.\-/](\d{1,2})[.\-/](\d{1,2})/g));
+  const all = Array.from(String(input || "").matchAll(/(20\d{2})\s*[.\-/]\s*(\d{1,2})\s*[.\-/]\s*(\d{1,2})/g));
   if (all.length === 0) return null;
   const last = all[all.length - 1];
   const yyyy = last[1];
@@ -98,7 +105,7 @@ function parseDateRangeEndLike(input: string): string | null {
 }
 
 function parseShortDateRangeEndLike(input: string): string | null {
-  const all = Array.from(String(input || "").matchAll(/(\d{1,2})[.\-/](\d{1,2})(?!\d)/g));
+  const all = Array.from(String(input || "").matchAll(/(\d{1,2})\s*[.\-/]\s*(\d{1,2})(?!\d)/g));
   if (all.length === 0) return null;
   const now = new Date();
   const nowTs = now.getTime();
@@ -127,7 +134,7 @@ function parseDeadlineFlexible(input: string): string | null {
   if (full) return full;
   const shortRangeEnd = parseShortDateRangeEndLike(input);
   if (shortRangeEnd) return shortRangeEnd;
-  const short = String(input || "").match(/(\d{1,2})[.\-/](\d{1,2})(?!\d)/);
+  const short = String(input || "").match(/(\d{1,2})\s*[.\-/]\s*(\d{1,2})(?!\d)/);
   if (!short) return null;
   const now = new Date();
   let yyyy = now.getUTCFullYear();
@@ -138,6 +145,13 @@ function parseDeadlineFlexible(input: string): string | null {
   // If date already passed this year, assume next cycle.
   if (candidate.getTime() < now.getTime()) yyyy += 1;
   return `${yyyy}-${String(mm).padStart(2, "0")}-${String(dd).padStart(2, "0")}`;
+}
+
+function parseDateFromPubDate(input: string): string | null {
+  const ts = Date.parse(String(input || "").trim());
+  if (!Number.isFinite(ts)) return null;
+  const d = new Date(ts);
+  return `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, "0")}-${String(d.getUTCDate()).padStart(2, "0")}`;
 }
 
 function isDeadlineActive(deadline: string) {
@@ -233,14 +247,15 @@ function parseRssItemsAsOpenCalls(input: {
   const items = input.xml.match(/<item[\s\S]*?<\/item>/gi) || [];
   const rows: CrawledOpenCall[] = [];
   for (const item of items.slice(0, 30)) {
-    const title = stripHtml((item.match(/<title>([\s\S]*?)<\/title>/i) || [])[1] || "");
-    const link = stripHtml((item.match(/<link>([\s\S]*?)<\/link>/i) || [])[1] || "");
-    const desc = stripHtml((item.match(/<description>([\s\S]*?)<\/description>/i) || [])[1] || "");
-    const pubDate = stripHtml((item.match(/<pubDate>([\s\S]*?)<\/pubDate>/i) || [])[1] || "");
+    const title = stripHtml(stripCdata((item.match(/<title>([\s\S]*?)<\/title>/i) || [])[1] || ""));
+    const link = stripHtml(stripCdata((item.match(/<link>([\s\S]*?)<\/link>/i) || [])[1] || ""));
+    const desc = stripHtml(stripCdata((item.match(/<description>([\s\S]*?)<\/description>/i) || [])[1] || ""));
+    const category = stripHtml(stripCdata((item.match(/<category>([\s\S]*?)<\/category>/i) || [])[1] || ""));
+    const pubDate = stripHtml(stripCdata((item.match(/<pubDate>([\s\S]*?)<\/pubDate>/i) || [])[1] || ""));
     if (!title || !link) continue;
-    const mergedText = `${title} ${desc}`;
+    const mergedText = `${title} ${category} ${desc}`;
     if (!containsKoreanOpenCallKeyword(mergedText)) continue;
-    const deadline = parseDeadlineFlexible(mergedText) || parseDeadlineFlexible(pubDate);
+    const deadline = parseDeadlineFlexible(mergedText) || parseDeadlineFlexible(pubDate) || parseDateFromPubDate(pubDate);
     if (!deadline) continue;
     const slug = toSlug(`${input.source}_${title}_${link}`);
     rows.push({
