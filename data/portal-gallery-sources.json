@@ -10589,11 +10589,58 @@
     "sourceUrl": "http://www.wikidata.org/entity/Q3329594"
   },
   {
+    "name": "Art Sohyang",
+    "country": "한국",
+    "city": "Busan",
+    "website": "https://www.artsohyang.com",
+    "bio": "Naver search based gallery listing (cafe/workshop excluded).",
+    "sourcePortal": "Naver",
+    "sourceUrl": "https://search.naver.com/search.naver?query=Art%20Sohyang%20Busan%20%EA%B0%A4%EB%9F%AC%EB%A6%AC"
+  },
+  {
+    "name": "Gallery DOS",
+    "country": "한국",
+    "city": "Busan",
+    "website": "https://www.gallerydos.com",
+    "bio": "Naver search based gallery listing (cafe/workshop excluded).",
+    "sourcePortal": "Naver",
+    "sourceUrl": "https://search.naver.com/search.naver?query=Gallery%20DOS%20Busan%20%EA%B0%A4%EB%9F%AC%EB%A6%AC"
+  },
+  {
+    "name": "Gallery M",
+    "country": "한국",
+    "city": "Busan",
+    "website": "https://www.gallerym.kr",
+    "bio": "Naver search based gallery listing (cafe/workshop excluded).",
+    "sourcePortal": "Naver",
+    "sourceUrl": "https://search.naver.com/search.naver?query=Gallery%20M%20Busan%20%EA%B0%A4%EB%9F%AC%EB%A6%AC"
+  },
+  {
+    "name": "Gallery Mare",
+    "country": "한국",
+    "city": "Busan",
+    "website": "https://www.gallerymare.com",
+    "bio": "Naver search based gallery listing (cafe/workshop excluded).",
+    "sourcePortal": "Naver",
+    "sourceUrl": "https://search.naver.com/search.naver?query=Gallery%20Mare%20Busan%20%EA%B0%A4%EB%9F%AC%EB%A6%AC"
+  },
+  {
     "name": "Johyun Gallery",
     "country": "한국",
     "city": "Busan",
     "website": "https://www.johyungallery.com",
-    "sourcePortal": "Naver"
+    "bio": "Naver search based gallery listing (cafe/workshop excluded).",
+    "sourcePortal": "Naver",
+    "sourceUrl": "https://search.naver.com/search.naver?query=Johyun%20Gallery%20Busan%20%EA%B0%A4%EB%9F%AC%EB%A6%AC"
+  },
+  {
+    "name": "LEE & BAE",
+    "country": "한국",
+    "city": "Busan",
+    "website": "https://www.leeandbae.com",
+    "bio": "Naver search based gallery listing (cafe/workshop excluded).",
+    "sourcePortal": "Naver",
+    "sourceUrl": "https://search.naver.com/search.naver?query=LEE%20%26%20BAE%20Busan%20%EA%B0%A4%EB%9F%AC%EB%A6%AC"
   },
   {
     "name": "Renault Samsung Motors Gallery",
@@ -10601,6 +10648,51 @@
     "city": "Busan",
     "sourcePortal": "Wikidata",
     "sourceUrl": "http://www.wikidata.org/entity/Q5366736"
+  },
+  {
+    "name": "Soul Art Space",
+    "country": "한국",
+    "city": "Busan",
+    "website": "https://www.soulartspace.com",
+    "bio": "Naver search based gallery listing (cafe/workshop excluded).",
+    "sourcePortal": "Naver",
+    "sourceUrl": "https://search.naver.com/search.naver?query=Soul%20Art%20Space%20Busan%20%EA%B0%A4%EB%9F%AC%EB%A6%AC"
+  },
+  {
+    "name": "Space One Busan",
+    "country": "한국",
+    "city": "Busan",
+    "website": "https://www.spaceone.co.kr",
+    "bio": "Naver search based gallery listing (cafe/workshop excluded).",
+    "sourcePortal": "Naver",
+    "sourceUrl": "https://search.naver.com/search.naver?query=Space%20One%20Busan%20Busan%20%EA%B0%A4%EB%9F%AC%EB%A6%AC"
+  },
+  {
+    "name": "Gallery Bun",
+    "country": "한국",
+    "city": "Daegu",
+    "website": "https://www.gallerybun.com",
+    "bio": "Naver search based gallery listing (cafe/workshop excluded).",
+    "sourcePortal": "Naver",
+    "sourceUrl": "https://search.naver.com/search.naver?query=Gallery%20Bun%20Daegu%20%EA%B0%A4%EB%9F%AC%EB%A6%AC"
+  },
+  {
+    "name": "Gallery MHK",
+    "country": "한국",
+    "city": "Daegu",
+    "website": "https://www.gallerymhk.com",
+    "bio": "Naver search based gallery listing (cafe/workshop excluded).",
+    "sourcePortal": "Naver",
+    "sourceUrl": "https://search.naver.com/search.naver?query=Gallery%20MHK%20Daegu%20%EA%B0%A4%EB%9F%AC%EB%A6%AC"
+  },
+  {
+    "name": "Wooson Gallery Daegu",
+    "country": "한국",
+    "city": "Daegu",
+    "website": "https://www.woosongallery.com",
+    "bio": "Naver search based gallery listing (cafe/workshop excluded).",
+    "sourcePortal": "Naver",
+    "sourceUrl": "https://search.naver.com/search.naver?query=Wooson%20Gallery%20Daegu%20Daegu%20%EA%B0%A4%EB%9F%AC%EB%A6%AC"
   },
   {
     "name": "Lehmann Maupin Gallery",
@@ -10625,11 +10717,56 @@
     "sourceUrl": "http://www.wikidata.org/entity/Q19802737"
   },
   {
+    "name": "Gallery Soso",
+    "country": "한국",
+    "city": "Paju",
+    "website": "https://www.gallerysoso.com",
+    "bio": "Naver search based gallery listing (cafe/workshop excluded).",
+    "sourcePortal": "Naver",
+    "sourceUrl": "https://search.naver.com/search.naver?query=Gallery%20Soso%20Paju%20%EA%B0%A4%EB%9F%AC%EB%A6%AC"
+  },
+  {
+    "name": "313 Art Project",
+    "country": "한국",
+    "city": "Seoul",
+    "website": "https://www.313artproject.com",
+    "bio": "Naver search based gallery listing (cafe/workshop excluded).",
+    "sourcePortal": "Naver",
+    "sourceUrl": "https://search.naver.com/search.naver?query=313%20Art%20Project%20Seoul%20%EA%B0%A4%EB%9F%AC%EB%A6%AC"
+  },
+  {
+    "name": "A-Lounge Contemporary",
+    "country": "한국",
+    "city": "Seoul",
+    "website": "https://www.a-lounge.kr",
+    "bio": "Naver search based gallery listing (cafe/workshop excluded).",
+    "sourcePortal": "Naver",
+    "sourceUrl": "https://search.naver.com/search.naver?query=A-Lounge%20Contemporary%20Seoul%20%EA%B0%A4%EB%9F%AC%EB%A6%AC"
+  },
+  {
+    "name": "Aando Fine Art",
+    "country": "한국",
+    "city": "Seoul",
+    "website": "https://www.aandoart.com",
+    "bio": "Naver search based gallery listing (cafe/workshop excluded).",
+    "sourcePortal": "Naver",
+    "sourceUrl": "https://search.naver.com/search.naver?query=Aando%20Fine%20Art%20Seoul%20%EA%B0%A4%EB%9F%AC%EB%A6%AC"
+  },
+  {
     "name": "Arario Gallery",
     "country": "한국",
     "city": "Seoul",
     "sourcePortal": "Wikidata",
     "sourceUrl": "http://www.wikidata.org/entity/Q109455537"
+  },
+  {
+    "name": "Arario Gallery Seoul",
+    "country": "한국",
+    "city": "Seoul",
+    "website": "https://www.arariogallery.com",
+    "bio": "Naver search based gallery listing (cafe/workshop excluded).",
+    "sourcePortal": "Naver",
+    "sourceUrl": "https://search.naver.com/search.naver?query=Arario%20Gallery%20Seoul%20Seoul%20%EA%B0%A4%EB%9F%AC%EB%A6%AC"
   },
   {
     "name": "Daeyang Gallery and House",
@@ -10639,12 +10776,67 @@
     "sourceUrl": "http://www.wikidata.org/entity/Q5208295"
   },
   {
+    "name": "Doosan Gallery",
+    "country": "한국",
+    "city": "Seoul",
+    "website": "https://www.doosangallery.com",
+    "bio": "Naver search based gallery listing (cafe/workshop excluded).",
+    "sourcePortal": "Naver",
+    "sourceUrl": "https://search.naver.com/search.naver?query=Doosan%20Gallery%20Seoul%20%EA%B0%A4%EB%9F%AC%EB%A6%AC"
+  },
+  {
+    "name": "Gallery Baton",
+    "country": "한국",
+    "city": "Seoul",
+    "website": "https://www.gallerybaton.com",
+    "bio": "Naver search based gallery listing (cafe/workshop excluded).",
+    "sourcePortal": "Naver",
+    "sourceUrl": "https://search.naver.com/search.naver?query=Gallery%20Baton%20Seoul%20%EA%B0%A4%EB%9F%AC%EB%A6%AC"
+  },
+  {
+    "name": "Gallery BK",
+    "country": "한국",
+    "city": "Seoul",
+    "website": "https://www.gallerybk.co.kr",
+    "bio": "Naver search based gallery listing (cafe/workshop excluded).",
+    "sourcePortal": "Naver",
+    "sourceUrl": "https://search.naver.com/search.naver?query=Gallery%20BK%20Seoul%20%EA%B0%A4%EB%9F%AC%EB%A6%AC"
+  },
+  {
+    "name": "Gallery BK Hannam",
+    "country": "한국",
+    "city": "Seoul",
+    "website": "https://www.gallerybk.co.kr",
+    "bio": "Naver search based gallery listing (cafe/workshop excluded).",
+    "sourcePortal": "Naver",
+    "sourceUrl": "https://search.naver.com/search.naver?query=Gallery%20BK%20Hannam%20Seoul%20%EA%B0%A4%EB%9F%AC%EB%A6%AC"
+  },
+  {
+    "name": "Gallery Choi",
+    "country": "한국",
+    "city": "Seoul",
+    "website": "https://www.gallerychoi.com",
+    "bio": "Naver search based gallery listing (cafe/workshop excluded).",
+    "sourcePortal": "Naver",
+    "sourceUrl": "https://search.naver.com/search.naver?query=Gallery%20Choi%20Seoul%20%EA%B0%A4%EB%9F%AC%EB%A6%AC"
+  },
+  {
     "name": "Gallery Chosun",
     "country": "한국",
     "city": "Seoul",
-    "website": "http://www.gallerychosun.com/",
-    "sourcePortal": "Wikidata",
-    "sourceUrl": "http://www.wikidata.org/entity/Q123676073"
+    "website": "https://www.gallerychosun.com",
+    "bio": "Naver search based gallery listing (cafe/workshop excluded).",
+    "sourcePortal": "Naver",
+    "sourceUrl": "https://search.naver.com/search.naver?query=Gallery%20Chosun%20Seoul%20%EA%B0%A4%EB%9F%AC%EB%A6%AC"
+  },
+  {
+    "name": "Gallery D",
+    "country": "한국",
+    "city": "Seoul",
+    "website": "https://www.galleryd.co.kr",
+    "bio": "Naver search based gallery listing (cafe/workshop excluded).",
+    "sourcePortal": "Naver",
+    "sourceUrl": "https://search.naver.com/search.naver?query=Gallery%20D%20Seoul%20%EA%B0%A4%EB%9F%AC%EB%A6%AC"
   },
   {
     "name": "Gallery Dam",
@@ -10655,11 +10847,139 @@
     "sourceUrl": "http://www.wikidata.org/entity/Q107284300"
   },
   {
+    "name": "Gallery Dam",
+    "country": "한국",
+    "city": "Seoul",
+    "website": "https://www.gallerydam.com",
+    "bio": "Naver search based gallery listing (cafe/workshop excluded).",
+    "sourcePortal": "Naver",
+    "sourceUrl": "https://search.naver.com/search.naver?query=Gallery%20Dam%20Seoul%20%EA%B0%A4%EB%9F%AC%EB%A6%AC"
+  },
+  {
+    "name": "Gallery Eum",
+    "country": "한국",
+    "city": "Seoul",
+    "website": "https://www.galleryeum.com",
+    "bio": "Naver search based gallery listing (cafe/workshop excluded).",
+    "sourcePortal": "Naver",
+    "sourceUrl": "https://search.naver.com/search.naver?query=Gallery%20Eum%20Seoul%20%EA%B0%A4%EB%9F%AC%EB%A6%AC"
+  },
+  {
+    "name": "Gallery Grimson",
+    "country": "한국",
+    "city": "Seoul",
+    "website": "https://www.gallerygrimson.com",
+    "bio": "Naver search based gallery listing (cafe/workshop excluded).",
+    "sourcePortal": "Naver",
+    "sourceUrl": "https://search.naver.com/search.naver?query=Gallery%20Grimson%20Seoul%20%EA%B0%A4%EB%9F%AC%EB%A6%AC"
+  },
+  {
+    "name": "Gallery H",
+    "country": "한국",
+    "city": "Seoul",
+    "website": "https://www.galleryh.kr",
+    "bio": "Naver search based gallery listing (cafe/workshop excluded).",
+    "sourcePortal": "Naver",
+    "sourceUrl": "https://search.naver.com/search.naver?query=Gallery%20H%20Seoul%20%EA%B0%A4%EB%9F%AC%EB%A6%AC"
+  },
+  {
     "name": "Gallery Hyundai",
     "country": "한국",
     "city": "Seoul",
     "website": "https://www.galleryhyundai.com",
-    "sourcePortal": "Naver"
+    "bio": "Naver search based gallery listing (cafe/workshop excluded).",
+    "sourcePortal": "Naver",
+    "sourceUrl": "https://search.naver.com/search.naver?query=Gallery%20Hyundai%20Seoul%20%EA%B0%A4%EB%9F%AC%EB%A6%AC"
+  },
+  {
+    "name": "Gallery Hyundai Dosan",
+    "country": "한국",
+    "city": "Seoul",
+    "website": "https://www.galleryhyundai.com",
+    "bio": "Naver search based gallery listing (cafe/workshop excluded).",
+    "sourcePortal": "Naver",
+    "sourceUrl": "https://search.naver.com/search.naver?query=Gallery%20Hyundai%20Dosan%20Seoul%20%EA%B0%A4%EB%9F%AC%EB%A6%AC"
+  },
+  {
+    "name": "Gallery IS",
+    "country": "한국",
+    "city": "Seoul",
+    "website": "https://www.galleryis.com",
+    "bio": "Naver search based gallery listing (cafe/workshop excluded).",
+    "sourcePortal": "Naver",
+    "sourceUrl": "https://search.naver.com/search.naver?query=Gallery%20IS%20Seoul%20%EA%B0%A4%EB%9F%AC%EB%A6%AC"
+  },
+  {
+    "name": "Gallery Joeun",
+    "country": "한국",
+    "city": "Seoul",
+    "website": "https://www.galleryjoeun.com",
+    "bio": "Naver search based gallery listing (cafe/workshop excluded).",
+    "sourcePortal": "Naver",
+    "sourceUrl": "https://search.naver.com/search.naver?query=Gallery%20Joeun%20Seoul%20%EA%B0%A4%EB%9F%AC%EB%A6%AC"
+  },
+  {
+    "name": "Gallery K",
+    "country": "한국",
+    "city": "Seoul",
+    "website": "https://www.galleryk.co.kr",
+    "bio": "Naver search based gallery listing (cafe/workshop excluded).",
+    "sourcePortal": "Naver",
+    "sourceUrl": "https://search.naver.com/search.naver?query=Gallery%20K%20Seoul%20%EA%B0%A4%EB%9F%AC%EB%A6%AC"
+  },
+  {
+    "name": "Gallery LEE",
+    "country": "한국",
+    "city": "Seoul",
+    "website": "https://www.gallerylee.co.kr",
+    "bio": "Naver search based gallery listing (cafe/workshop excluded).",
+    "sourcePortal": "Naver",
+    "sourceUrl": "https://search.naver.com/search.naver?query=Gallery%20LEE%20Seoul%20%EA%B0%A4%EB%9F%AC%EB%A6%AC"
+  },
+  {
+    "name": "Gallery Lux",
+    "country": "한국",
+    "city": "Seoul",
+    "website": "https://www.gallerylux.net",
+    "bio": "Naver search based gallery listing (cafe/workshop excluded).",
+    "sourcePortal": "Naver",
+    "sourceUrl": "https://search.naver.com/search.naver?query=Gallery%20Lux%20Seoul%20%EA%B0%A4%EB%9F%AC%EB%A6%AC"
+  },
+  {
+    "name": "Gallery LVS",
+    "country": "한국",
+    "city": "Seoul",
+    "website": "https://www.gallerylvs.org",
+    "bio": "Naver search based gallery listing (cafe/workshop excluded).",
+    "sourcePortal": "Naver",
+    "sourceUrl": "https://search.naver.com/search.naver?query=Gallery%20LVS%20Seoul%20%EA%B0%A4%EB%9F%AC%EB%A6%AC"
+  },
+  {
+    "name": "Gallery M9",
+    "country": "한국",
+    "city": "Seoul",
+    "website": "https://www.gallerym9.com",
+    "bio": "Naver search based gallery listing (cafe/workshop excluded).",
+    "sourcePortal": "Naver",
+    "sourceUrl": "https://search.naver.com/search.naver?query=Gallery%20M9%20Seoul%20%EA%B0%A4%EB%9F%AC%EB%A6%AC"
+  },
+  {
+    "name": "Gallery Minjung",
+    "country": "한국",
+    "city": "Seoul",
+    "website": "https://www.galleryminjung.com",
+    "bio": "Naver search based gallery listing (cafe/workshop excluded).",
+    "sourcePortal": "Naver",
+    "sourceUrl": "https://search.naver.com/search.naver?query=Gallery%20Minjung%20Seoul%20%EA%B0%A4%EB%9F%AC%EB%A6%AC"
+  },
+  {
+    "name": "Gallery Now",
+    "country": "한국",
+    "city": "Seoul",
+    "website": "https://www.gallerynow.co.kr",
+    "bio": "Naver search based gallery listing (cafe/workshop excluded).",
+    "sourcePortal": "Naver",
+    "sourceUrl": "https://search.naver.com/search.naver?query=Gallery%20Now%20Seoul%20%EA%B0%A4%EB%9F%AC%EB%A6%AC"
   },
   {
     "name": "Gallery O",
@@ -10667,6 +10987,69 @@
     "city": "Seoul",
     "sourcePortal": "Wikidata",
     "sourceUrl": "http://www.wikidata.org/entity/Q107284450"
+  },
+  {
+    "name": "Gallery Plant",
+    "country": "한국",
+    "city": "Seoul",
+    "website": "https://www.galleryplant.com",
+    "bio": "Naver search based gallery listing (cafe/workshop excluded).",
+    "sourcePortal": "Naver",
+    "sourceUrl": "https://search.naver.com/search.naver?query=Gallery%20Plant%20Seoul%20%EA%B0%A4%EB%9F%AC%EB%A6%AC"
+  },
+  {
+    "name": "Gallery Simon",
+    "country": "한국",
+    "city": "Seoul",
+    "website": "https://www.gallerysimon.com",
+    "bio": "Naver search based gallery listing (cafe/workshop excluded).",
+    "sourcePortal": "Naver",
+    "sourceUrl": "https://search.naver.com/search.naver?query=Gallery%20Simon%20Seoul%20%EA%B0%A4%EB%9F%AC%EB%A6%AC"
+  },
+  {
+    "name": "Gallery SP",
+    "country": "한국",
+    "city": "Seoul",
+    "website": "https://www.gallerysp.com",
+    "bio": "Naver search based gallery listing (cafe/workshop excluded).",
+    "sourcePortal": "Naver",
+    "sourceUrl": "https://search.naver.com/search.naver?query=Gallery%20SP%20Seoul%20%EA%B0%A4%EB%9F%AC%EB%A6%AC"
+  },
+  {
+    "name": "Gallery We",
+    "country": "한국",
+    "city": "Seoul",
+    "website": "https://www.gallerywe.com",
+    "bio": "Naver search based gallery listing (cafe/workshop excluded).",
+    "sourcePortal": "Naver",
+    "sourceUrl": "https://search.naver.com/search.naver?query=Gallery%20We%20Seoul%20%EA%B0%A4%EB%9F%AC%EB%A6%AC"
+  },
+  {
+    "name": "Gallery Yeh",
+    "country": "한국",
+    "city": "Seoul",
+    "website": "https://www.galleryyeh.com",
+    "bio": "Naver search based gallery listing (cafe/workshop excluded).",
+    "sourcePortal": "Naver",
+    "sourceUrl": "https://search.naver.com/search.naver?query=Gallery%20Yeh%20Seoul%20%EA%B0%A4%EB%9F%AC%EB%A6%AC"
+  },
+  {
+    "name": "Gallery2",
+    "country": "한국",
+    "city": "Seoul",
+    "website": "https://www.gallery2.co.kr",
+    "bio": "Naver search based gallery listing (cafe/workshop excluded).",
+    "sourcePortal": "Naver",
+    "sourceUrl": "https://search.naver.com/search.naver?query=Gallery2%20Seoul%20%EA%B0%A4%EB%9F%AC%EB%A6%AC"
+  },
+  {
+    "name": "Gana Art",
+    "country": "한국",
+    "city": "Seoul",
+    "website": "https://www.ganaart.com",
+    "bio": "Naver search based gallery listing (cafe/workshop excluded).",
+    "sourcePortal": "Naver",
+    "sourceUrl": "https://search.naver.com/search.naver?query=Gana%20Art%20Seoul%20%EA%B0%A4%EB%9F%AC%EB%A6%AC"
   },
   {
     "name": "Hakgojae",
@@ -10677,6 +11060,15 @@
     "sourceUrl": "http://www.wikidata.org/entity/Q12622583"
   },
   {
+    "name": "Hakgojae Gallery",
+    "country": "한국",
+    "city": "Seoul",
+    "website": "https://www.hakgojae.com",
+    "bio": "Naver search based gallery listing (cafe/workshop excluded).",
+    "sourcePortal": "Naver",
+    "sourceUrl": "https://search.naver.com/search.naver?query=Hakgojae%20Gallery%20Seoul%20%EA%B0%A4%EB%9F%AC%EB%A6%AC"
+  },
+  {
     "name": "Jason Haam",
     "country": "한국",
     "city": "Seoul",
@@ -10685,11 +11077,40 @@
     "sourceUrl": "http://www.wikidata.org/entity/Q57186000"
   },
   {
+    "name": "JJ Joong Jung Gallery",
+    "country": "한국",
+    "city": "Seoul",
+    "website": "https://www.jjjoongjunggallery.com",
+    "bio": "Naver search based gallery listing (cafe/workshop excluded).",
+    "sourcePortal": "Naver",
+    "sourceUrl": "https://search.naver.com/search.naver?query=JJ%20Joong%20Jung%20Gallery%20Seoul%20%EA%B0%A4%EB%9F%AC%EB%A6%AC"
+  },
+  {
+    "name": "Keumsan Gallery",
+    "country": "한국",
+    "city": "Seoul",
+    "website": "https://www.keumsan.org",
+    "bio": "Naver search based gallery listing (cafe/workshop excluded).",
+    "sourcePortal": "Naver",
+    "sourceUrl": "https://search.naver.com/search.naver?query=Keumsan%20Gallery%20Seoul%20%EA%B0%A4%EB%9F%AC%EB%A6%AC"
+  },
+  {
     "name": "Kukje Gallery",
     "country": "한국",
     "city": "Seoul",
     "website": "https://www.kukjegallery.com",
-    "sourcePortal": "Naver"
+    "bio": "Naver search based gallery listing (cafe/workshop excluded).",
+    "sourcePortal": "Naver",
+    "sourceUrl": "https://search.naver.com/search.naver?query=Kukje%20Gallery%20Seoul%20%EA%B0%A4%EB%9F%AC%EB%A6%AC"
+  },
+  {
+    "name": "Leeahn Gallery Seoul",
+    "country": "한국",
+    "city": "Seoul",
+    "website": "https://www.leeahngallery.com",
+    "bio": "Naver search based gallery listing (cafe/workshop excluded).",
+    "sourcePortal": "Naver",
+    "sourceUrl": "https://search.naver.com/search.naver?query=Leeahn%20Gallery%20Seoul%20Seoul%20%EA%B0%A4%EB%9F%AC%EB%A6%AC"
   },
   {
     "name": "Lehmann Maupin Gallery",
@@ -10699,6 +11120,24 @@
     "sourceUrl": "http://www.wikidata.org/entity/Q19802737"
   },
   {
+    "name": "OCI Museum of Art Gallery Space",
+    "country": "한국",
+    "city": "Seoul",
+    "website": "https://www.ociam.org",
+    "bio": "Naver search based gallery listing (cafe/workshop excluded).",
+    "sourcePortal": "Naver",
+    "sourceUrl": "https://search.naver.com/search.naver?query=OCI%20Museum%20of%20Art%20Gallery%20Space%20Seoul%20%EA%B0%A4%EB%9F%AC%EB%A6%AC"
+  },
+  {
+    "name": "One and J. Gallery",
+    "country": "한국",
+    "city": "Seoul",
+    "website": "https://www.oneandj.com",
+    "bio": "Naver search based gallery listing (cafe/workshop excluded).",
+    "sourcePortal": "Naver",
+    "sourceUrl": "https://search.naver.com/search.naver?query=One%20and%20J.%20Gallery%20Seoul%20%EA%B0%A4%EB%9F%AC%EB%A6%AC"
+  },
+  {
     "name": "ONE AND J. Gallery",
     "country": "한국",
     "city": "Seoul",
@@ -10706,11 +11145,94 @@
     "sourceUrl": "http://www.wikidata.org/entity/Q128213592"
   },
   {
+    "name": "Pace Gallery Seoul",
+    "country": "한국",
+    "city": "Seoul",
+    "website": "https://www.pacegallery.com",
+    "bio": "Naver search based gallery listing (cafe/workshop excluded).",
+    "sourcePortal": "Naver",
+    "sourceUrl": "https://search.naver.com/search.naver?query=Pace%20Gallery%20Seoul%20Seoul%20%EA%B0%A4%EB%9F%AC%EB%A6%AC"
+  },
+  {
+    "name": "Perigee Gallery",
+    "country": "한국",
+    "city": "Seoul",
+    "website": "https://www.perigeegallery.com",
+    "bio": "Naver search based gallery listing (cafe/workshop excluded).",
+    "sourcePortal": "Naver",
+    "sourceUrl": "https://search.naver.com/search.naver?query=Perigee%20Gallery%20Seoul%20%EA%B0%A4%EB%9F%AC%EB%A6%AC"
+  },
+  {
+    "name": "Perrotin Seoul",
+    "country": "한국",
+    "city": "Seoul",
+    "website": "https://www.perrotin.com",
+    "bio": "Naver search based gallery listing (cafe/workshop excluded).",
+    "sourcePortal": "Naver",
+    "sourceUrl": "https://search.naver.com/search.naver?query=Perrotin%20Seoul%20Seoul%20%EA%B0%A4%EB%9F%AC%EB%A6%AC"
+  },
+  {
     "name": "PKM Gallery",
     "country": "한국",
     "city": "Seoul",
     "website": "https://www.pkmgallery.com",
-    "sourcePortal": "Naver"
+    "bio": "Naver search based gallery listing (cafe/workshop excluded).",
+    "sourcePortal": "Naver",
+    "sourceUrl": "https://search.naver.com/search.naver?query=PKM%20Gallery%20Seoul%20%EA%B0%A4%EB%9F%AC%EB%A6%AC"
+  },
+  {
+    "name": "PYO Gallery Seoul",
+    "country": "한국",
+    "city": "Seoul",
+    "website": "https://www.pyogallery.com",
+    "bio": "Naver search based gallery listing (cafe/workshop excluded).",
+    "sourcePortal": "Naver",
+    "sourceUrl": "https://search.naver.com/search.naver?query=PYO%20Gallery%20Seoul%20Seoul%20%EA%B0%A4%EB%9F%AC%EB%A6%AC"
+  },
+  {
+    "name": "Sun Gallery",
+    "country": "한국",
+    "city": "Seoul",
+    "website": "https://www.sun-gallery.com",
+    "bio": "Naver search based gallery listing (cafe/workshop excluded).",
+    "sourcePortal": "Naver",
+    "sourceUrl": "https://search.naver.com/search.naver?query=Sun%20Gallery%20Seoul%20%EA%B0%A4%EB%9F%AC%EB%A6%AC"
+  },
+  {
+    "name": "Tang Contemporary Art Seoul",
+    "country": "한국",
+    "city": "Seoul",
+    "website": "https://www.tangcontemporary.com",
+    "bio": "Naver search based gallery listing (cafe/workshop excluded).",
+    "sourcePortal": "Naver",
+    "sourceUrl": "https://search.naver.com/search.naver?query=Tang%20Contemporary%20Art%20Seoul%20Seoul%20%EA%B0%A4%EB%9F%AC%EB%A6%AC"
+  },
+  {
+    "name": "Thaddaeus Ropac Seoul",
+    "country": "한국",
+    "city": "Seoul",
+    "website": "https://www.ropac.net",
+    "bio": "Naver search based gallery listing (cafe/workshop excluded).",
+    "sourcePortal": "Naver",
+    "sourceUrl": "https://search.naver.com/search.naver?query=Thaddaeus%20Ropac%20Seoul%20Seoul%20%EA%B0%A4%EB%9F%AC%EB%A6%AC"
+  },
+  {
+    "name": "ThisWeekendRoom",
+    "country": "한국",
+    "city": "Seoul",
+    "website": "https://www.thisweekendroom.com",
+    "bio": "Naver search based gallery listing (cafe/workshop excluded).",
+    "sourcePortal": "Naver",
+    "sourceUrl": "https://search.naver.com/search.naver?query=ThisWeekendRoom%20Seoul%20%EA%B0%A4%EB%9F%AC%EB%A6%AC"
+  },
+  {
+    "name": "Wooson Gallery Seoul",
+    "country": "한국",
+    "city": "Seoul",
+    "website": "https://www.woosongallery.com",
+    "bio": "Naver search based gallery listing (cafe/workshop excluded).",
+    "sourcePortal": "Naver",
+    "sourceUrl": "https://search.naver.com/search.naver?query=Wooson%20Gallery%20Seoul%20Seoul%20%EA%B0%A4%EB%9F%AC%EB%A6%AC"
   },
   {
     "name": "White Rabbit Gallery",
