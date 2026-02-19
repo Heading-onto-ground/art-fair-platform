@@ -50,10 +50,10 @@ function hostnameFromUrl(url?: string) {
 
 function buildMatchKey(input: RawDirectoryGallery) {
   const host = hostnameFromUrl(input.website || input.sourceUrl);
-  if (host) return `host:${host}`;
   const country = normalizeText(input.country);
   const city = normalizeText(input.city);
   const name = normalizeText(input.name);
+  if (host) return `hostncc:${host}|${name}|${country}|${city}`;
   return `ncc:${name}|${country}|${city}`;
 }
 
