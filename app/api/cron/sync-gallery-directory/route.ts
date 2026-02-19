@@ -64,7 +64,8 @@ export async function GET(req: Request) {
     });
   } catch (e) {
     console.error("GET /api/cron/sync-gallery-directory failed:", e);
-    return NextResponse.json({ ok: false, error: "server error" }, { status: 500 });
+    const message = e instanceof Error ? e.message : "server error";
+    return NextResponse.json({ ok: false, error: "server error", detail: message }, { status: 500 });
   }
 }
 
