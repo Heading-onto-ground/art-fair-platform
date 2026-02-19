@@ -231,6 +231,56 @@ function looksLikeJapaneseRssOpenCall(input: { title: string; category: string; 
   return false;
 }
 
+function looksLikeJapaneseExhibitionNotice(text: string) {
+  const t = normalizeText(text);
+  const hasExhibitionSignal =
+    t.includes(normalizeText("展覧会")) ||
+    t.includes(normalizeText("展示")) ||
+    t.includes(normalizeText("個展")) ||
+    t.includes(normalizeText("会期")) ||
+    t.includes(normalizeText("opening reception")) ||
+    t.includes(normalizeText("solo exhibition"));
+  if (!hasExhibitionSignal) return false;
+  // If explicit open-call keywords exist, keep it.
+  if (containsJapaneseOpenCallKeyword(text)) return false;
+  return true;
+}
+
+function resolveJapanSourceGalleryLabel(input: {
+  fallback: string;
+  title: string;
+  link: string;
+  baseUrl: string;
+  context?: string;
+}) {
+  const host = hostFromUrl(input.link) || hostFromUrl(input.baseUrl);
+  const hostMap: Record<string, string> = {
+    "www.tokyoartsandspace.jp": "Tokyo Arts and Space (TOKAS)",
+    "tokyoartsandspace.jp": "Tokyo Arts and Space (TOKAS)",
+    "air-j.info": "AIR_J Residency Network",
+    "www.artkoubo.jp": "ART Koubo",
+    "artkoubo.jp": "ART Koubo",
+    "koubo.jp": "Koubo",
+    "www.koubo.jp": "Koubo",
+  };
+  if (host && hostMap[host]) return hostMap[host];
+  const context = String(input.context || "");
+  const organizerMatch =
+    context.match(/主催\s*[：:]\s*([^\n\r<]{2,120})/) ||
+    context.match(/organizer\s*[：:]\s*([^\n\r<]{2,120})/i);
+  if (organizerMatch?.[1]) return stripHtml(organizerMatch[1]).slice(0, 120);
+  const title = stripHtml(input.title || "");
+  if (title.includes("｜")) {
+    const parts = title.split("｜").map((s) => s.trim()).filter(Boolean);
+    if (parts.length >= 2) return parts[parts.length - 1].slice(0, 120);
+  }
+  if (title.includes("|")) {
+    const parts = title.split("|").map((s) => s.trim()).filter(Boolean);
+    if (parts.length >= 2) return parts[parts.length - 1].slice(0, 120);
+  }
+  return input.fallback;
+}
+
 function parseHtmlLinksAsOpenCalls(input: {
   source: string;
   html: string;
@@ -240,6 +290,8 @@ function parseHtmlLinksAsOpenCalls(input: {
   galleryLabel: string;
   email: string;
   isRelevant: (text: string) => boolean;
+  shouldSkip?: (text: string) => boolean;
+  resolveGalleryLabel?: (v: { title: string; link: string; context: string; baseUrl: string }) => string;
 }): CrawledOpenCall[] {
   const rows: CrawledOpenCall[] = [];
   const anchorRegex = /<a[^>]+href=["']([^"']+)["'][^>]*>([\s\S]*?)<\/a>/gi;
@@ -250,13 +302,17 @@ function parseHtmlLinksAsOpenCalls(input: {
     if (!hrefRaw || !titleRaw) continue;
     if (!input.isRelevant(titleRaw)) continue;
     const block = input.html.slice(Math.max(0, m.index - 220), Math.min(input.html.length, m.index + 420));
+    if (input.shouldSkip && input.shouldSkip(`${titleRaw} ${block}`)) continue;
     const deadline = parseDeadlineFlexible(block);
     if (!deadline) continue;
     const link = absoluteUrl(input.baseUrl, hrefRaw);
     const slug = toSlug(`${input.source}_${titleRaw}_${link}`);
+    const galleryLabel = input.resolveGalleryLabel
+      ? input.resolveGalleryLabel({ title: titleRaw, link, context: block, baseUrl: input.baseUrl })
+      : input.galleryLabel;
     rows.push({
       source: input.source,
-      gallery: input.galleryLabel,
+      gallery: galleryLabel,
       galleryId: `__external_${input.source}_${slug}`,
       city: input.city,
       country: input.country,
@@ -265,7 +321,7 @@ function parseHtmlLinksAsOpenCalls(input: {
       externalEmail: input.email,
       externalUrl: link,
       galleryWebsite: input.baseUrl,
-      galleryDescription: `${input.galleryLabel} curated open-call listing.`,
+      galleryDescription: `${galleryLabel} curated open-call listing.`,
     });
   }
   return rows;
@@ -331,12 +387,20 @@ function parseJapaneseRssItemsAsOpenCalls(input: {
     if (!title || !link) continue;
     const mergedText = `${title} ${category} ${desc}`;
     if (!looksLikeJapaneseRssOpenCall({ title, category, desc })) continue;
+    if (looksLikeJapaneseExhibitionNotice(mergedText)) continue;
     const deadline = parseDeadlineFlexible(mergedText) || parseDeadlineFlexible(pubDate) || parseDateFromPubDate(pubDate);
     if (!deadline) continue;
     const slug = toSlug(`${input.source}_${title}_${link}`);
+    const gallery = resolveJapanSourceGalleryLabel({
+      fallback: input.galleryLabel,
+      title,
+      link,
+      baseUrl: input.baseUrl,
+      context: mergedText,
+    });
     rows.push({
       source: input.source,
-      gallery: input.galleryLabel,
+      gallery,
       galleryId: `__external_${input.source}_${slug}`,
       city: input.city,
       country: input.country,
@@ -345,7 +409,7 @@ function parseJapaneseRssItemsAsOpenCalls(input: {
       externalEmail: input.email,
       externalUrl: link,
       galleryWebsite: input.baseUrl,
-      galleryDescription: desc.slice(0, 300) || `${input.galleryLabel} JP RSS open-call listing.`,
+      galleryDescription: desc.slice(0, 300) || `${gallery} JP RSS open-call listing.`,
     });
   }
   return rows;
@@ -688,7 +752,7 @@ async function crawlKoreanArtBlogsWithDebug() {
 }
 
 async function crawlJapanOpenCallsWithDebug() {
-  const rssUrls = String(process.env.CRAWL_JP_OC_FEED_URLS || "")
+  const rssUrls = String(process.env.CRAWL_JP_OC_FEED_URLS || "https://air-j.info/en/program/feed/,https://air-j.info/en/program/rss/")
     .split(",")
     .map((s) => s.trim())
     .filter(Boolean);
@@ -742,6 +806,9 @@ async function crawlJapanOpenCallsWithDebug() {
       galleryLabel: label,
       email,
       isRelevant: containsJapaneseOpenCallKeyword,
+      shouldSkip: looksLikeJapaneseExhibitionNotice,
+      resolveGalleryLabel: ({ title, link, context, baseUrl }) =>
+        resolveJapanSourceGalleryLabel({ fallback: label, title, link, baseUrl, context }),
     });
     pageRowsParsed += rows.length;
     parsed.push(...rows);

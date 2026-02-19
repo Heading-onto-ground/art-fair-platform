@@ -123,6 +123,11 @@ export default function ArtistsPage() {
           grid-template-columns: repeat(3, 1fr);
           gap: 24px;
         }
+        .artist-list {
+          display: grid;
+          gap: 1px;
+          background: #e8e3db;
+        }
         @media (max-width: 900px) {
           .artist-card-grid { grid-template-columns: repeat(2, 1fr); gap: 20px; }
         }
@@ -223,6 +228,115 @@ export default function ArtistsPage() {
         ) : error ? (
           <div style={{ padding: 24, border: "1px solid #D4B0B0", background: "#FDF8F8", color: "#8B3A3A", fontFamily: F, fontSize: 12 }}>
             {error?.message ?? "Failed to load"}
+          </div>
+        ) : isGalleryViewer ? (
+          <div className="artist-list">
+            {filtered.map((a, idx) => (
+              <div
+                key={a.userId}
+                onClick={() => router.push(`/artists/${encodeURIComponent(a.userId)}`)}
+                style={{
+                  background: "#FFFFFF",
+                  padding: "14px 16px",
+                  cursor: "pointer",
+                  transition: "background 0.2s ease",
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.background = "#FAF8F4";
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.background = "#FFFFFF";
+                }}
+              >
+                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12 }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: 12, minWidth: 0 }}>
+                    <div
+                      style={{
+                        width: 56,
+                        height: 56,
+                        border: "1px solid #EDE6DA",
+                        background: "#F5F1EB",
+                        overflow: "hidden",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        flexShrink: 0,
+                      }}
+                    >
+                      {a.profileImage ? (
+                        <img src={a.profileImage} alt={a.name} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                      ) : (
+                        <span style={{ fontFamily: S, fontSize: 20, color: "#D0C7BA" }}>
+                          {a.name?.charAt(0)?.toUpperCase() || "A"}
+                        </span>
+                      )}
+                    </div>
+                    <div style={{ minWidth: 0 }}>
+                      <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 3 }}>
+                        <span style={{ fontFamily: S, fontSize: 14, color: "#D4CEC4" }}>
+                          {String(idx + 1).padStart(2, "0")}
+                        </span>
+                        <h3
+                          style={{
+                            fontFamily: S,
+                            fontSize: 18,
+                            fontWeight: 400,
+                            color: "#1A1A1A",
+                            margin: 0,
+                            whiteSpace: "nowrap",
+                            overflow: "hidden",
+                            textOverflow: "ellipsis",
+                          }}
+                        >
+                          {a.name}
+                        </h3>
+                      </div>
+                      <p style={{ fontFamily: F, fontSize: 10, color: "#8A8580", margin: 0 }}>
+                        {[a.city, a.country].filter(Boolean).join(", ") || "—"}
+                        {a.genre ? ` · ${a.genre}` : ""}
+                        {getYearsActive(a.startedYear) ? ` · ${getYearsActive(a.startedYear)}` : ""}
+                      </p>
+                    </div>
+                  </div>
+                  <div style={{ display: "flex", alignItems: "center", gap: 8, flexShrink: 0 }}>
+                    <span
+                      style={{
+                        fontFamily: F,
+                        fontSize: 9,
+                        fontWeight: 500,
+                        letterSpacing: "0.08em",
+                        textTransform: "uppercase",
+                        color: a.portfolioUrl ? "#2E6B45" : "#8A8580",
+                        background: a.portfolioUrl ? "#EDF7F1" : "#F5F3F0",
+                        padding: "4px 8px",
+                        border: `1px solid ${a.portfolioUrl ? "#D6EAD8" : "#ECEAE6"}`,
+                      }}
+                    >
+                      {a.portfolioUrl ? "Portfolio" : "No Portfolio"}
+                    </span>
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setFavorites((p) => ({ ...p, [a.userId]: !p[a.userId] }));
+                      }}
+                      style={{
+                        width: 30,
+                        height: 30,
+                        borderRadius: "50%",
+                        border: "1px solid #E8E3DB",
+                        background: favorites[a.userId] ? "#1A1A1A" : "#FFFFFF",
+                        color: favorites[a.userId] ? "#FFFFFF" : "#8A8A8A",
+                        fontFamily: F,
+                        fontSize: 13,
+                        cursor: "pointer",
+                      }}
+                    >
+                      {favorites[a.userId] ? "★" : "☆"}
+                    </button>
+                  </div>
+                </div>
+              </div>
+            ))}
           </div>
         ) : (
           <div className="artist-card-grid">
