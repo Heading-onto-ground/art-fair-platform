@@ -87,9 +87,46 @@ function parseDateLike(input: string): string | null {
   return `${yyyy}-${mm}-${dd}`;
 }
 
+function parseDateRangeEndLike(input: string): string | null {
+  const all = Array.from(String(input || "").matchAll(/(20\d{2})[.\-/](\d{1,2})[.\-/](\d{1,2})/g));
+  if (all.length === 0) return null;
+  const last = all[all.length - 1];
+  const yyyy = last[1];
+  const mm = String(Number(last[2])).padStart(2, "0");
+  const dd = String(Number(last[3])).padStart(2, "0");
+  return `${yyyy}-${mm}-${dd}`;
+}
+
+function parseShortDateRangeEndLike(input: string): string | null {
+  const all = Array.from(String(input || "").matchAll(/(\d{1,2})[.\-/](\d{1,2})(?!\d)/g));
+  if (all.length === 0) return null;
+  const now = new Date();
+  const nowTs = now.getTime();
+  const candidates: Array<{ ts: number; value: string }> = [];
+  for (const m of all) {
+    const mm = Number(m[1]);
+    const dd = Number(m[2]);
+    if (!Number.isFinite(mm) || !Number.isFinite(dd) || mm < 1 || mm > 12 || dd < 1 || dd > 31) continue;
+    let yyyy = now.getUTCFullYear();
+    let d = new Date(Date.UTC(yyyy, mm - 1, dd, 23, 59, 59));
+    if (d.getTime() < nowTs) d = new Date(Date.UTC(yyyy + 1, mm - 1, dd, 23, 59, 59));
+    candidates.push({
+      ts: d.getTime(),
+      value: `${d.getUTCFullYear()}-${String(mm).padStart(2, "0")}-${String(dd).padStart(2, "0")}`,
+    });
+  }
+  if (candidates.length === 0) return null;
+  candidates.sort((a, b) => b.ts - a.ts);
+  return candidates[0].value;
+}
+
 function parseDeadlineFlexible(input: string): string | null {
+  const rangeEnd = parseDateRangeEndLike(input);
+  if (rangeEnd) return rangeEnd;
   const full = parseDateLike(input);
   if (full) return full;
+  const shortRangeEnd = parseShortDateRangeEndLike(input);
+  if (shortRangeEnd) return shortRangeEnd;
   const short = String(input || "").match(/(\d{1,2})[.\-/](\d{1,2})(?!\d)/);
   if (!short) return null;
   const now = new Date();
@@ -452,7 +489,7 @@ async function crawlKoreanArtHub(): Promise<CrawledOpenCall[]> {
   return parsed.length ? parsed : crawlKoreanArtHubFallback();
 }
 
-async function crawlKoreanArtBlogs(): Promise<CrawledOpenCall[]> {
+async function crawlKoreanArtBlogsWithDebug() {
   const rssUrls = String(process.env.CRAWL_KR_BLOG_FEED_URLS || "")
     .split(",")
     .map((s) => s.trim())
@@ -464,40 +501,66 @@ async function crawlKoreanArtBlogs(): Promise<CrawledOpenCall[]> {
   const email = String(process.env.CRAWL_KR_BLOG_CONTACT_EMAIL || "editor@k-artblog.kr").trim();
 
   const parsed: CrawledOpenCall[] = [];
+  let rssFetched = 0;
+  let rssWithItems = 0;
+  let rssItemsScanned = 0;
+  let rssRowsParsed = 0;
+  let pageFetched = 0;
+  let pageRowsParsed = 0;
 
   for (const url of rssUrls) {
     const xml = await fetchText(url);
-    if (!xml || !xml.includes("<item")) continue;
-    parsed.push(
-      ...parseRssItemsAsOpenCalls({
-        source: "korean_art_blog_rss",
-        xml,
-        country: "한국",
-        city: "Seoul",
-        galleryLabel: "Korean Art Blog",
-        email,
-        baseUrl: url,
-      })
-    );
+    if (!xml) continue;
+    rssFetched += 1;
+    const itemMatches = xml.match(/<item[\s\S]*?<\/item>/gi) || [];
+    if (itemMatches.length === 0) continue;
+    rssWithItems += 1;
+    rssItemsScanned += itemMatches.length;
+    const rows = parseRssItemsAsOpenCalls({
+      source: "korean_art_blog_rss",
+      xml,
+      country: "한국",
+      city: "Seoul",
+      galleryLabel: "Korean Art Blog",
+      email,
+      baseUrl: url,
+    });
+    rssRowsParsed += rows.length;
+    parsed.push(...rows);
   }
 
   for (const url of pageUrls) {
     const html = await fetchText(url);
     if (!html) continue;
-    parsed.push(
-      ...parseHtmlLinksAsOpenCalls({
-        source: "korean_art_blog_live",
-        html,
-        baseUrl: url,
-        country: "한국",
-        city: "Seoul",
-        galleryLabel: "Korean Art Blog",
-        email,
-      })
-    );
+    pageFetched += 1;
+    const rows = parseHtmlLinksAsOpenCalls({
+      source: "korean_art_blog_live",
+      html,
+      baseUrl: url,
+      country: "한국",
+      city: "Seoul",
+      galleryLabel: "Korean Art Blog",
+      email,
+    });
+    pageRowsParsed += rows.length;
+    parsed.push(...rows);
   }
 
-  return parsed.length ? parsed : crawlKoreanArtBlogsFallback();
+  const usedFallback = parsed.length === 0;
+  return {
+    rows: usedFallback ? crawlKoreanArtBlogsFallback() : parsed,
+    debug: {
+      rssUrlsConfigured: rssUrls.length,
+      rssFetched,
+      rssWithItems,
+      rssItemsScanned,
+      rssRowsParsed,
+      pageUrlsConfigured: pageUrls.length,
+      pageFetched,
+      pageRowsParsed,
+      usedFallback,
+    },
+  };
 }
 
 // Remove previously crawled exhibition-style entries.
@@ -568,14 +631,15 @@ async function runCrawlJob() {
     )
   );
 
-  const [eflux, artrabbit, transartists, arthubKr, krBlogs, instagram] = await Promise.all([
+  const [eflux, artrabbit, transartists, arthubKr, krBlogsWithDebug, instagram] = await Promise.all([
     Promise.resolve(crawlEflux()),
     Promise.resolve(crawlArtrabbit()),
     Promise.resolve(crawlTransartists()),
     crawlKoreanArtHub(),
-    crawlKoreanArtBlogs(),
+    crawlKoreanArtBlogsWithDebug(),
     crawlInstagramOpenCalls(),
   ]);
+  const krBlogs = krBlogsWithDebug.rows;
   const allCrawled: CrawledOpenCall[] = [...eflux, ...artrabbit, ...transartists, ...arthubKr, ...krBlogs, ...instagram];
   const activeCrawled = allCrawled.filter((c) => isDeadlineActive(c.deadline));
 
@@ -626,6 +690,7 @@ async function runCrawlJob() {
     cleanedExpired,
     emailDirectory,
     validation,
+    koreanArtBlogDebug: krBlogsWithDebug.debug,
     sources: ["e-flux", "artrabbit", "transartists", "arthub-kr", "korean-art-blog", "instagram"],
   };
 }
