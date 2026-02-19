@@ -384,27 +384,38 @@ export async function syncGalleryEmailDirectory() {
 
 export async function deletePlaceholderGalleryEmails() {
   await ensureGalleryEmailDirectoryTable();
-  const deleted = await prisma.$executeRawUnsafe(
-    `
-      DELETE FROM "GalleryEmailDirectory"
-      WHERE lower("email") LIKE '%@gallery.art'
-         OR lower("email") LIKE '%@rob.art'
-         OR lower("email") LIKE '%@rob-roleofbridge.com';
-    `
-  );
-  const cleanedOpenCall = await prisma.$executeRawUnsafe(
-    `
-      UPDATE "OpenCall"
-      SET "externalEmail" = NULL
-      WHERE "externalEmail" IS NOT NULL
-        AND (
-          lower("externalEmail") LIKE '%@gallery.art'
-          OR lower("externalEmail") LIKE '%@rob.art'
-          OR lower("externalEmail") LIKE '%@rob-roleofbridge.com'
-        );
-    `
-  );
+  let deleted = 0;
+  let cleanedOpenCall = 0;
   let cleanedExternalDirectory = 0;
+  let anonymizedUsers = 0;
+  try {
+    deleted = await prisma.$executeRawUnsafe(
+      `
+        DELETE FROM "GalleryEmailDirectory"
+        WHERE lower("email") LIKE '%@gallery.art'
+           OR lower("email") LIKE '%@rob.art'
+           OR lower("email") LIKE '%@rob-roleofbridge.com';
+      `
+    );
+  } catch {
+    deleted = 0;
+  }
+  try {
+    cleanedOpenCall = await prisma.$executeRawUnsafe(
+      `
+        UPDATE "OpenCall"
+        SET "externalEmail" = NULL
+        WHERE "externalEmail" IS NOT NULL
+          AND (
+            lower("externalEmail") LIKE '%@gallery.art'
+            OR lower("externalEmail") LIKE '%@rob.art'
+            OR lower("externalEmail") LIKE '%@rob-roleofbridge.com'
+          );
+      `
+    );
+  } catch {
+    cleanedOpenCall = 0;
+  }
   try {
     cleanedExternalDirectory = await prisma.$executeRawUnsafe(
       `
@@ -421,18 +432,22 @@ export async function deletePlaceholderGalleryEmails() {
   } catch {
     cleanedExternalDirectory = 0;
   }
-  const anonymizedUsers = await prisma.$executeRawUnsafe(
-    `
-      UPDATE "User"
-      SET "email" = 'email-unverified+' || "id" || '@invalid.local'
-      WHERE "role" = 'gallery'
-        AND (
-          lower("email") LIKE '%@gallery.art'
-          OR lower("email") LIKE '%@rob.art'
-          OR lower("email") LIKE '%@rob-roleofbridge.com'
-        );
-    `
-  );
+  try {
+    anonymizedUsers = await prisma.$executeRawUnsafe(
+      `
+        UPDATE "User"
+        SET "email" = 'email-unverified+' || "id" || '@invalid.local'
+        WHERE "role" = 'gallery'
+          AND (
+            lower("email") LIKE '%@gallery.art'
+            OR lower("email") LIKE '%@rob.art'
+            OR lower("email") LIKE '%@rob-roleofbridge.com'
+          );
+      `
+    );
+  } catch {
+    anonymizedUsers = 0;
+  }
   return { deleted, cleanedOpenCall, cleanedExternalDirectory, anonymizedUsers };
 }
 
