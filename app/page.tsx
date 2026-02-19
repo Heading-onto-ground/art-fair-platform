@@ -150,8 +150,8 @@ export default function Home() {
           >
             contact@rob-roleofbridge.com
           </a>
-          <a href="https://instagram.com/1wh13" target="_blank" rel="noreferrer" style={{ fontFamily: F, fontSize: 11, color: "#8B7355", textDecoration: "underline" }}>
-            @1wh13
+          <a href="https://instagram.com/noas_no_art_special" target="_blank" rel="noreferrer" style={{ fontFamily: F, fontSize: 11, color: "#8B7355", textDecoration: "underline" }}>
+            @noas_no_art_special
           </a>
         </div>
         <div style={{ fontFamily: F, fontSize: 10, letterSpacing: "0.08em", color: "#D4CEC4" }}>© 2026 Global Art Platform</div>

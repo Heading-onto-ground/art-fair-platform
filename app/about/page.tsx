@@ -238,7 +238,7 @@ export default function AboutPage() {
                     rel="noreferrer"
                     style={{ fontFamily: F, fontSize: 13, color: "#8B7355", textDecoration: "underline" }}
                   >
-                    {content.founderInstagram || "@1wh13"}
+                    {content.founderInstagram || "@noas_no_art_special"}
                   </a>
                 </div>
               </div>

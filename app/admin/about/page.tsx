@@ -30,7 +30,7 @@ export default function AdminAboutPage() {
     story: "",
     mission: "",
     founderName: "",
-    founderInstagram: "@1wh13",
+    founderInstagram: "@noas_no_art_special",
     founderImageUrl: "",
   });
 
@@ -153,7 +153,7 @@ export default function AdminAboutPage() {
                 <input
                   value={content.founderInstagram}
                   onChange={(e) => update("founderInstagram", e.target.value)}
-                  placeholder="@1wh13"
+                  placeholder="@noas_no_art_special"
                   style={inputStyle}
                 />
               </Field>

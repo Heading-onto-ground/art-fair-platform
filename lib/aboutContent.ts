@@ -21,7 +21,7 @@ const DEFAULT_ABOUT_CONTENT: AboutContent = {
   mission:
     "Our mission is to make global exhibition opportunities open, transparent, and easy to access for every artist and gallery.",
   founderName: "Founder",
-  founderInstagram: "@1wh13",
+  founderInstagram: "@noas_no_art_special",
   founderImageUrl: "",
 };
 

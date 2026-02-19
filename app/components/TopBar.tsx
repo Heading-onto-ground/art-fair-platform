@@ -194,6 +194,7 @@ export default function TopBar() {
       { path: "/shipments", label: t("nav_shipments", lang) },
       { path: "/chat", label: t("nav_messages", lang) },
       { path: "/about", label: "ABOUT" },
+      { path: "/contact", label: lang === "ko" ? "문의" : lang === "ja" ? "お問い合わせ" : "CONTACT" },
     ],
     [lang]
   );
@@ -208,6 +209,7 @@ export default function TopBar() {
       { path: "/chat", label: t("nav_messages", lang) },
       { path: "/admin/outreach", label: t("nav_growth", lang) },
       { path: "/about", label: "ABOUT" },
+      { path: "/contact", label: lang === "ko" ? "문의" : lang === "ja" ? "お問い合わせ" : "CONTACT" },
     ],
     [lang]
   );
@@ -340,6 +342,24 @@ export default function TopBar() {
                 }}
               >
                 About
+              </button>
+              <button
+                onClick={() => router.push("/contact")}
+                style={{
+                  padding: "8px 12px",
+                  border: "1px solid #E8E3DB",
+                  background: "transparent",
+                  color: "#4A4A4A",
+                  fontFamily: F,
+                  fontSize: 10,
+                  fontWeight: 500,
+                  letterSpacing: "0.08em",
+                  textTransform: "uppercase",
+                  cursor: "pointer",
+                  marginRight: 8,
+                }}
+              >
+                {lang === "ko" ? "문의" : lang === "ja" ? "お問い合わせ" : "Contact"}
               </button>
               <button onClick={() => router.push("/login")} style={{ padding: "10px 28px", border: "1px solid #1A1A1A", background: "transparent", color: "#1A1A1A", fontFamily: F, fontSize: 10, fontWeight: 500, letterSpacing: "0.1em", textTransform: "uppercase", cursor: "pointer" }}
                 onMouseEnter={(e) => { e.currentTarget.style.background = "#1A1A1A"; e.currentTarget.style.color = "#FDFBF7"; }}
@@ -513,6 +533,25 @@ export default function TopBar() {
               }}
             >
               About
+            </button>
+            <button
+              onClick={() => navigate("/contact")}
+              style={{
+                width: "100%",
+                padding: "12px",
+                border: "1px solid #E8E3DB",
+                background: "transparent",
+                color: "#4A4A4A",
+                fontFamily: F,
+                fontSize: 10,
+                fontWeight: 500,
+                letterSpacing: "0.09em",
+                textTransform: "uppercase",
+                cursor: "pointer",
+                marginBottom: 8,
+              }}
+            >
+              {lang === "ko" ? "문의" : lang === "ja" ? "お問い合わせ" : "Contact"}
             </button>
             <button
               onClick={() => navigate("/login")}
