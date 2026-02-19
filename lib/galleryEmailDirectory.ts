@@ -117,7 +117,7 @@ async function fetchText(url: string) {
   try {
     const res = await fetch(url, {
       headers: { "user-agent": "ROB-GalleryEmail-Collector/1.0" },
-      signal: AbortSignal.timeout(4000),
+      signal: AbortSignal.timeout(1500),
       cache: "no-store",
     });
     if (!res.ok) return "";
@@ -141,11 +141,7 @@ async function discoverPublicGalleryEmail(
   const targets = unique([
     base,
     `${base}/contact`,
-    `${base}/contact-us`,
     `${base}/about`,
-    `${base}/about-us`,
-    `${base}/imprint`,
-    `${base}/info`,
   ]);
 
   const emails: string[] = [];
@@ -297,7 +293,7 @@ export async function syncGalleryEmailDirectory() {
   const byHostName = new Map<string, Omit<Candidate, "email">>();
   const discoveryCache = new Map<string, string>();
   let discoveryAttempts = 0;
-  const discoveryLimit = 40;
+  const discoveryLimit = 12;
 
   for (const g of internalGalleries) {
     const email = normalizeEmail(g.email);
