@@ -13,6 +13,11 @@ type ValidationRow = {
   checkedAt: Date;
 };
 
+type ValidationLike = {
+  status?: string;
+  reason?: string | null;
+};
+
 const OPEN_CALL_KEYWORDS = [
   "open call",
   "call for artists",
@@ -116,6 +121,19 @@ function evaluateContent(call: OpenCall, text: string, finalUrl: string) {
     return { status: "suspicious" as const, reason: "partial_match", confidence };
   }
   return { status: "invalid" as const, reason: "content_not_relevant", confidence };
+}
+
+export function isOpenCallDeadlineActive(deadline: string) {
+  const d = String(deadline || "").trim();
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(d)) return false;
+  const endOfDayUtc = new Date(`${d}T23:59:59Z`);
+  if (Number.isNaN(endOfDayUtc.getTime())) return false;
+  return endOfDayUtc.getTime() >= Date.now();
+}
+
+export function shouldHideOpenCallByValidation(validation?: ValidationLike) {
+  if (!validation) return false;
+  return String(validation.status || "").toLowerCase() === "invalid";
 }
 
 async function validateOne(call: OpenCall): Promise<ValidationRow> {
@@ -237,12 +255,31 @@ export async function validateExternalOpenCalls() {
   }
   await upsertValidation(results);
 
+  const prunableInvalidIds = results
+    .filter((r) => r.status === "invalid")
+    .map((r) => r.openCallId);
+  const prunableExpiredIds = external
+    .filter((c) => !isOpenCallDeadlineActive(String(c.deadline || "")))
+    .map((c) => c.id);
+  const pruneIds = Array.from(new Set([...prunableInvalidIds, ...prunableExpiredIds]));
+  let pruned = 0;
+  if (pruneIds.length > 0) {
+    const deleted = await prisma.openCall.deleteMany({
+      where: {
+        id: { in: pruneIds },
+        isExternal: true,
+      },
+    });
+    pruned = deleted.count;
+  }
+
   const counts = {
     total: results.length,
     verified: results.filter((r) => r.status === "verified").length,
     suspicious: results.filter((r) => r.status === "suspicious").length,
     invalid: results.filter((r) => r.status === "invalid").length,
     unreachable: results.filter((r) => r.status === "unreachable").length,
+    pruned,
   };
   return counts;
 }

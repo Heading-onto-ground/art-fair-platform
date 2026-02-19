@@ -1,7 +1,11 @@
 import { NextResponse } from "next/server";
 import { createOpenCall, listOpenCalls } from "@/app/data/openCalls";
 import { getServerSession } from "@/lib/auth";
-import { getOpenCallValidationMap } from "@/lib/openCallValidation";
+import {
+  getOpenCallValidationMap,
+  isOpenCallDeadlineActive,
+  shouldHideOpenCallByValidation,
+} from "@/lib/openCallValidation";
 
 function normalizeCountry(input: string) {
   const v = String(input || "").trim();
@@ -21,15 +25,6 @@ function normalizeCity(input: string) {
   return v;
 }
 
-function shouldHideByValidation(validation?: { status?: string; reason?: string | null }) {
-  if (!validation || validation.status !== "invalid") return false;
-  const reason = String(validation.reason || "").toLowerCase();
-  // Keep potential false negatives visible; hide only hard URL/link failures.
-  if (reason === "missing_or_invalid_url") return true;
-  if (reason.startsWith("http_")) return true;
-  return false;
-}
-
 export async function GET() {
   const allOpenCalls = await listOpenCalls();
   let validationMap = new Map<string, { status?: string; reason?: string | null }>();
@@ -41,10 +36,11 @@ export async function GET() {
   }
   const openCalls = allOpenCalls
     .filter((oc) => {
+      if (!isOpenCallDeadlineActive(String(oc.deadline || ""))) return false;
       // Only hide clearly invalid external entries. Keep internal and temporary-unreachable entries visible.
       const validation = validationMap.get(oc.id);
       if (!oc.isExternal) return true;
-      return !shouldHideByValidation(validation);
+      return !shouldHideOpenCallByValidation(validation);
     })
     .map((oc) => ({
     ...oc,

@@ -1,14 +1,10 @@
 import { NextResponse } from "next/server";
 import { getOpenCallById } from "@/app/data/openCalls";
-import { getOpenCallValidationMap } from "@/lib/openCallValidation";
-
-function shouldHideByValidation(validation?: { status?: string; reason?: string | null }) {
-  if (!validation || validation.status !== "invalid") return false;
-  const reason = String(validation.reason || "").toLowerCase();
-  if (reason === "missing_or_invalid_url") return true;
-  if (reason.startsWith("http_")) return true;
-  return false;
-}
+import {
+  getOpenCallValidationMap,
+  isOpenCallDeadlineActive,
+  shouldHideOpenCallByValidation,
+} from "@/lib/openCallValidation";
 
 export async function GET(
   _req: Request,
@@ -19,11 +15,14 @@ export async function GET(
     if (!openCall) {
       return NextResponse.json({ error: "not found" }, { status: 404 });
     }
+    if (!isOpenCallDeadlineActive(String(openCall.deadline || ""))) {
+      return NextResponse.json({ error: "not found" }, { status: 404 });
+    }
     if (openCall.isExternal) {
       try {
         const validationMap = await getOpenCallValidationMap([openCall.id]);
         const validation = validationMap.get(openCall.id);
-        if (shouldHideByValidation(validation)) {
+        if (shouldHideOpenCallByValidation(validation)) {
           return NextResponse.json({ error: "not found" }, { status: 404 });
         }
       } catch (validationError) {

@@ -87,12 +87,28 @@ function parseDateLike(input: string): string | null {
   return `${yyyy}-${mm}-${dd}`;
 }
 
-function plusDays(base: Date, days: number): string {
-  const d = new Date(base.getTime() + days * 86400000);
-  const yyyy = d.getUTCFullYear();
-  const mm = String(d.getUTCMonth() + 1).padStart(2, "0");
-  const dd = String(d.getUTCDate()).padStart(2, "0");
-  return `${yyyy}-${mm}-${dd}`;
+function parseDeadlineFlexible(input: string): string | null {
+  const full = parseDateLike(input);
+  if (full) return full;
+  const short = String(input || "").match(/(\d{1,2})[.\-/](\d{1,2})(?!\d)/);
+  if (!short) return null;
+  const now = new Date();
+  let yyyy = now.getUTCFullYear();
+  const mm = Number(short[1]);
+  const dd = Number(short[2]);
+  if (!Number.isFinite(mm) || !Number.isFinite(dd) || mm < 1 || mm > 12 || dd < 1 || dd > 31) return null;
+  const candidate = new Date(Date.UTC(yyyy, mm - 1, dd, 23, 59, 59));
+  // If date already passed this year, assume next cycle.
+  if (candidate.getTime() < now.getTime()) yyyy += 1;
+  return `${yyyy}-${String(mm).padStart(2, "0")}-${String(dd).padStart(2, "0")}`;
+}
+
+function isDeadlineActive(deadline: string) {
+  const d = String(deadline || "").trim();
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(d)) return false;
+  const endOfDayUtc = new Date(`${d}T23:59:59Z`);
+  if (Number.isNaN(endOfDayUtc.getTime())) return false;
+  return endOfDayUtc.getTime() >= Date.now();
 }
 
 function absoluteUrl(base: string, href: string): string {
@@ -147,7 +163,8 @@ function parseHtmlLinksAsOpenCalls(input: {
     if (!hrefRaw || !titleRaw) continue;
     if (!containsKoreanOpenCallKeyword(titleRaw)) continue;
     const block = input.html.slice(Math.max(0, m.index - 220), Math.min(input.html.length, m.index + 420));
-    const deadline = parseDateLike(block) || plusDays(new Date(), 30);
+    const deadline = parseDeadlineFlexible(block);
+    if (!deadline) continue;
     const link = absoluteUrl(input.baseUrl, hrefRaw);
     const slug = toSlug(`${input.source}_${titleRaw}_${link}`);
     rows.push({
@@ -186,7 +203,8 @@ function parseRssItemsAsOpenCalls(input: {
     if (!title || !link) continue;
     const mergedText = `${title} ${desc}`;
     if (!containsKoreanOpenCallKeyword(mergedText)) continue;
-    const deadline = parseDateLike(mergedText) || parseDateLike(pubDate) || plusDays(new Date(), 45);
+    const deadline = parseDeadlineFlexible(mergedText) || parseDeadlineFlexible(pubDate);
+    if (!deadline) continue;
     const slug = toSlug(`${input.source}_${title}_${link}`);
     rows.push({
       source: input.source,
@@ -201,6 +219,81 @@ function parseRssItemsAsOpenCalls(input: {
       galleryWebsite: input.baseUrl,
       galleryDescription: desc.slice(0, 300) || `${input.galleryLabel} RSS open-call listing.`,
     });
+  }
+  return rows;
+}
+
+function containsOpenCallKeyword(text: string) {
+  const t = normalizeText(text);
+  return KR_OC_KEYWORDS.some((k) => t.includes(normalizeText(k)));
+}
+
+function parseInstagramAccountMetaMap() {
+  const raw = String(process.env.CRAWL_INSTAGRAM_ACCOUNT_META_JSON || "").trim();
+  if (!raw) return {} as Record<string, any>;
+  try {
+    const parsed = JSON.parse(raw);
+    if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) return {};
+    return parsed as Record<string, any>;
+  } catch {
+    return {};
+  }
+}
+
+async function crawlInstagramOpenCalls(): Promise<CrawledOpenCall[]> {
+  const enabled = (process.env.CRAWL_INSTAGRAM_ENABLED || "1") !== "0";
+  if (!enabled) return [];
+  const token = String(process.env.INSTAGRAM_ACCESS_TOKEN || "").trim();
+  const accountIds = String(process.env.CRAWL_INSTAGRAM_ACCOUNT_IDS || "")
+    .split(",")
+    .map((v) => v.trim())
+    .filter(Boolean);
+  if (!token || accountIds.length === 0) return [];
+
+  const metaMap = parseInstagramAccountMetaMap();
+  const rows: CrawledOpenCall[] = [];
+  for (const accountId of accountIds) {
+    const url = `https://graph.facebook.com/v21.0/${encodeURIComponent(accountId)}/media?fields=id,caption,permalink,timestamp,username&limit=30&access_token=${encodeURIComponent(token)}`;
+    const text = await fetchText(url, 12000);
+    if (!text) continue;
+    let media: any[] = [];
+    try {
+      const parsed = JSON.parse(text);
+      media = Array.isArray(parsed?.data) ? parsed.data : [];
+    } catch {
+      media = [];
+    }
+    const meta = metaMap[accountId] || {};
+    for (const item of media) {
+      const caption = String(item?.caption || "").trim();
+      if (!caption) continue;
+      if (!containsOpenCallKeyword(caption)) continue;
+      const deadline = parseDeadlineFlexible(caption);
+      if (!deadline) continue;
+      const permalink = String(item?.permalink || "").trim();
+      if (!permalink) continue;
+      const gallery = String(meta.gallery || item?.username || `Instagram ${accountId}`).trim();
+      const city = String(meta.city || "Seoul").trim();
+      const country = String(meta.country || "한국").trim();
+      const externalEmail = String(meta.email || "").trim();
+      const website = String(meta.website || "").trim();
+      const description = String(meta.description || "Instagram sourced open-call listing.").trim();
+      const firstLine = caption.split("\n").map((l: string) => l.trim()).find(Boolean) || caption.slice(0, 200);
+      const theme = firstLine.slice(0, 200);
+      rows.push({
+        source: "instagram",
+        gallery,
+        galleryId: `__external_instagram_${accountId}_${String(item?.id || "").slice(-16)}`,
+        city,
+        country,
+        theme,
+        deadline,
+        externalEmail,
+        externalUrl: permalink,
+        galleryWebsite: website || `https://www.instagram.com/${String(item?.username || "").trim()}`,
+        galleryDescription: description,
+      });
+    }
   }
   return rows;
 }
@@ -425,6 +518,22 @@ async function cleanupExhibitionEntries() {
   return res.count;
 }
 
+async function cleanupExpiredExternalOpenCalls() {
+  const existing = await listOpenCalls();
+  const expiredIds = existing
+    .filter((oc) => oc.isExternal)
+    .filter((oc) => !isDeadlineActive(String(oc.deadline || "")))
+    .map((oc) => oc.id);
+  if (!expiredIds.length) return 0;
+  const res = await prisma.openCall.deleteMany({
+    where: {
+      id: { in: expiredIds },
+      isExternal: true,
+    },
+  });
+  return res.count;
+}
+
 async function runCrawlJob() {
   const enabled = (process.env.CRAWL_OPENCALLS_ENABLED || "1") !== "0";
   if (!enabled) {
@@ -437,6 +546,7 @@ async function runCrawlJob() {
     };
   }
   const cleaned = await cleanupExhibitionEntries();
+  const cleanedExpired = await cleanupExpiredExternalOpenCalls();
   const existingOpenCalls = await listOpenCalls();
   const existingIds = new Set(existingOpenCalls.map((oc) => oc.galleryId));
   const existingUrls = new Set(
@@ -458,17 +568,19 @@ async function runCrawlJob() {
     )
   );
 
-  const [eflux, artrabbit, transartists, arthubKr, krBlogs] = await Promise.all([
+  const [eflux, artrabbit, transartists, arthubKr, krBlogs, instagram] = await Promise.all([
     Promise.resolve(crawlEflux()),
     Promise.resolve(crawlArtrabbit()),
     Promise.resolve(crawlTransartists()),
     crawlKoreanArtHub(),
     crawlKoreanArtBlogs(),
+    crawlInstagramOpenCalls(),
   ]);
-  const allCrawled: CrawledOpenCall[] = [...eflux, ...artrabbit, ...transartists, ...arthubKr, ...krBlogs];
+  const allCrawled: CrawledOpenCall[] = [...eflux, ...artrabbit, ...transartists, ...arthubKr, ...krBlogs, ...instagram];
+  const activeCrawled = allCrawled.filter((c) => isDeadlineActive(c.deadline));
 
   const seenInBatch = new Set<string>();
-  const newCalls = allCrawled.filter((c) => {
+  const newCalls = activeCrawled.filter((c) => {
     const key = openCallKey(c);
     if (existingKeys.has(key)) return false;
     if (seenInBatch.has(key)) return false;
@@ -508,11 +620,13 @@ async function runCrawlJob() {
   return {
     message: `Crawler completed. ${imported.length} new open calls imported.`,
     imported,
-    skipped: allCrawled.length - imported.length,
+    skipped: activeCrawled.length - imported.length,
+    droppedExpired: allCrawled.length - activeCrawled.length,
     cleaned,
+    cleanedExpired,
     emailDirectory,
     validation,
-    sources: ["e-flux", "artrabbit", "transartists", "arthub-kr", "korean-art-blog"],
+    sources: ["e-flux", "artrabbit", "transartists", "arthub-kr", "korean-art-blog", "instagram"],
   };
 }
 
@@ -551,6 +665,7 @@ export async function GET(req: Request) {
       { name: "transartists", url: "https://www.transartists.org", type: "Scrape", status: "active" },
       { name: "arthub-kr", url: "https://arthub.co.kr", type: "Scrape", status: "active" },
       { name: "korean-art-blog", url: "https://blog.naver.com", type: "Scrape", status: "active" },
+      { name: "instagram", url: "https://www.instagram.com", type: "Graph API", status: "active if env configured" },
     ],
     currentOpenCalls: existing.length,
     externalOpenCalls: externalCount,

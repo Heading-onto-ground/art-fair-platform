@@ -3,7 +3,11 @@ import { getServerSession, getProfileByUserId } from "@/lib/auth";
 import { listOpenCalls } from "@/app/data/openCalls";
 import { listApplicationsByArtist } from "@/app/data/applications";
 import { getTopRecommendations } from "@/lib/matcher";
-import { getOpenCallValidationMap } from "@/lib/openCallValidation";
+import {
+  getOpenCallValidationMap,
+  isOpenCallDeadlineActive,
+  shouldHideOpenCallByValidation,
+} from "@/lib/openCallValidation";
 
 export const dynamic = "force-dynamic";
 
@@ -23,14 +27,6 @@ function normalizeCountry(input: string) {
     return "한국";
   }
   return v;
-}
-
-function shouldHideByValidation(validation?: { status?: string; reason?: string | null }) {
-  if (!validation || validation.status !== "invalid") return false;
-  const reason = String(validation.reason || "").toLowerCase();
-  if (reason === "missing_or_invalid_url") return true;
-  if (reason.startsWith("http_")) return true;
-  return false;
 }
 
 function isLikelyGarbageGalleryName(name: string) {
@@ -59,8 +55,9 @@ export async function GET() {
     const validationMap = await getOpenCallValidationMap(openCallsRaw.map((oc) => oc.id));
     const openCalls = openCallsRaw
       .filter((oc) => {
+        if (!isOpenCallDeadlineActive(String(oc.deadline || ""))) return false;
         const validation = validationMap.get(oc.id);
-        if (oc.isExternal && shouldHideByValidation(validation)) return false;
+        if (oc.isExternal && shouldHideOpenCallByValidation(validation)) return false;
         if (isLikelyGarbageGalleryName(oc.gallery)) return false;
         return true;
       })
@@ -88,7 +85,7 @@ export async function GET() {
 
     return NextResponse.json({
       recommendations,
-      totalAvailable: openCalls.filter((oc) => !appliedIds.has(oc.id) && new Date(oc.deadline).getTime() > Date.now()).length,
+      totalAvailable: openCalls.filter((oc) => !appliedIds.has(oc.id)).length,
     });
   } catch (e) {
     console.error("GET /api/recommendations failed:", e);
