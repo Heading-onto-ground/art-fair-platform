@@ -8,6 +8,7 @@ import {
 import { getOpenCallById } from "@/app/data/openCalls";
 import { getAdminSession } from "@/lib/adminAuth";
 import { sendPlatformEmail } from "@/lib/email";
+import { findBestGalleryEmail } from "@/lib/galleryEmailDirectory";
 
 export const dynamic = "force-dynamic";
 
@@ -29,10 +30,18 @@ export async function GET(req: NextRequest) {
     const enriched = await Promise.all(
       apps.map(async (app) => {
         const oc = await getOpenCallById(app.openCallId);
+        const fallbackEmail = oc
+          ? await findBestGalleryEmail({
+              galleryId: oc.galleryId,
+              galleryName: oc.gallery,
+              website: oc.galleryWebsite || oc.externalUrl || "",
+              country: oc.country || "",
+            })
+          : null;
         return {
           ...app,
           galleryName: oc?.gallery ?? "Unknown",
-          galleryEmail: oc?.externalEmail ?? "",
+          galleryEmail: oc?.externalEmail || fallbackEmail || "",
           galleryCity: oc?.city ?? "",
           galleryCountry: oc?.country ?? "",
           galleryWebsite: oc?.galleryWebsite ?? "",
@@ -88,7 +97,13 @@ export async function POST(req: NextRequest) {
     }
 
     // Build outreach email content
-    const galleryEmail = oc.externalEmail;
+    const fallbackEmail = await findBestGalleryEmail({
+      galleryId: oc.galleryId,
+      galleryName: oc.gallery,
+      website: oc.galleryWebsite || oc.externalUrl || "",
+      country: oc.country || "",
+    });
+    const galleryEmail = oc.externalEmail || fallbackEmail || "";
     const galleryName = oc.gallery;
     const artistName = app.artistName;
     const artistCountry = app.artistCountry;

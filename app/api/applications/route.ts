@@ -12,6 +12,7 @@ import {
 import { createNotification } from "@/app/data/notifications";
 import { sendApplicationEmail } from "@/lib/email";
 import { prisma } from "@/lib/prisma";
+import { findBestGalleryEmail } from "@/lib/galleryEmailDirectory";
 
 export const dynamic = "force-dynamic";
 
@@ -377,9 +378,25 @@ export async function POST(req: Request) {
       // 외부 오픈콜 → 갤러리에 자동 아웃리치 이메일 발송
       const artistName = profile.name ?? session.userId;
       const platformUrl = "https://art-fair-platform.vercel.app";
-      const targetEmail = String(openCall.externalEmail || "").trim();
+      const fallbackEmail = await findBestGalleryEmail({
+        galleryId: openCall.galleryId,
+        galleryName: openCall.gallery,
+        website: openCall.galleryWebsite || openCall.externalUrl || "",
+        country: openCall.country || "",
+      });
+      const targetEmail = String(openCall.externalEmail || fallbackEmail || "").trim();
       const canSendOutreach = looksLikeEmail(targetEmail);
       outreachTargetEmail = canSendOutreach ? targetEmail : null;
+      if (!openCall.externalEmail && canSendOutreach) {
+        try {
+          await prisma.openCall.update({
+            where: { id: openCall.id },
+            data: { externalEmail: targetEmail },
+          });
+        } catch (persistErr) {
+          console.error("openCall externalEmail persist failed (non-blocking):", persistErr);
+        }
+      }
 
       const emailBody = `Dear ${openCall.gallery},
 

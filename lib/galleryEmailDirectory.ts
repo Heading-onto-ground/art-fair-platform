@@ -98,6 +98,63 @@ function extractEmails(text: string) {
   return unique(found.map((v) => normalizeEmail(v))).filter(isCollectibleGalleryEmail);
 }
 
+function extractMailtoEmails(text: string) {
+  const out: string[] = [];
+  const re = /mailto:([^"'?\s>]+)/gi;
+  let m: RegExpExecArray | null;
+  while ((m = re.exec(String(text || "")))) {
+    const email = normalizeEmail(decodeURIComponent(String(m[1] || "")));
+    if (isCollectibleGalleryEmail(email)) out.push(email);
+  }
+  return unique(out);
+}
+
+function decodeObfuscatedEmailText(input: string) {
+  return String(input || "")
+    .replace(/\s*\[\s*at\s*\]\s*/gi, "@")
+    .replace(/\s*\(\s*at\s*\)\s*/gi, "@")
+    .replace(/\s+at\s+/gi, "@")
+    .replace(/\s*\[\s*dot\s*\]\s*/gi, ".")
+    .replace(/\s*\(\s*dot\s*\)\s*/gi, ".")
+    .replace(/\s+dot\s+/gi, ".")
+    .replace(/\s+/g, " ");
+}
+
+function extractEmailsWithObfuscation(text: string) {
+  const raw = String(text || "");
+  const decoded = decodeObfuscatedEmailText(raw);
+  return unique([...extractEmails(raw), ...extractEmails(decoded), ...extractMailtoEmails(raw)]);
+}
+
+function extractLikelyContactLinks(html: string, baseUrl: string) {
+  const links: string[] = [];
+  const re = /<a[^>]+href=["']([^"']+)["'][^>]*>([\s\S]*?)<\/a>/gi;
+  let m: RegExpExecArray | null;
+  while ((m = re.exec(String(html || "")))) {
+    const href = String(m[1] || "").trim();
+    const label = String(m[2] || "").replace(/<[^>]+>/g, " ").trim().toLowerCase();
+    if (!href || href.startsWith("#")) continue;
+    const hay = `${href.toLowerCase()} ${label}`;
+    const looksContact =
+      hay.includes("contact") ||
+      hay.includes("about") ||
+      hay.includes("inquiry") ||
+      hay.includes("impressum") ||
+      hay.includes("お問い合わせ") ||
+      hay.includes("連絡") ||
+      hay.includes("会社概要") ||
+      hay.includes("運営");
+    if (!looksContact) continue;
+    try {
+      const absolute = new URL(href, baseUrl).toString();
+      links.push(absolute.replace(/\/+$/, ""));
+    } catch {
+      // ignore bad link
+    }
+  }
+  return unique(links).slice(0, 4);
+}
+
 function pickBestEmail(candidates: string[], websiteHost: string) {
   if (!candidates.length) return "";
   const host = String(websiteHost || "").trim().toLowerCase();
@@ -141,14 +198,23 @@ async function discoverPublicGalleryEmail(
   const targets = unique([
     base,
     `${base}/contact`,
+    `${base}/contact-us`,
+    `${base}/contactus`,
+    `${base}/en/contact`,
+    `${base}/ja/contact`,
     `${base}/about`,
+    `${base}/about-us`,
+    `${base}/aboutus`,
+    `${base}/inquiry`,
+    `${base}/impressum`,
   ]);
 
   const emails: string[] = [];
-  for (const url of targets) {
+  let dynamicTargets = [...targets];
+  for (const url of dynamicTargets) {
     const text = await fetchText(url);
     if (!text) continue;
-    const found = extractEmails(text);
+    const found = extractEmailsWithObfuscation(text);
     if (found.length) {
       emails.push(...found);
       const picked = pickBestEmail(emails, host);
@@ -156,6 +222,10 @@ async function discoverPublicGalleryEmail(
         cache.set(host, picked);
         return picked;
       }
+    }
+    if (url === base) {
+      const linked = extractLikelyContactLinks(text, base);
+      dynamicTargets = unique([...dynamicTargets, ...linked]);
     }
   }
 
@@ -293,7 +363,11 @@ export async function syncGalleryEmailDirectory() {
   const byHostName = new Map<string, Omit<Candidate, "email">>();
   const discoveryCache = new Map<string, string>();
   let discoveryAttempts = 0;
-  const discoveryLimit = 12;
+  let discoveryFound = 0;
+  const discoveryLimit = Math.max(
+    12,
+    Number.parseInt(String(process.env.CRAWL_GALLERY_EMAIL_DISCOVERY_LIMIT || "80"), 10) || 80
+  );
 
   for (const g of internalGalleries) {
     const email = normalizeEmail(g.email);
@@ -362,6 +436,7 @@ export async function syncGalleryEmailDirectory() {
     discoveryAttempts += 1;
     const discovered = await discoverPublicGalleryEmail(website, discoveryCache);
     if (!discovered || !isCollectibleGalleryEmail(discovered)) continue;
+    discoveryFound += 1;
     byEmail.set(
       discovered,
       mergeCandidate(byEmail.get(discovered), {
@@ -378,8 +453,76 @@ export async function syncGalleryEmailDirectory() {
   return {
     collected: candidates.length,
     upserted: result.upserted,
-    discovered: discoveryAttempts,
+    discovered: discoveryFound,
+    discoveryAttempts,
   };
+}
+
+export async function findBestGalleryEmail(params: {
+  galleryId?: string | null;
+  galleryName?: string | null;
+  website?: string | null;
+  country?: string | null;
+}): Promise<string | null> {
+  await ensureGalleryEmailDirectoryTable();
+  const galleryId = String(params.galleryId || "").trim();
+  const galleryName = String(params.galleryName || "").trim();
+  const website = String(params.website || "").trim();
+  const country = String(params.country || "").trim();
+  if (galleryId) {
+    const byId = (await prisma.$queryRawUnsafe(
+      `
+      SELECT "email"
+      FROM "GalleryEmailDirectory"
+      WHERE "isActive" = true
+        AND "isBlocked" = false
+        AND "galleryId" = $1
+      ORDER BY "qualityScore" DESC, "updatedAt" DESC
+      LIMIT 1;
+      `,
+      galleryId
+    )) as Array<{ email: string }>;
+    const email = normalizeEmail(byId[0]?.email || "");
+    if (isCollectibleGalleryEmail(email)) return email;
+  }
+
+  const host = hostFromUrl(website);
+  if (host) {
+    const byWebsite = (await prisma.$queryRawUnsafe(
+      `
+      SELECT "email"
+      FROM "GalleryEmailDirectory"
+      WHERE "isActive" = true
+        AND "isBlocked" = false
+        AND lower(coalesce("website", '')) LIKE '%' || $1 || '%'
+      ORDER BY "qualityScore" DESC, "updatedAt" DESC
+      LIMIT 1;
+      `,
+      host
+    )) as Array<{ email: string }>;
+    const email = normalizeEmail(byWebsite[0]?.email || "");
+    if (isCollectibleGalleryEmail(email)) return email;
+  }
+
+  if (galleryName) {
+    const byName = (await prisma.$queryRawUnsafe(
+      `
+      SELECT "email"
+      FROM "GalleryEmailDirectory"
+      WHERE "isActive" = true
+        AND "isBlocked" = false
+        AND lower("galleryName") = lower($1)
+        AND ($2 = '' OR lower(coalesce("country", '')) = lower($2))
+      ORDER BY "qualityScore" DESC, "updatedAt" DESC
+      LIMIT 1;
+      `,
+      galleryName,
+      country
+    )) as Array<{ email: string }>;
+    const email = normalizeEmail(byName[0]?.email || "");
+    if (isCollectibleGalleryEmail(email)) return email;
+  }
+  return null;
 }
 
 export async function deletePlaceholderGalleryEmails() {
