@@ -474,7 +474,7 @@ ${platformUrl}
         // 어드민에게도 기록 알림
         await createNotification({
           userId: "ROB_ADMIN",
-          type: emailSent ? "new_application" : "system_alert",
+          type: emailSent ? "new_application" : "gallery_outreach",
           title: emailSent ? "AUTO OUTREACH SENT" : "AUTO OUTREACH SKIPPED",
           message: emailSent
             ? `${artistName} applied to "${openCall.theme}" at ${openCall.gallery}. Outreach email auto-sent to ${targetEmail}.`
