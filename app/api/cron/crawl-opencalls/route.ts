@@ -21,6 +21,7 @@ type CrawledOpenCall = {
 };
 
 const KR_OC_KEYWORDS = ["오픈콜", "공모", "모집", "레지던시", "지원", "open call", "residency", "call for artists"];
+const JP_OC_KEYWORDS = ["オープンコール", "公募", "募集", "レジデンス", "アーティスト募集", "open call", "residency", "call for artists"];
 
 function normalizeText(input: string) {
   return String(input || "")
@@ -30,6 +31,11 @@ function normalizeText(input: string) {
     .replace(/[^a-z0-9\u3131-\uD79D\u3040-\u30ff\u4e00-\u9faf\s-]/g, " ")
     .replace(/\s+/g, " ")
     .trim();
+}
+
+function containsAnyKeyword(text: string, keywords: string[]) {
+  const t = normalizeText(text);
+  return keywords.some((k) => t.includes(normalizeText(k)));
 }
 
 function hostFromUrl(url?: string) {
@@ -192,8 +198,11 @@ async function fetchText(url: string, timeoutMs = 10000): Promise<string> {
 }
 
 function containsKoreanOpenCallKeyword(text: string) {
-  const t = normalizeText(text);
-  return KR_OC_KEYWORDS.some((k) => t.includes(normalizeText(k)));
+  return containsAnyKeyword(text, KR_OC_KEYWORDS);
+}
+
+function containsJapaneseOpenCallKeyword(text: string) {
+  return containsAnyKeyword(text, JP_OC_KEYWORDS);
 }
 
 function looksLikeKoreanRssOpenCall(input: { title: string; category: string; desc: string }) {
@@ -209,6 +218,19 @@ function looksLikeKoreanRssOpenCall(input: { title: string; category: string; de
   return false;
 }
 
+function looksLikeJapaneseRssOpenCall(input: { title: string; category: string; desc: string }) {
+  const merged = `${input.title} ${input.category} ${input.desc}`;
+  const title = normalizeText(input.title);
+  const category = normalizeText(input.category);
+  const desc = normalizeText(input.desc);
+  if (title.includes(normalizeText("展示")) && !containsJapaneseOpenCallKeyword(merged)) return false;
+  if (title.includes(normalizeText("展覧会")) && !containsJapaneseOpenCallKeyword(merged)) return false;
+  if (containsJapaneseOpenCallKeyword(merged)) return true;
+  if (desc.includes(normalizeText("応募")) && desc.includes(normalizeText("締切"))) return true;
+  if (desc.includes(normalizeText("application")) && desc.includes(normalizeText("deadline"))) return true;
+  return false;
+}
+
 function parseHtmlLinksAsOpenCalls(input: {
   source: string;
   html: string;
@@ -217,6 +239,7 @@ function parseHtmlLinksAsOpenCalls(input: {
   city: string;
   galleryLabel: string;
   email: string;
+  isRelevant: (text: string) => boolean;
 }): CrawledOpenCall[] {
   const rows: CrawledOpenCall[] = [];
   const anchorRegex = /<a[^>]+href=["']([^"']+)["'][^>]*>([\s\S]*?)<\/a>/gi;
@@ -225,7 +248,7 @@ function parseHtmlLinksAsOpenCalls(input: {
     const hrefRaw = String(m[1] || "").trim();
     const titleRaw = stripHtml(m[2] || "");
     if (!hrefRaw || !titleRaw) continue;
-    if (!containsKoreanOpenCallKeyword(titleRaw)) continue;
+    if (!input.isRelevant(titleRaw)) continue;
     const block = input.html.slice(Math.max(0, m.index - 220), Math.min(input.html.length, m.index + 420));
     const deadline = parseDeadlineFlexible(block);
     if (!deadline) continue;
@@ -283,6 +306,46 @@ function parseRssItemsAsOpenCalls(input: {
       externalUrl: link,
       galleryWebsite: input.baseUrl,
       galleryDescription: desc.slice(0, 300) || `${input.galleryLabel} RSS open-call listing.`,
+    });
+  }
+  return rows;
+}
+
+function parseJapaneseRssItemsAsOpenCalls(input: {
+  source: string;
+  xml: string;
+  country: string;
+  city: string;
+  galleryLabel: string;
+  email: string;
+  baseUrl: string;
+}): CrawledOpenCall[] {
+  const items = input.xml.match(/<item[\s\S]*?<\/item>/gi) || [];
+  const rows: CrawledOpenCall[] = [];
+  for (const item of items.slice(0, 40)) {
+    const title = stripHtml(stripCdata((item.match(/<title>([\s\S]*?)<\/title>/i) || [])[1] || ""));
+    const link = stripHtml(stripCdata((item.match(/<link>([\s\S]*?)<\/link>/i) || [])[1] || ""));
+    const desc = stripHtml(stripCdata((item.match(/<description>([\s\S]*?)<\/description>/i) || [])[1] || ""));
+    const category = stripHtml(stripCdata((item.match(/<category>([\s\S]*?)<\/category>/i) || [])[1] || ""));
+    const pubDate = stripHtml(stripCdata((item.match(/<pubDate>([\s\S]*?)<\/pubDate>/i) || [])[1] || ""));
+    if (!title || !link) continue;
+    const mergedText = `${title} ${category} ${desc}`;
+    if (!looksLikeJapaneseRssOpenCall({ title, category, desc })) continue;
+    const deadline = parseDeadlineFlexible(mergedText) || parseDeadlineFlexible(pubDate) || parseDateFromPubDate(pubDate);
+    if (!deadline) continue;
+    const slug = toSlug(`${input.source}_${title}_${link}`);
+    rows.push({
+      source: input.source,
+      gallery: input.galleryLabel,
+      galleryId: `__external_${input.source}_${slug}`,
+      city: input.city,
+      country: input.country,
+      theme: title.slice(0, 200),
+      deadline,
+      externalEmail: input.email,
+      externalUrl: link,
+      galleryWebsite: input.baseUrl,
+      galleryDescription: desc.slice(0, 300) || `${input.galleryLabel} JP RSS open-call listing.`,
     });
   }
   return rows;
@@ -493,6 +556,37 @@ function crawlKoreanArtBlogsFallback(): CrawledOpenCall[] {
   ];
 }
 
+function crawlJapanOpenCallsFallback(): CrawledOpenCall[] {
+  return [
+    {
+      source: "tokas_jp",
+      gallery: "Tokyo Arts and Space (TOKAS)",
+      galleryId: "__external_tokas_jp",
+      city: "Tokyo",
+      country: "일본",
+      theme: "TOKAS Open Call Program",
+      deadline: "2026-09-30",
+      externalEmail: "info@tokyoartsandspace.jp",
+      externalUrl: "https://www.tokyoartsandspace.jp/en/application/about_opencall.html",
+      galleryWebsite: "https://www.tokyoartsandspace.jp",
+      galleryDescription: "Public contemporary art programs and open calls in Tokyo.",
+    },
+    {
+      source: "air_jp",
+      gallery: "AIR_J Residency Network",
+      galleryId: "__external_air_jp",
+      city: "Tokyo",
+      country: "일본",
+      theme: "Japan Residency Open Calls",
+      deadline: "2026-10-31",
+      externalEmail: "info@air-j.info",
+      externalUrl: "https://air-j.info/en/program/",
+      galleryWebsite: "https://air-j.info",
+      galleryDescription: "Database of artist-in-residence open calls across Japan.",
+    },
+  ];
+}
+
 async function crawlKoreanArtHub(): Promise<CrawledOpenCall[]> {
   const urls = String(process.env.CRAWL_ARTHUB_LIST_URLS || "https://arthub.co.kr")
     .split(",")
@@ -511,6 +605,7 @@ async function crawlKoreanArtHub(): Promise<CrawledOpenCall[]> {
       city: "Seoul",
       galleryLabel: "ArtHub Korea",
       email,
+      isRelevant: containsKoreanOpenCallKeyword,
     });
     parsed.push(...rows);
   }
@@ -569,6 +664,7 @@ async function crawlKoreanArtBlogsWithDebug() {
       city: "Seoul",
       galleryLabel: "Korean Art Blog",
       email,
+      isRelevant: containsKoreanOpenCallKeyword,
     });
     pageRowsParsed += rows.length;
     parsed.push(...rows);
@@ -577,6 +673,83 @@ async function crawlKoreanArtBlogsWithDebug() {
   const usedFallback = parsed.length === 0;
   return {
     rows: usedFallback ? crawlKoreanArtBlogsFallback() : parsed,
+    debug: {
+      rssUrlsConfigured: rssUrls.length,
+      rssFetched,
+      rssWithItems,
+      rssItemsScanned,
+      rssRowsParsed,
+      pageUrlsConfigured: pageUrls.length,
+      pageFetched,
+      pageRowsParsed,
+      usedFallback,
+    },
+  };
+}
+
+async function crawlJapanOpenCallsWithDebug() {
+  const rssUrls = String(process.env.CRAWL_JP_OC_FEED_URLS || "")
+    .split(",")
+    .map((s) => s.trim())
+    .filter(Boolean);
+  const pageUrls = String(process.env.CRAWL_JP_OC_PAGE_URLS || "https://www.tokyoartsandspace.jp/en/application/about_opencall.html,https://air-j.info/en/program/")
+    .split(",")
+    .map((s) => s.trim())
+    .filter(Boolean);
+  const email = String(process.env.CRAWL_JP_OC_CONTACT_EMAIL || "info@tokyoartsandspace.jp").trim();
+  const city = String(process.env.CRAWL_JP_OC_DEFAULT_CITY || "Tokyo").trim();
+  const label = String(process.env.CRAWL_JP_OC_LABEL || "Japan Open Call Network").trim();
+
+  const parsed: CrawledOpenCall[] = [];
+  let rssFetched = 0;
+  let rssWithItems = 0;
+  let rssItemsScanned = 0;
+  let rssRowsParsed = 0;
+  let pageFetched = 0;
+  let pageRowsParsed = 0;
+
+  for (const url of rssUrls) {
+    const xml = await fetchText(url);
+    if (!xml) continue;
+    rssFetched += 1;
+    const itemMatches = xml.match(/<item[\s\S]*?<\/item>/gi) || [];
+    if (itemMatches.length === 0) continue;
+    rssWithItems += 1;
+    rssItemsScanned += itemMatches.length;
+    const rows = parseJapaneseRssItemsAsOpenCalls({
+      source: "japan_open_call_rss",
+      xml,
+      country: "일본",
+      city,
+      galleryLabel: label,
+      email,
+      baseUrl: url,
+    });
+    rssRowsParsed += rows.length;
+    parsed.push(...rows);
+  }
+
+  for (const url of pageUrls) {
+    const html = await fetchText(url);
+    if (!html) continue;
+    pageFetched += 1;
+    const rows = parseHtmlLinksAsOpenCalls({
+      source: "japan_open_call_live",
+      html,
+      baseUrl: url,
+      country: "일본",
+      city,
+      galleryLabel: label,
+      email,
+      isRelevant: containsJapaneseOpenCallKeyword,
+    });
+    pageRowsParsed += rows.length;
+    parsed.push(...rows);
+  }
+
+  const usedFallback = parsed.length === 0;
+  return {
+    rows: usedFallback ? crawlJapanOpenCallsFallback() : parsed,
     debug: {
       rssUrlsConfigured: rssUrls.length,
       rssFetched,
@@ -633,7 +806,7 @@ async function runCrawlJob() {
       imported: [],
       skipped: 0,
       cleaned: 0,
-      sources: ["e-flux", "artrabbit", "transartists", "arthub-kr", "korean-art-blog"],
+      sources: ["e-flux", "artrabbit", "transartists", "arthub-kr", "korean-art-blog", "japan-open-call", "instagram"],
     };
   }
   const cleaned = await cleanupExhibitionEntries();
@@ -659,16 +832,18 @@ async function runCrawlJob() {
     )
   );
 
-  const [eflux, artrabbit, transartists, arthubKr, krBlogsWithDebug, instagram] = await Promise.all([
+  const [eflux, artrabbit, transartists, arthubKr, krBlogsWithDebug, jpOpenCallsWithDebug, instagram] = await Promise.all([
     Promise.resolve(crawlEflux()),
     Promise.resolve(crawlArtrabbit()),
     Promise.resolve(crawlTransartists()),
     crawlKoreanArtHub(),
     crawlKoreanArtBlogsWithDebug(),
+    crawlJapanOpenCallsWithDebug(),
     crawlInstagramOpenCalls(),
   ]);
   const krBlogs = krBlogsWithDebug.rows;
-  const allCrawled: CrawledOpenCall[] = [...eflux, ...artrabbit, ...transartists, ...arthubKr, ...krBlogs, ...instagram];
+  const jpOpenCalls = jpOpenCallsWithDebug.rows;
+  const allCrawled: CrawledOpenCall[] = [...eflux, ...artrabbit, ...transartists, ...arthubKr, ...krBlogs, ...jpOpenCalls, ...instagram];
   const activeCrawled = allCrawled.filter((c) => isDeadlineActive(c.deadline));
 
   const seenInBatch = new Set<string>();
@@ -719,7 +894,8 @@ async function runCrawlJob() {
     emailDirectory,
     validation,
     koreanArtBlogDebug: krBlogsWithDebug.debug,
-    sources: ["e-flux", "artrabbit", "transartists", "arthub-kr", "korean-art-blog", "instagram"],
+    japanOpenCallDebug: jpOpenCallsWithDebug.debug,
+    sources: ["e-flux", "artrabbit", "transartists", "arthub-kr", "korean-art-blog", "japan-open-call", "instagram"],
   };
 }
 
@@ -758,6 +934,7 @@ export async function GET(req: Request) {
       { name: "transartists", url: "https://www.transartists.org", type: "Scrape", status: "active" },
       { name: "arthub-kr", url: "https://arthub.co.kr", type: "Scrape", status: "active" },
       { name: "korean-art-blog", url: "https://blog.naver.com", type: "Scrape", status: "active" },
+      { name: "japan-open-call", url: "https://www.tokyoartsandspace.jp/en/application/about_opencall.html", type: "RSS/Scrape", status: "active" },
       { name: "instagram", url: "https://www.instagram.com", type: "Graph API", status: "active if env configured" },
     ],
     currentOpenCalls: existing.length,
