@@ -8,6 +8,7 @@ const ADMIN_COOKIE = "afp_admin_session";
 
 // Default admin credentials (override via env vars in production)
 const ADMIN_EMAIL = process.env.ADMIN_EMAIL || "admin@rob-roleofbridge.com";
+const LEGACY_ADMIN_EMAIL = "admin@rob.art";
 const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || "rob-admin-2026";
 
 export type AdminSession = {
@@ -18,8 +19,11 @@ export type AdminSession = {
 
 /** Verify admin credentials */
 export function verifyAdminCredentials(email: string, password: string): boolean {
+  const normalized = email.toLowerCase().trim();
+  const matchesPrimary = normalized === ADMIN_EMAIL.toLowerCase().trim();
+  const matchesLegacy = !process.env.ADMIN_EMAIL && normalized === LEGACY_ADMIN_EMAIL;
   return (
-    email.toLowerCase().trim() === ADMIN_EMAIL.toLowerCase().trim() &&
+    (matchesPrimary || matchesLegacy) &&
     password === ADMIN_PASSWORD
   );
 }

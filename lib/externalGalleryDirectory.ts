@@ -64,20 +64,63 @@ export async function ensureExternalGalleryDirectoryTable() {
 
 export async function upsertExternalGalleryDirectory(items: CanonicalDirectoryGallery[]) {
   await ensureExternalGalleryDirectoryTable();
-  for (const item of items) {
-    const galleryId = String(item.galleryId || "").trim();
-    const matchKey = String(item.matchKey || "").trim() || null;
-    const name = String(item.name || "").trim();
-    const country = String(item.country || "").trim();
-    const city = String(item.city || "").trim();
-    if (!galleryId || !name || !country || !city) continue;
+  const rows = items
+    .map((item) => {
+      const galleryId = String(item.galleryId || "").trim();
+      const matchKey = String(item.matchKey || "").trim() || null;
+      const name = String(item.name || "").trim();
+      const country = String(item.country || "").trim();
+      const city = String(item.city || "").trim();
+      if (!galleryId || !name || !country || !city) return null;
+      return {
+        galleryId,
+        matchKey,
+        name,
+        country,
+        city,
+        website: item.website || null,
+        bio: item.bio || null,
+        sourcePortal: item.sourcePortals.join(", ") || null,
+        sourceCount: item.sourcePortals.length,
+        qualityScore: item.qualityScore,
+        sourceUrl: item.sourceUrl || null,
+        externalEmail: item.externalEmail || null,
+      };
+    })
+    .filter((x): x is NonNullable<typeof x> => !!x);
+
+  const batchSize = 120;
+  for (let i = 0; i < rows.length; i += batchSize) {
+    const batch = rows.slice(i, i + batchSize);
+    const values: any[] = [];
+    const tuples: string[] = [];
+    for (const row of batch) {
+      const offset = values.length;
+      values.push(
+        row.galleryId,
+        row.matchKey,
+        row.name,
+        row.country,
+        row.city,
+        row.website,
+        row.bio,
+        row.sourcePortal,
+        row.sourceCount,
+        row.qualityScore,
+        row.sourceUrl,
+        row.externalEmail
+      );
+      tuples.push(
+        `($${offset + 1}, $${offset + 2}, $${offset + 3}, $${offset + 4}, $${offset + 5}, $${offset + 6}, $${offset + 7}, $${offset + 8}, $${offset + 9}, $${offset + 10}, $${offset + 11}, $${offset + 12}, NOW())`
+      );
+    }
 
     await prisma.$executeRawUnsafe(
       `
       INSERT INTO "ExternalGalleryDirectory"
         ("galleryId", "matchKey", "name", "country", "city", "website", "bio", "sourcePortal", "sourceCount", "qualityScore", "sourceUrl", "externalEmail", "updatedAt")
       VALUES
-        ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, NOW())
+        ${tuples.join(",\n")}
       ON CONFLICT ("galleryId")
       DO UPDATE SET
         "matchKey" = EXCLUDED."matchKey",
@@ -93,18 +136,7 @@ export async function upsertExternalGalleryDirectory(items: CanonicalDirectoryGa
         "externalEmail" = EXCLUDED."externalEmail",
         "updatedAt" = NOW();
       `,
-      galleryId,
-      matchKey,
-      name,
-      country,
-      city,
-      item.website || null,
-      item.bio || null,
-      item.sourcePortals.join(", ") || null,
-      item.sourcePortals.length,
-      item.qualityScore,
-      item.sourceUrl || null,
-      item.externalEmail || null
+      ...values
     );
   }
 }

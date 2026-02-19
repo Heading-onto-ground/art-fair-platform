@@ -10,6 +10,7 @@ import { syncGalleryEmailDirectory } from "@/lib/galleryEmailDirectory";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
+export const maxDuration = 300;
 
 function isCronAuthorized(req: Request) {
   const run = String(new URL(req.url).searchParams.get("run") || "");
@@ -34,6 +35,8 @@ export async function GET(req: Request) {
   }
 
   try {
+    const { searchParams } = new URL(req.url);
+    const includeEmailSync = searchParams.get("emails") === "1";
     const loadedSources = await loadPortalGallerySources();
     const mergedRaw: RawDirectoryGallery[] = [
       ...loadedSources.sources,
@@ -41,7 +44,9 @@ export async function GET(req: Request) {
     ];
     const canonical = canonicalizeDirectoryGalleries(mergedRaw);
     await upsertExternalGalleryDirectory(canonical);
-    const emailSync = await syncGalleryEmailDirectory();
+    const emailSync = includeEmailSync
+      ? await syncGalleryEmailDirectory()
+      : { skipped: true, reason: "emails=0" };
 
     const byCountry: Record<string, number> = {};
     for (const g of canonical) {
