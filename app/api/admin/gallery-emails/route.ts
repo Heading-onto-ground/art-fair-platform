@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { getAdminSession } from "@/lib/adminAuth";
 import { sendBatchOutreach } from "@/lib/outreach";
 import {
+  deletePlaceholderGalleryEmails,
   getGalleryEmailDirectoryStats,
   listGalleryEmailDirectory,
   syncGalleryEmailDirectory,
@@ -48,6 +49,12 @@ export async function POST(req: Request) {
 
     if (action === "sync") {
       const result = await syncGalleryEmailDirectory();
+      const stats = await getGalleryEmailDirectoryStats();
+      return NextResponse.json({ ok: true, ...result, stats });
+    }
+
+    if (action === "cleanup_placeholders") {
+      const result = await deletePlaceholderGalleryEmails();
       const stats = await getGalleryEmailDirectoryStats();
       return NextResponse.json({ ok: true, ...result, stats });
     }

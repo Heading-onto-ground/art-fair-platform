@@ -918,6 +918,41 @@
     "sourceUrl": "http://www.wikidata.org/entity/Q2359946"
   },
   {
+    "name": "Agnes",
+    "country": "미국",
+    "city": "Alabama",
+    "sourcePortal": "Wikidata",
+    "sourceUrl": "http://www.wikidata.org/entity/Q4693000"
+  },
+  {
+    "name": "Jonson Gallery",
+    "country": "미국",
+    "city": "Albuquerque",
+    "sourcePortal": "Wikidata",
+    "sourceUrl": "http://www.wikidata.org/entity/Q106828547"
+  },
+  {
+    "name": "Henri Gallery",
+    "country": "미국",
+    "city": "Alexandria",
+    "sourcePortal": "Wikidata",
+    "sourceUrl": "http://www.wikidata.org/entity/Q72853970"
+  },
+  {
+    "name": "Studio Antiques & Fine Art",
+    "country": "미국",
+    "city": "Alexandria",
+    "sourcePortal": "Wikidata",
+    "sourceUrl": "http://www.wikidata.org/entity/Q18592160"
+  },
+  {
+    "name": "CCS Bard Galleries",
+    "country": "미국",
+    "city": "Annandale-on-Hudson",
+    "sourcePortal": "Wikidata",
+    "sourceUrl": "http://www.wikidata.org/entity/Q134970658"
+  },
+  {
     "name": "Modified Arts",
     "country": "미국",
     "city": "Arizona",
@@ -926,12 +961,26 @@
     "sourceUrl": "http://www.wikidata.org/entity/Q6889360"
   },
   {
+    "name": "Paper Heart Gallery",
+    "country": "미국",
+    "city": "Arizona",
+    "sourcePortal": "Wikidata",
+    "sourceUrl": "http://www.wikidata.org/entity/Q7132629"
+  },
+  {
     "name": "Center for Craft, Creativity & Design",
     "country": "미국",
     "city": "Asheville",
     "website": "https://www.centerforcraft.org/",
     "sourcePortal": "Wikidata",
     "sourceUrl": "http://www.wikidata.org/entity/Q110542358"
+  },
+  {
+    "name": "Zone one",
+    "country": "미국",
+    "city": "Asheville",
+    "sourcePortal": "Wikidata",
+    "sourceUrl": "http://www.wikidata.org/entity/Q124302326"
   },
   {
     "name": "Athens Institute for Contemporary Art",
@@ -966,12 +1015,40 @@
     "sourceUrl": "http://www.wikidata.org/entity/Q99542401"
   },
   {
+    "name": "Oliver Cesair Gallery",
+    "country": "미국",
+    "city": "Atlanta",
+    "sourcePortal": "Wikidata",
+    "sourceUrl": "http://www.wikidata.org/entity/Q72941141"
+  },
+  {
     "name": "Spruill Gallery & Gift Shop",
     "country": "미국",
     "city": "Atlanta",
     "website": "https://www.spruillarts.org/gallery",
     "sourcePortal": "Wikidata",
     "sourceUrl": "http://www.wikidata.org/entity/Q78906473"
+  },
+  {
+    "name": "Country Store",
+    "country": "미국",
+    "city": "Austin",
+    "sourcePortal": "Wikidata",
+    "sourceUrl": "http://www.wikidata.org/entity/Q72856921"
+  },
+  {
+    "name": "Hopscotch",
+    "country": "미국",
+    "city": "Austin",
+    "sourcePortal": "Wikidata",
+    "sourceUrl": "http://www.wikidata.org/entity/Q131127603"
+  },
+  {
+    "name": "B. R. Kornblatt Gallery",
+    "country": "미국",
+    "city": "Baltimore",
+    "sourcePortal": "Wikidata",
+    "sourceUrl": "http://www.wikidata.org/entity/Q72854615"
   },
   {
     "name": "BR Kornblatt Gallery, Inc.",
@@ -990,12 +1067,68 @@
     "sourceUrl": "http://www.wikidata.org/entity/Q28735415"
   },
   {
+    "name": "Blackfriars Gallery and Library",
+    "country": "미국",
+    "city": "Berkeley",
+    "sourcePortal": "Wikidata",
+    "sourceUrl": "http://www.wikidata.org/entity/Q131939383"
+  },
+  {
+    "name": "daliel's Gallery",
+    "country": "미국",
+    "city": "Berkeley",
+    "sourcePortal": "Wikidata",
+    "sourceUrl": "http://www.wikidata.org/entity/Q5210982"
+  },
+  {
+    "name": "Fiberworks Center for the Textile Arts",
+    "country": "미국",
+    "city": "Berkeley",
+    "sourcePortal": "Wikidata",
+    "sourceUrl": "http://www.wikidata.org/entity/Q85760838"
+  },
+  {
     "name": "Kala Art Institute",
     "country": "미국",
     "city": "Berkeley",
     "website": "http://www.kala.org/",
     "sourcePortal": "Wikidata",
     "sourceUrl": "http://www.wikidata.org/entity/Q30264496"
+  },
+  {
+    "name": "Achim Moeller Fine Art",
+    "country": "미국",
+    "city": "Berlin",
+    "sourcePortal": "Wikidata",
+    "sourceUrl": "http://www.wikidata.org/entity/Q73520259"
+  },
+  {
+    "name": "Schaeffer Galleries",
+    "country": "미국",
+    "city": "Berlin",
+    "sourcePortal": "Wikidata",
+    "sourceUrl": "http://www.wikidata.org/entity/Q53790434"
+  },
+  {
+    "name": "Edgardo Acosta Gallery",
+    "country": "미국",
+    "city": "Beverly Hills",
+    "sourcePortal": "Wikidata",
+    "sourceUrl": "http://www.wikidata.org/entity/Q72854938"
+  },
+  {
+    "name": "Frank Perls Gallery",
+    "country": "미국",
+    "city": "Beverly Hills",
+    "sourcePortal": "Wikidata",
+    "sourceUrl": "http://www.wikidata.org/entity/Q72854820"
+  },
+  {
+    "name": "Kantor Gallery",
+    "country": "미국",
+    "city": "Beverly Hills",
+    "sourcePortal": "Wikidata",
+    "sourceUrl": "http://www.wikidata.org/entity/Q72853197"
   },
   {
     "name": "Natural Gallery",
@@ -1006,6 +1139,20 @@
     "sourceUrl": "http://www.wikidata.org/entity/Q137761847"
   },
   {
+    "name": "Q119842926",
+    "country": "미국",
+    "city": "Beverly Hills",
+    "sourcePortal": "Wikidata",
+    "sourceUrl": "http://www.wikidata.org/entity/Q119842926"
+  },
+  {
+    "name": "831 Gallery",
+    "country": "미국",
+    "city": "Birmingham",
+    "sourcePortal": "Wikidata",
+    "sourceUrl": "http://www.wikidata.org/entity/Q51484605"
+  },
+  {
     "name": "Abroms-Engel Institute for the Visual Arts",
     "country": "미국",
     "city": "Birmingham",
@@ -1014,12 +1161,89 @@
     "sourceUrl": "http://www.wikidata.org/entity/Q112054869"
   },
   {
+    "name": "Little Gallery",
+    "country": "미국",
+    "city": "Birmingham",
+    "sourcePortal": "Wikidata",
+    "sourceUrl": "http://www.wikidata.org/entity/Q76543976"
+  },
+  {
+    "name": "University of Alabama at Birmingham Visual Arts Gallery",
+    "country": "미국",
+    "city": "Birmingham",
+    "sourcePortal": "Wikidata",
+    "sourceUrl": "http://www.wikidata.org/entity/Q112054792"
+  },
+  {
+    "name": "Boris Mirski",
+    "country": "미국",
+    "city": "Boston",
+    "sourcePortal": "Wikidata",
+    "sourceUrl": "http://www.wikidata.org/entity/Q72855550"
+  },
+  {
+    "name": "Copley Gallery",
+    "country": "미국",
+    "city": "Boston",
+    "sourcePortal": "Wikidata",
+    "sourceUrl": "http://www.wikidata.org/entity/Q72854901"
+  },
+  {
+    "name": "Doll & Richards",
+    "country": "미국",
+    "city": "Boston",
+    "sourcePortal": "Wikidata",
+    "sourceUrl": "http://www.wikidata.org/entity/Q72855507"
+  },
+  {
+    "name": "Gallery East",
+    "country": "미국",
+    "city": "Boston",
+    "sourcePortal": "Wikidata",
+    "sourceUrl": "http://www.wikidata.org/entity/Q5518987"
+  },
+  {
+    "name": "Helen Shlien Gallery",
+    "country": "미국",
+    "city": "Boston",
+    "sourcePortal": "Wikidata",
+    "sourceUrl": "http://www.wikidata.org/entity/Q72853984"
+  },
+  {
+    "name": "Impressions Workshop",
+    "country": "미국",
+    "city": "Boston",
+    "sourcePortal": "Wikidata",
+    "sourceUrl": "http://www.wikidata.org/entity/Q72856932"
+  },
+  {
     "name": "Institute of Contemporary Art, Boston",
     "country": "미국",
     "city": "Boston",
     "website": "http://www.icaboston.org/",
     "sourcePortal": "Wikidata",
     "sourceUrl": "http://www.wikidata.org/entity/Q3152226"
+  },
+  {
+    "name": "Joan Peterson Gallery",
+    "country": "미국",
+    "city": "Boston",
+    "sourcePortal": "Wikidata",
+    "sourceUrl": "http://www.wikidata.org/entity/Q72853480"
+  },
+  {
+    "name": "Margaret Brown Gallery",
+    "country": "미국",
+    "city": "Boston",
+    "sourcePortal": "Wikidata",
+    "sourceUrl": "http://www.wikidata.org/entity/Q73573745"
+  },
+  {
+    "name": "Nordest Gallery",
+    "country": "미국",
+    "city": "Boston",
+    "sourcePortal": "Wikidata",
+    "sourceUrl": "http://www.wikidata.org/entity/Q113578510"
   },
   {
     "name": "Victoria Munroe Fine Art",
@@ -1038,6 +1262,13 @@
     "sourceUrl": "http://www.wikidata.org/entity/Q77432087"
   },
   {
+    "name": "Voss Galleries",
+    "country": "미국",
+    "city": "Boston",
+    "sourcePortal": "Wikidata",
+    "sourceUrl": "http://www.wikidata.org/entity/Q18579030"
+  },
+  {
     "name": "Capitol Arts Center",
     "country": "미국",
     "city": "Bowling Green",
@@ -1046,12 +1277,26 @@
     "sourceUrl": "http://www.wikidata.org/entity/Q5035842"
   },
   {
+    "name": "Steel Gallery",
+    "country": "미국",
+    "city": "Bridgehampton",
+    "sourcePortal": "Wikidata",
+    "sourceUrl": "http://www.wikidata.org/entity/Q77491847"
+  },
+  {
     "name": "Lester-Thompson Fine Art",
     "country": "미국",
     "city": "Brooklyn",
     "website": "https://www.lesterthompsonfineart.com/",
     "sourcePortal": "Wikidata",
     "sourceUrl": "http://www.wikidata.org/entity/Q130461703"
+  },
+  {
+    "name": "Minor Injury",
+    "country": "미국",
+    "city": "Brooklyn",
+    "sourcePortal": "Wikidata",
+    "sourceUrl": "http://www.wikidata.org/entity/Q112224653"
   },
   {
     "name": "Skylight Gallery - Brooklyn",
@@ -1070,6 +1315,27 @@
     "sourceUrl": "http://www.wikidata.org/entity/Q66121113"
   },
   {
+    "name": "20 GOTO 10",
+    "country": "미국",
+    "city": "California",
+    "sourcePortal": "Wikidata",
+    "sourceUrl": "http://www.wikidata.org/entity/Q4630553"
+  },
+  {
+    "name": "Anno Domini",
+    "country": "미국",
+    "city": "California",
+    "sourcePortal": "Wikidata",
+    "sourceUrl": "http://www.wikidata.org/entity/Q4769573"
+  },
+  {
+    "name": "Bergamot Station",
+    "country": "미국",
+    "city": "California",
+    "sourcePortal": "Wikidata",
+    "sourceUrl": "http://www.wikidata.org/entity/Q4891432"
+  },
+  {
     "name": "des pair books",
     "country": "미국",
     "city": "California",
@@ -1086,12 +1352,26 @@
     "sourceUrl": "http://www.wikidata.org/entity/Q5907922"
   },
   {
+    "name": "HSU First Street Gallery",
+    "country": "미국",
+    "city": "California",
+    "sourcePortal": "Wikidata",
+    "sourceUrl": "http://www.wikidata.org/entity/Q4470362"
+  },
+  {
     "name": "Intersection for the Arts",
     "country": "미국",
     "city": "California",
     "website": "http://www.theintersection.org/",
     "sourcePortal": "Wikidata",
     "sourceUrl": "http://www.wikidata.org/entity/Q6056711"
+  },
+  {
+    "name": "L.A. Louver",
+    "country": "미국",
+    "city": "California",
+    "sourcePortal": "Wikidata",
+    "sourceUrl": "http://www.wikidata.org/entity/Q6456224"
   },
   {
     "name": "Shoshana Wayne Gallery",
@@ -1118,12 +1398,89 @@
     "sourceUrl": "http://www.wikidata.org/entity/Q7596786"
   },
   {
+    "name": "Carmel Arts and Crafts Club",
+    "country": "미국",
+    "city": "Carmel-by-the-Sea",
+    "sourcePortal": "Wikidata",
+    "sourceUrl": "http://www.wikidata.org/entity/Q111204101"
+  },
+  {
+    "name": "Winfield Gallery",
+    "country": "미국",
+    "city": "Carmel-by-the-Sea",
+    "sourcePortal": "Wikidata",
+    "sourceUrl": "http://www.wikidata.org/entity/Q26110586"
+  },
+  {
+    "name": "Gilded Pear Gallery",
+    "country": "미국",
+    "city": "Cedar Rapids",
+    "sourcePortal": "Wikidata",
+    "sourceUrl": "http://www.wikidata.org/entity/Q107284755"
+  },
+  {
+    "name": "Allan Frumkin Gallery",
+    "country": "미국",
+    "city": "Chicago",
+    "sourcePortal": "Wikidata",
+    "sourceUrl": "http://www.wikidata.org/entity/Q106649673"
+  },
+  {
+    "name": "B.C. Holland Gallery",
+    "country": "미국",
+    "city": "Chicago",
+    "sourcePortal": "Wikidata",
+    "sourceUrl": "http://www.wikidata.org/entity/Q72854629"
+  },
+  {
+    "name": "Benjamin Galleries",
+    "country": "미국",
+    "city": "Chicago",
+    "sourcePortal": "Wikidata",
+    "sourceUrl": "http://www.wikidata.org/entity/Q89129448"
+  },
+  {
+    "name": "Dart Gallery",
+    "country": "미국",
+    "city": "Chicago",
+    "sourcePortal": "Wikidata",
+    "sourceUrl": "http://www.wikidata.org/entity/Q115650644"
+  },
+  {
+    "name": "Donald Young Gallery",
+    "country": "미국",
+    "city": "Chicago",
+    "sourcePortal": "Wikidata",
+    "sourceUrl": "http://www.wikidata.org/entity/Q122921531"
+  },
+  {
+    "name": "Esther Saks Gallery",
+    "country": "미국",
+    "city": "Chicago",
+    "sourcePortal": "Wikidata",
+    "sourceUrl": "http://www.wikidata.org/entity/Q106890475"
+  },
+  {
     "name": "Gallery 400",
     "country": "미국",
     "city": "Chicago",
     "website": "http://gallery400.aa.uic.edu",
     "sourcePortal": "Wikidata",
     "sourceUrl": "http://www.wikidata.org/entity/Q5518984"
+  },
+  {
+    "name": "N.A.M.E. Gallery",
+    "country": "미국",
+    "city": "Chicago",
+    "sourcePortal": "Wikidata",
+    "sourceUrl": "http://www.wikidata.org/entity/Q72964528"
+  },
+  {
+    "name": "Perimeter Gallery",
+    "country": "미국",
+    "city": "Chicago",
+    "sourcePortal": "Wikidata",
+    "sourceUrl": "http://www.wikidata.org/entity/Q107297021"
   },
   {
     "name": "Queer Thoughts",
@@ -1158,12 +1515,40 @@
     "sourceUrl": "http://www.wikidata.org/entity/Q111356170"
   },
   {
+    "name": "Ombré Gallery",
+    "country": "미국",
+    "city": "Cincinnati",
+    "sourcePortal": "Wikidata",
+    "sourceUrl": "http://www.wikidata.org/entity/Q105201910"
+  },
+  {
+    "name": "Reinberger Gallery",
+    "country": "미국",
+    "city": "Cleveland",
+    "sourcePortal": "Wikidata",
+    "sourceUrl": "http://www.wikidata.org/entity/Q112194407"
+  },
+  {
     "name": "University of Maryland Art Gallery",
     "country": "미국",
     "city": "College Park",
     "website": "https://artgallery.umd.edu/",
     "sourcePortal": "Wikidata",
     "sourceUrl": "http://www.wikidata.org/entity/Q7714351"
+  },
+  {
+    "name": "Margarete Roeder Gallery",
+    "country": "미국",
+    "city": "Cologne",
+    "sourcePortal": "Wikidata",
+    "sourceUrl": "http://www.wikidata.org/entity/Q124022004"
+  },
+  {
+    "name": "Dikeou Collection",
+    "country": "미국",
+    "city": "Colorado",
+    "sourcePortal": "Wikidata",
+    "sourceUrl": "http://www.wikidata.org/entity/Q5276519"
   },
   {
     "name": "Bo Bartlett Center",
@@ -1190,12 +1575,40 @@
     "sourceUrl": "http://www.wikidata.org/entity/Q4713992"
   },
   {
+    "name": "Artspace",
+    "country": "미국",
+    "city": "Connecticut",
+    "sourcePortal": "Wikidata",
+    "sourceUrl": "http://www.wikidata.org/entity/Q4801555"
+  },
+  {
     "name": "Vallejo Gallery",
     "country": "미국",
     "city": "Costa Mesa",
     "website": "https://www.vallejogallery.com/",
     "sourcePortal": "Wikidata",
     "sourceUrl": "http://www.wikidata.org/entity/Q105072798"
+  },
+  {
+    "name": "D. W. Gallery",
+    "country": "미국",
+    "city": "Dallas",
+    "sourcePortal": "Wikidata",
+    "sourceUrl": "http://www.wikidata.org/entity/Q72855816"
+  },
+  {
+    "name": "Delahunty",
+    "country": "미국",
+    "city": "Dallas",
+    "sourcePortal": "Wikidata",
+    "sourceUrl": "http://www.wikidata.org/entity/Q116055855"
+  },
+  {
+    "name": "Q116055894",
+    "country": "미국",
+    "city": "Dallas",
+    "sourcePortal": "Wikidata",
+    "sourceUrl": "http://www.wikidata.org/entity/Q116055894"
   },
   {
     "name": "Van Every Smith Galleries",
@@ -1214,6 +1627,41 @@
     "sourceUrl": "http://www.wikidata.org/entity/Q5253245"
   },
   {
+    "name": "Dikeou Collection",
+    "country": "미국",
+    "city": "Denver",
+    "sourcePortal": "Wikidata",
+    "sourceUrl": "http://www.wikidata.org/entity/Q5276519"
+  },
+  {
+    "name": "Rhinoceropolis",
+    "country": "미국",
+    "city": "Denver",
+    "sourcePortal": "Wikidata",
+    "sourceUrl": "http://www.wikidata.org/entity/Q112194086"
+  },
+  {
+    "name": "Saks Galleries",
+    "country": "미국",
+    "city": "Denver",
+    "sourcePortal": "Wikidata",
+    "sourceUrl": "http://www.wikidata.org/entity/Q130298711"
+  },
+  {
+    "name": "Dikeou Collection",
+    "country": "미국",
+    "city": "Denver County",
+    "sourcePortal": "Wikidata",
+    "sourceUrl": "http://www.wikidata.org/entity/Q5276519"
+  },
+  {
+    "name": "Arwin Galleries",
+    "country": "미국",
+    "city": "Detroit",
+    "sourcePortal": "Wikidata",
+    "sourceUrl": "http://www.wikidata.org/entity/Q77434038"
+  },
+  {
     "name": "Center Galleries",
     "country": "미국",
     "city": "Detroit",
@@ -1222,12 +1670,33 @@
     "sourceUrl": "http://www.wikidata.org/entity/Q135445737"
   },
   {
+    "name": "Gertrude Kasle Gallery",
+    "country": "미국",
+    "city": "Detroit",
+    "sourcePortal": "Wikidata",
+    "sourceUrl": "http://www.wikidata.org/entity/Q5553345"
+  },
+  {
+    "name": "J.L. Hudson Gallery",
+    "country": "미국",
+    "city": "Detroit",
+    "sourcePortal": "Wikidata",
+    "sourceUrl": "http://www.wikidata.org/entity/Q72853405"
+  },
+  {
     "name": "Trumbullplex",
     "country": "미국",
     "city": "Detroit",
     "website": "https://trumbullplex.org/",
     "sourcePortal": "Wikidata",
     "sourceUrl": "http://www.wikidata.org/entity/Q7847750"
+  },
+  {
+    "name": "Willis Gallery",
+    "country": "미국",
+    "city": "Detroit",
+    "sourcePortal": "Wikidata",
+    "sourceUrl": "http://www.wikidata.org/entity/Q73544897"
   },
   {
     "name": "Museum of Contemporary Art Jacksonville",
@@ -1294,6 +1763,27 @@
     "sourceUrl": "http://www.wikidata.org/entity/Q4647709"
   },
   {
+    "name": "Candy Store Gallery",
+    "country": "미국",
+    "city": "Folsom",
+    "sourcePortal": "Wikidata",
+    "sourceUrl": "http://www.wikidata.org/entity/Q16851533"
+  },
+  {
+    "name": "Fifth Avenue Gallery",
+    "country": "미국",
+    "city": "Fort Worth",
+    "sourcePortal": "Wikidata",
+    "sourceUrl": "http://www.wikidata.org/entity/Q72855681"
+  },
+  {
+    "name": "Gallery of Wonderful Things",
+    "country": "미국",
+    "city": "Fort Worth",
+    "sourcePortal": "Wikidata",
+    "sourceUrl": "http://www.wikidata.org/entity/Q72854409"
+  },
+  {
     "name": "Franconia Sculpture Park",
     "country": "미국",
     "city": "Franconia Township",
@@ -1302,12 +1792,33 @@
     "sourceUrl": "http://www.wikidata.org/entity/Q5484704"
   },
   {
+    "name": "Tsunami Gallery",
+    "country": "미국",
+    "city": "Gardiner",
+    "sourcePortal": "Wikidata",
+    "sourceUrl": "http://www.wikidata.org/entity/Q101603759"
+  },
+  {
     "name": "Atlanta Contemporary Art Center",
     "country": "미국",
     "city": "Georgia",
     "website": "http://www.thecontemporary.org/",
     "sourcePortal": "Wikidata",
     "sourceUrl": "http://www.wikidata.org/entity/Q4816049"
+  },
+  {
+    "name": "Wunsch Arts Center",
+    "country": "미국",
+    "city": "Glen Cove",
+    "sourcePortal": "Wikidata",
+    "sourceUrl": "http://www.wikidata.org/entity/Q112194555"
+  },
+  {
+    "name": "Campbell Building",
+    "country": "미국",
+    "city": "Glen Rose",
+    "sourcePortal": "Wikidata",
+    "sourceUrl": "http://www.wikidata.org/entity/Q107320476"
   },
   {
     "name": "Roslin Art Gallery",
@@ -1342,12 +1853,110 @@
     "sourceUrl": "http://www.wikidata.org/entity/Q136916929"
   },
   {
+    "name": "The Craftery",
+    "country": "미국",
+    "city": "Hartford",
+    "sourcePortal": "Wikidata",
+    "sourceUrl": "http://www.wikidata.org/entity/Q120550285"
+  },
+  {
     "name": "Volcano Art Center",
     "country": "미국",
     "city": "Hawaii County",
     "website": "https://volcanoartcenter.org/",
     "sourcePortal": "Wikidata",
     "sourceUrl": "http://www.wikidata.org/entity/Q49367335"
+  },
+  {
+    "name": "International Art",
+    "country": "미국",
+    "city": "Hollywood",
+    "sourcePortal": "Wikidata",
+    "sourceUrl": "http://www.wikidata.org/entity/Q72853350"
+  },
+  {
+    "name": "Space Gallery",
+    "country": "미국",
+    "city": "Hollywood",
+    "sourcePortal": "Wikidata",
+    "sourceUrl": "http://www.wikidata.org/entity/Q72880884"
+  },
+  {
+    "name": "Lehmann Maupin Gallery",
+    "country": "미국",
+    "city": "Hong Kong",
+    "sourcePortal": "Wikidata",
+    "sourceUrl": "http://www.wikidata.org/entity/Q19802737"
+  },
+  {
+    "name": "Spalding House",
+    "country": "미국",
+    "city": "Honolulu",
+    "sourcePortal": "Wikidata",
+    "sourceUrl": "http://www.wikidata.org/entity/Q7572983"
+  },
+  {
+    "name": "The Contemporary Museum, Honolulu",
+    "country": "미국",
+    "city": "Honolulu",
+    "sourcePortal": "Wikidata",
+    "sourceUrl": "http://www.wikidata.org/entity/Q7727449"
+  },
+  {
+    "name": "Covo de Iongh Gallery",
+    "country": "미국",
+    "city": "Houston",
+    "sourcePortal": "Wikidata",
+    "sourceUrl": "http://www.wikidata.org/entity/Q72855025"
+  },
+  {
+    "name": "David Gallery",
+    "country": "미국",
+    "city": "Houston",
+    "sourcePortal": "Wikidata",
+    "sourceUrl": "http://www.wikidata.org/entity/Q72855850"
+  },
+  {
+    "name": "Dubose Gallery",
+    "country": "미국",
+    "city": "Houston",
+    "sourcePortal": "Wikidata",
+    "sourceUrl": "http://www.wikidata.org/entity/Q72854991"
+  },
+  {
+    "name": "Graham Gallery",
+    "country": "미국",
+    "city": "Houston",
+    "sourcePortal": "Wikidata",
+    "sourceUrl": "http://www.wikidata.org/entity/Q72854138"
+  },
+  {
+    "name": "Harambee Art Gallery",
+    "country": "미국",
+    "city": "Houston",
+    "sourcePortal": "Wikidata",
+    "sourceUrl": "http://www.wikidata.org/entity/Q107094441"
+  },
+  {
+    "name": "Moody Gallery",
+    "country": "미국",
+    "city": "Houston",
+    "sourcePortal": "Wikidata",
+    "sourceUrl": "http://www.wikidata.org/entity/Q77491868"
+  },
+  {
+    "name": "New Arts",
+    "country": "미국",
+    "city": "Houston",
+    "sourcePortal": "Wikidata",
+    "sourceUrl": "http://www.wikidata.org/entity/Q77432062"
+  },
+  {
+    "name": "The New Arts gallery",
+    "country": "미국",
+    "city": "Houston",
+    "sourcePortal": "Wikidata",
+    "sourceUrl": "http://www.wikidata.org/entity/Q135268283"
   },
   {
     "name": "Caldwell Gallery Hudson",
@@ -1430,12 +2039,33 @@
     "sourceUrl": "http://www.wikidata.org/entity/Q14688488"
   },
   {
+    "name": "G. C. Murphy Building",
+    "country": "미국",
+    "city": "Indianapolis",
+    "sourcePortal": "Wikidata",
+    "sourceUrl": "http://www.wikidata.org/entity/Q5512172"
+  },
+  {
     "name": "Thorne-Sagendorph Art Gallery",
     "country": "미국",
     "city": "Keene",
     "website": "https://www.keene.edu/tsag/",
     "sourcePortal": "Wikidata",
     "sourceUrl": "http://www.wikidata.org/entity/Q111990920"
+  },
+  {
+    "name": "Powerhouse Arts",
+    "country": "미국",
+    "city": "Kings County",
+    "sourcePortal": "Wikidata",
+    "sourceUrl": "http://www.wikidata.org/entity/Q133286782"
+  },
+  {
+    "name": "Challis Galleries",
+    "country": "미국",
+    "city": "Laguna Beach",
+    "sourcePortal": "Wikidata",
+    "sourceUrl": "http://www.wikidata.org/entity/Q77433213"
   },
   {
     "name": "Post Road Gallery",
@@ -1452,6 +2082,13 @@
     "website": "https://lik.com/",
     "sourcePortal": "Wikidata",
     "sourceUrl": "http://www.wikidata.org/entity/Q136326824"
+  },
+  {
+    "name": "Duveen Galleries",
+    "country": "미국",
+    "city": "London",
+    "sourcePortal": "Wikidata",
+    "sourceUrl": "http://www.wikidata.org/entity/Q18670279"
   },
   {
     "name": "Lévy Gorvy",
@@ -1502,12 +2139,47 @@
     "sourceUrl": "http://www.wikidata.org/entity/Q133837927"
   },
   {
+    "name": "01 Gallery",
+    "country": "미국",
+    "city": "Los Angeles",
+    "sourcePortal": "Wikidata",
+    "sourceUrl": "http://www.wikidata.org/entity/Q4545553"
+  },
+  {
     "name": "Ace Gallery",
     "country": "미국",
     "city": "Los Angeles",
     "website": "http://www.acegallery.net/live.php/",
     "sourcePortal": "Wikidata",
     "sourceUrl": "http://www.wikidata.org/entity/Q4672976"
+  },
+  {
+    "name": "Ankrum Gallery",
+    "country": "미국",
+    "city": "Los Angeles",
+    "sourcePortal": "Wikidata",
+    "sourceUrl": "http://www.wikidata.org/entity/Q72849627"
+  },
+  {
+    "name": "Art Space",
+    "country": "미국",
+    "city": "Los Angeles",
+    "sourcePortal": "Wikidata",
+    "sourceUrl": "http://www.wikidata.org/entity/Q72854558"
+  },
+  {
+    "name": "Ben Maltz Gallery",
+    "country": "미국",
+    "city": "Los Angeles",
+    "sourcePortal": "Wikidata",
+    "sourceUrl": "http://www.wikidata.org/entity/Q4886110"
+  },
+  {
+    "name": "Brockman Gallery",
+    "country": "미국",
+    "city": "Los Angeles",
+    "sourcePortal": "Wikidata",
+    "sourceUrl": "http://www.wikidata.org/entity/Q65937145"
   },
   {
     "name": "China Art Objects Galleries",
@@ -1524,6 +2196,69 @@
     "website": "https://www.cirrusgallery.com",
     "sourcePortal": "Wikidata",
     "sourceUrl": "http://www.wikidata.org/entity/Q18149269"
+  },
+  {
+    "name": "Dalzell Hatfield Galleries",
+    "country": "미국",
+    "city": "Los Angeles",
+    "sourcePortal": "Wikidata",
+    "sourceUrl": "http://www.wikidata.org/entity/Q18347314"
+  },
+  {
+    "name": "Daniel Weinberg Gallery",
+    "country": "미국",
+    "city": "Los Angeles",
+    "sourcePortal": "Wikidata",
+    "sourceUrl": "http://www.wikidata.org/entity/Q111148298"
+  },
+  {
+    "name": "Dwan Gallery Los Angeles",
+    "country": "미국",
+    "city": "Los Angeles",
+    "sourcePortal": "Wikidata",
+    "sourceUrl": "http://www.wikidata.org/entity/Q65937071"
+  },
+  {
+    "name": "Esther Robles Gallery",
+    "country": "미국",
+    "city": "Los Angeles",
+    "sourcePortal": "Wikidata",
+    "sourceUrl": "http://www.wikidata.org/entity/Q72855735"
+  },
+  {
+    "name": "Everet Ellin Gallery",
+    "country": "미국",
+    "city": "Los Angeles",
+    "sourcePortal": "Wikidata",
+    "sourceUrl": "http://www.wikidata.org/entity/Q72854773"
+  },
+  {
+    "name": "Felix Landau Gallery",
+    "country": "미국",
+    "city": "Los Angeles",
+    "sourcePortal": "Wikidata",
+    "sourceUrl": "http://www.wikidata.org/entity/Q72854777"
+  },
+  {
+    "name": "Ferus Gallery",
+    "country": "미국",
+    "city": "Los Angeles",
+    "sourcePortal": "Wikidata",
+    "sourceUrl": "http://www.wikidata.org/entity/Q5445606"
+  },
+  {
+    "name": "Gallery 32",
+    "country": "미국",
+    "city": "Los Angeles",
+    "sourcePortal": "Wikidata",
+    "sourceUrl": "http://www.wikidata.org/entity/Q109890956"
+  },
+  {
+    "name": "Gallery 669",
+    "country": "미국",
+    "city": "Los Angeles",
+    "sourcePortal": "Wikidata",
+    "sourceUrl": "http://www.wikidata.org/entity/Q65936868"
   },
   {
     "name": "Gemini G.E.L.",
@@ -1566,6 +2301,27 @@
     "sourceUrl": "http://www.wikidata.org/entity/Q118352433"
   },
   {
+    "name": "Irving Blum Gallery",
+    "country": "미국",
+    "city": "Los Angeles",
+    "sourcePortal": "Wikidata",
+    "sourceUrl": "http://www.wikidata.org/entity/Q67165060"
+  },
+  {
+    "name": "James Vigeveno Galleries",
+    "country": "미국",
+    "city": "Los Angeles",
+    "sourcePortal": "Wikidata",
+    "sourceUrl": "http://www.wikidata.org/entity/Q73704791"
+  },
+  {
+    "name": "Jancar Kuhlenschmidt Gallery",
+    "country": "미국",
+    "city": "Los Angeles",
+    "sourcePortal": "Wikidata",
+    "sourceUrl": "http://www.wikidata.org/entity/Q26910839"
+  },
+  {
     "name": "Kalkeriet Contemporary",
     "country": "미국",
     "city": "Los Angeles",
@@ -1574,12 +2330,47 @@
     "sourceUrl": "http://www.wikidata.org/entity/Q124221142"
   },
   {
+    "name": "Kanst Art Gallery",
+    "country": "미국",
+    "city": "Los Angeles",
+    "sourcePortal": "Wikidata",
+    "sourceUrl": "http://www.wikidata.org/entity/Q72853506"
+  },
+  {
+    "name": "Koplin Del Rio Gallery",
+    "country": "미국",
+    "city": "Los Angeles",
+    "sourcePortal": "Wikidata",
+    "sourceUrl": "http://www.wikidata.org/entity/Q135529462"
+  },
+  {
+    "name": "Koplin Gallery",
+    "country": "미국",
+    "city": "Los Angeles",
+    "sourcePortal": "Wikidata",
+    "sourceUrl": "http://www.wikidata.org/entity/Q135529365"
+  },
+  {
     "name": "MAMA",
     "country": "미국",
     "city": "Los Angeles",
     "website": "http://mama.gallery/",
     "sourcePortal": "Wikidata",
     "sourceUrl": "http://www.wikidata.org/entity/Q6714265"
+  },
+  {
+    "name": "Margo Leavin Gallery",
+    "country": "미국",
+    "city": "Los Angeles",
+    "sourcePortal": "Wikidata",
+    "sourceUrl": "http://www.wikidata.org/entity/Q65802336"
+  },
+  {
+    "name": "Mizuno Gallery",
+    "country": "미국",
+    "city": "Los Angeles",
+    "sourcePortal": "Wikidata",
+    "sourceUrl": "http://www.wikidata.org/entity/Q65936879"
   },
   {
     "name": "Parker Gallery",
@@ -1598,6 +2389,27 @@
     "sourceUrl": "http://www.wikidata.org/entity/Q107426318"
   },
   {
+    "name": "Roger Wong Gallery",
+    "country": "미국",
+    "city": "Los Angeles",
+    "sourcePortal": "Wikidata",
+    "sourceUrl": "http://www.wikidata.org/entity/Q72880887"
+  },
+  {
+    "name": "Scene Dock (Theatre)",
+    "country": "미국",
+    "city": "Los Angeles",
+    "sourcePortal": "Wikidata",
+    "sourceUrl": "http://www.wikidata.org/entity/Q135669436"
+  },
+  {
+    "name": "Stendahl Art Galleries",
+    "country": "미국",
+    "city": "Los Angeles",
+    "sourcePortal": "Wikidata",
+    "sourceUrl": "http://www.wikidata.org/entity/Q72967373"
+  },
+  {
     "name": "The Box Gallery",
     "country": "미국",
     "city": "Los Angeles",
@@ -1614,12 +2426,26 @@
     "sourceUrl": "http://www.wikidata.org/entity/Q84582011"
   },
   {
+    "name": "Womanspace Gallery",
+    "country": "미국",
+    "city": "Los Angeles",
+    "sourcePortal": "Wikidata",
+    "sourceUrl": "http://www.wikidata.org/entity/Q67165213"
+  },
+  {
     "name": "Alto Beta",
     "country": "미국",
     "city": "Los Angeles County",
     "website": "https://www.altobeta.com/",
     "sourcePortal": "Wikidata",
     "sourceUrl": "http://www.wikidata.org/entity/Q131745293"
+  },
+  {
+    "name": "Baxter Art Gallery",
+    "country": "미국",
+    "city": "Los Angeles County",
+    "sourcePortal": "Wikidata",
+    "sourceUrl": "http://www.wikidata.org/entity/Q23302692"
   },
   {
     "name": "Various Small Fires",
@@ -1638,6 +2464,27 @@
     "sourceUrl": "http://www.wikidata.org/entity/Q931081"
   },
   {
+    "name": "Baton Rouge Gallery",
+    "country": "미국",
+    "city": "Louisiana",
+    "sourcePortal": "Wikidata",
+    "sourceUrl": "http://www.wikidata.org/entity/Q4869469"
+  },
+  {
+    "name": "Argus Gallery",
+    "country": "미국",
+    "city": "Madison",
+    "sourcePortal": "Wikidata",
+    "sourceUrl": "http://www.wikidata.org/entity/Q72854541"
+  },
+  {
+    "name": "Madison Museum of Contemporary Art",
+    "country": "미국",
+    "city": "Madison",
+    "sourcePortal": "Wikidata",
+    "sourceUrl": "http://www.wikidata.org/entity/Q6728060"
+  },
+  {
     "name": "Madison Museum of Fine Art",
     "country": "미국",
     "city": "Madison",
@@ -1654,6 +2501,20 @@
     "sourceUrl": "http://www.wikidata.org/entity/Q78209271"
   },
   {
+    "name": "291",
+    "country": "미국",
+    "city": "Manhattan",
+    "sourcePortal": "Wikidata",
+    "sourceUrl": "http://www.wikidata.org/entity/Q1392715"
+  },
+  {
+    "name": "548 West 22nd Street",
+    "country": "미국",
+    "city": "Manhattan",
+    "sourcePortal": "Wikidata",
+    "sourceUrl": "http://www.wikidata.org/entity/Q114688527"
+  },
+  {
     "name": "56 Henry",
     "country": "미국",
     "city": "Manhattan",
@@ -1668,6 +2529,13 @@
     "website": "https://80wse.org/",
     "sourcePortal": "Wikidata",
     "sourceUrl": "http://www.wikidata.org/entity/Q130332227"
+  },
+  {
+    "name": "8BC",
+    "country": "미국",
+    "city": "Manhattan",
+    "sourcePortal": "Wikidata",
+    "sourceUrl": "http://www.wikidata.org/entity/Q4645169"
   },
   {
     "name": "A La Vieille Russie",
@@ -1702,6 +2570,13 @@
     "sourceUrl": "http://www.wikidata.org/entity/Q4674763"
   },
   {
+    "name": "American Indian Community House Gallery",
+    "country": "미국",
+    "city": "Manhattan",
+    "sourcePortal": "Wikidata",
+    "sourceUrl": "http://www.wikidata.org/entity/Q123504658"
+  },
+  {
     "name": "Americas Society",
     "country": "미국",
     "city": "Manhattan",
@@ -1732,6 +2607,13 @@
     "website": "http://www.artingeneral.org",
     "sourcePortal": "Wikidata",
     "sourceUrl": "http://www.wikidata.org/entity/Q4797206"
+  },
+  {
+    "name": "Art Projects International",
+    "country": "미국",
+    "city": "Manhattan",
+    "sourcePortal": "Wikidata",
+    "sourceUrl": "http://www.wikidata.org/entity/Q4797024"
   },
   {
     "name": "Artists Space",
@@ -1774,6 +2656,13 @@
     "sourceUrl": "http://www.wikidata.org/entity/Q4918850"
   },
   {
+    "name": "Bodley Gallery",
+    "country": "미국",
+    "city": "Manhattan",
+    "sourcePortal": "Wikidata",
+    "sourceUrl": "http://www.wikidata.org/entity/Q4936656"
+  },
+  {
     "name": "Bose Pacia Gallery",
     "country": "미국",
     "city": "Manhattan",
@@ -1790,6 +2679,20 @@
     "sourceUrl": "http://www.wikidata.org/entity/Q14706196"
   },
   {
+    "name": "Bronwyn Keenan Gallery",
+    "country": "미국",
+    "city": "Manhattan",
+    "sourcePortal": "Wikidata",
+    "sourceUrl": "http://www.wikidata.org/entity/Q4974144"
+  },
+  {
+    "name": "Bruce Silverstein Gallery",
+    "country": "미국",
+    "city": "Manhattan",
+    "sourcePortal": "Wikidata",
+    "sourceUrl": "http://www.wikidata.org/entity/Q4978279"
+  },
+  {
     "name": "Buck House NYC",
     "country": "미국",
     "city": "Manhattan",
@@ -1804,6 +2707,41 @@
     "website": "http://bulletspace.org/site/",
     "sourcePortal": "Wikidata",
     "sourceUrl": "http://www.wikidata.org/entity/Q105368671"
+  },
+  {
+    "name": "Bykert Gallery",
+    "country": "미국",
+    "city": "Manhattan",
+    "sourcePortal": "Wikidata",
+    "sourceUrl": "http://www.wikidata.org/entity/Q5004105"
+  },
+  {
+    "name": "Byron Gallery",
+    "country": "미국",
+    "city": "Manhattan",
+    "sourcePortal": "Wikidata",
+    "sourceUrl": "http://www.wikidata.org/entity/Q5004361"
+  },
+  {
+    "name": "Casey Kaplan",
+    "country": "미국",
+    "city": "Manhattan",
+    "sourcePortal": "Wikidata",
+    "sourceUrl": "http://www.wikidata.org/entity/Q5048527"
+  },
+  {
+    "name": "Catherine Viviano Gallery",
+    "country": "미국",
+    "city": "Manhattan",
+    "sourcePortal": "Wikidata",
+    "sourceUrl": "http://www.wikidata.org/entity/Q134890069"
+  },
+  {
+    "name": "Cayman Gallery",
+    "country": "미국",
+    "city": "Manhattan",
+    "sourcePortal": "Wikidata",
+    "sourceUrl": "http://www.wikidata.org/entity/Q115626588"
   },
   {
     "name": "Center for Architecture",
@@ -1830,12 +2768,40 @@
     "sourceUrl": "http://www.wikidata.org/entity/Q5059528"
   },
   {
+    "name": "Charles Egan Gallery",
+    "country": "미국",
+    "city": "Manhattan",
+    "sourcePortal": "Wikidata",
+    "sourceUrl": "http://www.wikidata.org/entity/Q5077332"
+  },
+  {
+    "name": "City Gallery, New York",
+    "country": "미국",
+    "city": "Manhattan",
+    "sourcePortal": "Wikidata",
+    "sourceUrl": "http://www.wikidata.org/entity/Q5123167"
+  },
+  {
     "name": "Claire Oliver Gallery",
     "country": "미국",
     "city": "Manhattan",
     "website": "https://www.claireoliver.com/",
     "sourcePortal": "Wikidata",
     "sourceUrl": "http://www.wikidata.org/entity/Q123237896"
+  },
+  {
+    "name": "CRG Gallery",
+    "country": "미국",
+    "city": "Manhattan",
+    "sourcePortal": "Wikidata",
+    "sourceUrl": "http://www.wikidata.org/entity/Q5013878"
+  },
+  {
+    "name": "Crossing Art",
+    "country": "미국",
+    "city": "Manhattan",
+    "sourcePortal": "Wikidata",
+    "sourceUrl": "http://www.wikidata.org/entity/Q85841996"
   },
   {
     "name": "Daniel Cooney Fine Art",
@@ -1846,12 +2812,26 @@
     "sourceUrl": "http://www.wikidata.org/entity/Q126540025"
   },
   {
+    "name": "David Zwirner Gallery",
+    "country": "미국",
+    "city": "Manhattan",
+    "sourcePortal": "Wikidata",
+    "sourceUrl": "http://www.wikidata.org/entity/Q1950826"
+  },
+  {
     "name": "Deitch Projects",
     "country": "미국",
     "city": "Manhattan",
     "website": "http://www.deitch.com",
     "sourcePortal": "Wikidata",
     "sourceUrl": "http://www.wikidata.org/entity/Q3021342"
+  },
+  {
+    "name": "Denny Gallery",
+    "country": "미국",
+    "city": "Manhattan",
+    "sourcePortal": "Wikidata",
+    "sourceUrl": "http://www.wikidata.org/entity/Q122960806"
   },
   {
     "name": "Derosia",
@@ -1894,6 +2874,27 @@
     "sourceUrl": "http://www.wikidata.org/entity/Q115650588"
   },
   {
+    "name": "Fischbach Gallery",
+    "country": "미국",
+    "city": "Manhattan",
+    "sourcePortal": "Wikidata",
+    "sourceUrl": "http://www.wikidata.org/entity/Q5454409"
+  },
+  {
+    "name": "Florian Papp",
+    "country": "미국",
+    "city": "Manhattan",
+    "sourcePortal": "Wikidata",
+    "sourceUrl": "http://www.wikidata.org/entity/Q5461026"
+  },
+  {
+    "name": "Forbes Galleries",
+    "country": "미국",
+    "city": "Manhattan",
+    "sourcePortal": "Wikidata",
+    "sourceUrl": "http://www.wikidata.org/entity/Q3076807"
+  },
+  {
     "name": "Foxy Production",
     "country": "미국",
     "city": "Manhattan",
@@ -1902,12 +2903,47 @@
     "sourceUrl": "http://www.wikidata.org/entity/Q5477333"
   },
   {
+    "name": "Fulcrum Gallery",
+    "country": "미국",
+    "city": "Manhattan",
+    "sourcePortal": "Wikidata",
+    "sourceUrl": "http://www.wikidata.org/entity/Q5507819"
+  },
+  {
     "name": "FusionArts Museum",
     "country": "미국",
     "city": "Manhattan",
     "website": "http://fusionartsmuseum.org/home.html",
     "sourcePortal": "Wikidata",
     "sourceUrl": "http://www.wikidata.org/entity/Q5510244"
+  },
+  {
+    "name": "Galerie Chalette",
+    "country": "미국",
+    "city": "Manhattan",
+    "sourcePortal": "Wikidata",
+    "sourceUrl": "http://www.wikidata.org/entity/Q96379036"
+  },
+  {
+    "name": "Galerie Richard",
+    "country": "미국",
+    "city": "Manhattan",
+    "sourcePortal": "Wikidata",
+    "sourceUrl": "http://www.wikidata.org/entity/Q15031919"
+  },
+  {
+    "name": "Gallery 1199",
+    "country": "미국",
+    "city": "Manhattan",
+    "sourcePortal": "Wikidata",
+    "sourceUrl": "http://www.wikidata.org/entity/Q115650542"
+  },
+  {
+    "name": "Gallery 303",
+    "country": "미국",
+    "city": "Manhattan",
+    "sourcePortal": "Wikidata",
+    "sourceUrl": "http://www.wikidata.org/entity/Q112123760"
   },
   {
     "name": "Gallery Onetwentyeight",
@@ -1934,12 +2970,75 @@
     "sourceUrl": "http://www.wikidata.org/entity/Q130348690"
   },
   {
+    "name": "Grand Central Art Galleries",
+    "country": "미국",
+    "city": "Manhattan",
+    "sourcePortal": "Wikidata",
+    "sourceUrl": "http://www.wikidata.org/entity/Q5594399"
+  },
+  {
+    "name": "Green Gallery",
+    "country": "미국",
+    "city": "Manhattan",
+    "sourcePortal": "Wikidata",
+    "sourceUrl": "http://www.wikidata.org/entity/Q5602572"
+  },
+  {
+    "name": "Guild & Greyshkul",
+    "country": "미국",
+    "city": "Manhattan",
+    "sourcePortal": "Wikidata",
+    "sourceUrl": "http://www.wikidata.org/entity/Q136371266"
+  },
+  {
+    "name": "Harlem Art Gallery",
+    "country": "미국",
+    "city": "Manhattan",
+    "sourcePortal": "Wikidata",
+    "sourceUrl": "http://www.wikidata.org/entity/Q130282247"
+  },
+  {
+    "name": "Hugo Gallery",
+    "country": "미국",
+    "city": "Manhattan",
+    "sourcePortal": "Wikidata",
+    "sourceUrl": "http://www.wikidata.org/entity/Q5933966"
+  },
+  {
+    "name": "I-20",
+    "country": "미국",
+    "city": "Manhattan",
+    "sourcePortal": "Wikidata",
+    "sourceUrl": "http://www.wikidata.org/entity/Q5967520"
+  },
+  {
+    "name": "Jacques Seligmann & Company",
+    "country": "미국",
+    "city": "Manhattan",
+    "sourcePortal": "Wikidata",
+    "sourceUrl": "http://www.wikidata.org/entity/Q3067376"
+  },
+  {
     "name": "James Cohan Gallery",
     "country": "미국",
     "city": "Manhattan",
     "website": "http://www.jamescohan.com",
     "sourcePortal": "Wikidata",
     "sourceUrl": "http://www.wikidata.org/entity/Q6131542"
+  },
+  {
+    "name": "Jane Kahan Gallery",
+    "country": "미국",
+    "city": "Manhattan",
+    "sourcePortal": "Wikidata",
+    "sourceUrl": "http://www.wikidata.org/entity/Q6152428"
+  },
+  {
+    "name": "Janet Carter Gallery",
+    "country": "미국",
+    "city": "Manhattan",
+    "sourcePortal": "Wikidata",
+    "sourceUrl": "http://www.wikidata.org/entity/Q115626628"
   },
   {
     "name": "Jason McCoy Inc",
@@ -1950,12 +3049,40 @@
     "sourceUrl": "http://www.wikidata.org/entity/Q6163075"
   },
   {
+    "name": "Jen Bekman Gallery",
+    "country": "미국",
+    "city": "Manhattan",
+    "sourcePortal": "Wikidata",
+    "sourceUrl": "http://www.wikidata.org/entity/Q6177260"
+  },
+  {
+    "name": "John Wanamaker",
+    "country": "미국",
+    "city": "Manhattan",
+    "sourcePortal": "Wikidata",
+    "sourceUrl": "http://www.wikidata.org/entity/Q72856587"
+  },
+  {
+    "name": "Just Above Midtown",
+    "country": "미국",
+    "city": "Manhattan",
+    "sourcePortal": "Wikidata",
+    "sourceUrl": "http://www.wikidata.org/entity/Q55566681"
+  },
+  {
     "name": "Klaus von Nichtssagend Gallery",
     "country": "미국",
     "city": "Manhattan",
     "website": "https://klausgallery.com/",
     "sourcePortal": "Wikidata",
     "sourceUrl": "http://www.wikidata.org/entity/Q17380415"
+  },
+  {
+    "name": "Kraushaar Galleries",
+    "country": "미국",
+    "city": "Manhattan",
+    "sourcePortal": "Wikidata",
+    "sourceUrl": "http://www.wikidata.org/entity/Q6436445"
   },
   {
     "name": "Lubin House",
@@ -1966,6 +3093,20 @@
     "sourceUrl": "http://www.wikidata.org/entity/Q120758537"
   },
   {
+    "name": "Luhring Augustine Gallery",
+    "country": "미국",
+    "city": "Manhattan",
+    "sourcePortal": "Wikidata",
+    "sourceUrl": "http://www.wikidata.org/entity/Q509930"
+  },
+  {
+    "name": "Maccarone Inc",
+    "country": "미국",
+    "city": "Manhattan",
+    "sourcePortal": "Wikidata",
+    "sourceUrl": "http://www.wikidata.org/entity/Q6722886"
+  },
+  {
     "name": "Macy Gallery",
     "country": "미국",
     "city": "Manhattan",
@@ -1974,12 +3115,40 @@
     "sourceUrl": "http://www.wikidata.org/entity/Q117353283"
   },
   {
+    "name": "Market Place Gallery",
+    "country": "미국",
+    "city": "Manhattan",
+    "sourcePortal": "Wikidata",
+    "sourceUrl": "http://www.wikidata.org/entity/Q115795759"
+  },
+  {
+    "name": "Matthew Marks Gallery",
+    "country": "미국",
+    "city": "Manhattan",
+    "sourcePortal": "Wikidata",
+    "sourceUrl": "http://www.wikidata.org/entity/Q6790924"
+  },
+  {
+    "name": "McMillen Gallery",
+    "country": "미국",
+    "city": "Manhattan",
+    "sourcePortal": "Wikidata",
+    "sourceUrl": "http://www.wikidata.org/entity/Q130359995"
+  },
+  {
     "name": "Metro Pictures Gallery",
     "country": "미국",
     "city": "Manhattan",
     "website": "https://www.metropictures.com",
     "sourcePortal": "Wikidata",
     "sourceUrl": "http://www.wikidata.org/entity/Q6824666"
+  },
+  {
+    "name": "Michael Werner Gallery",
+    "country": "미국",
+    "city": "Manhattan",
+    "sourcePortal": "Wikidata",
+    "sourceUrl": "http://www.wikidata.org/entity/Q6835292"
   },
   {
     "name": "Miles McEnery Gallery",
@@ -1998,6 +3167,20 @@
     "sourceUrl": "http://www.wikidata.org/entity/Q123237903"
   },
   {
+    "name": "Now Gallery",
+    "country": "미국",
+    "city": "Manhattan",
+    "sourcePortal": "Wikidata",
+    "sourceUrl": "http://www.wikidata.org/entity/Q2374498"
+  },
+  {
+    "name": "OK Harris Gallery",
+    "country": "미국",
+    "city": "Manhattan",
+    "sourcePortal": "Wikidata",
+    "sourceUrl": "http://www.wikidata.org/entity/Q7072631"
+  },
+  {
     "name": "Olfactory Art Keller",
     "country": "미국",
     "city": "Manhattan",
@@ -2014,12 +3197,33 @@
     "sourceUrl": "http://www.wikidata.org/entity/Q3094612"
   },
   {
+    "name": "Palitz Gallery",
+    "country": "미국",
+    "city": "Manhattan",
+    "sourcePortal": "Wikidata",
+    "sourceUrl": "http://www.wikidata.org/entity/Q120758596"
+  },
+  {
+    "name": "Park Place Gallery",
+    "country": "미국",
+    "city": "Manhattan",
+    "sourcePortal": "Wikidata",
+    "sourceUrl": "http://www.wikidata.org/entity/Q3365422"
+  },
+  {
     "name": "Participant Inc.",
     "country": "미국",
     "city": "Manhattan",
     "website": "http://participantinc.org/",
     "sourcePortal": "Wikidata",
     "sourceUrl": "http://www.wikidata.org/entity/Q110809651"
+  },
+  {
+    "name": "Paula Cooper Gallery",
+    "country": "미국",
+    "city": "Manhattan",
+    "sourcePortal": "Wikidata",
+    "sourceUrl": "http://www.wikidata.org/entity/Q2063533"
   },
   {
     "name": "Plane Space",
@@ -2046,6 +3250,34 @@
     "sourceUrl": "http://www.wikidata.org/entity/Q7338883"
   },
   {
+    "name": "Salon 94",
+    "country": "미국",
+    "city": "Manhattan",
+    "sourcePortal": "Wikidata",
+    "sourceUrl": "http://www.wikidata.org/entity/Q7405667"
+  },
+  {
+    "name": "Schroeder Romero & Shredder",
+    "country": "미국",
+    "city": "Manhattan",
+    "sourcePortal": "Wikidata",
+    "sourceUrl": "http://www.wikidata.org/entity/Q7432898"
+  },
+  {
+    "name": "Sean Kelly Gallery",
+    "country": "미국",
+    "city": "Manhattan",
+    "sourcePortal": "Wikidata",
+    "sourceUrl": "http://www.wikidata.org/entity/Q17123936"
+  },
+  {
+    "name": "Silk Road Cafe",
+    "country": "미국",
+    "city": "Manhattan",
+    "sourcePortal": "Wikidata",
+    "sourceUrl": "http://www.wikidata.org/entity/Q110714453"
+  },
+  {
     "name": "Skoto Gallery",
     "country": "미국",
     "city": "Manhattan",
@@ -2070,6 +3302,20 @@
     "sourceUrl": "http://www.wikidata.org/entity/Q7576405"
   },
   {
+    "name": "Stable Gallery",
+    "country": "미국",
+    "city": "Manhattan",
+    "sourcePortal": "Wikidata",
+    "sourceUrl": "http://www.wikidata.org/entity/Q1511776"
+  },
+  {
+    "name": "Staley-Wise Gallery",
+    "country": "미국",
+    "city": "Manhattan",
+    "sourcePortal": "Wikidata",
+    "sourceUrl": "http://www.wikidata.org/entity/Q7597231"
+  },
+  {
     "name": "Stephen Haller Gallery",
     "country": "미국",
     "city": "Manhattan",
@@ -2084,6 +3330,20 @@
     "website": "http://www.storefrontnews.org",
     "sourcePortal": "Wikidata",
     "sourceUrl": "http://www.wikidata.org/entity/Q7619980"
+  },
+  {
+    "name": "Talwar Gallery",
+    "country": "미국",
+    "city": "Manhattan",
+    "sourcePortal": "Wikidata",
+    "sourceUrl": "http://www.wikidata.org/entity/Q7680410"
+  },
+  {
+    "name": "Tanager Gallery",
+    "country": "미국",
+    "city": "Manhattan",
+    "sourcePortal": "Wikidata",
+    "sourceUrl": "http://www.wikidata.org/entity/Q72882495"
   },
   {
     "name": "Tanya Bonakdar Gallery",
@@ -2110,12 +3370,89 @@
     "sourceUrl": "http://www.wikidata.org/entity/Q7703226"
   },
   {
+    "name": "The Alternative Museum",
+    "country": "미국",
+    "city": "Manhattan",
+    "sourcePortal": "Wikidata",
+    "sourceUrl": "http://www.wikidata.org/entity/Q7713262"
+  },
+  {
+    "name": "Tibor de Nagy Gallery",
+    "country": "미국",
+    "city": "Manhattan",
+    "sourcePortal": "Wikidata",
+    "sourceUrl": "http://www.wikidata.org/entity/Q7800521"
+  },
+  {
+    "name": "Tim Blackburn Gallery",
+    "country": "미국",
+    "city": "Manhattan",
+    "sourcePortal": "Wikidata",
+    "sourceUrl": "http://www.wikidata.org/entity/Q115650906"
+  },
+  {
+    "name": "Tucker Galleries",
+    "country": "미국",
+    "city": "Manhattan",
+    "sourcePortal": "Wikidata",
+    "sourceUrl": "http://www.wikidata.org/entity/Q131339003"
+  },
+  {
+    "name": "Universal Concepts Unlimited",
+    "country": "미국",
+    "city": "Manhattan",
+    "sourcePortal": "Wikidata",
+    "sourceUrl": "http://www.wikidata.org/entity/Q15031991"
+  },
+  {
+    "name": "Urban Center",
+    "country": "미국",
+    "city": "Manhattan",
+    "sourcePortal": "Wikidata",
+    "sourceUrl": "http://www.wikidata.org/entity/Q7899870"
+  },
+  {
+    "name": "Waddell Gallery",
+    "country": "미국",
+    "city": "Manhattan",
+    "sourcePortal": "Wikidata",
+    "sourceUrl": "http://www.wikidata.org/entity/Q72968036"
+  },
+  {
+    "name": "Wallspace",
+    "country": "미국",
+    "city": "Manhattan",
+    "sourcePortal": "Wikidata",
+    "sourceUrl": "http://www.wikidata.org/entity/Q130343314"
+  },
+  {
     "name": "Ward-Nasse Gallery",
     "country": "미국",
     "city": "Manhattan",
     "website": "http://www.wardnasse.org/",
     "sourcePortal": "Wikidata",
     "sourceUrl": "http://www.wikidata.org/entity/Q7968924"
+  },
+  {
+    "name": "Weusi-Nyumba Ya Sanaa Gallery",
+    "country": "미국",
+    "city": "Manhattan",
+    "sourcePortal": "Wikidata",
+    "sourceUrl": "http://www.wikidata.org/entity/Q130487535"
+  },
+  {
+    "name": "Weyhe Gallery",
+    "country": "미국",
+    "city": "Manhattan",
+    "sourcePortal": "Wikidata",
+    "sourceUrl": "http://www.wikidata.org/entity/Q7990321"
+  },
+  {
+    "name": "White Columns",
+    "country": "미국",
+    "city": "Manhattan",
+    "sourcePortal": "Wikidata",
+    "sourceUrl": "http://www.wikidata.org/entity/Q12072840"
   },
   {
     "name": "Woodward Gallery",
@@ -2166,12 +3503,61 @@
     "sourceUrl": "http://www.wikidata.org/entity/Q5006482"
   },
   {
+    "name": "Charm City Art Space",
+    "country": "미국",
+    "city": "Maryland",
+    "sourcePortal": "Wikidata",
+    "sourceUrl": "http://www.wikidata.org/entity/Q5086388"
+  },
+  {
+    "name": "Maryland Art Place",
+    "country": "미국",
+    "city": "Maryland",
+    "sourcePortal": "Wikidata",
+    "sourceUrl": "http://www.wikidata.org/entity/Q6781268"
+  },
+  {
+    "name": "Boston Sculptors Gallery",
+    "country": "미국",
+    "city": "Massachusetts",
+    "sourcePortal": "Wikidata",
+    "sourceUrl": "http://www.wikidata.org/entity/Q4948083"
+  },
+  {
+    "name": "Harding's Gallery",
+    "country": "미국",
+    "city": "Massachusetts",
+    "sourcePortal": "Wikidata",
+    "sourceUrl": "http://www.wikidata.org/entity/Q5656053"
+  },
+  {
+    "name": "Lumen Eclipse",
+    "country": "미국",
+    "city": "Massachusetts",
+    "sourcePortal": "Wikidata",
+    "sourceUrl": "http://www.wikidata.org/entity/Q6703189"
+  },
+  {
+    "name": "Rose-Marie and Eijk van Otterloo Collection",
+    "country": "미국",
+    "city": "Massachusetts",
+    "sourcePortal": "Wikidata",
+    "sourceUrl": "http://www.wikidata.org/entity/Q21004295"
+  },
+  {
     "name": "University Museum of Contemporary Art",
     "country": "미국",
     "city": "Massachusetts",
     "website": "https://fac.umass.edu/UMCA/Online/",
     "sourcePortal": "Wikidata",
     "sourceUrl": "http://www.wikidata.org/entity/Q7894833"
+  },
+  {
+    "name": "Odd Fellows Hall",
+    "country": "미국",
+    "city": "Mendocino",
+    "sourcePortal": "Wikidata",
+    "sourceUrl": "http://www.wikidata.org/entity/Q56255760"
   },
   {
     "name": "De la Cruz Collection",
@@ -2188,6 +3574,27 @@
     "website": "https://www.dianalowensteingallery.com/",
     "sourcePortal": "Wikidata",
     "sourceUrl": "http://www.wikidata.org/entity/Q124221270"
+  },
+  {
+    "name": "Locust Projects",
+    "country": "미국",
+    "city": "Miami",
+    "sourcePortal": "Wikidata",
+    "sourceUrl": "http://www.wikidata.org/entity/Q17018639"
+  },
+  {
+    "name": "Basement 414",
+    "country": "미국",
+    "city": "Michigan",
+    "sourcePortal": "Wikidata",
+    "sourceUrl": "http://www.wikidata.org/entity/Q4866691"
+  },
+  {
+    "name": "Bohemian National Home",
+    "country": "미국",
+    "city": "Michigan",
+    "sourcePortal": "Wikidata",
+    "sourceUrl": "http://www.wikidata.org/entity/Q4938112"
   },
   {
     "name": "Traffic Zone Center for Visual Art",
@@ -2214,6 +3621,20 @@
     "sourceUrl": "http://www.wikidata.org/entity/Q72941062"
   },
   {
+    "name": "Gallery Loupe",
+    "country": "미국",
+    "city": "Montclair",
+    "sourcePortal": "Wikidata",
+    "sourceUrl": "http://www.wikidata.org/entity/Q105098406"
+  },
+  {
+    "name": "Hotel del Monte Art Gallery",
+    "country": "미국",
+    "city": "Monterey",
+    "sourcePortal": "Wikidata",
+    "sourceUrl": "http://www.wikidata.org/entity/Q72853303"
+  },
+  {
     "name": "Monongalia Arts Center",
     "country": "미국",
     "city": "Morgantown",
@@ -2230,12 +3651,40 @@
     "sourceUrl": "http://www.wikidata.org/entity/Q47498888"
   },
   {
+    "name": "Plaza Mariachi Music City",
+    "country": "미국",
+    "city": "Nashville",
+    "sourcePortal": "Wikidata",
+    "sourceUrl": "http://www.wikidata.org/entity/Q39086129"
+  },
+  {
+    "name": "Eva Lee Gallery",
+    "country": "미국",
+    "city": "Nassau County",
+    "sourcePortal": "Wikidata",
+    "sourceUrl": "http://www.wikidata.org/entity/Q72854764"
+  },
+  {
+    "name": "Albus Cavus",
+    "country": "미국",
+    "city": "New Jersey",
+    "sourcePortal": "Wikidata",
+    "sourceUrl": "http://www.wikidata.org/entity/Q4712862"
+  },
+  {
     "name": "Aljira, a Center for Contemporary Art",
     "country": "미국",
     "city": "New Jersey",
     "website": "http://www.aljira.org/",
     "sourcePortal": "Wikidata",
     "sourceUrl": "http://www.wikidata.org/entity/Q4727596"
+  },
+  {
+    "name": "Nüart Gallery Santa Fe",
+    "country": "미국",
+    "city": "New Mexico",
+    "sourcePortal": "Wikidata",
+    "sourceUrl": "http://www.wikidata.org/entity/Q137226622"
   },
   {
     "name": "SITE Santa Fe",
@@ -2246,6 +3695,13 @@
     "sourceUrl": "http://www.wikidata.org/entity/Q7390499"
   },
   {
+    "name": "Tom Ross Gallery",
+    "country": "미국",
+    "city": "New Mexico",
+    "sourcePortal": "Wikidata",
+    "sourceUrl": "http://www.wikidata.org/entity/Q131623426"
+  },
+  {
     "name": "Boyd Satellite Gallery",
     "country": "미국",
     "city": "New Orleans",
@@ -2254,12 +3710,26 @@
     "sourceUrl": "http://www.wikidata.org/entity/Q16255341"
   },
   {
+    "name": "Stone and Press Gallery",
+    "country": "미국",
+    "city": "New Orleans",
+    "sourcePortal": "Wikidata",
+    "sourceUrl": "http://www.wikidata.org/entity/Q135648371"
+  },
+  {
     "name": "The Parlour Gallery",
     "country": "미국",
     "city": "New Orleans",
     "website": "https://www.campstreetstudios.org/parlourgallery",
     "sourcePortal": "Wikidata",
     "sourceUrl": "http://www.wikidata.org/entity/Q136705651"
+  },
+  {
+    "name": "Thomas Mann Gallery",
+    "country": "미국",
+    "city": "New Orleans",
+    "sourcePortal": "Wikidata",
+    "sourceUrl": "http://www.wikidata.org/entity/Q107304761"
   },
   {
     "name": "David Zwirner",
@@ -2301,12 +3771,47 @@
     "sourceUrl": "http://www.wikidata.org/entity/Q24192775"
   },
   {
+    "name": "Gorham Galleries",
+    "country": "미국",
+    "city": "New York",
+    "sourcePortal": "Wikidata",
+    "sourceUrl": "http://www.wikidata.org/entity/Q131582210"
+  },
+  {
     "name": "Katonah Museum of Art",
     "country": "미국",
     "city": "New York",
     "website": "http://www.katonahmuseum.org",
     "sourcePortal": "Wikidata",
     "sourceUrl": "http://www.wikidata.org/entity/Q6377782"
+  },
+  {
+    "name": "Mandeville Gallery",
+    "country": "미국",
+    "city": "New York",
+    "sourcePortal": "Wikidata",
+    "sourceUrl": "http://www.wikidata.org/entity/Q55075448"
+  },
+  {
+    "name": "Newhouse Center for Contemporary Art",
+    "country": "미국",
+    "city": "New York",
+    "sourcePortal": "Wikidata",
+    "sourceUrl": "http://www.wikidata.org/entity/Q7018212"
+  },
+  {
+    "name": "Proteus Gowanus",
+    "country": "미국",
+    "city": "New York",
+    "sourcePortal": "Wikidata",
+    "sourceUrl": "http://www.wikidata.org/entity/Q7251699"
+  },
+  {
+    "name": "REVERSE (art space)",
+    "country": "미국",
+    "city": "New York",
+    "sourcePortal": "Wikidata",
+    "sourceUrl": "http://www.wikidata.org/entity/Q14707215"
   },
   {
     "name": "SculptureCenter",
@@ -2317,12 +3822,54 @@
     "sourceUrl": "http://www.wikidata.org/entity/Q7439449"
   },
   {
+    "name": "The Living Museum",
+    "country": "미국",
+    "city": "New York",
+    "sourcePortal": "Wikidata",
+    "sourceUrl": "http://www.wikidata.org/entity/Q14707450"
+  },
+  {
     "name": "The Phatory",
     "country": "미국",
     "city": "New York",
     "website": "http://phatory.com",
     "sourcePortal": "Wikidata",
     "sourceUrl": "http://www.wikidata.org/entity/Q25006946"
+  },
+  {
+    "name": "49th parallel",
+    "country": "미국",
+    "city": "New York City",
+    "sourcePortal": "Wikidata",
+    "sourceUrl": "http://www.wikidata.org/entity/Q55400193"
+  },
+  {
+    "name": "A & R Ball Gallery",
+    "country": "미국",
+    "city": "New York City",
+    "sourcePortal": "Wikidata",
+    "sourceUrl": "http://www.wikidata.org/entity/Q56218992"
+  },
+  {
+    "name": "Acanthus Ancient Art",
+    "country": "미국",
+    "city": "New York City",
+    "sourcePortal": "Wikidata",
+    "sourceUrl": "http://www.wikidata.org/entity/Q122376149"
+  },
+  {
+    "name": "Achim Moeller Fine Art",
+    "country": "미국",
+    "city": "New York City",
+    "sourcePortal": "Wikidata",
+    "sourceUrl": "http://www.wikidata.org/entity/Q73520259"
+  },
+  {
+    "name": "Acts of Art",
+    "country": "미국",
+    "city": "New York City",
+    "sourcePortal": "Wikidata",
+    "sourceUrl": "http://www.wikidata.org/entity/Q93361249"
   },
   {
     "name": "Adam Baumgold Fine Art",
@@ -2341,12 +3888,47 @@
     "sourceUrl": "http://www.wikidata.org/entity/Q105623511"
   },
   {
+    "name": "Alan Gallery",
+    "country": "미국",
+    "city": "New York City",
+    "sourcePortal": "Wikidata",
+    "sourceUrl": "http://www.wikidata.org/entity/Q72854475"
+  },
+  {
     "name": "Alexander and Bonin",
     "country": "미국",
     "city": "New York City",
     "website": "https://www.alexanderandbonin.com/",
     "sourcePortal": "Wikidata",
     "sourceUrl": "http://www.wikidata.org/entity/Q110280153"
+  },
+  {
+    "name": "American Art Association",
+    "country": "미국",
+    "city": "New York City",
+    "sourcePortal": "Wikidata",
+    "sourceUrl": "http://www.wikidata.org/entity/Q16961275"
+  },
+  {
+    "name": "American Art Galleries",
+    "country": "미국",
+    "city": "New York City",
+    "sourcePortal": "Wikidata",
+    "sourceUrl": "http://www.wikidata.org/entity/Q18565755"
+  },
+  {
+    "name": "American Fine Arts, Co.",
+    "country": "미국",
+    "city": "New York City",
+    "sourcePortal": "Wikidata",
+    "sourceUrl": "http://www.wikidata.org/entity/Q135069026"
+  },
+  {
+    "name": "Amos Eno Gallery",
+    "country": "미국",
+    "city": "New York City",
+    "sourcePortal": "Wikidata",
+    "sourceUrl": "http://www.wikidata.org/entity/Q72849553"
   },
   {
     "name": "Amsterdam Whitney Gallery",
@@ -2357,12 +3939,103 @@
     "sourceUrl": "http://www.wikidata.org/entity/Q105623580"
   },
   {
+    "name": "Anderson Galleries",
+    "country": "미국",
+    "city": "New York City",
+    "sourcePortal": "Wikidata",
+    "sourceUrl": "http://www.wikidata.org/entity/Q72940895"
+  },
+  {
+    "name": "André Emmerich Gallery",
+    "country": "미국",
+    "city": "New York City",
+    "sourcePortal": "Wikidata",
+    "sourceUrl": "http://www.wikidata.org/entity/Q72853024"
+  },
+  {
+    "name": "Area X Gallery",
+    "country": "미국",
+    "city": "New York City",
+    "sourcePortal": "Wikidata",
+    "sourceUrl": "http://www.wikidata.org/entity/Q72853052"
+  },
+  {
+    "name": "Arnot Galleries",
+    "country": "미국",
+    "city": "New York City",
+    "sourcePortal": "Wikidata",
+    "sourceUrl": "http://www.wikidata.org/entity/Q113665924"
+  },
+  {
+    "name": "Arthur S. Vernay Incorporated",
+    "country": "미국",
+    "city": "New York City",
+    "sourcePortal": "Wikidata",
+    "sourceUrl": "http://www.wikidata.org/entity/Q72883226"
+  },
+  {
+    "name": "Arthur U. Newton Gallery",
+    "country": "미국",
+    "city": "New York City",
+    "sourcePortal": "Wikidata",
+    "sourceUrl": "http://www.wikidata.org/entity/Q72854593"
+  },
+  {
     "name": "Artifact Art Gallery",
     "country": "미국",
     "city": "New York City",
     "website": "https://www.artifactnyc.net",
     "sourcePortal": "Wikidata",
     "sourceUrl": "http://www.wikidata.org/entity/Q106204728"
+  },
+  {
+    "name": "Artists in Residence",
+    "country": "미국",
+    "city": "New York City",
+    "sourcePortal": "Wikidata",
+    "sourceUrl": "http://www.wikidata.org/entity/Q72855796"
+  },
+  {
+    "name": "Artists' Gallery",
+    "country": "미국",
+    "city": "New York City",
+    "sourcePortal": "Wikidata",
+    "sourceUrl": "http://www.wikidata.org/entity/Q72855906"
+  },
+  {
+    "name": "Associated American Artists",
+    "country": "미국",
+    "city": "New York City",
+    "sourcePortal": "Wikidata",
+    "sourceUrl": "http://www.wikidata.org/entity/Q4809147"
+  },
+  {
+    "name": "Bachstitz Gallery",
+    "country": "미국",
+    "city": "New York City",
+    "sourcePortal": "Wikidata",
+    "sourceUrl": "http://www.wikidata.org/entity/Q29587290"
+  },
+  {
+    "name": "Betty Cuningham Gallery",
+    "country": "미국",
+    "city": "New York City",
+    "sourcePortal": "Wikidata",
+    "sourceUrl": "http://www.wikidata.org/entity/Q134888833"
+  },
+  {
+    "name": "Betty Parsons Gallery",
+    "country": "미국",
+    "city": "New York City",
+    "sourcePortal": "Wikidata",
+    "sourceUrl": "http://www.wikidata.org/entity/Q72854644"
+  },
+  {
+    "name": "Bignou Gallery",
+    "country": "미국",
+    "city": "New York City",
+    "sourcePortal": "Wikidata",
+    "sourceUrl": "http://www.wikidata.org/entity/Q15619234"
   },
   {
     "name": "Bill Hodges Gallery",
@@ -2381,12 +4054,152 @@
     "sourceUrl": "http://www.wikidata.org/entity/Q4923911"
   },
   {
+    "name": "Bland Gallery",
+    "country": "미국",
+    "city": "New York City",
+    "sourcePortal": "Wikidata",
+    "sourceUrl": "http://www.wikidata.org/entity/Q72854661"
+  },
+  {
+    "name": "Blumka Gallery",
+    "country": "미국",
+    "city": "New York City",
+    "sourcePortal": "Wikidata",
+    "sourceUrl": "http://www.wikidata.org/entity/Q72854676"
+  },
+  {
+    "name": "Bowery Gallery",
+    "country": "미국",
+    "city": "New York City",
+    "sourcePortal": "Wikidata",
+    "sourceUrl": "http://www.wikidata.org/entity/Q134889280"
+  },
+  {
+    "name": "Brata Gallery",
+    "country": "미국",
+    "city": "New York City",
+    "sourcePortal": "Wikidata",
+    "sourceUrl": "http://www.wikidata.org/entity/Q71896070"
+  },
+  {
     "name": "Bridget Donahue",
     "country": "미국",
     "city": "New York City",
     "website": "https://www.bridgetdonahue.nyc",
     "sourcePortal": "Wikidata",
     "sourceUrl": "http://www.wikidata.org/entity/Q81210433"
+  },
+  {
+    "name": "Brummer Gallery",
+    "country": "미국",
+    "city": "New York City",
+    "sourcePortal": "Wikidata",
+    "sourceUrl": "http://www.wikidata.org/entity/Q16255648"
+  },
+  {
+    "name": "Buchholz Gallery",
+    "country": "미국",
+    "city": "New York City",
+    "sourcePortal": "Wikidata",
+    "sourceUrl": "http://www.wikidata.org/entity/Q27450220"
+  },
+  {
+    "name": "Carl Battaglia Galleries",
+    "country": "미국",
+    "city": "New York City",
+    "sourcePortal": "Wikidata",
+    "sourceUrl": "http://www.wikidata.org/entity/Q72883248"
+  },
+  {
+    "name": "Carlebach Gallery",
+    "country": "미국",
+    "city": "New York City",
+    "sourcePortal": "Wikidata",
+    "sourceUrl": "http://www.wikidata.org/entity/Q89045179"
+  },
+  {
+    "name": "Carus Gallery",
+    "country": "미국",
+    "city": "New York City",
+    "sourcePortal": "Wikidata",
+    "sourceUrl": "http://www.wikidata.org/entity/Q135261403"
+  },
+  {
+    "name": "Chapellier Galleries",
+    "country": "미국",
+    "city": "New York City",
+    "sourcePortal": "Wikidata",
+    "sourceUrl": "http://www.wikidata.org/entity/Q72883273"
+  },
+  {
+    "name": "Christine Burgin Gallery",
+    "country": "미국",
+    "city": "New York City",
+    "sourcePortal": "Wikidata",
+    "sourceUrl": "http://www.wikidata.org/entity/Q134958529"
+  },
+  {
+    "name": "Christopher Leonard Gallery",
+    "country": "미국",
+    "city": "New York City",
+    "sourcePortal": "Wikidata",
+    "sourceUrl": "http://www.wikidata.org/entity/Q72854864"
+  },
+  {
+    "name": "City Gallery of the New York City Department of Cultural Affairs",
+    "country": "미국",
+    "city": "New York City",
+    "sourcePortal": "Wikidata",
+    "sourceUrl": "http://www.wikidata.org/entity/Q111512720"
+  },
+  {
+    "name": "Civilian Warfare Studio",
+    "country": "미국",
+    "city": "New York City",
+    "sourcePortal": "Wikidata",
+    "sourceUrl": "http://www.wikidata.org/entity/Q81233189"
+  },
+  {
+    "name": "Coe Kerr Gallery",
+    "country": "미국",
+    "city": "New York City",
+    "sourcePortal": "Wikidata",
+    "sourceUrl": "http://www.wikidata.org/entity/Q18524287"
+  },
+  {
+    "name": "Curt Valentin Gallery",
+    "country": "미국",
+    "city": "New York City",
+    "sourcePortal": "Wikidata",
+    "sourceUrl": "http://www.wikidata.org/entity/Q72855604"
+  },
+  {
+    "name": "Daniel Gallery",
+    "country": "미국",
+    "city": "New York City",
+    "sourcePortal": "Wikidata",
+    "sourceUrl": "http://www.wikidata.org/entity/Q72854927"
+  },
+  {
+    "name": "David Anderson Gallery",
+    "country": "미국",
+    "city": "New York City",
+    "sourcePortal": "Wikidata",
+    "sourceUrl": "http://www.wikidata.org/entity/Q72855014"
+  },
+  {
+    "name": "David Nolan Gallery",
+    "country": "미국",
+    "city": "New York City",
+    "sourcePortal": "Wikidata",
+    "sourceUrl": "http://www.wikidata.org/entity/Q73812295"
+  },
+  {
+    "name": "Downtown Gallery",
+    "country": "미국",
+    "city": "New York City",
+    "sourcePortal": "Wikidata",
+    "sourceUrl": "http://www.wikidata.org/entity/Q18510566"
   },
   {
     "name": "Driscoll Babcock Galleries",
@@ -2397,12 +4210,96 @@
     "sourceUrl": "http://www.wikidata.org/entity/Q77454486"
   },
   {
+    "name": "Durlacher Bros. New York",
+    "country": "미국",
+    "city": "New York City",
+    "sourcePortal": "Wikidata",
+    "sourceUrl": "http://www.wikidata.org/entity/Q135233598"
+  },
+  {
+    "name": "Duveen Galleries",
+    "country": "미국",
+    "city": "New York City",
+    "sourcePortal": "Wikidata",
+    "sourceUrl": "http://www.wikidata.org/entity/Q18670279"
+  },
+  {
+    "name": "Dwan Gallery New York",
+    "country": "미국",
+    "city": "New York City",
+    "sourcePortal": "Wikidata",
+    "sourceUrl": "http://www.wikidata.org/entity/Q65937107"
+  },
+  {
+    "name": "East Side Gallery",
+    "country": "미국",
+    "city": "New York City",
+    "sourcePortal": "Wikidata",
+    "sourceUrl": "http://www.wikidata.org/entity/Q72854954"
+  },
+  {
+    "name": "Edward Anthony & Co.",
+    "country": "미국",
+    "city": "New York City",
+    "sourcePortal": "Wikidata",
+    "sourceUrl": "http://www.wikidata.org/entity/Q45128629"
+  },
+  {
+    "name": "Ehrich Galleries",
+    "country": "미국",
+    "city": "New York City",
+    "sourcePortal": "Wikidata",
+    "sourceUrl": "http://www.wikidata.org/entity/Q105698482"
+  },
+  {
+    "name": "Elizabeth Koury Gallery",
+    "country": "미국",
+    "city": "New York City",
+    "sourcePortal": "Wikidata",
+    "sourceUrl": "http://www.wikidata.org/entity/Q111359185"
+  },
+  {
+    "name": "Fairtree Gallery",
+    "country": "미국",
+    "city": "New York City",
+    "sourcePortal": "Wikidata",
+    "sourceUrl": "http://www.wikidata.org/entity/Q106900662"
+  },
+  {
+    "name": "Fearon Galleries",
+    "country": "미국",
+    "city": "New York City",
+    "sourcePortal": "Wikidata",
+    "sourceUrl": "http://www.wikidata.org/entity/Q30057274"
+  },
+  {
     "name": "Fisher Landau Center",
     "country": "미국",
     "city": "New York City",
     "website": "http://www.flcart.org/",
     "sourcePortal": "Wikidata",
     "sourceUrl": "http://www.wikidata.org/entity/Q5454820"
+  },
+  {
+    "name": "Fitzgerald Gallery",
+    "country": "미국",
+    "city": "New York City",
+    "sourcePortal": "Wikidata",
+    "sourceUrl": "http://www.wikidata.org/entity/Q72855700"
+  },
+  {
+    "name": "Forum Gallery",
+    "country": "미국",
+    "city": "New York City",
+    "sourcePortal": "Wikidata",
+    "sourceUrl": "http://www.wikidata.org/entity/Q72855752"
+  },
+  {
+    "name": "Francis Irv",
+    "country": "미국",
+    "city": "New York City",
+    "sourcePortal": "Wikidata",
+    "sourceUrl": "http://www.wikidata.org/entity/Q137923812"
   },
   {
     "name": "French and Company",
@@ -2413,12 +4310,96 @@
     "sourceUrl": "http://www.wikidata.org/entity/Q18575739"
   },
   {
+    "name": "G.R.D. Studio (New York, N.Y.)",
+    "country": "미국",
+    "city": "New York City",
+    "sourcePortal": "Wikidata",
+    "sourceUrl": "http://www.wikidata.org/entity/Q72883468"
+  },
+  {
+    "name": "Gerson Gallery",
+    "country": "미국",
+    "city": "New York City",
+    "sourcePortal": "Wikidata",
+    "sourceUrl": "http://www.wikidata.org/entity/Q62063063"
+  },
+  {
     "name": "Gordon Robichaux",
     "country": "미국",
     "city": "New York City",
     "website": "http://www.gordonrobichaux.com",
     "sourcePortal": "Wikidata",
     "sourceUrl": "http://www.wikidata.org/entity/Q110226592"
+  },
+  {
+    "name": "Grace Borgenicht Gallery",
+    "country": "미국",
+    "city": "New York City",
+    "sourcePortal": "Wikidata",
+    "sourceUrl": "http://www.wikidata.org/entity/Q72854159"
+  },
+  {
+    "name": "Gracie Mansion Gallery",
+    "country": "미국",
+    "city": "New York City",
+    "sourcePortal": "Wikidata",
+    "sourceUrl": "http://www.wikidata.org/entity/Q72854151"
+  },
+  {
+    "name": "Graham Gallery",
+    "country": "미국",
+    "city": "New York City",
+    "sourcePortal": "Wikidata",
+    "sourceUrl": "http://www.wikidata.org/entity/Q72854123"
+  },
+  {
+    "name": "Guild Art Gallery",
+    "country": "미국",
+    "city": "New York City",
+    "sourcePortal": "Wikidata",
+    "sourceUrl": "http://www.wikidata.org/entity/Q135183945"
+  },
+  {
+    "name": "H. Shickman Gallery",
+    "country": "미국",
+    "city": "New York City",
+    "sourcePortal": "Wikidata",
+    "sourceUrl": "http://www.wikidata.org/entity/Q97323207"
+  },
+  {
+    "name": "Hamilton Gallery of Contemporary Art",
+    "country": "미국",
+    "city": "New York City",
+    "sourcePortal": "Wikidata",
+    "sourceUrl": "http://www.wikidata.org/entity/Q74056157"
+  },
+  {
+    "name": "Helen Drutt Gallery",
+    "country": "미국",
+    "city": "New York City",
+    "sourcePortal": "Wikidata",
+    "sourceUrl": "http://www.wikidata.org/entity/Q106551653"
+  },
+  {
+    "name": "Helen L. Card gallery",
+    "country": "미국",
+    "city": "New York City",
+    "sourcePortal": "Wikidata",
+    "sourceUrl": "http://www.wikidata.org/entity/Q72854031"
+  },
+  {
+    "name": "Howard Wise Gallery",
+    "country": "미국",
+    "city": "New York City",
+    "sourcePortal": "Wikidata",
+    "sourceUrl": "http://www.wikidata.org/entity/Q72853335"
+  },
+  {
+    "name": "Hundred Acres",
+    "country": "미국",
+    "city": "New York City",
+    "sourcePortal": "Wikidata",
+    "sourceUrl": "http://www.wikidata.org/entity/Q72853923"
   },
   {
     "name": "Jack Shainman Gallery",
@@ -2429,12 +4410,47 @@
     "sourceUrl": "http://www.wikidata.org/entity/Q55523966"
   },
   {
+    "name": "John Gibson Gallery",
+    "country": "미국",
+    "city": "New York City",
+    "sourcePortal": "Wikidata",
+    "sourceUrl": "http://www.wikidata.org/entity/Q30253163"
+  },
+  {
+    "name": "John Weber Gallery",
+    "country": "미국",
+    "city": "New York City",
+    "sourcePortal": "Wikidata",
+    "sourceUrl": "http://www.wikidata.org/entity/Q72853809"
+  },
+  {
+    "name": "Judson Gallery",
+    "country": "미국",
+    "city": "New York City",
+    "sourcePortal": "Wikidata",
+    "sourceUrl": "http://www.wikidata.org/entity/Q98158313"
+  },
+  {
+    "name": "Julien Levy Gallery",
+    "country": "미국",
+    "city": "New York City",
+    "sourcePortal": "Wikidata",
+    "sourceUrl": "http://www.wikidata.org/entity/Q72853783"
+  },
+  {
     "name": "Kapp Kapp Gallery",
     "country": "미국",
     "city": "New York City",
     "website": "https://www.kappkapp.com/",
     "sourcePortal": "Wikidata",
     "sourceUrl": "http://www.wikidata.org/entity/Q130333480"
+  },
+  {
+    "name": "Katharina Rich Perlow Gallery",
+    "country": "미국",
+    "city": "New York City",
+    "sourcePortal": "Wikidata",
+    "sourceUrl": "http://www.wikidata.org/entity/Q16334452"
   },
   {
     "name": "Kenkeleba House",
@@ -2445,12 +4461,138 @@
     "sourceUrl": "http://www.wikidata.org/entity/Q55563173"
   },
   {
+    "name": "Kleinberger Galleries",
+    "country": "미국",
+    "city": "New York City",
+    "sourcePortal": "Wikidata",
+    "sourceUrl": "http://www.wikidata.org/entity/Q24024925"
+  },
+  {
+    "name": "Kootz Gallery",
+    "country": "미국",
+    "city": "New York City",
+    "sourcePortal": "Wikidata",
+    "sourceUrl": "http://www.wikidata.org/entity/Q72858998"
+  },
+  {
+    "name": "Koury Wingate Gallery",
+    "country": "미국",
+    "city": "New York City",
+    "sourcePortal": "Wikidata",
+    "sourceUrl": "http://www.wikidata.org/entity/Q111359194"
+  },
+  {
+    "name": "Laurel Gallery",
+    "country": "미국",
+    "city": "New York City",
+    "sourcePortal": "Wikidata",
+    "sourceUrl": "http://www.wikidata.org/entity/Q72853139"
+  },
+  {
+    "name": "Lehmann Maupin Gallery",
+    "country": "미국",
+    "city": "New York City",
+    "sourcePortal": "Wikidata",
+    "sourceUrl": "http://www.wikidata.org/entity/Q19802737"
+  },
+  {
+    "name": "Leo Castelli Gallery",
+    "country": "미국",
+    "city": "New York City",
+    "sourcePortal": "Wikidata",
+    "sourceUrl": "http://www.wikidata.org/entity/Q31407686"
+  },
+  {
+    "name": "Leonard Clayton Gallery",
+    "country": "미국",
+    "city": "New York City",
+    "sourcePortal": "Wikidata",
+    "sourceUrl": "http://www.wikidata.org/entity/Q72853120"
+  },
+  {
+    "name": "LGDR",
+    "country": "미국",
+    "city": "New York City",
+    "sourcePortal": "Wikidata",
+    "sourceUrl": "http://www.wikidata.org/entity/Q108371158"
+  },
+  {
+    "name": "LIGHT Gallery",
+    "country": "미국",
+    "city": "New York City",
+    "sourcePortal": "Wikidata",
+    "sourceUrl": "http://www.wikidata.org/entity/Q98152483"
+  },
+  {
+    "name": "LoGiudice Gallery",
+    "country": "미국",
+    "city": "New York City",
+    "sourcePortal": "Wikidata",
+    "sourceUrl": "http://www.wikidata.org/entity/Q97097872"
+  },
+  {
+    "name": "Lorence-Monk Gallery",
+    "country": "미국",
+    "city": "New York City",
+    "sourcePortal": "Wikidata",
+    "sourceUrl": "http://www.wikidata.org/entity/Q135233354"
+  },
+  {
+    "name": "Louis Alexander Gallery",
+    "country": "미국",
+    "city": "New York City",
+    "sourcePortal": "Wikidata",
+    "sourceUrl": "http://www.wikidata.org/entity/Q75602107"
+  },
+  {
+    "name": "Lyles and King",
+    "country": "미국",
+    "city": "New York City",
+    "sourcePortal": "Wikidata",
+    "sourceUrl": "http://www.wikidata.org/entity/Q130333508"
+  },
+  {
+    "name": "M. Knoedler & Co.",
+    "country": "미국",
+    "city": "New York City",
+    "sourcePortal": "Wikidata",
+    "sourceUrl": "http://www.wikidata.org/entity/Q10288073"
+  },
+  {
+    "name": "Margarete Roeder Gallery",
+    "country": "미국",
+    "city": "New York City",
+    "sourcePortal": "Wikidata",
+    "sourceUrl": "http://www.wikidata.org/entity/Q124022004"
+  },
+  {
+    "name": "Margo Feiden Galleries (New York, N.Y.)",
+    "country": "미국",
+    "city": "New York City",
+    "sourcePortal": "Wikidata",
+    "sourceUrl": "http://www.wikidata.org/entity/Q72883513"
+  },
+  {
+    "name": "Margo Pollins Schab, Inc.",
+    "country": "미국",
+    "city": "New York City",
+    "sourcePortal": "Wikidata",
+    "sourceUrl": "http://www.wikidata.org/entity/Q134001033"
+  },
+  {
     "name": "Marianne Boesky Gallery",
     "country": "미국",
     "city": "New York City",
     "website": "http://www.marianneboeskygallery.com/",
     "sourcePortal": "Wikidata",
     "sourceUrl": "http://www.wikidata.org/entity/Q51594553"
+  },
+  {
+    "name": "Marilyn Pearl Gallery",
+    "country": "미국",
+    "city": "New York City",
+    "sourcePortal": "Wikidata",
+    "sourceUrl": "http://www.wikidata.org/entity/Q135243988"
   },
   {
     "name": "Mary Boone Gallery",
@@ -2461,12 +4603,54 @@
     "sourceUrl": "http://www.wikidata.org/entity/Q25401661"
   },
   {
+    "name": "Maynard Walker",
+    "country": "미국",
+    "city": "New York City",
+    "sourcePortal": "Wikidata",
+    "sourceUrl": "http://www.wikidata.org/entity/Q72883551"
+  },
+  {
     "name": "Michael Altman Fine Art",
     "country": "미국",
     "city": "New York City",
     "website": "http://www.mnafineart.com/",
     "sourcePortal": "Wikidata",
     "sourceUrl": "http://www.wikidata.org/entity/Q29441896"
+  },
+  {
+    "name": "Midtown Galleries",
+    "country": "미국",
+    "city": "New York City",
+    "sourcePortal": "Wikidata",
+    "sourceUrl": "http://www.wikidata.org/entity/Q72883600"
+  },
+  {
+    "name": "Modern Gallery",
+    "country": "미국",
+    "city": "New York City",
+    "sourcePortal": "Wikidata",
+    "sourceUrl": "http://www.wikidata.org/entity/Q72883728"
+  },
+  {
+    "name": "Nancy Wiener Gallery",
+    "country": "미국",
+    "city": "New York City",
+    "sourcePortal": "Wikidata",
+    "sourceUrl": "http://www.wikidata.org/entity/Q113561858"
+  },
+  {
+    "name": "New Gallery",
+    "country": "미국",
+    "city": "New York City",
+    "sourcePortal": "Wikidata",
+    "sourceUrl": "http://www.wikidata.org/entity/Q72883149"
+  },
+  {
+    "name": "Noho Gallery",
+    "country": "미국",
+    "city": "New York City",
+    "sourcePortal": "Wikidata",
+    "sourceUrl": "http://www.wikidata.org/entity/Q72883640"
   },
   {
     "name": "P.P.O.W Gallery",
@@ -2477,12 +4661,61 @@
     "sourceUrl": "http://www.wikidata.org/entity/Q51281657"
   },
   {
+    "name": "Pam Adler Gallery",
+    "country": "미국",
+    "city": "New York City",
+    "sourcePortal": "Wikidata",
+    "sourceUrl": "http://www.wikidata.org/entity/Q78060345"
+  },
+  {
+    "name": "Passedoit Gallery",
+    "country": "미국",
+    "city": "New York City",
+    "sourcePortal": "Wikidata",
+    "sourceUrl": "http://www.wikidata.org/entity/Q72883624"
+  },
+  {
+    "name": "Penold Masters, LTD",
+    "country": "미국",
+    "city": "New York City",
+    "sourcePortal": "Wikidata",
+    "sourceUrl": "http://www.wikidata.org/entity/Q67141931"
+  },
+  {
+    "name": "Perls Galleries",
+    "country": "미국",
+    "city": "New York City",
+    "sourcePortal": "Wikidata",
+    "sourceUrl": "http://www.wikidata.org/entity/Q67164948"
+  },
+  {
     "name": "Peter Blum Gallery",
     "country": "미국",
     "city": "New York City",
     "website": "http://www.peterblumgallery.com/",
     "sourcePortal": "Wikidata",
     "sourceUrl": "http://www.wikidata.org/entity/Q57903608"
+  },
+  {
+    "name": "Peter H. Davidson & Co.",
+    "country": "미국",
+    "city": "New York City",
+    "sourcePortal": "Wikidata",
+    "sourceUrl": "http://www.wikidata.org/entity/Q69517035"
+  },
+  {
+    "name": "Pierre Matisse Gallery",
+    "country": "미국",
+    "city": "New York City",
+    "sourcePortal": "Wikidata",
+    "sourceUrl": "http://www.wikidata.org/entity/Q60023570"
+  },
+  {
+    "name": "Pinacotheca Gallery",
+    "country": "미국",
+    "city": "New York City",
+    "sourcePortal": "Wikidata",
+    "sourceUrl": "http://www.wikidata.org/entity/Q58326937"
   },
   {
     "name": "Q110218346",
@@ -2501,12 +4734,152 @@
     "sourceUrl": "http://www.wikidata.org/entity/Q116058173"
   },
   {
+    "name": "Q133266370",
+    "country": "미국",
+    "city": "New York City",
+    "sourcePortal": "Wikidata",
+    "sourceUrl": "http://www.wikidata.org/entity/Q133266370"
+  },
+  {
     "name": "Q136529352",
     "country": "미국",
     "city": "New York City",
     "website": "https://www.adam-williams.com/",
     "sourcePortal": "Wikidata",
     "sourceUrl": "http://www.wikidata.org/entity/Q136529352"
+  },
+  {
+    "name": "Recess Activities",
+    "country": "미국",
+    "city": "New York City",
+    "sourcePortal": "Wikidata",
+    "sourceUrl": "http://www.wikidata.org/entity/Q7302376"
+  },
+  {
+    "name": "Reuben Gallery",
+    "country": "미국",
+    "city": "New York City",
+    "sourcePortal": "Wikidata",
+    "sourceUrl": "http://www.wikidata.org/entity/Q98277789"
+  },
+  {
+    "name": "Richard Dudensing & Son",
+    "country": "미국",
+    "city": "New York City",
+    "sourcePortal": "Wikidata",
+    "sourceUrl": "http://www.wikidata.org/entity/Q117270554"
+  },
+  {
+    "name": "Richard L. Feigen & Co.",
+    "country": "미국",
+    "city": "New York City",
+    "sourcePortal": "Wikidata",
+    "sourceUrl": "http://www.wikidata.org/entity/Q18592375"
+  },
+  {
+    "name": "Robert Freidus Gallery",
+    "country": "미국",
+    "city": "New York City",
+    "sourcePortal": "Wikidata",
+    "sourceUrl": "http://www.wikidata.org/entity/Q117863897"
+  },
+  {
+    "name": "Rosa Esman Gallery",
+    "country": "미국",
+    "city": "New York City",
+    "sourcePortal": "Wikidata",
+    "sourceUrl": "http://www.wikidata.org/entity/Q117638255"
+  },
+  {
+    "name": "Rose Fried Gallery (New York, N.Y.)",
+    "country": "미국",
+    "city": "New York City",
+    "sourcePortal": "Wikidata",
+    "sourceUrl": "http://www.wikidata.org/entity/Q72882815"
+  },
+  {
+    "name": "Ross L. Peacock Madison Avenue Gallery",
+    "country": "미국",
+    "city": "New York City",
+    "sourcePortal": "Wikidata",
+    "sourceUrl": "http://www.wikidata.org/entity/Q125999011"
+  },
+  {
+    "name": "Roth Horowitz",
+    "country": "미국",
+    "city": "New York City",
+    "sourcePortal": "Wikidata",
+    "sourceUrl": "http://www.wikidata.org/entity/Q81651415"
+  },
+  {
+    "name": "Schaeffer Galleries",
+    "country": "미국",
+    "city": "New York City",
+    "sourcePortal": "Wikidata",
+    "sourceUrl": "http://www.wikidata.org/entity/Q53790434"
+  },
+  {
+    "name": "Schneider-Gabriel Galleries",
+    "country": "미국",
+    "city": "New York City",
+    "sourcePortal": "Wikidata",
+    "sourceUrl": "http://www.wikidata.org/entity/Q72882605"
+  },
+  {
+    "name": "Schoneman Gallery",
+    "country": "미국",
+    "city": "New York City",
+    "sourcePortal": "Wikidata",
+    "sourceUrl": "http://www.wikidata.org/entity/Q135486462"
+  },
+  {
+    "name": "Scott and Fowles Art Gallery",
+    "country": "미국",
+    "city": "New York City",
+    "sourcePortal": "Wikidata",
+    "sourceUrl": "http://www.wikidata.org/entity/Q28910166"
+  },
+  {
+    "name": "Sculpture to Wear",
+    "country": "미국",
+    "city": "New York City",
+    "sourcePortal": "Wikidata",
+    "sourceUrl": "http://www.wikidata.org/entity/Q107300957"
+  },
+  {
+    "name": "Shepherd Gallery",
+    "country": "미국",
+    "city": "New York City",
+    "sourcePortal": "Wikidata",
+    "sourceUrl": "http://www.wikidata.org/entity/Q21551162"
+  },
+  {
+    "name": "Sidney Janis Gallery",
+    "country": "미국",
+    "city": "New York City",
+    "sourcePortal": "Wikidata",
+    "sourceUrl": "http://www.wikidata.org/entity/Q56555805"
+  },
+  {
+    "name": "Stendahl Art Galleries",
+    "country": "미국",
+    "city": "New York City",
+    "sourcePortal": "Wikidata",
+    "sourceUrl": "http://www.wikidata.org/entity/Q72967373"
+  },
+  {
+    "name": "Stephen Gang Gallery",
+    "country": "미국",
+    "city": "New York City",
+    "sourcePortal": "Wikidata",
+    "sourceUrl": "http://www.wikidata.org/entity/Q111417515"
+  },
+  {
+    "name": "Susan Aberbach Fine Art",
+    "country": "미국",
+    "city": "New York City",
+    "sourcePortal": "Wikidata",
+    "sourceUrl": "http://www.wikidata.org/entity/Q72882524"
   },
   {
     "name": "The 8th Floor",
@@ -2517,12 +4890,47 @@
     "sourceUrl": "http://www.wikidata.org/entity/Q43306925"
   },
   {
+    "name": "The American British Art Center",
+    "country": "미국",
+    "city": "New York City",
+    "sourcePortal": "Wikidata",
+    "sourceUrl": "http://www.wikidata.org/entity/Q126266122"
+  },
+  {
+    "name": "The Art of This Century Gallery",
+    "country": "미국",
+    "city": "New York City",
+    "sourcePortal": "Wikidata",
+    "sourceUrl": "http://www.wikidata.org/entity/Q705846"
+  },
+  {
     "name": "The Invisible Dog Art Center",
     "country": "미국",
     "city": "New York City",
     "website": "http://theinvisibledog.org/",
     "sourcePortal": "Wikidata",
     "sourceUrl": "http://www.wikidata.org/entity/Q7742457"
+  },
+  {
+    "name": "United Nations Galleries Inc",
+    "country": "미국",
+    "city": "New York City",
+    "sourcePortal": "Wikidata",
+    "sourceUrl": "http://www.wikidata.org/entity/Q110321679"
+  },
+  {
+    "name": "Valentine Gallery",
+    "country": "미국",
+    "city": "New York City",
+    "sourcePortal": "Wikidata",
+    "sourceUrl": "http://www.wikidata.org/entity/Q72882472"
+  },
+  {
+    "name": "Van Bovenkamp Gallerie",
+    "country": "미국",
+    "city": "New York City",
+    "sourcePortal": "Wikidata",
+    "sourceUrl": "http://www.wikidata.org/entity/Q72882433"
   },
   {
     "name": "Wallach Art Gallery",
@@ -2533,6 +4941,27 @@
     "sourceUrl": "http://www.wikidata.org/entity/Q117374330"
   },
   {
+    "name": "Ward Eggleston Galleries",
+    "country": "미국",
+    "city": "New York City",
+    "sourcePortal": "Wikidata",
+    "sourceUrl": "http://www.wikidata.org/entity/Q72882406"
+  },
+  {
+    "name": "Washburn Gallery",
+    "country": "미국",
+    "city": "New York City",
+    "sourcePortal": "Wikidata",
+    "sourceUrl": "http://www.wikidata.org/entity/Q135455102"
+  },
+  {
+    "name": "Willard Gallery",
+    "country": "미국",
+    "city": "New York City",
+    "sourcePortal": "Wikidata",
+    "sourceUrl": "http://www.wikidata.org/entity/Q75615090"
+  },
+  {
     "name": "Winston Art Group",
     "country": "미국",
     "city": "New York City",
@@ -2541,12 +4970,47 @@
     "sourceUrl": "http://www.wikidata.org/entity/Q127272907"
   },
   {
+    "name": "Wolff Gallery",
+    "country": "미국",
+    "city": "New York City",
+    "sourcePortal": "Wikidata",
+    "sourceUrl": "http://www.wikidata.org/entity/Q72882322"
+  },
+  {
+    "name": "Workshop Gallery (New York, N.Y.)",
+    "country": "미국",
+    "city": "New York City",
+    "sourcePortal": "Wikidata",
+    "sourceUrl": "http://www.wikidata.org/entity/Q72882301"
+  },
+  {
+    "name": "Yvon Lambert Gallery, New York, NY",
+    "country": "미국",
+    "city": "New York City",
+    "sourcePortal": "Wikidata",
+    "sourceUrl": "http://www.wikidata.org/entity/Q97063215"
+  },
+  {
+    "name": "Ki Smith Gallery",
+    "country": "미국",
+    "city": "New York County",
+    "sourcePortal": "Wikidata",
+    "sourceUrl": "http://www.wikidata.org/entity/Q110588858"
+  },
+  {
     "name": "Ulrik",
     "country": "미국",
     "city": "New York County",
     "website": "https://ulrik.nyc/",
     "sourcePortal": "Wikidata",
     "sourceUrl": "http://www.wikidata.org/entity/Q116467056"
+  },
+  {
+    "name": "William Vareika Fine Arts",
+    "country": "미국",
+    "city": "Newport",
+    "sourcePortal": "Wikidata",
+    "sourceUrl": "http://www.wikidata.org/entity/Q18572042"
   },
   {
     "name": "Massachusetts Museum of Contemporary Art",
@@ -2581,6 +5045,13 @@
     "sourceUrl": "http://www.wikidata.org/entity/Q72846118"
   },
   {
+    "name": "Dayton Visual Arts Center",
+    "country": "미국",
+    "city": "Ohio",
+    "sourcePortal": "Wikidata",
+    "sourceUrl": "http://www.wikidata.org/entity/Q5243580"
+  },
+  {
     "name": "McDonough Museum of Art",
     "country": "미국",
     "city": "Ohio",
@@ -2597,12 +5068,47 @@
     "sourceUrl": "http://www.wikidata.org/entity/Q7750509"
   },
   {
+    "name": "Concepts Gallery",
+    "country": "미국",
+    "city": "Palo Alto",
+    "sourcePortal": "Wikidata",
+    "sourceUrl": "http://www.wikidata.org/entity/Q106858438"
+  },
+  {
+    "name": "Cosanti",
+    "country": "미국",
+    "city": "Paradise Valley",
+    "sourcePortal": "Wikidata",
+    "sourceUrl": "http://www.wikidata.org/entity/Q5173837"
+  },
+  {
     "name": "Almine Rech Gallery",
     "country": "미국",
     "city": "Paris",
     "website": "https://www.alminerech.com",
     "sourcePortal": "Wikidata",
     "sourceUrl": "http://www.wikidata.org/entity/Q55661948"
+  },
+  {
+    "name": "Bignou Gallery",
+    "country": "미국",
+    "city": "Paris",
+    "sourcePortal": "Wikidata",
+    "sourceUrl": "http://www.wikidata.org/entity/Q15619234"
+  },
+  {
+    "name": "Duveen Galleries",
+    "country": "미국",
+    "city": "Paris",
+    "sourcePortal": "Wikidata",
+    "sourceUrl": "http://www.wikidata.org/entity/Q18670279"
+  },
+  {
+    "name": "Jacques Seligmann & Company",
+    "country": "미국",
+    "city": "Paris",
+    "sourcePortal": "Wikidata",
+    "sourceUrl": "http://www.wikidata.org/entity/Q3067376"
   },
   {
     "name": "Marian Goodman Gallery",
@@ -2645,6 +5151,13 @@
     "sourceUrl": "http://www.wikidata.org/entity/Q2821637"
   },
   {
+    "name": "Gallery 339",
+    "country": "미국",
+    "city": "Pennsylvania",
+    "sourcePortal": "Wikidata",
+    "sourceUrl": "http://www.wikidata.org/entity/Q5518982"
+  },
+  {
     "name": "Miller Gallery at Carnegie Mellon University",
     "country": "미국",
     "city": "Pennsylvania",
@@ -2669,12 +5182,61 @@
     "sourceUrl": "http://www.wikidata.org/entity/Q10748128"
   },
   {
+    "name": "Black Floor",
+    "country": "미국",
+    "city": "Philadelphia",
+    "sourcePortal": "Wikidata",
+    "sourceUrl": "http://www.wikidata.org/entity/Q135661944"
+  },
+  {
+    "name": "Gross McCleaf Gallery",
+    "country": "미국",
+    "city": "Philadelphia",
+    "sourcePortal": "Wikidata",
+    "sourceUrl": "http://www.wikidata.org/entity/Q135159915"
+  },
+  {
+    "name": "Helen Drutt Gallery",
+    "country": "미국",
+    "city": "Philadelphia",
+    "sourcePortal": "Wikidata",
+    "sourceUrl": "http://www.wikidata.org/entity/Q106551653"
+  },
+  {
     "name": "Institute of Contemporary Art, Philadelphia",
     "country": "미국",
     "city": "Philadelphia",
     "website": "http://www.icaphila.org/",
     "sourcePortal": "Wikidata",
     "sourceUrl": "http://www.wikidata.org/entity/Q3152800"
+  },
+  {
+    "name": "John Wanamaker",
+    "country": "미국",
+    "city": "Philadelphia",
+    "sourcePortal": "Wikidata",
+    "sourceUrl": "http://www.wikidata.org/entity/Q72856587"
+  },
+  {
+    "name": "Locks Gallery",
+    "country": "미국",
+    "city": "Philadelphia",
+    "sourcePortal": "Wikidata",
+    "sourceUrl": "http://www.wikidata.org/entity/Q78161164"
+  },
+  {
+    "name": "Makler Gallery",
+    "country": "미국",
+    "city": "Philadelphia",
+    "sourcePortal": "Wikidata",
+    "sourceUrl": "http://www.wikidata.org/entity/Q73514236"
+  },
+  {
+    "name": "Newman Galleries",
+    "country": "미국",
+    "city": "Philadelphia",
+    "sourcePortal": "Wikidata",
+    "sourceUrl": "http://www.wikidata.org/entity/Q76545678"
   },
   {
     "name": "Painted Bride Art Center",
@@ -2693,12 +5255,33 @@
     "sourceUrl": "http://www.wikidata.org/entity/Q7182595"
   },
   {
+    "name": "Schwarz Gallery",
+    "country": "미국",
+    "city": "Philadelphia",
+    "sourcePortal": "Wikidata",
+    "sourceUrl": "http://www.wikidata.org/entity/Q18591026"
+  },
+  {
+    "name": "Temple Gallery",
+    "country": "미국",
+    "city": "Philadelphia",
+    "sourcePortal": "Wikidata",
+    "sourceUrl": "http://www.wikidata.org/entity/Q81651592"
+  },
+  {
     "name": "Ulises",
     "country": "미국",
     "city": "Philadelphia",
     "website": "https://www.ulises.us/",
     "sourcePortal": "Wikidata",
     "sourceUrl": "http://www.wikidata.org/entity/Q125153510"
+  },
+  {
+    "name": "Frank Curto Park",
+    "country": "미국",
+    "city": "Pittsburgh",
+    "sourcePortal": "Wikidata",
+    "sourceUrl": "http://www.wikidata.org/entity/Q5486082"
   },
   {
     "name": "Mattress Factory",
@@ -2709,12 +5292,40 @@
     "sourceUrl": "http://www.wikidata.org/entity/Q6791877"
   },
   {
+    "name": "Outlines Gallery",
+    "country": "미국",
+    "city": "Pittsburgh",
+    "sourcePortal": "Wikidata",
+    "sourceUrl": "http://www.wikidata.org/entity/Q135274471"
+  },
+  {
     "name": "Wood Street Galleries",
     "country": "미국",
     "city": "Pittsburgh",
     "website": "http://woodstreetgalleries.org/",
     "sourcePortal": "Wikidata",
     "sourceUrl": "http://www.wikidata.org/entity/Q8032280"
+  },
+  {
+    "name": "Hoffman Gallery of the Oregon School of Arts and Crafts",
+    "country": "미국",
+    "city": "Portland",
+    "sourcePortal": "Wikidata",
+    "sourceUrl": "http://www.wikidata.org/entity/Q107294948"
+  },
+  {
+    "name": "Hopscotch",
+    "country": "미국",
+    "city": "Portland",
+    "sourcePortal": "Wikidata",
+    "sourceUrl": "http://www.wikidata.org/entity/Q131127603"
+  },
+  {
+    "name": "Kharouba Gallery",
+    "country": "미국",
+    "city": "Portland",
+    "sourcePortal": "Wikidata",
+    "sourceUrl": "http://www.wikidata.org/entity/Q110938832"
   },
   {
     "name": "Portland Institute for Contemporary Art",
@@ -2725,12 +5336,75 @@
     "sourceUrl": "http://www.wikidata.org/entity/Q7231961"
   },
   {
+    "name": "Gallery 256",
+    "country": "미국",
+    "city": "Provincetown",
+    "sourcePortal": "Wikidata",
+    "sourceUrl": "http://www.wikidata.org/entity/Q72854416"
+  },
+  {
+    "name": "Crossing Art",
+    "country": "미국",
+    "city": "Queens",
+    "sourcePortal": "Wikidata",
+    "sourceUrl": "http://www.wikidata.org/entity/Q85841996"
+  },
+  {
+    "name": "Heidi Lowe Gallery",
+    "country": "미국",
+    "city": "Rehoboth",
+    "sourcePortal": "Wikidata",
+    "sourceUrl": "http://www.wikidata.org/entity/Q107285160"
+  },
+  {
     "name": "Sara D. November Gallery",
     "country": "미국",
     "city": "Richmond",
     "website": "https://weinsteinjcc.org/cultural-arts/sara-d-november-gallery",
     "sourcePortal": "Wikidata",
     "sourceUrl": "http://www.wikidata.org/entity/Q105939914"
+  },
+  {
+    "name": "UCR Art Gallery",
+    "country": "미국",
+    "city": "Riverside",
+    "sourcePortal": "Wikidata",
+    "sourceUrl": "http://www.wikidata.org/entity/Q115689409"
+  },
+  {
+    "name": "Habatat Galleries",
+    "country": "미국",
+    "city": "Royal Oak",
+    "sourcePortal": "Wikidata",
+    "sourceUrl": "http://www.wikidata.org/entity/Q111148350"
+  },
+  {
+    "name": "The Sybaris Gallery",
+    "country": "미국",
+    "city": "Royal Oak",
+    "sourcePortal": "Wikidata",
+    "sourceUrl": "http://www.wikidata.org/entity/Q135440500"
+  },
+  {
+    "name": "Charlton Art Gallery",
+    "country": "미국",
+    "city": "San Antonio",
+    "sourcePortal": "Wikidata",
+    "sourceUrl": "http://www.wikidata.org/entity/Q134974839"
+  },
+  {
+    "name": "Hopscotch",
+    "country": "미국",
+    "city": "San Antonio",
+    "sourcePortal": "Wikidata",
+    "sourceUrl": "http://www.wikidata.org/entity/Q131127603"
+  },
+  {
+    "name": "Objects Gallery",
+    "country": "미국",
+    "city": "San Antonio",
+    "sourcePortal": "Wikidata",
+    "sourceUrl": "http://www.wikidata.org/entity/Q75613856"
   },
   {
     "name": "Sala Diaz",
@@ -2757,6 +5431,34 @@
     "sourceUrl": "http://www.wikidata.org/entity/Q5518998"
   },
   {
+    "name": "Ansel Adams Center for Photography",
+    "country": "미국",
+    "city": "San Francisco",
+    "sourcePortal": "Wikidata",
+    "sourceUrl": "http://www.wikidata.org/entity/Q130360416"
+  },
+  {
+    "name": "Artists' Television Access",
+    "country": "미국",
+    "city": "San Francisco",
+    "sourcePortal": "Wikidata",
+    "sourceUrl": "http://www.wikidata.org/entity/Q4801300"
+  },
+  {
+    "name": "BlackMan's Art Gallery",
+    "country": "미국",
+    "city": "San Francisco",
+    "sourcePortal": "Wikidata",
+    "sourceUrl": "http://www.wikidata.org/entity/Q137206017"
+  },
+  {
+    "name": "Braunstein/Quay Gallery",
+    "country": "미국",
+    "city": "San Francisco",
+    "sourcePortal": "Wikidata",
+    "sourceUrl": "http://www.wikidata.org/entity/Q72855590"
+  },
+  {
     "name": "Catharine Clark Gallery",
     "country": "미국",
     "city": "San Francisco",
@@ -2765,12 +5467,68 @@
     "sourceUrl": "http://www.wikidata.org/entity/Q5052096"
   },
   {
+    "name": "Daniel Weinberg Gallery",
+    "country": "미국",
+    "city": "San Francisco",
+    "sourcePortal": "Wikidata",
+    "sourceUrl": "http://www.wikidata.org/entity/Q111148298"
+  },
+  {
+    "name": "Diego Rivera Gallery",
+    "country": "미국",
+    "city": "San Francisco",
+    "sourcePortal": "Wikidata",
+    "sourceUrl": "http://www.wikidata.org/entity/Q5274789"
+  },
+  {
+    "name": "Dilexi Gallery",
+    "country": "미국",
+    "city": "San Francisco",
+    "sourcePortal": "Wikidata",
+    "sourceUrl": "http://www.wikidata.org/entity/Q72854999"
+  },
+  {
+    "name": "Dorothy Weiss Gallery",
+    "country": "미국",
+    "city": "San Francisco",
+    "sourcePortal": "Wikidata",
+    "sourceUrl": "http://www.wikidata.org/entity/Q135033771"
+  },
+  {
+    "name": "East and West Gallery",
+    "country": "미국",
+    "city": "San Francisco",
+    "sourcePortal": "Wikidata",
+    "sourceUrl": "http://www.wikidata.org/entity/Q72854970"
+  },
+  {
+    "name": "Femina Potens Art Gallery",
+    "country": "미국",
+    "city": "San Francisco",
+    "sourcePortal": "Wikidata",
+    "sourceUrl": "http://www.wikidata.org/entity/Q5442814"
+  },
+  {
+    "name": "Focus Gallery",
+    "country": "미국",
+    "city": "San Francisco",
+    "sourcePortal": "Wikidata",
+    "sourceUrl": "http://www.wikidata.org/entity/Q72854808"
+  },
+  {
     "name": "Gallery 16",
     "country": "미국",
     "city": "San Francisco",
     "website": "http://www.gallery16.com/",
     "sourcePortal": "Wikidata",
     "sourceUrl": "http://www.wikidata.org/entity/Q5518981"
+  },
+  {
+    "name": "Hansen Fuller Gallery",
+    "country": "미국",
+    "city": "San Francisco",
+    "sourcePortal": "Wikidata",
+    "sourceUrl": "http://www.wikidata.org/entity/Q106649665"
   },
   {
     "name": "Institute of Illegal Images",
@@ -2789,12 +5547,40 @@
     "sourceUrl": "http://www.wikidata.org/entity/Q114391919"
   },
   {
+    "name": "Jehu-Wong Gallery",
+    "country": "미국",
+    "city": "San Francisco",
+    "sourcePortal": "Wikidata",
+    "sourceUrl": "http://www.wikidata.org/entity/Q72853438"
+  },
+  {
+    "name": "John Bolles Gallery",
+    "country": "미국",
+    "city": "San Francisco",
+    "sourcePortal": "Wikidata",
+    "sourceUrl": "http://www.wikidata.org/entity/Q72853834"
+  },
+  {
+    "name": "Luggage Store Gallery",
+    "country": "미국",
+    "city": "San Francisco",
+    "sourcePortal": "Wikidata",
+    "sourceUrl": "http://www.wikidata.org/entity/Q110974457"
+  },
+  {
     "name": "McEvoy Foundation for the Arts",
     "country": "미국",
     "city": "San Francisco",
     "website": "https://www.mcevoyarts.org/",
     "sourcePortal": "Wikidata",
     "sourceUrl": "http://www.wikidata.org/entity/Q114391917"
+  },
+  {
+    "name": "Ratio 3",
+    "country": "미국",
+    "city": "San Francisco",
+    "sourcePortal": "Wikidata",
+    "sourceUrl": "http://www.wikidata.org/entity/Q117104201"
   },
   {
     "name": "Thacher Gallery",
@@ -2813,12 +5599,61 @@
     "sourceUrl": "http://www.wikidata.org/entity/Q7877573"
   },
   {
+    "name": "Velvet da Vinci",
+    "country": "미국",
+    "city": "San Francisco",
+    "sourcePortal": "Wikidata",
+    "sourceUrl": "http://www.wikidata.org/entity/Q98825290"
+  },
+  {
+    "name": "Vickery, Atkins & Torrey",
+    "country": "미국",
+    "city": "San Francisco",
+    "sourcePortal": "Wikidata",
+    "sourceUrl": "http://www.wikidata.org/entity/Q7925351"
+  },
+  {
+    "name": "Wattis Institute for Contemporary Arts",
+    "country": "미국",
+    "city": "San Francisco",
+    "sourcePortal": "Wikidata",
+    "sourceUrl": "http://www.wikidata.org/entity/Q7974967"
+  },
+  {
+    "name": "Anneberg Gallery",
+    "country": "미국",
+    "city": "San Francisco Bay Area",
+    "sourcePortal": "Wikidata",
+    "sourceUrl": "http://www.wikidata.org/entity/Q134882624"
+  },
+  {
     "name": "Sandy Spring Slave Museum & African Art Gallery",
     "country": "미국",
     "city": "Sandy Spring",
     "website": "https://www.sandyspringslavemuseum.org/",
     "sourcePortal": "Wikidata",
     "sourceUrl": "http://www.wikidata.org/entity/Q136088871"
+  },
+  {
+    "name": "IDEA Gallery",
+    "country": "미국",
+    "city": "Sandy Springs",
+    "sourcePortal": "Wikidata",
+    "sourceUrl": "http://www.wikidata.org/entity/Q99542361"
+  },
+  {
+    "name": "Esther Bear Gallery",
+    "country": "미국",
+    "city": "Santa Barbara",
+    "sourcePortal": "Wikidata",
+    "sourceUrl": "http://www.wikidata.org/entity/Q72855650"
+  },
+  {
+    "name": "Mary Porter Sesnon Art Gallery",
+    "country": "미국",
+    "city": "Santa Cruz",
+    "sourcePortal": "Wikidata",
+    "sourceUrl": "http://www.wikidata.org/entity/Q125993589"
   },
   {
     "name": "Adobe Gallery",
@@ -2837,12 +5672,33 @@
     "sourceUrl": "http://www.wikidata.org/entity/Q131650788"
   },
   {
+    "name": "Patina Gallery",
+    "country": "미국",
+    "city": "Santa Fe",
+    "sourcePortal": "Wikidata",
+    "sourceUrl": "http://www.wikidata.org/entity/Q107296945"
+  },
+  {
+    "name": "Q116058284",
+    "country": "미국",
+    "city": "Santa Fe",
+    "sourcePortal": "Wikidata",
+    "sourceUrl": "http://www.wikidata.org/entity/Q116058284"
+  },
+  {
     "name": "Chuck Jones Studio Gallery",
     "country": "미국",
     "city": "Santa Fe County",
     "website": "https://chuckjones.com/gallery",
     "sourcePortal": "Wikidata",
     "sourceUrl": "http://www.wikidata.org/entity/Q133863145"
+  },
+  {
+    "name": "Nüart Gallery Santa Fe",
+    "country": "미국",
+    "city": "Santa Fe County",
+    "sourcePortal": "Wikidata",
+    "sourceUrl": "http://www.wikidata.org/entity/Q137226622"
   },
   {
     "name": "Pascual's Cafe and Gallery",
@@ -2861,12 +5717,47 @@
     "sourceUrl": "http://www.wikidata.org/entity/Q133863173"
   },
   {
+    "name": "Tom Ross Gallery",
+    "country": "미국",
+    "city": "Santa Fe County",
+    "sourcePortal": "Wikidata",
+    "sourceUrl": "http://www.wikidata.org/entity/Q131623426"
+  },
+  {
     "name": "Vladem Contemporary",
     "country": "미국",
     "city": "Santa Fe County",
     "website": "https://nmartmuseum.org/vladem-contemporary",
     "sourcePortal": "Wikidata",
     "sourceUrl": "http://www.wikidata.org/entity/Q122873639"
+  },
+  {
+    "name": "Dorothy Goldeen Gallery",
+    "country": "미국",
+    "city": "Santa Monica",
+    "sourcePortal": "Wikidata",
+    "sourceUrl": "http://www.wikidata.org/entity/Q81361948"
+  },
+  {
+    "name": "Koplin Gallery",
+    "country": "미국",
+    "city": "Santa Monica",
+    "sourcePortal": "Wikidata",
+    "sourceUrl": "http://www.wikidata.org/entity/Q135529365"
+  },
+  {
+    "name": "Thomas Lewallen Gallery",
+    "country": "미국",
+    "city": "Santa Monica",
+    "sourcePortal": "Wikidata",
+    "sourceUrl": "http://www.wikidata.org/entity/Q73017914"
+  },
+  {
+    "name": "Gallery Wall, Inc.",
+    "country": "미국",
+    "city": "Sante Fe",
+    "sourcePortal": "Wikidata",
+    "sourceUrl": "http://www.wikidata.org/entity/Q72854166"
   },
   {
     "name": "Puerto Rico Museum of Contemporary Art",
@@ -2877,12 +5768,68 @@
     "sourceUrl": "http://www.wikidata.org/entity/Q6033864"
   },
   {
+    "name": "Corbino Galleries",
+    "country": "미국",
+    "city": "Sarasota County",
+    "sourcePortal": "Wikidata",
+    "sourceUrl": "http://www.wikidata.org/entity/Q134959078"
+  },
+  {
+    "name": "Sausalito Art Center",
+    "country": "미국",
+    "city": "Sausalito",
+    "sourcePortal": "Wikidata",
+    "sourceUrl": "http://www.wikidata.org/entity/Q110191618"
+  },
+  {
+    "name": "Joanne Rapp Gallery/The Hand and the Spirit",
+    "country": "미국",
+    "city": "Scottsdale",
+    "sourcePortal": "Wikidata",
+    "sourceUrl": "http://www.wikidata.org/entity/Q135532445"
+  },
+  {
+    "name": "And/or alternative space",
+    "country": "미국",
+    "city": "Seattle",
+    "sourcePortal": "Wikidata",
+    "sourceUrl": "http://www.wikidata.org/entity/Q16245703"
+  },
+  {
     "name": "Chihuly Garden and Glass",
     "country": "미국",
     "city": "Seattle",
     "website": "http://www.chihulygardenandglass.com/",
     "sourcePortal": "Wikidata",
     "sourceUrl": "http://www.wikidata.org/entity/Q5097315"
+  },
+  {
+    "name": "Facèré Jewelry Art Gallery",
+    "country": "미국",
+    "city": "Seattle",
+    "sourcePortal": "Wikidata",
+    "sourceUrl": "http://www.wikidata.org/entity/Q106896806"
+  },
+  {
+    "name": "Francine Seders Gallery",
+    "country": "미국",
+    "city": "Seattle",
+    "sourcePortal": "Wikidata",
+    "sourceUrl": "http://www.wikidata.org/entity/Q72855946"
+  },
+  {
+    "name": "Jacob Lawrence Gallery",
+    "country": "미국",
+    "city": "Seattle",
+    "sourcePortal": "Wikidata",
+    "sourceUrl": "http://www.wikidata.org/entity/Q101110467"
+  },
+  {
+    "name": "Koplin Del Rio Gallery",
+    "country": "미국",
+    "city": "Seattle",
+    "sourcePortal": "Wikidata",
+    "sourceUrl": "http://www.wikidata.org/entity/Q135529462"
   },
   {
     "name": "Martyr Sauce",
@@ -2899,6 +5846,34 @@
     "website": "http://soilart.org",
     "sourcePortal": "Wikidata",
     "sourceUrl": "http://www.wikidata.org/entity/Q7554869"
+  },
+  {
+    "name": "Traver Gallery",
+    "country": "미국",
+    "city": "Seattle",
+    "sourcePortal": "Wikidata",
+    "sourceUrl": "http://www.wikidata.org/entity/Q107305600"
+  },
+  {
+    "name": "Lehmann Maupin Gallery",
+    "country": "미국",
+    "city": "Seoul",
+    "sourcePortal": "Wikidata",
+    "sourceUrl": "http://www.wikidata.org/entity/Q19802737"
+  },
+  {
+    "name": "Campbell Gallery",
+    "country": "미국",
+    "city": "Sewickley",
+    "sourcePortal": "Wikidata",
+    "sourceUrl": "http://www.wikidata.org/entity/Q115626577"
+  },
+  {
+    "name": "Artwear Gallery",
+    "country": "미국",
+    "city": "SoHo",
+    "sourcePortal": "Wikidata",
+    "sourceUrl": "http://www.wikidata.org/entity/Q106840046"
   },
   {
     "name": "Walsh Gallery",
@@ -2939,6 +5914,13 @@
     "website": "https://cityofsugarhill.com/art-gallery-and-history-museum/",
     "sourcePortal": "Wikidata",
     "sourceUrl": "http://www.wikidata.org/entity/Q107574915"
+  },
+  {
+    "name": "Gallery RFD",
+    "country": "미국",
+    "city": "Swainsboro",
+    "sourcePortal": "Wikidata",
+    "sourceUrl": "http://www.wikidata.org/entity/Q97013510"
   },
   {
     "name": "Hudson Gallery",
@@ -2997,6 +5979,20 @@
     "sourceUrl": "http://www.wikidata.org/entity/Q122175107"
   },
   {
+    "name": "The Gallery at the Tech Garden",
+    "country": "미국",
+    "city": "Syracuse",
+    "sourcePortal": "Wikidata",
+    "sourceUrl": "http://www.wikidata.org/entity/Q122175071"
+  },
+  {
+    "name": "The Warehouse",
+    "country": "미국",
+    "city": "Syracuse",
+    "sourcePortal": "Wikidata",
+    "sourceUrl": "http://www.wikidata.org/entity/Q7773542"
+  },
+  {
     "name": "Westcott Community Art Gallery",
     "country": "미국",
     "city": "Syracuse",
@@ -3013,12 +6009,33 @@
     "sourceUrl": "http://www.wikidata.org/entity/Q122190685"
   },
   {
+    "name": "Galeria Escondida",
+    "country": "미국",
+    "city": "Taos",
+    "sourcePortal": "Wikidata",
+    "sourceUrl": "http://www.wikidata.org/entity/Q75987353"
+  },
+  {
     "name": "Knoxville Museum of Art",
     "country": "미국",
     "city": "Tennessee",
     "website": "http://www.knoxart.org/",
     "sourcePortal": "Wikidata",
     "sourceUrl": "http://www.wikidata.org/entity/Q6423681"
+  },
+  {
+    "name": "Chauvin Sculpture Garden & Art",
+    "country": "미국",
+    "city": "Terrebonne Parish",
+    "sourcePortal": "Wikidata",
+    "sourceUrl": "http://www.wikidata.org/entity/Q123985352"
+  },
+  {
+    "name": "5&J Gallery and Studios",
+    "country": "미국",
+    "city": "Texas",
+    "sourcePortal": "Wikidata",
+    "sourceUrl": "http://www.wikidata.org/entity/Q107320798"
   },
   {
     "name": "Artpace",
@@ -3037,12 +6054,96 @@
     "sourceUrl": "http://www.wikidata.org/entity/Q4929912"
   },
   {
+    "name": "Campbell Building",
+    "country": "미국",
+    "city": "Texas",
+    "sourcePortal": "Wikidata",
+    "sourceUrl": "http://www.wikidata.org/entity/Q107320476"
+  },
+  {
+    "name": "Charles Adams Gallery",
+    "country": "미국",
+    "city": "Texas",
+    "sourcePortal": "Wikidata",
+    "sourceUrl": "http://www.wikidata.org/entity/Q107320796"
+  },
+  {
+    "name": "De Dantos Gallery",
+    "country": "미국",
+    "city": "Texas",
+    "sourcePortal": "Wikidata",
+    "sourceUrl": "http://www.wikidata.org/entity/Q107317756"
+  },
+  {
+    "name": "Dishman Art Gallery",
+    "country": "미국",
+    "city": "Texas",
+    "sourcePortal": "Wikidata",
+    "sourceUrl": "http://www.wikidata.org/entity/Q107317988"
+  },
+  {
+    "name": "Inde/Jacobs Gallery",
+    "country": "미국",
+    "city": "Texas",
+    "sourcePortal": "Wikidata",
+    "sourceUrl": "http://www.wikidata.org/entity/Q107322824"
+  },
+  {
+    "name": "Kendall Art Gallery",
+    "country": "미국",
+    "city": "Texas",
+    "sourcePortal": "Wikidata",
+    "sourceUrl": "http://www.wikidata.org/entity/Q107323057"
+  },
+  {
+    "name": "Kiowa Gallery",
+    "country": "미국",
+    "city": "Texas",
+    "sourcePortal": "Wikidata",
+    "sourceUrl": "http://www.wikidata.org/entity/Q107322786"
+  },
+  {
     "name": "Lawndale Art Center",
     "country": "미국",
     "city": "Texas",
     "website": "http://www.lawndaleartcenter.org/",
     "sourcePortal": "Wikidata",
     "sourceUrl": "http://www.wikidata.org/entity/Q6503693"
+  },
+  {
+    "name": "Marfa Contemporary Gallery",
+    "country": "미국",
+    "city": "Texas",
+    "sourcePortal": "Wikidata",
+    "sourceUrl": "http://www.wikidata.org/entity/Q107322826"
+  },
+  {
+    "name": "Mason Gallery",
+    "country": "미국",
+    "city": "Texas",
+    "sourcePortal": "Wikidata",
+    "sourceUrl": "http://www.wikidata.org/entity/Q107320051"
+  },
+  {
+    "name": "Old City Hall and Fire Station",
+    "country": "미국",
+    "city": "Texas",
+    "sourcePortal": "Wikidata",
+    "sourceUrl": "http://www.wikidata.org/entity/Q107320315"
+  },
+  {
+    "name": "Richmond Hall",
+    "country": "미국",
+    "city": "Texas",
+    "sourcePortal": "Wikidata",
+    "sourceUrl": "http://www.wikidata.org/entity/Q107317754"
+  },
+  {
+    "name": "Talley Dunn Gallery",
+    "country": "미국",
+    "city": "Texas",
+    "sourcePortal": "Wikidata",
+    "sourceUrl": "http://www.wikidata.org/entity/Q7680116"
   },
   {
     "name": "The Dallas Contemporary",
@@ -3053,12 +6154,61 @@
     "sourceUrl": "http://www.wikidata.org/entity/Q7728754"
   },
   {
+    "name": "Mohr Art Galleries",
+    "country": "미국",
+    "city": "Toledo",
+    "sourcePortal": "Wikidata",
+    "sourceUrl": "http://www.wikidata.org/entity/Q78160389"
+  },
+  {
+    "name": "Mobilia Gallery",
+    "country": "미국",
+    "city": "United States",
+    "sourcePortal": "Wikidata",
+    "sourceUrl": "http://www.wikidata.org/entity/Q98558022"
+  },
+  {
     "name": "Cinema Theater",
     "country": "미국",
     "city": "Urbana",
     "website": "http://www.cinemagallery.cc",
     "sourcePortal": "Wikidata",
     "sourceUrl": "http://www.wikidata.org/entity/Q42544179"
+  },
+  {
+    "name": "Pine Street Art Works",
+    "country": "미국",
+    "city": "Vermont",
+    "sourcePortal": "Wikidata",
+    "sourceUrl": "http://www.wikidata.org/entity/Q7195358"
+  },
+  {
+    "name": "Arnot Galleries",
+    "country": "미국",
+    "city": "Vienna",
+    "sourcePortal": "Wikidata",
+    "sourceUrl": "http://www.wikidata.org/entity/Q113665924"
+  },
+  {
+    "name": "Anderson Gallery",
+    "country": "미국",
+    "city": "Virginia",
+    "sourcePortal": "Wikidata",
+    "sourceUrl": "http://www.wikidata.org/entity/Q134699833"
+  },
+  {
+    "name": "G Place Gallery",
+    "country": "미국",
+    "city": "Wainscott",
+    "sourcePortal": "Wikidata",
+    "sourceUrl": "http://www.wikidata.org/entity/Q72855881"
+  },
+  {
+    "name": "Hera Gallery",
+    "country": "미국",
+    "city": "Wakefield",
+    "sourcePortal": "Wikidata",
+    "sourceUrl": "http://www.wikidata.org/entity/Q5732474"
   },
   {
     "name": "Wall Drug",
@@ -3077,12 +6227,103 @@
     "sourceUrl": "http://www.wikidata.org/entity/Q109627645"
   },
   {
+    "name": "Adams Davidson Galleries",
+    "country": "미국",
+    "city": "Washington",
+    "sourcePortal": "Wikidata",
+    "sourceUrl": "http://www.wikidata.org/entity/Q134881831"
+  },
+  {
     "name": "Consolidated Works",
     "country": "미국",
     "city": "Washington",
     "website": "http://www.conworks.org/",
     "sourcePortal": "Wikidata",
     "sourceUrl": "http://www.wikidata.org/entity/Q5163308"
+  },
+  {
+    "name": "Fendrick Gallery",
+    "country": "미국",
+    "city": "Washington",
+    "sourcePortal": "Wikidata",
+    "sourceUrl": "http://www.wikidata.org/entity/Q72854790"
+  },
+  {
+    "name": "Foundry Gallery",
+    "country": "미국",
+    "city": "Washington",
+    "sourcePortal": "Wikidata",
+    "sourceUrl": "http://www.wikidata.org/entity/Q134882373"
+  },
+  {
+    "name": "Hemphill Fine Arts",
+    "country": "미국",
+    "city": "Washington",
+    "sourcePortal": "Wikidata",
+    "sourceUrl": "http://www.wikidata.org/entity/Q5712671"
+  },
+  {
+    "name": "Henri Gallery",
+    "country": "미국",
+    "city": "Washington",
+    "sourcePortal": "Wikidata",
+    "sourceUrl": "http://www.wikidata.org/entity/Q72853970"
+  },
+  {
+    "name": "Howard House",
+    "country": "미국",
+    "city": "Washington",
+    "sourcePortal": "Wikidata",
+    "sourceUrl": "http://www.wikidata.org/entity/Q5919920"
+  },
+  {
+    "name": "Jack Rasmussen Gallery",
+    "country": "미국",
+    "city": "Washington",
+    "sourcePortal": "Wikidata",
+    "sourceUrl": "http://www.wikidata.org/entity/Q72853885"
+  },
+  {
+    "name": "Jefferson Place Gallery",
+    "country": "미국",
+    "city": "Washington",
+    "sourcePortal": "Wikidata",
+    "sourceUrl": "http://www.wikidata.org/entity/Q6175565"
+  },
+  {
+    "name": "Jewelers' Werk Galerie",
+    "country": "미국",
+    "city": "Washington",
+    "sourcePortal": "Wikidata",
+    "sourceUrl": "http://www.wikidata.org/entity/Q98505063"
+  },
+  {
+    "name": "Kathleen Ewing Gallery",
+    "country": "미국",
+    "city": "Washington",
+    "sourcePortal": "Wikidata",
+    "sourceUrl": "http://www.wikidata.org/entity/Q110280478"
+  },
+  {
+    "name": "Larson Gallery",
+    "country": "미국",
+    "city": "Washington",
+    "sourcePortal": "Wikidata",
+    "sourceUrl": "http://www.wikidata.org/entity/Q6491861"
+  },
+  {
+    "name": "McLeod Residence",
+    "country": "미국",
+    "city": "Washington",
+    "sourcePortal": "Wikidata",
+    "sourceUrl": "http://www.wikidata.org/entity/Q6802240"
+  },
+  {
+    "name": "Nancy Drysdale Gallery",
+    "country": "미국",
+    "city": "Washington",
+    "sourcePortal": "Wikidata",
+    "sourceUrl": "http://www.wikidata.org/entity/Q73087986"
   },
   {
     "name": "National Gallery of Art Sculpture Garden",
@@ -3093,12 +6334,110 @@
     "sourceUrl": "http://www.wikidata.org/entity/Q6972835"
   },
   {
+    "name": "National Statuary Hall Collection",
+    "country": "미국",
+    "city": "Washington",
+    "sourcePortal": "Wikidata",
+    "sourceUrl": "http://www.wikidata.org/entity/Q1134223"
+  },
+  {
+    "name": "Northwest Woodworkers Gallery",
+    "country": "미국",
+    "city": "Washington",
+    "sourcePortal": "Wikidata",
+    "sourceUrl": "http://www.wikidata.org/entity/Q14713858"
+  },
+  {
+    "name": "Platform Gallery",
+    "country": "미국",
+    "city": "Washington",
+    "sourcePortal": "Wikidata",
+    "sourceUrl": "http://www.wikidata.org/entity/Q7202272"
+  },
+  {
+    "name": "Presidential Walk of Fame",
+    "country": "미국",
+    "city": "Washington",
+    "sourcePortal": "Wikidata",
+    "sourceUrl": "http://www.wikidata.org/entity/Q137471602"
+  },
+  {
+    "name": "Q114124295",
+    "country": "미국",
+    "city": "Washington",
+    "sourcePortal": "Wikidata",
+    "sourceUrl": "http://www.wikidata.org/entity/Q114124295"
+  },
+  {
+    "name": "Q133266381",
+    "country": "미국",
+    "city": "Washington",
+    "sourcePortal": "Wikidata",
+    "sourceUrl": "http://www.wikidata.org/entity/Q133266381"
+  },
+  {
+    "name": "Statues of the Liberators",
+    "country": "미국",
+    "city": "Washington",
+    "sourcePortal": "Wikidata",
+    "sourceUrl": "http://www.wikidata.org/entity/Q7604513"
+  },
+  {
+    "name": "Tollbooth Gallery",
+    "country": "미국",
+    "city": "Washington",
+    "sourcePortal": "Wikidata",
+    "sourceUrl": "http://www.wikidata.org/entity/Q7814356"
+  },
+  {
+    "name": "VO Galerie",
+    "country": "미국",
+    "city": "Washington",
+    "sourcePortal": "Wikidata",
+    "sourceUrl": "http://www.wikidata.org/entity/Q104629865"
+  },
+  {
+    "name": "Whyte Bookshop & Gallery",
+    "country": "미국",
+    "city": "Washington",
+    "sourcePortal": "Wikidata",
+    "sourceUrl": "http://www.wikidata.org/entity/Q130224388"
+  },
+  {
+    "name": "Zenith Gallery",
+    "country": "미국",
+    "city": "Washington",
+    "sourcePortal": "Wikidata",
+    "sourceUrl": "http://www.wikidata.org/entity/Q60767432"
+  },
+  {
     "name": "Wayne Art Center",
     "country": "미국",
     "city": "Wayne",
     "website": "https://www.wayneart.org/",
     "sourcePortal": "Wikidata",
     "sourceUrl": "http://www.wikidata.org/entity/Q110551514"
+  },
+  {
+    "name": "Old City Hall and Fire Station",
+    "country": "미국",
+    "city": "Weatherford",
+    "sourcePortal": "Wikidata",
+    "sourceUrl": "http://www.wikidata.org/entity/Q107320315"
+  },
+  {
+    "name": "RIVERA & RIVERA",
+    "country": "미국",
+    "city": "West Hollywood",
+    "sourcePortal": "Wikidata",
+    "sourceUrl": "http://www.wikidata.org/entity/Q7276845"
+  },
+  {
+    "name": "Wildenstein & Company",
+    "country": "미국",
+    "city": "Wildenstein & Company Building",
+    "sourcePortal": "Wikidata",
+    "sourceUrl": "http://www.wikidata.org/entity/Q10288082"
   },
   {
     "name": "Knight's Spider Web Farm",
@@ -3115,6 +6454,20 @@
     "website": "http://www.secca.org/",
     "sourcePortal": "Wikidata",
     "sourceUrl": "http://www.wikidata.org/entity/Q373379"
+  },
+  {
+    "name": "Center Street Gallery",
+    "country": "미국",
+    "city": "Winter Park",
+    "sourcePortal": "Wikidata",
+    "sourceUrl": "http://www.wikidata.org/entity/Q72854865"
+  },
+  {
+    "name": "Gallery 1015",
+    "country": "미국",
+    "city": "Wyncote",
+    "sourcePortal": "Wikidata",
+    "sourceUrl": "http://www.wikidata.org/entity/Q72854426"
   },
   {
     "name": "Kunsthalle Arbon",

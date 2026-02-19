@@ -16,6 +16,7 @@ const dbUrl = (process.env.DATABASE_URL || "").replace(/\\n$/, "").trim();
 
 type SeoulGallery = {
   name: string;
+  email?: string;
   city: "Seoul";
   country: "한국";
   website: string;
@@ -42,12 +43,8 @@ function cuid() {
   return "c" + crypto.randomBytes(12).toString("hex");
 }
 
-function slug(v: string) {
-  return v.toLowerCase().replace(/[^a-z0-9]+/g, ".").replace(/^\.|\.$/g, "");
-}
-
-function emailFor(name: string) {
-  return `${slug(name)}@gallery.art`;
+function emailFor(gallery: SeoulGallery) {
+  return String(gallery.email || "").trim().toLowerCase();
 }
 
 function randomPassword() {
@@ -76,7 +73,11 @@ async function main() {
 
   try {
     for (const g of SEOUL_GALLERIES) {
-      const email = emailFor(g.name);
+      const email = emailFor(g);
+      if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+        rows.push({ name: g.name, email: "이메일 확인 불가", password: "-", status: "skipped: no verified email" });
+        continue;
+      }
       const password = randomPassword();
       const passwordHash = bcrypt.hashSync(password, 10);
 

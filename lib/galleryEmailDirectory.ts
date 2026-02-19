@@ -33,6 +33,7 @@ type Candidate = {
 };
 
 let ensured = false;
+const EMAIL_NOT_AVAILABLE_LABEL = "이메일 확인 불가";
 
 function normalizeEmail(input: string) {
   return String(input || "").trim().toLowerCase();
@@ -58,6 +59,112 @@ function inferLanguageFromCountry(country?: string) {
 
 function isValidEmail(input: string) {
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(input);
+}
+
+function isPlaceholderEmail(input: string) {
+  const email = normalizeEmail(input);
+  if (!email) return false;
+  if (email.endsWith("@gallery.art")) return true;
+  if (email.endsWith("@rob.art")) return true;
+  if (email.endsWith("@rob-roleofbridge.com")) return true;
+  if (email.endsWith("@invalid.local")) return true;
+  return false;
+}
+
+function isCollectibleGalleryEmail(input: string) {
+  const email = normalizeEmail(input);
+  if (!email || !isValidEmail(email)) return false;
+  if (isPlaceholderEmail(email)) return false;
+  if (email === normalizeEmail(EMAIL_NOT_AVAILABLE_LABEL)) return false;
+  return true;
+}
+
+function hostFromUrl(url?: string) {
+  if (!url) return "";
+  try {
+    return new URL(url).hostname.replace(/^www\./, "").toLowerCase().trim();
+  } catch {
+    return "";
+  }
+}
+
+function unique<T>(arr: T[]) {
+  return Array.from(new Set(arr));
+}
+
+function extractEmails(text: string) {
+  const emailRegex = /[a-z0-9._%+-]+@[a-z0-9.-]+\.[a-z]{2,}/gi;
+  const found = String(text || "").match(emailRegex) || [];
+  return unique(found.map((v) => normalizeEmail(v))).filter(isCollectibleGalleryEmail);
+}
+
+function pickBestEmail(candidates: string[], websiteHost: string) {
+  if (!candidates.length) return "";
+  const host = String(websiteHost || "").trim().toLowerCase();
+  const clean = candidates
+    .map((c) => normalizeEmail(c))
+    .filter((c) => isCollectibleGalleryEmail(c))
+    .filter((c) => !c.startsWith("noreply@") && !c.startsWith("no-reply@"));
+  if (!clean.length) return "";
+  if (host) {
+    const sameHost = clean.find((c) => c.endsWith(`@${host}`));
+    if (sameHost) return sameHost;
+  }
+  return clean[0];
+}
+
+async function fetchText(url: string) {
+  try {
+    const res = await fetch(url, {
+      headers: { "user-agent": "ROB-GalleryEmail-Collector/1.0" },
+      signal: AbortSignal.timeout(4000),
+      cache: "no-store",
+    });
+    if (!res.ok) return "";
+    const html = await res.text();
+    return String(html || "");
+  } catch {
+    return "";
+  }
+}
+
+async function discoverPublicGalleryEmail(
+  website: string,
+  cache: Map<string, string>
+): Promise<string> {
+  const host = hostFromUrl(website);
+  if (!host) return "";
+  if (cache.has(host)) return String(cache.get(host) || "");
+
+  const origin = /^https?:\/\//i.test(website) ? website : `https://${website}`;
+  const base = origin.replace(/\/+$/, "");
+  const targets = unique([
+    base,
+    `${base}/contact`,
+    `${base}/contact-us`,
+    `${base}/about`,
+    `${base}/about-us`,
+    `${base}/imprint`,
+    `${base}/info`,
+  ]);
+
+  const emails: string[] = [];
+  for (const url of targets) {
+    const text = await fetchText(url);
+    if (!text) continue;
+    const found = extractEmails(text);
+    if (found.length) {
+      emails.push(...found);
+      const picked = pickBestEmail(emails, host);
+      if (picked) {
+        cache.set(host, picked);
+        return picked;
+      }
+    }
+  }
+
+  cache.set(host, "");
+  return "";
 }
 
 function sourcePriority(source: string) {
@@ -170,6 +277,7 @@ export async function upsertGalleryEmailDirectory(candidates: Candidate[]) {
 
 export async function syncGalleryEmailDirectory() {
   await ensureGalleryEmailDirectoryTable();
+  await deletePlaceholderGalleryEmails();
 
   const [openCalls, externalDirectory, internalGalleries] = await Promise.all([
     listOpenCalls(),
@@ -186,10 +294,14 @@ export async function syncGalleryEmailDirectory() {
   ]);
 
   const byEmail = new Map<string, Candidate>();
+  const byHostName = new Map<string, Omit<Candidate, "email">>();
+  const discoveryCache = new Map<string, string>();
+  let discoveryAttempts = 0;
+  const discoveryLimit = 40;
 
   for (const g of internalGalleries) {
     const email = normalizeEmail(g.email);
-    if (!email || !isValidEmail(email)) continue;
+    if (!email || !isCollectibleGalleryEmail(email)) continue;
     const candidate: Candidate = {
       email,
       galleryName: g.galleryProfile?.name || email,
@@ -206,9 +318,7 @@ export async function syncGalleryEmailDirectory() {
 
   for (const e of externalDirectory) {
     const email = normalizeEmail(e.externalEmail || "");
-    if (!email || !isValidEmail(email)) continue;
-    const candidate: Candidate = {
-      email,
+    const base: Omit<Candidate, "email"> = {
       galleryName: e.name,
       country: e.country || undefined,
       city: e.city || undefined,
@@ -218,15 +328,19 @@ export async function syncGalleryEmailDirectory() {
       website: e.website || undefined,
       qualityScore: Number(e.qualityScore || 60),
     };
-    byEmail.set(email, mergeCandidate(byEmail.get(email), candidate));
+    if (email && isCollectibleGalleryEmail(email)) {
+      byEmail.set(email, mergeCandidate(byEmail.get(email), { ...base, email }));
+      continue;
+    }
+    const host = hostFromUrl(e.website || "");
+    const key = `${host}|${normalizeEmail(e.name)}`;
+    if (host && !byHostName.has(key)) byHostName.set(key, base);
   }
 
   for (const oc of openCalls) {
     if (!oc.isExternal) continue;
     const email = normalizeEmail(oc.externalEmail || "");
-    if (!email || !isValidEmail(email)) continue;
-    const candidate: Candidate = {
-      email,
+    const base: Omit<Candidate, "email"> = {
       galleryName: oc.gallery,
       country: oc.country || undefined,
       city: oc.city || undefined,
@@ -236,7 +350,31 @@ export async function syncGalleryEmailDirectory() {
       website: oc.galleryWebsite || undefined,
       qualityScore: 50,
     };
-    byEmail.set(email, mergeCandidate(byEmail.get(email), candidate));
+    if (email && isCollectibleGalleryEmail(email)) {
+      byEmail.set(email, mergeCandidate(byEmail.get(email), { ...base, email }));
+      continue;
+    }
+    const host = hostFromUrl(oc.galleryWebsite || "");
+    const key = `${host}|${normalizeEmail(oc.gallery)}`;
+    if (host && !byHostName.has(key)) byHostName.set(key, base);
+  }
+
+  for (const base of byHostName.values()) {
+    if (discoveryAttempts >= discoveryLimit) break;
+    const website = String(base.website || "").trim();
+    if (!website) continue;
+    discoveryAttempts += 1;
+    const discovered = await discoverPublicGalleryEmail(website, discoveryCache);
+    if (!discovered || !isCollectibleGalleryEmail(discovered)) continue;
+    byEmail.set(
+      discovered,
+      mergeCandidate(byEmail.get(discovered), {
+        ...base,
+        email: discovered,
+        source: "website_discovery",
+        qualityScore: Math.max(Number(base.qualityScore || 0), 70),
+      })
+    );
   }
 
   const candidates = Array.from(byEmail.values());
@@ -244,7 +382,62 @@ export async function syncGalleryEmailDirectory() {
   return {
     collected: candidates.length,
     upserted: result.upserted,
+    discovered: discoveryAttempts,
   };
+}
+
+export async function deletePlaceholderGalleryEmails() {
+  await ensureGalleryEmailDirectoryTable();
+  const deleted = await prisma.$executeRawUnsafe(
+    `
+      DELETE FROM "GalleryEmailDirectory"
+      WHERE lower("email") LIKE '%@gallery.art'
+         OR lower("email") LIKE '%@rob.art'
+         OR lower("email") LIKE '%@rob-roleofbridge.com';
+    `
+  );
+  const cleanedOpenCall = await prisma.$executeRawUnsafe(
+    `
+      UPDATE "OpenCall"
+      SET "externalEmail" = NULL
+      WHERE "externalEmail" IS NOT NULL
+        AND (
+          lower("externalEmail") LIKE '%@gallery.art'
+          OR lower("externalEmail") LIKE '%@rob.art'
+          OR lower("externalEmail") LIKE '%@rob-roleofbridge.com'
+        );
+    `
+  );
+  let cleanedExternalDirectory = 0;
+  try {
+    cleanedExternalDirectory = await prisma.$executeRawUnsafe(
+      `
+        UPDATE "ExternalGalleryDirectory"
+        SET "externalEmail" = NULL
+        WHERE "externalEmail" IS NOT NULL
+          AND (
+            lower("externalEmail") LIKE '%@gallery.art'
+            OR lower("externalEmail") LIKE '%@rob.art'
+            OR lower("externalEmail") LIKE '%@rob-roleofbridge.com'
+          );
+      `
+    );
+  } catch {
+    cleanedExternalDirectory = 0;
+  }
+  const anonymizedUsers = await prisma.$executeRawUnsafe(
+    `
+      UPDATE "User"
+      SET "email" = 'email-unverified+' || "id" || '@invalid.local'
+      WHERE "role" = 'gallery'
+        AND (
+          lower("email") LIKE '%@gallery.art'
+          OR lower("email") LIKE '%@rob.art'
+          OR lower("email") LIKE '%@rob-roleofbridge.com'
+        );
+    `
+  );
+  return { deleted, cleanedOpenCall, cleanedExternalDirectory, anonymizedUsers };
 }
 
 export async function listGalleryEmailDirectory(params?: {

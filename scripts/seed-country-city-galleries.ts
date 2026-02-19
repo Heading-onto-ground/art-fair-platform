@@ -15,6 +15,7 @@ const dbUrl = (process.env.DATABASE_URL || "").replace(/\\n$/, "").trim();
 
 type Entry = {
   name: string;
+  email?: string;
   country: string;
   city: string;
   website: string;
@@ -25,12 +26,12 @@ type Entry = {
 
 const ENTRIES: Entry[] = [
   { name: "NANZUKA", country: "일본", city: "Tokyo", website: "https://www.nanzuka.com", foundedYear: 2005, address: "Shibuya-ku, Tokyo", bio: "Contemporary gallery program in Tokyo." },
-  { name: "The Modern Institute", country: "영국", city: "Glasgow", website: "https://www.themoderninstitute.com", foundedYear: 1997, address: "Glasgow", bio: "International contemporary art gallery." },
-  { name: "Regen Projects", country: "미국", city: "Los Angeles", website: "https://www.regenprojects.com", foundedYear: 1989, address: "Los Angeles", bio: "Major LA contemporary gallery." },
-  { name: "Galerie Max Hetzler", country: "독일", city: "Berlin", website: "https://www.maxhetzler.com", foundedYear: 1974, address: "Berlin", bio: "Leading German gallery." },
-  { name: "Gió Marconi", country: "이탈리아", city: "Milan", website: "https://www.giomarconi.com", foundedYear: 1990, address: "Milan", bio: "Contemporary gallery in Milan." },
+  { name: "The Modern Institute", email: "mail@themoderninstitute.com", country: "영국", city: "Glasgow", website: "https://www.themoderninstitute.com", foundedYear: 1997, address: "Glasgow", bio: "International contemporary art gallery." },
+  { name: "Regen Projects", email: "office@regenprojects.com", country: "미국", city: "Los Angeles", website: "https://www.regenprojects.com", foundedYear: 1989, address: "Los Angeles", bio: "Major LA contemporary gallery." },
+  { name: "Galerie Max Hetzler", email: "info@maxhetzler.com", country: "독일", city: "Berlin", website: "https://www.maxhetzler.com", foundedYear: 1974, address: "Berlin", bio: "Leading German gallery." },
+  { name: "Gió Marconi", email: "info@giomarconi.com", country: "이탈리아", city: "Milan", website: "https://www.giomarconi.com", foundedYear: 1990, address: "Milan", bio: "Contemporary gallery in Milan." },
   { name: "White Space Beijing", country: "중국", city: "Beijing", website: "https://www.whitespace-beijing.com", foundedYear: 2004, address: "798 Art District", bio: "Contemporary gallery in Beijing." },
-  { name: "von Bartha", country: "스위스", city: "Basel", website: "https://www.vonbartha.com", foundedYear: 1970, address: "Basel", bio: "Swiss gallery with international program." },
+  { name: "von Bartha", email: "info@vonbartha.com", country: "스위스", city: "Basel", website: "https://www.vonbartha.com", foundedYear: 1970, address: "Basel", bio: "Swiss gallery with international program." },
   { name: "Sutton Gallery", country: "호주", city: "Melbourne", website: "https://www.suttongallery.com.au", foundedYear: 1988, address: "Melbourne", bio: "Contemporary Australian art gallery." },
 ];
 
@@ -38,12 +39,8 @@ function cuid() {
   return "c" + crypto.randomBytes(12).toString("hex");
 }
 
-function slug(v: string) {
-  return v.toLowerCase().replace(/[^a-z0-9]+/g, ".").replace(/^\.|\.$/g, "");
-}
-
-function emailFor(name: string, city: string) {
-  return `${slug(name)}.${slug(city)}@gallery.art`;
+function emailFor(entry: Entry) {
+  return String(entry.email || "").trim().toLowerCase();
 }
 
 function randomPassword() {
@@ -70,7 +67,11 @@ async function main() {
 
   try {
     for (const e of ENTRIES) {
-      const email = emailFor(e.name, e.city);
+      const email = emailFor(e);
+      if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+        rows.push({ country: e.country, city: e.city, name: e.name, email: "이메일 확인 불가", password: "-", status: "skipped: no verified email" });
+        continue;
+      }
       const password = randomPassword();
       const passwordHash = bcrypt.hashSync(password, 10);
 

@@ -5,7 +5,7 @@ type ResolveGalleryContactEmailInput = {
   fallback?: string;
 };
 
-const EMAIL_NOT_FOUND_LABEL = "이메일 못찾음";
+const EMAIL_NOT_FOUND_LABEL = "이메일 확인 불가";
 
 function normalizeText(input: string) {
   return String(input || "")
@@ -34,7 +34,12 @@ function isValidEmail(input: string) {
 
 function isPlaceholderGalleryArtEmail(input?: string) {
   const email = String(input || "").trim().toLowerCase();
-  return email.endsWith("@gallery.art");
+  return (
+    email.endsWith("@gallery.art") ||
+    email.endsWith("@rob.art") ||
+    email.endsWith("@rob-roleofbridge.com") ||
+    email.endsWith("@invalid.local")
+  );
 }
 
 const EMAIL_BY_NORMALIZED_NAME: Record<string, string> = {

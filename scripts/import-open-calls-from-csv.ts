@@ -22,6 +22,7 @@ const dbUrl = (process.env.DATABASE_URL || "").replace(/\\n$/, "").trim();
 
 type CsvRow = {
   gallery_name: string;
+  gallery_email?: string;
   gallery_country: string;
   gallery_city: string;
   gallery_website?: string;
@@ -51,16 +52,8 @@ function cuid() {
   return "c" + crypto.randomBytes(12).toString("hex");
 }
 
-function slug(v: string) {
-  return v.toLowerCase().replace(/[^a-z0-9]+/g, ".").replace(/^\.|\.$/g, "");
-}
-
 function galleryIdFor(name: string) {
   return `DIR-${name.replace(/[^a-zA-Z0-9]+/g, "-").toUpperCase().slice(0, 20)}`;
-}
-
-function emailFor(name: string, city: string) {
-  return `${slug(name)}.${slug(city)}@gallery.art`;
 }
 
 function randomPassword() {
@@ -136,6 +129,14 @@ function normalizeDeadline(v: string): string {
   return s;
 }
 
+function normalizeEmail(v: string) {
+  return String(v || "").trim().toLowerCase();
+}
+
+function isValidEmail(v: string) {
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v);
+}
+
 async function main() {
   if (!dbUrl) throw new Error("DATABASE_URL is empty");
 
@@ -200,7 +201,17 @@ async function main() {
         continue;
       }
 
-      const email = emailFor(galleryName, city);
+      const email = normalizeEmail(row.gallery_email || "");
+      if (!isValidEmail(email)) {
+        errors++;
+        credRows.push({
+          gallery_name: galleryName,
+          gallery_email: "이메일 확인 불가",
+          gallery_password: "",
+          account_status: "skipped_no_verified_email",
+        });
+        continue;
+      }
       const generatedPassword = randomPassword();
       const passwordHash = bcrypt.hashSync(generatedPassword, 10);
 
