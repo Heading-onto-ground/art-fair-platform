@@ -7,6 +7,7 @@ import {
 } from "@/app/data/applications";
 import { getOpenCallById } from "@/app/data/openCalls";
 import { getAdminSession } from "@/lib/adminAuth";
+import { sendPlatformEmail } from "@/lib/email";
 
 export const dynamic = "force-dynamic";
 
@@ -107,23 +108,43 @@ export async function POST(req: NextRequest) {
       platformUrl,
     });
 
-    // In production, this would send via Resend/SendGrid/etc.
-    // For now, we log and mark as sent
-    console.log(`\n📧 OUTREACH EMAIL to ${galleryName} (${galleryEmail})`);
-    console.log(`Subject: An artist is interested in "${openCallTheme}"`);
-    console.log(`Body:\n${emailBody}`);
-    console.log(`---\n`);
+    if (!galleryEmail || !String(galleryEmail).includes("@")) {
+      return NextResponse.json({ error: "gallery email missing" }, { status: 400 });
+    }
+
+    const subject = `An artist is interested in "${openCallTheme}" — ROB Platform`;
+    const sendRes = await sendPlatformEmail({
+      emailType: "external_outreach",
+      to: galleryEmail,
+      subject,
+      text: emailBody,
+      html: `<div style="font-family:Arial,sans-serif;white-space:pre-wrap;line-height:1.7">${emailBody}</div>`,
+      replyTo: "contact@rob-roleofbridge.com",
+      meta: {
+        applicationId,
+        galleryName,
+        galleryEmail,
+        openCallTheme,
+        artistName,
+      },
+    });
+    if (!sendRes.ok) {
+      return NextResponse.json(
+        { error: sendRes.error || "failed to send outreach email" },
+        { status: 500 }
+      );
+    }
 
     // Mark outreach as sent
     const updated = await markOutreachSent(applicationId, `Outreach sent to ${galleryEmail}`);
 
     return NextResponse.json({
       ok: true,
-      message: `Outreach email prepared for ${galleryName} (${galleryEmail})`,
+      message: `Outreach email sent to ${galleryName} (${galleryEmail})`,
       application: updated,
       email: {
         to: galleryEmail,
-        subject: `An artist is interested in "${openCallTheme}" — ROB Platform`,
+        subject,
         body: emailBody,
       },
     });

@@ -378,26 +378,33 @@ export default function OutreachPage() {
 
                   {/* Action buttons */}
                   <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-                    {!app.outreachSent ? (
-                      <button
-                        onClick={() => sendOutreachToGallery(app.id)}
-                        disabled={sendingOutreach === app.id}
-                        style={{
-                          padding: "10px 20px", border: "1px solid #1A1A1A", background: "#1A1A1A",
-                          color: "#FDFBF7", fontFamily: F, fontSize: 10, fontWeight: 500,
-                          letterSpacing: "0.1em", textTransform: "uppercase",
-                          cursor: sendingOutreach === app.id ? "wait" : "pointer",
-                        }}
-                      >
-                        {sendingOutreach === app.id
-                          ? tr("Sending...", "발송 중...", "送信中...", "Envoi...")
+                    <button
+                      onClick={() => sendOutreachToGallery(app.id)}
+                      disabled={sendingOutreach === app.id}
+                      style={{
+                        padding: "10px 20px",
+                        border: app.outreachSent ? "1px solid #8B7355" : "1px solid #1A1A1A",
+                        background: app.outreachSent ? "#FFFFFF" : "#1A1A1A",
+                        color: app.outreachSent ? "#8B7355" : "#FDFBF7",
+                        fontFamily: F,
+                        fontSize: 10,
+                        fontWeight: 500,
+                        letterSpacing: "0.1em",
+                        textTransform: "uppercase",
+                        cursor: sendingOutreach === app.id ? "wait" : "pointer",
+                      }}
+                    >
+                      {sendingOutreach === app.id
+                        ? tr("Sending...", "발송 중...", "送信中...", "Envoi...")
+                        : app.outreachSent
+                          ? tr("Resend outreach", "아웃리치 재발송", "再送信", "Renvoyer outreach")
                           : `${tr("Send outreach to", "아웃리치 보내기:", "送信先:", "Envoyer à")} ${app.galleryName}`}
-                      </button>
-                    ) : (
+                    </button>
+                    {app.outreachSent ? (
                       <span style={{ fontFamily: F, fontSize: 11, color: "#5A7A5A" }}>
                         {tr("Sent", "발송됨", "送信済み", "Envoyé")} {app.outreachSentAt ? new Date(app.outreachSentAt).toLocaleString() : ""}
                       </span>
-                    )}
+                    ) : null}
                   </div>
 
                   {outreachResults[app.id] && (
