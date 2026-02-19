@@ -34,16 +34,27 @@ export async function GET(req: Request) {
     });
   }
 
+  let stage = "init";
   try {
     const { searchParams } = new URL(req.url);
     const includeEmailSync = searchParams.get("emails") === "1";
+    stage = "loadPortalGallerySources";
     const loadedSources = await loadPortalGallerySources();
     const mergedRaw: RawDirectoryGallery[] = [
       ...loadedSources.sources,
       ...PORTAL_GALLERY_SEEDS,
     ];
+    stage = "canonicalizeDirectoryGalleries";
     const canonical = canonicalizeDirectoryGalleries(mergedRaw);
+    const byGalleryId = new Map<string, number>();
+    for (const g of canonical) {
+      const id = String(g.galleryId || "").trim();
+      byGalleryId.set(id, (byGalleryId.get(id) || 0) + 1);
+    }
+    const duplicateGalleryIds = Array.from(byGalleryId.values()).filter((n) => n > 1).length;
+    stage = "upsertExternalGalleryDirectory";
     await upsertExternalGalleryDirectory(canonical);
+    stage = "syncGalleryEmailDirectory";
     const emailSync = includeEmailSync
       ? await syncGalleryEmailDirectory()
       : { skipped: true, reason: "emails=0" };
@@ -56,6 +67,8 @@ export async function GET(req: Request) {
     return NextResponse.json({
       ok: true,
       synced: canonical.length,
+      uniqueGalleryIds: byGalleryId.size,
+      duplicateGalleryIds,
       rawInput: mergedRaw.length,
       deduped: mergedRaw.length - canonical.length,
       countries: byCountry,
@@ -65,7 +78,7 @@ export async function GET(req: Request) {
   } catch (e) {
     console.error("GET /api/cron/sync-gallery-directory failed:", e);
     const message = e instanceof Error ? e.message : "server error";
-    return NextResponse.json({ ok: false, error: "server error", detail: message }, { status: 500 });
+    return NextResponse.json({ ok: false, error: "server error", stage, detail: message }, { status: 500 });
   }
 }
 
