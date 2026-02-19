@@ -3,21 +3,7 @@ import { getProfileByUserId } from "@/lib/auth";
 import { getExhibitionsByGalleryId } from "@/app/data/exhibitions";
 import { listOpenCalls } from "@/app/data/openCalls";
 import { getExternalGalleryDirectoryById } from "@/lib/externalGalleryDirectory";
-
-function hostFromUrl(url?: string) {
-  if (!url) return "";
-  try {
-    return new URL(url).hostname.replace(/^www\./, "").toLowerCase().trim();
-  } catch {
-    return "";
-  }
-}
-
-function inferredEmailFromWebsite(website?: string) {
-  const host = hostFromUrl(website);
-  if (!host || !host.includes(".")) return "";
-  return `info@${host}`;
-}
+import { resolveGalleryContactEmail } from "@/lib/galleryContactEmail";
 
 function isTokenLike(value: string) {
   const v = String(value || "").trim();
@@ -61,7 +47,11 @@ export async function GET(
           id: `external-directory-${id}`,
           userId: id,
           role: "gallery" as const,
-          email: ext.externalEmail || inferredEmailFromWebsite(ext.website || undefined) || "",
+          email: resolveGalleryContactEmail({
+            name: ext.name,
+            explicit: ext.externalEmail || "",
+            website: ext.website || undefined,
+          }),
           name: ext.name,
           country: ext.country,
           city: ext.city,
@@ -92,7 +82,11 @@ export async function GET(
         id: `external-${id}`,
         userId: id,
         role: "gallery" as const,
-        email: latest.externalEmail || inferredEmailFromWebsite(latest.galleryWebsite || undefined) || "",
+        email: resolveGalleryContactEmail({
+          name: latest.gallery,
+          explicit: latest.externalEmail || "",
+          website: latest.galleryWebsite || undefined,
+        }),
         name: latest.gallery,
         country: latest.country,
         city: latest.city,
@@ -108,8 +102,19 @@ export async function GET(
     }
 
     const exhibitions = await getExhibitionsByGalleryId(profile.userId);
+    const safeProfile =
+      profile.role === "gallery"
+        ? {
+          ...profile,
+          email: resolveGalleryContactEmail({
+            name: profile.name,
+            explicit: profile.email,
+            website: profile.website || undefined,
+          }),
+        }
+        : profile;
 
-    return NextResponse.json({ ok: true, profile, exhibitions }, { status: 200 });
+    return NextResponse.json({ ok: true, profile: safeProfile, exhibitions }, { status: 200 });
   } catch (e) {
     console.error("GET /api/public/gallery/[id] failed:", e);
     return NextResponse.json(

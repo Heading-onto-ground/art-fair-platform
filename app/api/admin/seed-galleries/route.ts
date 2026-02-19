@@ -75,7 +75,7 @@ export async function POST(req: Request) {
   const dummyPasswordHash = bcrypt.hashSync("gallery-directory-2026", 10);
 
   for (const g of GALLERIES) {
-    const email = `directory_${g.name.toLowerCase().replace(/[^a-z0-9]/g, "_")}@rob.art`;
+    const email = `directory_${g.name.toLowerCase().replace(/[^a-z0-9]/g, "_")}@rob-roleofbridge.com`;
 
     try {
       // Check if user already exists

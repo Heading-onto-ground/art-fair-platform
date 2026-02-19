@@ -4,6 +4,7 @@ import { listOpenCalls } from "@/app/data/openCalls";
 import { listExternalGalleryDirectory } from "@/lib/externalGalleryDirectory";
 import { listGalleryEmailDirectory } from "@/lib/galleryEmailDirectory";
 import { PORTAL_GALLERY_SEEDS } from "@/lib/portalGallerySeeds";
+import { resolveGalleryContactEmail } from "@/lib/galleryContactEmail";
 
 export const dynamic = "force-dynamic";
 
@@ -114,12 +115,6 @@ function isValidEmail(input: string) {
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(input || "").trim());
 }
 
-function inferredEmailFromWebsite(website?: string) {
-  const host = hostFromUrl(website);
-  if (!host || !host.includes(".")) return "";
-  return `info@${host}`;
-}
-
 function matchKey(input: {
   name: string;
   country: string;
@@ -189,14 +184,17 @@ export async function GET() {
       city: string;
     }) {
       const explicit = String(input.explicit || "").trim().toLowerCase();
-      if (isValidEmail(explicit)) return explicit;
-      if (input.galleryId && emailByGalleryId.has(input.galleryId)) return String(emailByGalleryId.get(input.galleryId));
+      const fromGalleryId = input.galleryId && emailByGalleryId.has(input.galleryId) ? String(emailByGalleryId.get(input.galleryId)) : "";
       const host = hostFromUrl(input.website);
-      if (host && emailByHost.has(host)) return String(emailByHost.get(host));
+      const fromHost = host && emailByHost.has(host) ? String(emailByHost.get(host)) : "";
       const ncc = `ncc:${normalizeText(input.name)}|${normalizeText(input.country)}|${normalizeText(input.city)}`;
-      if (emailByNcc.has(ncc)) return String(emailByNcc.get(ncc));
-      const inferred = inferredEmailFromWebsite(input.website);
-      return inferred || "";
+      const fromNcc = emailByNcc.has(ncc) ? String(emailByNcc.get(ncc)) : "";
+      return resolveGalleryContactEmail({
+        name: input.name,
+        explicit,
+        website: input.website,
+        fallback: fromGalleryId || fromHost || fromNcc,
+      });
     }
 
     const internalIds = new Set(internalGalleries.map((g) => g.userId));

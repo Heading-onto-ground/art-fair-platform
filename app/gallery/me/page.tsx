@@ -89,7 +89,7 @@ export default function GalleryMePage() {
       if (adminData?.authenticated) {
         setAdminReadOnly(true);
         setMe({
-          session: { userId: "__admin_preview__", role: "gallery", email: adminData?.session?.email || "admin@rob.art" },
+          session: { userId: "__admin_preview__", role: "gallery", email: adminData?.session?.email || "admin@rob-roleofbridge.com" },
           profile: null,
         });
         setLoading(false);

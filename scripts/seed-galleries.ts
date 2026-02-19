@@ -61,7 +61,7 @@ async function main() {
 
   try {
     for (const g of GALLERIES) {
-      const email = `directory_${g.name.toLowerCase().replace(/[^a-z0-9]/g, "_")}@rob.art`;
+      const email = `directory_${g.name.toLowerCase().replace(/[^a-z0-9]/g, "_")}@rob-roleofbridge.com`;
       const galleryId = `DIR-${g.name.replace(/\s+/g, "-").toUpperCase().slice(0, 20)}`;
 
       try {

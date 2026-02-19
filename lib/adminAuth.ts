@@ -7,7 +7,7 @@ import { signSession, verifySession } from "@/lib/session";
 const ADMIN_COOKIE = "afp_admin_session";
 
 // Default admin credentials (override via env vars in production)
-const ADMIN_EMAIL = process.env.ADMIN_EMAIL || "admin@rob.art";
+const ADMIN_EMAIL = process.env.ADMIN_EMAIL || "admin@rob-roleofbridge.com";
 const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || "rob-admin-2026";
 
 export type AdminSession = {

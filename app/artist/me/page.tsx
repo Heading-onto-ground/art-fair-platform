@@ -37,7 +37,7 @@ export default function ArtistMePage() {
         const adminData = adminRes ? await adminRes.json().catch(() => null) : null;
         if (adminData?.authenticated) {
           setAdminReadOnly(true);
-          setMe({ session: { userId: "__admin_preview__", role: "artist", email: adminData?.session?.email || "admin@rob.art" }, profile: null });
+          setMe({ session: { userId: "__admin_preview__", role: "artist", email: adminData?.session?.email || "admin@rob-roleofbridge.com" }, profile: null });
           return;
         }
       }

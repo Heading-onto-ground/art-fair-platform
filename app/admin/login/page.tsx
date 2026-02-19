@@ -143,7 +143,7 @@ export default function AdminLoginPage() {
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               required
-              placeholder="admin@rob.art"
+              placeholder="admin@rob-roleofbridge.com"
               style={{
                 width: "100%",
                 padding: "14px 16px",
