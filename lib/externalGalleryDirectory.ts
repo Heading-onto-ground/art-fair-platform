@@ -67,7 +67,8 @@ export async function upsertExternalGalleryDirectory(items: CanonicalDirectoryGa
   const rows = items
     .map((item) => {
       const galleryId = String(item.galleryId || "").trim();
-      const matchKey = String(item.matchKey || "").trim() || null;
+      // Keep nullable to avoid unique-index conflicts across heterogeneous source merges.
+      const matchKey = null;
       const name = String(item.name || "").trim();
       const country = String(item.country || "").trim();
       const city = String(item.city || "").trim();
