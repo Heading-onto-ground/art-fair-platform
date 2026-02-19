@@ -19,6 +19,11 @@ function normalizeLoose(value: string | undefined | null) {
   return String(value ?? "").trim().toLowerCase();
 }
 
+function looksLikeEmail(value: string | undefined | null) {
+  const v = String(value || "").trim();
+  return !!v && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v);
+}
+
 function sanitizePortfolioForApplication(value?: string) {
   const v = String(value || "").trim();
   if (!v) return undefined;
@@ -224,6 +229,10 @@ export async function GET(req: Request) {
 export async function POST(req: Request) {
   let stage = "init";
   try {
+    let emailSent = false;
+    let outreachReason: string | null = null;
+    let outreachTargetEmail: string | null = null;
+
     stage = "session";
     const session = getServerSession();
     if (!session || session.role !== "artist") {
@@ -368,6 +377,9 @@ export async function POST(req: Request) {
       // 외부 오픈콜 → 갤러리에 자동 아웃리치 이메일 발송
       const artistName = profile.name ?? session.userId;
       const platformUrl = "https://art-fair-platform.vercel.app";
+      const targetEmail = String(openCall.externalEmail || "").trim();
+      const canSendOutreach = looksLikeEmail(targetEmail);
+      outreachTargetEmail = canSendOutreach ? targetEmail : null;
 
       const emailBody = `Dear ${openCall.gallery},
 
@@ -398,10 +410,18 @@ ${platformUrl}
 `;
 
       // 이메일 발송 (비동기, 실패해도 지원은 성공)
-      try {
-        if (openCall.externalEmail) {
-          await sendApplicationEmail({
-            galleryEmail: openCall.externalEmail,
+      if (!canSendOutreach) {
+        outreachReason = "missing_external_email";
+        console.warn("Auto-outreach skipped: missing/invalid external email", {
+          openCallId,
+          gallery: openCall.gallery,
+          externalEmail: openCall.externalEmail,
+        });
+      } else {
+        // 이메일 발송 (비동기, 실패해도 지원은 성공)
+        try {
+          const sent = await sendApplicationEmail({
+            galleryEmail: targetEmail,
             galleryName: openCall.gallery,
             openCallTheme: openCall.theme,
             artistName,
@@ -413,34 +433,44 @@ ${platformUrl}
             artistWebsite: profile.website ?? undefined,
             message: emailBody,
           });
-          console.log(`📧 Auto-outreach sent to ${openCall.gallery} (${openCall.externalEmail}) for artist ${artistName}`);
+          emailSent = !!sent.ok;
+          outreachReason = sent.ok ? "sent" : `send_failed:${sent.error || "unknown"}`;
+          if (sent.ok) {
+            console.log(`📧 Auto-outreach sent to ${openCall.gallery} (${targetEmail}) for artist ${artistName}`);
+          }
+        } catch (emailErr) {
+          outreachReason = "send_failed:exception";
+          console.error("Auto-outreach email error (non-blocking):", emailErr);
         }
-      } catch (emailErr) {
-        console.error("Auto-outreach email error (non-blocking):", emailErr);
-      }
 
-      try {
-        // 발송 기록 마킹
-        await markOutreachSent(created.id, `Auto-sent to ${openCall.externalEmail}`);
-      } catch (markErr) {
-        console.error("markOutreachSent failed (non-blocking):", markErr);
+        if (emailSent) {
+          try {
+            // 발송 기록 마킹
+            await markOutreachSent(created.id, `Auto-sent to ${targetEmail}`);
+          } catch (markErr) {
+            console.error("markOutreachSent failed (non-blocking):", markErr);
+          }
+        }
       }
 
       try {
         // 어드민에게도 기록 알림
         await createNotification({
           userId: "ROB_ADMIN",
-          type: "new_application",
-          title: "AUTO OUTREACH SENT",
-          message: `${artistName} applied to "${openCall.theme}" at ${openCall.gallery}. Outreach email auto-sent to ${openCall.externalEmail}.`,
+          type: emailSent ? "new_application" : "system_alert",
+          title: emailSent ? "AUTO OUTREACH SENT" : "AUTO OUTREACH SKIPPED",
+          message: emailSent
+            ? `${artistName} applied to "${openCall.theme}" at ${openCall.gallery}. Outreach email auto-sent to ${targetEmail}.`
+            : `${artistName} applied to "${openCall.theme}" at ${openCall.gallery}. Outreach skipped (${outreachReason || "unknown"}).`,
           link: `/admin/outreach`,
           data: {
             applicationId: created.id,
             openCallId,
             galleryName: openCall.gallery,
-            galleryEmail: openCall.externalEmail,
+            galleryEmail: targetEmail || null,
             artistName,
-            autoSent: true,
+            autoSent: emailSent,
+            outreachReason,
           },
         });
       } catch (adminNotifErr) {
@@ -450,6 +480,13 @@ ${platformUrl}
 
     return NextResponse.json({
       application: created,
+      emailSent,
+      outreach: {
+        isExternal: !!openCall.isExternal,
+        sent: emailSent,
+        reason: outreachReason,
+        targetEmail: outreachTargetEmail,
+      },
     }, { status: 201 });
   } catch (e: any) {
     const detail = String(e?.message || e || "").slice(0, 400);

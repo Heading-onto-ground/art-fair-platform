@@ -13,6 +13,7 @@ type Role = "artist" | "gallery";
 type MeResponse = { session: { userId: string; role: Role; email?: string } | null; profile: any | null };
 type OpenCall = { id: string; galleryId: string; gallery: string; city: string; country: string; theme: string; exhibitionDate?: string; deadline: string; posterImage?: string | null; isExternal?: boolean; externalEmail?: string; externalUrl?: string; galleryWebsite?: string; galleryDescription?: string };
 type Application = { id: string; openCallId: string; galleryId: string; artistId: string; artistName: string; artistEmail: string; artistCountry: string; artistCity: string; artistPortfolioUrl?: string; message?: string; status: "submitted" | "reviewing" | "accepted" | "rejected"; shippingStatus: "pending" | "shipped" | "received" | "inspected" | "exhibited"; shippingNote?: string; shippingCarrier?: string; trackingNumber?: string; trackingUrl?: string; createdAt: number; updatedAt: number };
+type OutreachResult = { isExternal?: boolean; sent?: boolean; reason?: string | null; targetEmail?: string | null };
 
 async function fetchMe(): Promise<MeResponse | null> { try { const res = await fetch("/api/auth/me?lite=1", { cache: "default", credentials: "include" }); return (await res.json().catch(() => null)) as MeResponse | null; } catch { return null; } }
 
@@ -49,6 +50,7 @@ export default function OpenCallDetailPage({ params }: { params: { id: string } 
   const [translatedDesc, setTranslatedDesc] = useState<string | null>(null);
   const [showTranslation, setShowTranslation] = useState(false);
   const [translating, setTranslating] = useState(false);
+  const [outreachResult, setOutreachResult] = useState<OutreachResult | null>(null);
 
   async function translateText(text: string, targetLang: string): Promise<string | null> {
     try {
@@ -77,8 +79,33 @@ export default function OpenCallDetailPage({ params }: { params: { id: string } 
     })();
   }, [openCall?.id, lang]);
 
-  useEffect(() => { (async () => { setMe(await fetchMe()); })(); }, []);
-  useEffect(() => { (async () => { try { setError(null); setLoading(true); const res = await fetch(`/api/open-calls/${params.id}`, { cache: "default", credentials: "include" }); const data = await res.json().catch(() => null); if (!res.ok) throw new Error(data?.error ?? `Failed (${res.status})`); setOpenCall((data?.openCall ?? null) as OpenCall | null); } catch (e: any) { setOpenCall(null); setError(e?.message ?? "Failed to load"); } finally { setLoading(false); } })(); }, [params.id]);
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        setError(null);
+        setLoading(true);
+        const [meData, openCallRes] = await Promise.all([
+          fetchMe(),
+          fetch(`/api/open-calls/${params.id}`, { cache: "default", credentials: "include" }),
+        ]);
+        const openCallData = await openCallRes.json().catch(() => null);
+        if (cancelled) return;
+        setMe(meData);
+        if (!openCallRes.ok) throw new Error(openCallData?.error ?? `Failed (${openCallRes.status})`);
+        setOpenCall((openCallData?.openCall ?? null) as OpenCall | null);
+      } catch (e: any) {
+        if (cancelled) return;
+        setOpenCall(null);
+        setError(e?.message ?? "Failed to load");
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [params.id]);
 
   useEffect(() => { if (!openCall || !me?.session) return; const session = me.session; (async () => { try { setLoadingApps(true); const res = await fetch(`/api/applications?openCallId=${openCall.id}`, { cache: "default", credentials: "include" }); const data = await res.json().catch(() => null); if (!res.ok) { setApplications([]); setMyApplication(null); return; } const list = Array.isArray(data?.applications) ? data.applications : []; if (session.role === "artist") { setMyApplication(list[0] ?? null); setApplications([]); } else if (session.role === "gallery") { setApplications(session.userId === openCall.galleryId ? list : []); setMyApplication(null); } } finally { setLoadingApps(false); } })(); }, [openCall?.id, me?.session?.userId]);
 
@@ -86,7 +113,7 @@ export default function OpenCallDetailPage({ params }: { params: { id: string } 
 
   async function contactGallery() { if (!openCall) return; setContacting(true); setError(null); try { const m = me ?? (await fetchMe()); if (!m?.session) { router.push("/login"); return; } if (m.session.role !== "artist") throw new Error("Artists only"); const res = await fetch("/api/chat", { method: "POST", headers: { "Content-Type": "application/json" }, credentials: "include", body: JSON.stringify({ openCallId: openCall.id, galleryId: openCall.galleryId }) }); const data = await res.json().catch(() => null); if (!res.ok || !data?.roomId) throw new Error(data?.error ?? "Failed"); router.push(`/chat/${data.roomId}`); } catch (e: any) { setError(e?.message ?? "Failed"); } finally { setContacting(false); } }
 
-  async function applyToOpenCall() { if (!openCall) return; setApplying(true); setError(null); try { const res = await fetch("/api/applications", { method: "POST", headers: { "Content-Type": "application/json" }, credentials: "include", body: JSON.stringify({ openCallId: openCall.id, message: applyMessage.trim() || undefined }) }); const data = await res.json().catch(() => null); if (!res.ok || !data?.application) throw new Error(data?.error ?? "Failed"); setMyApplication(data.application as Application); if (data.emailSent) setEmailSent(true); } catch (e: any) { setError(e?.message ?? "Failed"); } finally { setApplying(false); } }
+  async function applyToOpenCall() { if (!openCall) return; setApplying(true); setError(null); try { const res = await fetch("/api/applications", { method: "POST", headers: { "Content-Type": "application/json" }, credentials: "include", body: JSON.stringify({ openCallId: openCall.id, message: applyMessage.trim() || undefined }) }); const data = await res.json().catch(() => null); if (!res.ok || !data?.application) throw new Error(data?.error ?? "Failed"); setMyApplication(data.application as Application); setOutreachResult((data?.outreach ?? null) as OutreachResult | null); if (data.emailSent) setEmailSent(true); } catch (e: any) { setError(e?.message ?? "Failed"); } finally { setApplying(false); } }
 
   async function markShipped() { if (!myApplication) return; setShipSaving(true); setError(null); try { const res = await fetch(`/api/applications/${myApplication.id}`, { method: "PATCH", headers: { "Content-Type": "application/json" }, credentials: "include", body: JSON.stringify({ shippingStatus: "shipped", shippingNote: shipNote.trim() || undefined, shippingCarrier: shipCarrier.trim() || undefined, trackingNumber: shipTrackingNumber.trim() || undefined, trackingUrl: shipTrackingUrl.trim() || undefined }) }); const data = await res.json().catch(() => null); if (!res.ok || !data?.application) throw new Error(data?.error ?? "Failed"); setMyApplication(data.application as Application); } catch (e: any) { setError(e?.message ?? "Failed"); } finally { setShipSaving(false); } }
 
@@ -231,6 +258,19 @@ export default function OpenCallDetailPage({ params }: { params: { id: string } 
                     <div style={{ marginTop: 12, padding: 16, background: "rgba(90,122,90,0.04)", border: "1px solid rgba(90,122,90,0.15)" }}>
                       <p style={{ fontFamily: F, fontSize: 12, color: "#5A7A5A", lineHeight: 1.5, margin: 0, fontWeight: 300 }}>{t("oc_application_submitted", lang)}</p>
                     </div>
+                    {openCall.isExternal && (
+                      <div style={{ marginTop: 12, padding: 12, border: "1px solid #E8E3DB", background: "#FAF8F4" }}>
+                        <p style={{ margin: 0, fontFamily: F, fontSize: 11, color: "#6A6660", lineHeight: 1.5 }}>
+                          {emailSent || outreachResult?.sent
+                            ? (lang === "ko"
+                              ? `외부 갤러리(${outreachResult?.targetEmail || openCall.externalEmail || "이메일"})로 자동 아웃리치 메일을 보냈습니다.`
+                              : "Auto outreach email was sent to the external gallery.")
+                            : (lang === "ko"
+                              ? "외부 갤러리 이메일이 없어 자동 메일을 보내지 못했습니다. 관리자 아웃리치에서 수동 발송이 필요합니다."
+                              : "No external gallery email was available, so auto outreach was skipped. Manual outreach is needed from admin.")}
+                        </p>
+                      </div>
+                    )}
                     {myApplication.shippingStatus !== "pending" && (
                       <div style={{ fontFamily: F, marginTop: 8, fontSize: 12, color: "#8A8580" }}>{t("oc_shipping", lang)}: {myApplication.shippingStatus}</div>
                     )}

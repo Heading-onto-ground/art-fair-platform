@@ -96,6 +96,12 @@ export default function ArtistsPage() {
   }, [artists, country, query]);
 
   useEffect(() => {
+    for (const artist of filtered.slice(0, 24)) {
+      router.prefetch(`/artists/${encodeURIComponent(artist.userId)}`);
+    }
+  }, [router, filtered]);
+
+  useEffect(() => {
     if (hasAutoSelectedCountry) return;
     if (country !== "ALL") {
       setHasAutoSelectedCountry(true);

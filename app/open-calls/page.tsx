@@ -85,6 +85,13 @@ export default function OpenCallsPage() {
   }, [openCalls, countryFilter]);
 
   useEffect(() => {
+    // Prefetch likely detail routes to make list -> detail navigation feel instant.
+    for (const item of filtered.slice(0, 16)) {
+      router.prefetch(`/open-calls/${item.id}`);
+    }
+  }, [router, filtered]);
+
+  useEffect(() => {
     if (hasAutoSelectedCountry) return;
     if (countryFilter !== "ALL") {
       setHasAutoSelectedCountry(true);
@@ -136,7 +143,7 @@ export default function OpenCallsPage() {
     if (lang === "en" || openCalls.length === 0) return;
     const targets = openCalls
       .filter((o) => !translatedById[o.id]?.theme)
-      .slice(0, 20);
+      .slice(0, 8);
     if (targets.length === 0) return;
     (async () => {
       for (const item of targets) {
