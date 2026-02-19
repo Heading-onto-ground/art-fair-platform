@@ -74,7 +74,7 @@ export async function POST(req: Request) {
               email: email.toLowerCase(),
               role,
             });
-            const appUrl = process.env.NEXT_PUBLIC_APP_URL || "https://www.rob-roleofbridge.com";
+            const appUrl = process.env.NEXT_PUBLIC_APP_URL || "https://rob-roleofbridge.com";
             const verifyUrl = `${appUrl}/api/auth/verify?token=${encodeURIComponent(token)}&email=${encodeURIComponent(email.toLowerCase())}&role=${encodeURIComponent(role)}`;
             const acceptLang = req.headers.get("accept-language");
             const sent = await sendVerificationEmail({

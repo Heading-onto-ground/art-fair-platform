@@ -9,7 +9,7 @@ export const dynamic = "force-dynamic";
 type Role = "artist" | "gallery";
 
 function redirectToLogin(status: "success" | "expired" | "invalid" | "server") {
-  const appUrl = process.env.NEXT_PUBLIC_APP_URL || "https://www.rob-roleofbridge.com";
+  const appUrl = process.env.NEXT_PUBLIC_APP_URL || "https://rob-roleofbridge.com";
   return NextResponse.redirect(`${appUrl}/login?verified=${status}`);
 }
 

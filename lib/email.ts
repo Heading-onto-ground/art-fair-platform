@@ -5,7 +5,7 @@ import { logEmailEvent } from "@/lib/emailLog";
 const RESEND_API_KEY = process.env.RESEND_API_KEY || "";
 const FROM_EMAIL = process.env.FROM_EMAIL || "onboarding@resend.dev";
 const PLATFORM_NAME = "ROB — Role of Bridge";
-const PLATFORM_URL = process.env.NEXT_PUBLIC_APP_URL || "https://www.rob-roleofbridge.com";
+const PLATFORM_URL = process.env.NEXT_PUBLIC_APP_URL || "https://rob-roleofbridge.com";
 
 export type ArtistApplicationEmail = {
   galleryEmail: string;

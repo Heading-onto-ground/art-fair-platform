@@ -81,7 +81,7 @@ async function fetchPage(url: string) {
       redirect: "follow",
       cache: "no-store",
       headers: {
-        "user-agent": "ROB-OpenCall-Validator/1.0 (+https://www.rob-roleofbridge.com)",
+        "user-agent": "ROB-OpenCall-Validator/1.0 (+https://rob-roleofbridge.com)",
         accept: "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
       },
     });

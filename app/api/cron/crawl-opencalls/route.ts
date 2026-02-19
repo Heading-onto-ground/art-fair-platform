@@ -177,7 +177,7 @@ async function fetchText(url: string, timeoutMs = 10000): Promise<string> {
     const res = await fetch(url, {
       signal: controller.signal,
       headers: {
-        "user-agent": "ROB-OpenCall-Crawler/1.0 (+https://www.rob-roleofbridge.com)",
+        "user-agent": "ROB-OpenCall-Crawler/1.0 (+https://rob-roleofbridge.com)",
         accept: "text/html,application/xml,text/xml;q=0.9,*/*;q=0.8",
       },
       cache: "no-store",
