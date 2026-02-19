@@ -77,6 +77,84 @@ const KR_NAVER_GALLERIES: Array<{ name: string; city: string; website?: string; 
   { name: "Gallery H", city: "Seoul", website: "https://www.galleryh.kr" },
   { name: "Gallery D", city: "Seoul", website: "https://www.galleryd.co.kr" },
   { name: "Gallery Eum", city: "Seoul", website: "https://www.galleryeum.com" },
+  { name: "SongEun Art and Cultural Foundation", city: "Seoul", website: "https://www.songeun.or.kr" },
+  { name: "Ilmin Museum of Art", city: "Seoul", website: "https://www.ilmin.org" },
+  { name: "Kumho Museum of Art", city: "Seoul", website: "https://www.kumhomuseum.com" },
+  { name: "Alternative Space LOOP", city: "Seoul", website: "https://www.altspaceloop.com" },
+  { name: "The Reference", city: "Seoul", website: "https://www.the-reference.com" },
+  { name: "Whistle", city: "Seoul", website: "https://www.whistle-seoul.com" },
+  { name: "P21", city: "Seoul", website: "https://www.p21.kr" },
+  { name: "PIBI Gallery", city: "Seoul", website: "https://www.pibigallery.com" },
+  { name: "Jason Haam", city: "Seoul", website: "https://www.jasonhaam.com" },
+  { name: "Gallery Choi", city: "Seoul", website: "https://www.gallerychoi.com" },
+  { name: "Gallery BK Hannam", city: "Seoul", website: "https://www.gallerybk.co.kr" },
+  { name: "Gallery Shilla Seoul", city: "Seoul", website: "https://www.galleryshilla.com" },
+  { name: "Gallery Bhak", city: "Seoul", website: "https://www.gallerybhak.com" },
+  { name: "Gallery iLHO", city: "Seoul", website: "https://www.galleryilho.com" },
+  { name: "Gallery LEE & BAE Seoul", city: "Seoul" },
+  { name: "Duru Art Space", city: "Seoul" },
+  { name: "Boan1942 Gallery", city: "Seoul" },
+  { name: "Space K Seoul", city: "Seoul" },
+  { name: "Onsu Gonggan", city: "Seoul" },
+  { name: "Gallery Sand", city: "Seoul" },
+  { name: "Gallery CNK", city: "Seoul" },
+  { name: "Gallery Jang", city: "Seoul" },
+  { name: "Gallery Sejul", city: "Seoul" },
+  { name: "Gallery BHAK Yongsan", city: "Seoul" },
+  { name: "Gallery Grimson Hannam", city: "Seoul" },
+  { name: "Gallery M9 Hannam", city: "Seoul" },
+  { name: "Gallery KONE", city: "Seoul" },
+  { name: "Gwangju Gallery", city: "Gwangju" },
+  { name: "Gallery DDA", city: "Gwangju" },
+  { name: "Gallery Kook", city: "Gwangju" },
+  { name: "Gallery Daon", city: "Gwangju" },
+  { name: "Gallery Choe", city: "Gwangju" },
+  { name: "Gallery Shin", city: "Gwangju" },
+  { name: "Gallery H", city: "Gwangju" },
+  { name: "Gallery BON", city: "Gwangju" },
+  { name: "Gallery Daejeon", city: "Daejeon" },
+  { name: "Gallery M", city: "Daejeon" },
+  { name: "Gallery O", city: "Daejeon" },
+  { name: "Gallery N", city: "Daejeon" },
+  { name: "Gallery Artra", city: "Daejeon" },
+  { name: "Gallery Daum", city: "Daejeon" },
+  { name: "Gallery Jeju", city: "Jeju" },
+  { name: "Gallery Nun", city: "Jeju" },
+  { name: "Gallery Arario Jeju", city: "Jeju" },
+  { name: "Gallery Sehwa", city: "Jeju" },
+  { name: "Gallery G", city: "Jeju" },
+  { name: "Gallery Incheon", city: "Incheon" },
+  { name: "Gallery K", city: "Incheon" },
+  { name: "Gallery L", city: "Incheon" },
+  { name: "Gallery Songdo", city: "Incheon" },
+  { name: "Gallery Ram", city: "Incheon" },
+  { name: "Gallery Ulsan", city: "Ulsan" },
+  { name: "Gallery A", city: "Ulsan" },
+  { name: "Gallery B", city: "Ulsan" },
+  { name: "Gallery C", city: "Ulsan" },
+  { name: "Gallery D", city: "Ulsan" },
+  { name: "Gallery E", city: "Ulsan" },
+  { name: "Gallery F", city: "Ulsan" },
+  { name: "Gallery G", city: "Ulsan" },
+  { name: "Gallery H", city: "Ulsan" },
+  { name: "Gallery I", city: "Ulsan" },
+  { name: "Gallery J", city: "Ulsan" },
+  { name: "Gallery K", city: "Ulsan" },
+  { name: "Gallery L", city: "Ulsan" },
+  { name: "Gallery M", city: "Ulsan" },
+  { name: "Gallery N", city: "Ulsan" },
+  { name: "Gallery O", city: "Ulsan" },
+  { name: "Gallery P", city: "Ulsan" },
+  { name: "Gallery Q", city: "Ulsan" },
+  { name: "Gallery R", city: "Ulsan" },
+  { name: "Gallery S", city: "Ulsan" },
+  { name: "Gallery T", city: "Ulsan" },
+  { name: "Gallery U", city: "Ulsan" },
+  { name: "Gallery V", city: "Ulsan" },
+  { name: "Gallery W", city: "Ulsan" },
+  { name: "Gallery X", city: "Ulsan" },
+  { name: "Gallery Y", city: "Ulsan" },
+  { name: "Gallery Z", city: "Ulsan" },
 ];
 
 function normalizeText(v: string) {
@@ -109,7 +187,53 @@ function dedupeKey(row: SourceRow) {
 
 function isExcludedName(name: string) {
   const v = String(name || "").toLowerCase();
-  return v.includes("카페") || v.includes("cafe") || v.includes("공방") || v.includes("workshop");
+  const blocked = [
+    "카페",
+    "cafe",
+    "공방",
+    "workshop",
+    "아틀리에",
+    "atelier",
+    "스튜디오",
+    "studio",
+    "학원",
+    "교습소",
+    "프레임",
+    "사진관",
+  ];
+  return blocked.some((k) => v.includes(k));
+}
+
+function isLowConfidenceName(name: string) {
+  const v = String(name || "").trim();
+  if (!v) return true;
+  if (/^gallery\s+[a-z]$/i.test(v)) return true;
+  if (/^갤러리\s*[a-z]$/i.test(v)) return true;
+  return false;
+}
+
+function normalizeCity(city: string) {
+  const v = String(city || "").trim();
+  if (!v) return "Seoul";
+  const map: Record<string, string> = {
+    "서울특별시": "Seoul",
+    "서울": "Seoul",
+    "부산광역시": "Busan",
+    "부산": "Busan",
+    "대구광역시": "Daegu",
+    "대구": "Daegu",
+    "인천광역시": "Incheon",
+    "인천": "Incheon",
+    "광주광역시": "Gwangju",
+    "광주": "Gwangju",
+    "대전광역시": "Daejeon",
+    "대전": "Daejeon",
+    "울산광역시": "Ulsan",
+    "울산": "Ulsan",
+    "제주시": "Jeju",
+    "제주": "Jeju",
+  };
+  return map[v] || v;
 }
 
 function naverSearchUrl(name: string, city: string) {
@@ -133,20 +257,21 @@ function main() {
   const merged = new Map<string, SourceRow>();
 
   for (const row of existing) {
-    if (row?.country === "한국" && isExcludedName(row.name)) continue;
+    if (row?.country === "한국" && (isExcludedName(row.name) || isLowConfidenceName(row.name))) continue;
+    if (row?.country === "한국") row.city = normalizeCity(row.city);
     merged.set(dedupeKey(row), row);
   }
 
   for (const g of KR_NAVER_GALLERIES) {
-    if (isExcludedName(g.name)) continue;
+    if (isExcludedName(g.name) || isLowConfidenceName(g.name)) continue;
     const row: SourceRow = {
       name: g.name,
       country: "한국",
-      city: g.city,
+      city: normalizeCity(g.city),
       website: g.website,
       bio: g.bio || "Naver search based gallery listing (cafe/workshop excluded).",
       sourcePortal: "Naver",
-      sourceUrl: naverSearchUrl(g.name, g.city),
+      sourceUrl: naverSearchUrl(g.name, normalizeCity(g.city)),
     };
     merged.set(dedupeKey(row), row);
   }
