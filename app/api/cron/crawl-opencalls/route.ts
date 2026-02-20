@@ -5,6 +5,8 @@ import { syncGalleryEmailDirectory } from "@/lib/galleryEmailDirectory";
 import { validateExternalOpenCalls } from "@/lib/openCallValidation";
 
 export const dynamic = "force-dynamic";
+export const runtime = "nodejs";
+export const maxDuration = 300;
 
 type CrawledOpenCall = {
   source: string;
