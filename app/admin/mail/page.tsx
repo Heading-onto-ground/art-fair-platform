@@ -283,10 +283,10 @@ export default function AdminMailPage() {
           }}
         >
           {tr(
-            "Deliverability check: SPF is configured. DMARC appears missing in DNS. Add a TXT record for _dmarc.rob-roleofbridge.com to reduce spam-box risk.",
-            "전달성 체크: SPF는 설정되어 있습니다. DNS에서 DMARC는 아직 보이지 않습니다. 스팸함 위험을 줄이려면 _dmarc.rob-roleofbridge.com TXT 레코드를 추가하세요.",
-            "到達性チェック: SPF は設定済みです。DNS では DMARC が未設定に見えます。迷惑メール判定を減らすため、_dmarc.rob-roleofbridge.com の TXT レコードを追加してください。",
-            "Verification de delivrabilite : SPF est configure. DMARC semble absent dans le DNS. Ajoutez un enregistrement TXT pour _dmarc.rob-roleofbridge.com afin de reduire le risque de spam."
+            "Deliverability tip: keep SPF, DKIM, and DMARC configured in DNS for stable inbox delivery.",
+            "전달성 안내: 받은편지함 도달률을 높이려면 DNS에서 SPF, DKIM, DMARC를 함께 유지하세요.",
+            "到達性のヒント: 受信トレイ到達率を高めるため、DNS で SPF・DKIM・DMARC を維持してください。",
+            "Conseil de delivrabilite : maintenez SPF, DKIM et DMARC dans le DNS pour une meilleure reception en boite de reception."
           )}
         </div>
 
