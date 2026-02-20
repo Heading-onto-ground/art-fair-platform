@@ -21,15 +21,6 @@ type OpenCall = {
 
 type MeResponse = { session: { userId: string; role: string } | null; profile: any | null };
 
-function hostFromUrl(url?: string): string {
-  if (!url) return "";
-  try {
-    return new URL(url).hostname.replace(/^www\./, "");
-  } catch {
-    return "";
-  }
-}
-
 export default function OpenCallsPage() {
   const router = useRouter();
   const { data, error, isLoading, mutate } = useFetch<{ openCalls: OpenCall[] }>("/api/open-calls");
@@ -235,79 +226,37 @@ export default function OpenCallsPage() {
                       }}
                     >
                       {lang === "ko"
-                        ? `오픈콜 정보 · 전시 ${o.exhibitionDate || "-"} · 지원 마감 ${o.deadline} · ${o.isExternal ? "원문 사이트 지원" : "ROB 지원 가능"}`
+                        ? `오픈콜 정보 · 전시 ${o.exhibitionDate || "-"} · 지원 마감 ${o.deadline}`
                         : lang === "ja"
-                          ? `オープンコール情報 · 展示日 ${o.exhibitionDate || "-"} · 応募締切 ${o.deadline} · ${o.isExternal ? "原文サイトで応募" : "ROBで応募可能"}`
-                          : `Open call info · Exhibition ${o.exhibitionDate || "-"} · Deadline ${o.deadline} · ${o.isExternal ? "Apply via source site" : "Apply via ROB"}`}
+                          ? `オープンコール情報 · 展示日 ${o.exhibitionDate || "-"} · 応募締切 ${o.deadline}`
+                          : `Open call info · Exhibition ${o.exhibitionDate || "-"} · Deadline ${o.deadline}`}
                     </p>
-                    {(o.galleryWebsite || o.externalUrl) && (
-                      <div style={{ marginTop: 10, display: "flex", gap: 8, flexWrap: "wrap" }}>
-                        {lang !== "en" && (
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              toggleTranslation(o);
-                            }}
-                            disabled={!!translatingById[o.id]}
-                            style={{
-                              fontFamily: F,
-                              fontSize: 10,
-                              letterSpacing: "0.08em",
-                              textTransform: "uppercase",
-                              color: "#8A8580",
-                              border: "1px solid #E8E3DB",
-                              padding: "6px 10px",
-                              background: "#FFFFFF",
-                              cursor: translatingById[o.id] ? "wait" : "pointer",
-                            }}
-                          >
-                            {translatingById[o.id]
-                              ? "..."
-                              : showOriginalById[o.id]
-                                ? t("oc_show_translation", lang)
-                                : t("oc_show_original", lang)}
-                          </button>
-                        )}
-                        {o.galleryWebsite && (
-                          <a
-                            href={o.galleryWebsite}
-                            target="_blank"
-                            rel="noreferrer"
-                            onClick={(e) => e.stopPropagation()}
-                            style={{
-                              fontFamily: F,
-                              fontSize: 10,
-                              letterSpacing: "0.08em",
-                              textTransform: "uppercase",
-                              color: "#8B7355",
-                              textDecoration: "none",
-                              border: "1px solid #E8E3DB",
-                              padding: "6px 10px",
-                            }}
-                          >
-                            {hostFromUrl(o.galleryWebsite) || "Website"}
-                          </a>
-                        )}
-                        {o.externalUrl && (
-                          <a
-                            href={o.externalUrl}
-                            target="_blank"
-                            rel="noreferrer"
-                            onClick={(e) => e.stopPropagation()}
-                            style={{
-                              fontFamily: F,
-                              fontSize: 10,
-                              letterSpacing: "0.08em",
-                              textTransform: "uppercase",
-                              color: "#8A8580",
-                              textDecoration: "none",
-                              border: "1px solid #E8E3DB",
-                              padding: "6px 10px",
-                            }}
-                          >
-                            {t("oc_source", lang)}
-                          </a>
-                        )}
+                    {lang !== "en" && (
+                      <div style={{ marginTop: 10 }}>
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            toggleTranslation(o);
+                          }}
+                          disabled={!!translatingById[o.id]}
+                          style={{
+                            fontFamily: F,
+                            fontSize: 10,
+                            letterSpacing: "0.08em",
+                            textTransform: "uppercase",
+                            color: "#8A8580",
+                            border: "1px solid #E8E3DB",
+                            padding: "6px 10px",
+                            background: "#FFFFFF",
+                            cursor: translatingById[o.id] ? "wait" : "pointer",
+                          }}
+                        >
+                          {translatingById[o.id]
+                            ? "..."
+                            : showOriginalById[o.id]
+                              ? t("oc_show_translation", lang)
+                              : t("oc_show_original", lang)}
+                        </button>
                       </div>
                     )}
                   </div>
