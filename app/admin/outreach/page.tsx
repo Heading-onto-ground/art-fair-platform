@@ -531,7 +531,7 @@ export default function OutreachPage() {
               { name: "artrabbit", url: "artrabbit.com", type: tr("Scrape", "스크랩", "スクレイプ", "Scraping") },
               { name: "transartists", url: "transartists.org", type: tr("Scrape", "스크랩", "スクレイプ", "Scraping") },
               { name: "arthub-kr", url: "arthub.co.kr", type: tr("Scrape", "스크랩", "スクレイプ", "Scraping") },
-              { name: "korean-art-blog", url: "blog.naver.com", type: tr("Scrape", "스크랩", "スクレイプ", "Scraping") },
+              { name: "korean-art-blog", url: "blog.naver.com", type: "RSS/Scrape" },
             ].map((s) => (
               <div key={s.name} style={{ padding: "16px 20px", background: "#FFFFFF", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                 <div>

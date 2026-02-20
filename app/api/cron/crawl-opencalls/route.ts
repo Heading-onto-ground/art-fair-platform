@@ -1027,7 +1027,7 @@ export async function GET(req: Request) {
       { name: "artrabbit", url: "https://www.artrabbit.com", type: "Scrape", status: "active" },
       { name: "transartists", url: "https://www.transartists.org", type: "Scrape", status: "active" },
       { name: "arthub-kr", url: "https://arthub.co.kr", type: "Scrape", status: "active" },
-      { name: "korean-art-blog", url: "https://blog.naver.com", type: "Scrape", status: "active" },
+      { name: "korean-art-blog", url: "https://blog.naver.com", type: "RSS/Scrape", status: "active" },
       { name: "japan-open-call", url: "https://www.tokyoartsandspace.jp/en/application/about_opencall.html", type: "RSS/Scrape", status: "active" },
       { name: "instagram", url: "https://www.instagram.com", type: "Graph API", status: "active if env configured" },
     ],
