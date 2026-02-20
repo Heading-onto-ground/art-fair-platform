@@ -927,31 +927,53 @@ async function runCrawlJob() {
   });
 
   const imported: any[] = [];
+  const importErrors: Array<{ source: string; gallery: string; reason: string }> = [];
   for (const call of newCalls) {
-    const created = await createOpenCall({
-      galleryId: call.galleryId,
-      gallery: call.gallery,
-      city: call.city,
-      country: call.country,
-      theme: call.theme,
-      deadline: call.deadline,
-      isExternal: true,
-      externalEmail: call.externalEmail,
-      externalUrl: call.externalUrl,
-      galleryWebsite: call.galleryWebsite,
-      galleryDescription: call.galleryDescription,
-    });
-    imported.push({
-      id: created.id,
-      source: call.source,
-      gallery: call.gallery,
-      country: call.country,
-      theme: call.theme,
-    });
+    try {
+      const created = await createOpenCall({
+        galleryId: call.galleryId,
+        gallery: call.gallery,
+        city: call.city,
+        country: call.country,
+        theme: call.theme,
+        deadline: call.deadline,
+        isExternal: true,
+        externalEmail: call.externalEmail,
+        externalUrl: call.externalUrl,
+        galleryWebsite: call.galleryWebsite,
+        galleryDescription: call.galleryDescription,
+      });
+      imported.push({
+        id: created.id,
+        source: call.source,
+        gallery: call.gallery,
+        country: call.country,
+        theme: call.theme,
+      });
+    } catch (e: any) {
+      importErrors.push({
+        source: call.source,
+        gallery: call.gallery,
+        reason: String(e?.message || "createOpenCall failed"),
+      });
+    }
   }
 
-  const emailDirectory = await syncGalleryEmailDirectory();
-  const validation = await validateExternalOpenCalls();
+  let emailDirectory: any = { collected: 0, upserted: 0, discovered: 0, skipped: true };
+  let emailDirectoryError: string | null = null;
+  try {
+    emailDirectory = await syncGalleryEmailDirectory();
+  } catch (e: any) {
+    emailDirectoryError = String(e?.message || "email directory sync failed");
+  }
+
+  let validation: any = { total: 0, verified: 0, suspicious: 0, invalid: 0, unreachable: 0, pruned: 0, skipped: true };
+  let validationError: string | null = null;
+  try {
+    validation = await validateExternalOpenCalls();
+  } catch (e: any) {
+    validationError = String(e?.message || "validation failed");
+  }
 
   return {
     message: `Crawler completed. ${imported.length} new open calls imported.`,
@@ -962,6 +984,9 @@ async function runCrawlJob() {
     cleanedExpired,
     emailDirectory,
     validation,
+    importErrors: importErrors.slice(0, 20),
+    emailDirectoryError,
+    validationError,
     koreanArtBlogDebug: krBlogsWithDebug.debug,
     japanOpenCallDebug: jpOpenCallsWithDebug.debug,
     sources: ["e-flux", "artrabbit", "transartists", "arthub-kr", "korean-art-blog", "japan-open-call", "instagram"],
@@ -972,9 +997,9 @@ export async function POST() {
   try {
     const data = await runCrawlJob();
     return NextResponse.json(data);
-  } catch (e) {
+  } catch (e: any) {
     console.error("POST /api/cron/crawl-opencalls failed:", e);
-    return NextResponse.json({ error: "server error" }, { status: 500 });
+    return NextResponse.json({ error: "server error", detail: String(e?.message || "unknown") }, { status: 500 });
   }
 }
 
@@ -987,9 +1012,9 @@ export async function GET(req: Request) {
     try {
       const data = await runCrawlJob();
       return NextResponse.json({ triggeredBy: isCron ? "vercel-cron" : "query", ...data });
-    } catch (e) {
+    } catch (e: any) {
       console.error("GET /api/cron/crawl-opencalls run failed:", e);
-      return NextResponse.json({ error: "crawler run failed" }, { status: 500 });
+      return NextResponse.json({ error: "crawler run failed", detail: String(e?.message || "unknown") }, { status: 500 });
     }
   }
 
