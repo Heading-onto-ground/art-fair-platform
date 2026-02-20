@@ -230,8 +230,23 @@ export default function OutreachPage() {
     try {
       const res = await fetch("/api/cron/crawl-opencalls", { method: "POST" });
       const data = await res.json();
-      setCrawlResult(data.message || tr("Crawler completed", "크롤러 완료", "クローラー完了", "Crawler terminé"));
-    } catch { setCrawlResult(tr("Crawler failed", "크롤러 실패", "クローラー失敗", "Échec du crawler")); }
+      if (!res.ok || data?.error) {
+        const detail = data?.error || `HTTP ${res.status}`;
+        setCrawlResult(
+          `${tr("Crawler failed", "크롤러 실패", "クローラー失敗", "Échec du crawler")}: ${detail}`
+        );
+        return;
+      }
+      const importedCount = Array.isArray(data?.imported) ? data.imported.length : null;
+      setCrawlResult(
+        importedCount !== null
+          ? `${data?.message || tr("Crawler completed", "크롤러 완료", "クローラー完了", "Crawler terminé")} (${tr("imported", "신규 반영", "新規反映", "importés")}: ${importedCount})`
+          : data?.message || tr("Crawler completed", "크롤러 완료", "クローラー完了", "Crawler terminé")
+      );
+      loadData();
+    } catch {
+      setCrawlResult(tr("Crawler failed", "크롤러 실패", "クローラー失敗", "Échec du crawler"));
+    }
     finally { setCrawling(false); }
   }
 
