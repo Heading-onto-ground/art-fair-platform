@@ -2,8 +2,42 @@ import { NextRequest, NextResponse } from "next/server";
 import { getAdminSession } from "@/lib/adminAuth";
 import { isValidEmail, sanitizeEmail, sanitizeText } from "@/lib/sanitize";
 import { sendPlatformEmail } from "@/lib/email";
+import { prisma } from "@/lib/prisma";
 
 export const dynamic = "force-dynamic";
+
+type PlatformRole = "artist" | "gallery";
+
+function dedupeEmails(values: string[]) {
+  return Array.from(new Set(values.map((v) => sanitizeEmail(v)).filter(Boolean)));
+}
+
+async function resolvePlatformRecipients(input: {
+  recipientMode: "all" | "selected";
+  roles: PlatformRole[];
+  userIds?: string[];
+}) {
+  const roles = (input.roles || []).filter((r): r is PlatformRole => r === "artist" || r === "gallery");
+  if (!roles.length) return [];
+
+  if (input.recipientMode === "selected") {
+    const userIds = Array.isArray(input.userIds)
+      ? input.userIds.map((v) => String(v || "").trim()).filter(Boolean)
+      : [];
+    if (!userIds.length) return [];
+    const rows: Array<{ email: string }> = await prisma.user.findMany({
+      where: { id: { in: userIds }, role: { in: roles } as any },
+      select: { email: true },
+    });
+    return dedupeEmails(rows.map((r: { email: string }) => String(r.email || ""))).filter(isValidEmail);
+  }
+
+  const rows: Array<{ email: string }> = await prisma.user.findMany({
+    where: { role: { in: roles } as any },
+    select: { email: true },
+  });
+  return dedupeEmails(rows.map((r: { email: string }) => String(r.email || ""))).filter(isValidEmail);
+}
 
 export async function POST(req: NextRequest) {
   try {
@@ -13,20 +47,41 @@ export async function POST(req: NextRequest) {
     }
 
     const body = await req.json().catch(() => ({}));
+    const mode = String(body?.targetMode || "manual").trim().toLowerCase();
     const to = sanitizeEmail(String(body?.to || ""));
     const subject = sanitizeText(String(body?.subject || ""), 180);
     const message = sanitizeText(String(body?.message || ""), 5000);
     const replyToRaw = String(body?.replyTo || "").trim();
     const replyTo = replyToRaw ? sanitizeEmail(replyToRaw) : "";
 
-    if (!to || !subject || !message) {
+    if (!subject || !message) {
       return NextResponse.json({ error: "missing fields" }, { status: 400 });
-    }
-    if (!isValidEmail(to)) {
-      return NextResponse.json({ error: "invalid recipient email" }, { status: 400 });
     }
     if (replyTo && !isValidEmail(replyTo)) {
       return NextResponse.json({ error: "invalid reply-to email" }, { status: 400 });
+    }
+
+    let recipients: string[] = [];
+    if (mode === "platform") {
+      const recipientMode = String(body?.recipientMode || "selected").trim() === "all" ? "all" : "selected";
+      const rolesRaw = Array.isArray(body?.roles) ? body.roles : [];
+      const roles: PlatformRole[] = rolesRaw
+        .map((v: unknown) => String(v || "").trim().toLowerCase())
+        .filter((v: string) => v === "artist" || v === "gallery") as PlatformRole[];
+      recipients = await resolvePlatformRecipients({
+        recipientMode,
+        roles: roles.length ? roles : ["artist", "gallery"],
+        userIds: Array.isArray(body?.userIds) ? body.userIds : [],
+      });
+    } else {
+      if (!to || !isValidEmail(to)) {
+        return NextResponse.json({ error: "invalid recipient email" }, { status: 400 });
+      }
+      recipients = [to];
+    }
+
+    if (!recipients.length) {
+      return NextResponse.json({ error: "no recipients resolved" }, { status: 400 });
     }
 
     const text = `${message}\n\n---\nSent from ROB Admin Mail`;
@@ -38,22 +93,40 @@ export async function POST(req: NextRequest) {
       </div>
     `;
 
-    const sent = await sendPlatformEmail({
-      emailType: "admin_manual",
-      to,
-      subject,
-      text,
-      html,
-      replyTo: replyTo || undefined,
-      meta: {
-        adminEmail: admin.email,
-      },
-    });
-    if (!sent.ok) {
-      return NextResponse.json({ error: sent.error || "send failed" }, { status: 500 });
+    let sentCount = 0;
+    let failedCount = 0;
+    const failed: Array<{ email: string; error: string }> = [];
+    for (const email of recipients) {
+      const sent = await sendPlatformEmail({
+        emailType: mode === "platform" ? "admin_platform_broadcast" : "admin_manual",
+        to: email,
+        subject,
+        text,
+        html,
+        replyTo: replyTo || undefined,
+        meta: {
+          adminEmail: admin.email,
+          targetMode: mode,
+        },
+      });
+      if (sent.ok) sentCount += 1;
+      else {
+        failedCount += 1;
+        failed.push({ email, error: sent.error || "send failed" });
+      }
     }
 
-    return NextResponse.json({ ok: true }, { status: 200 });
+    return NextResponse.json(
+      {
+        ok: true,
+        targetMode: mode,
+        total: recipients.length,
+        sent: sentCount,
+        failed: failedCount,
+        failedList: failed.slice(0, 20),
+      },
+      { status: 200 }
+    );
   } catch (e) {
     console.error("POST /api/admin/mail failed:", e);
     return NextResponse.json({ error: "server error" }, { status: 500 });

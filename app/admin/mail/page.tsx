@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import AdminTopBar from "@/app/components/AdminTopBar";
 import { F, S } from "@/lib/design";
@@ -11,6 +11,7 @@ export default function AdminMailPage() {
   const { lang } = useLanguage();
   const [authenticated, setAuthenticated] = useState<boolean | null>(null);
   const [sending, setSending] = useState(false);
+  const [targetMode, setTargetMode] = useState<"manual" | "platform">("platform");
   const [result, setResult] = useState<string | null>(null);
   const [logs, setLogs] = useState<
     Array<{
@@ -25,6 +26,21 @@ export default function AdminMailPage() {
   >([]);
   const [loadingLogs, setLoadingLogs] = useState(false);
   const [templateId, setTemplateId] = useState("custom");
+  const [platformUsers, setPlatformUsers] = useState<
+    Array<{
+      id: string;
+      email: string;
+      role: "artist" | "gallery";
+      name: string;
+      country: string;
+      city: string;
+    }>
+  >([]);
+  const [loadingUsers, setLoadingUsers] = useState(false);
+  const [recipientMode, setRecipientMode] = useState<"all" | "selected">("selected");
+  const [roleFilter, setRoleFilter] = useState<"all" | "artist" | "gallery">("all");
+  const [userQuery, setUserQuery] = useState("");
+  const [selectedUserIds, setSelectedUserIds] = useState<string[]>([]);
   const [form, setForm] = useState({
     to: "",
     subject: "",
@@ -102,6 +118,7 @@ export default function AdminMailPage() {
         }
         setAuthenticated(true);
         await loadLogs();
+        await loadUsers();
       } catch {
         setAuthenticated(false);
         router.replace("/admin/login");
@@ -125,24 +142,95 @@ export default function AdminMailPage() {
     }
   }
 
+  async function loadUsers() {
+    setLoadingUsers(true);
+    try {
+      const res = await fetch("/api/admin/users", {
+        cache: "no-store",
+        credentials: "include",
+      });
+      const data = await res.json().catch(() => null);
+      if (res.ok && Array.isArray(data?.users)) {
+        setPlatformUsers(
+          data.users.map((u: any) => ({
+            id: String(u.id || ""),
+            email: String(u.email || ""),
+            role: u.role === "gallery" ? "gallery" : "artist",
+            name: String(u.name || ""),
+            country: String(u.country || ""),
+            city: String(u.city || ""),
+          }))
+        );
+      }
+    } finally {
+      setLoadingUsers(false);
+    }
+  }
+
+  const filteredUsers = useMemo(() => {
+    const q = userQuery.trim().toLowerCase();
+    return platformUsers.filter((u) => {
+      if (roleFilter !== "all" && u.role !== roleFilter) return false;
+      if (!q) return true;
+      return (
+        u.email.toLowerCase().includes(q) ||
+        u.name.toLowerCase().includes(q) ||
+        u.country.toLowerCase().includes(q) ||
+        u.city.toLowerCase().includes(q)
+      );
+    });
+  }, [platformUsers, roleFilter, userQuery]);
+
+  const roleScopedUsers = useMemo(() => {
+    if (roleFilter === "all") return platformUsers;
+    return platformUsers.filter((u) => u.role === roleFilter);
+  }, [platformUsers, roleFilter]);
+
+  const selectedCount = selectedUserIds.length;
+
+  const allFilteredSelected =
+    filteredUsers.length > 0 && filteredUsers.every((u) => selectedUserIds.includes(u.id));
+
   async function sendMail() {
-    if (!form.to.trim() || !form.subject.trim() || !form.message.trim()) {
+    if (!form.subject.trim() || !form.message.trim()) {
       setResult(tr("Please fill required fields.", "필수 항목을 입력해주세요.", "必須項目を入力してください。", "Veuillez remplir les champs obligatoires."));
+      return;
+    }
+    if (targetMode === "manual" && !form.to.trim()) {
+      setResult(tr("Please enter recipient email.", "수신자 이메일을 입력해주세요.", "宛先メールを入力してください。", "Veuillez saisir l'email destinataire."));
+      return;
+    }
+    if (targetMode === "platform" && recipientMode === "selected" && selectedUserIds.length === 0) {
+      setResult(tr("Select at least one user.", "최소 1명 이상 선택하세요.", "少なくとも1人を選択してください。", "Selectionnez au moins un utilisateur."));
       return;
     }
     setSending(true);
     setResult(null);
     try {
+      const roles =
+        roleFilter === "all" ? (["artist", "gallery"] as const) : ([roleFilter] as const);
       const res = await fetch("/api/admin/mail", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
-        body: JSON.stringify(form),
+        body: JSON.stringify({
+          ...form,
+          targetMode,
+          recipientMode,
+          roles,
+          userIds: targetMode === "platform" ? selectedUserIds : undefined,
+        }),
       });
       const data = await res.json().catch(() => null);
       if (!res.ok || !data?.ok) throw new Error(data?.error || "send failed");
-      setResult(tr("Email sent successfully.", "이메일 발송 완료.", "メールを送信しました。", "Email envoye avec succes."));
-      setForm((p) => ({ ...p, subject: "", message: "" }));
+      if (targetMode === "platform") {
+        setResult(
+          `${tr("Bulk send completed", "일괄 발송 완료", "一括送信完了", "Envoi groupe termine")} · ${tr("sent", "성공", "送信", "envoyes")}: ${data.sent}/${data.total} · ${tr("failed", "실패", "失敗", "echoues")}: ${data.failed}`
+        );
+      } else {
+        setResult(tr("Email sent successfully.", "이메일 발송 완료.", "メールを送信しました。", "Email envoye avec succes."));
+      }
+      setForm((p) => ({ ...p, subject: "", message: "", ...(targetMode === "manual" ? {} : { to: "" }) }));
       await loadLogs();
     } catch (e: any) {
       setResult(e?.message || tr("Failed to send email.", "이메일 발송 실패.", "メール送信に失敗しました。", "Echec de l'envoi de l'email."));
@@ -203,6 +291,95 @@ export default function AdminMailPage() {
         </div>
 
         <div style={{ border: "1px solid #E8E3DB", background: "#FFFFFF", padding: 24, display: "grid", gap: 12 }}>
+          <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+            <button
+              onClick={() => setTargetMode("platform")}
+              style={{ ...modeBtn, borderColor: targetMode === "platform" ? "#1A1A1A" : "#E8E3DB", background: targetMode === "platform" ? "#1A1A1A" : "#FFFFFF", color: targetMode === "platform" ? "#FFFFFF" : "#8A8580" }}
+            >
+              {tr("Platform users", "플랫폼 사용자", "プラットフォームユーザー", "Utilisateurs plateforme")}
+            </button>
+            <button
+              onClick={() => setTargetMode("manual")}
+              style={{ ...modeBtn, borderColor: targetMode === "manual" ? "#1A1A1A" : "#E8E3DB", background: targetMode === "manual" ? "#1A1A1A" : "#FFFFFF", color: targetMode === "manual" ? "#FFFFFF" : "#8A8580" }}
+            >
+              {tr("Manual recipient", "직접 수신자", "手動宛先", "Destinataire manuel")}
+            </button>
+          </div>
+
+          {targetMode === "platform" && (
+            <div style={{ border: "1px solid #E8E3DB", background: "#FAF8F4", padding: 12, display: "grid", gap: 10 }}>
+              <div style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center" }}>
+                <button onClick={() => setRecipientMode("all")} style={{ ...smallBtn, borderColor: recipientMode === "all" ? "#1A1A1A" : "#E8E3DB", background: recipientMode === "all" ? "#1A1A1A" : "#FFFFFF", color: recipientMode === "all" ? "#FFFFFF" : "#8A8580" }}>
+                  {tr("Select all", "전체 선택", "全体選択", "Tout selectionner")}
+                </button>
+                <button onClick={() => setRecipientMode("selected")} style={{ ...smallBtn, borderColor: recipientMode === "selected" ? "#1A1A1A" : "#E8E3DB", background: recipientMode === "selected" ? "#1A1A1A" : "#FFFFFF", color: recipientMode === "selected" ? "#FFFFFF" : "#8A8580" }}>
+                  {tr("Individual select", "개별 선택", "個別選択", "Selection individuelle")}
+                </button>
+                <span style={{ fontFamily: F, fontSize: 11, color: "#8A8580" }}>
+                  {tr("Selected", "선택", "選択", "Selectionnes")}: {recipientMode === "all" ? roleScopedUsers.length : selectedCount}
+                </span>
+              </div>
+              <div style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center" }}>
+                <button onClick={() => setRoleFilter("all")} style={{ ...smallBtn, borderColor: roleFilter === "all" ? "#1A1A1A" : "#E8E3DB", background: roleFilter === "all" ? "#1A1A1A" : "#FFFFFF", color: roleFilter === "all" ? "#FFFFFF" : "#8A8580" }}>ALL</button>
+                <button onClick={() => setRoleFilter("artist")} style={{ ...smallBtn, borderColor: roleFilter === "artist" ? "#1A1A1A" : "#E8E3DB", background: roleFilter === "artist" ? "#1A1A1A" : "#FFFFFF", color: roleFilter === "artist" ? "#FFFFFF" : "#8A8580" }}>{tr("Artists", "작가", "作家", "Artistes")}</button>
+                <button onClick={() => setRoleFilter("gallery")} style={{ ...smallBtn, borderColor: roleFilter === "gallery" ? "#1A1A1A" : "#E8E3DB", background: roleFilter === "gallery" ? "#1A1A1A" : "#FFFFFF", color: roleFilter === "gallery" ? "#FFFFFF" : "#8A8580" }}>{tr("Galleries", "갤러리", "ギャラリー", "Galeries")}</button>
+                <input
+                  value={userQuery}
+                  onChange={(e) => setUserQuery(e.target.value)}
+                  placeholder={tr("Search user/email/country...", "사용자/이메일/국가 검색...", "ユーザー/メール/国を検索...", "Recherche utilisateur/email/pays...")}
+                  style={{ ...inp, maxWidth: 320, padding: "8px 10px" }}
+                />
+              </div>
+
+              {recipientMode === "selected" && (
+                <div style={{ border: "1px solid #E8E3DB", background: "#FFFFFF", maxHeight: 220, overflow: "auto" }}>
+                  <div style={{ padding: "8px 10px", borderBottom: "1px solid #F0EBE3", display: "flex", gap: 8, alignItems: "center" }}>
+                    <input
+                      type="checkbox"
+                      checked={allFilteredSelected}
+                      onChange={(e) => {
+                        if (e.target.checked) {
+                          setSelectedUserIds(Array.from(new Set([...selectedUserIds, ...filteredUsers.map((u) => u.id)])));
+                        } else {
+                          const filteredSet = new Set(filteredUsers.map((u) => u.id));
+                          setSelectedUserIds(selectedUserIds.filter((id) => !filteredSet.has(id)));
+                        }
+                      }}
+                    />
+                    <span style={{ fontFamily: F, fontSize: 11, color: "#6F6A64" }}>
+                      {tr("Select all in current filter", "현재 필터 전체 선택", "現在フィルタを全選択", "Tout selectionner dans le filtre")}
+                    </span>
+                  </div>
+                  {loadingUsers ? (
+                    <div style={{ padding: 12, fontFamily: F, fontSize: 11, color: "#B0AAA2" }}>...</div>
+                  ) : filteredUsers.length === 0 ? (
+                    <div style={{ padding: 12, fontFamily: F, fontSize: 11, color: "#B0AAA2" }}>
+                      {tr("No users found.", "사용자가 없습니다.", "ユーザーがいません。", "Aucun utilisateur.")}
+                    </div>
+                  ) : (
+                    <div style={{ display: "grid", gap: 1, background: "#F5F1EB" }}>
+                      {filteredUsers.slice(0, 400).map((u) => (
+                        <label key={u.id} style={{ display: "flex", gap: 8, alignItems: "center", padding: "8px 10px", background: "#FFFFFF" }}>
+                          <input
+                            type="checkbox"
+                            checked={selectedUserIds.includes(u.id)}
+                            onChange={(e) => {
+                              if (e.target.checked) setSelectedUserIds(Array.from(new Set([...selectedUserIds, u.id])));
+                              else setSelectedUserIds(selectedUserIds.filter((id) => id !== u.id));
+                            }}
+                          />
+                          <span style={{ fontFamily: F, fontSize: 11, color: "#1A1A1A" }}>
+                            [{u.role}] {u.name || "-"} · {u.email} {u.country ? `· ${u.country}/${u.city || "-"}` : ""}
+                          </span>
+                        </label>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+          )}
+
           <label style={labelStyle}>
             {tr("Template", "템플릿", "テンプレート", "Modele")}
             <select value={templateId} onChange={(e) => applyTemplate(e.target.value)} style={inp}>
@@ -214,10 +391,12 @@ export default function AdminMailPage() {
             </select>
           </label>
 
-          <label style={labelStyle}>
-            {tr("Recipient", "수신자", "宛先", "Destinataire")}
-            <input value={form.to} onChange={(e) => setForm((p) => ({ ...p, to: e.target.value }))} placeholder="gallery@example.com" style={inp} />
-          </label>
+          {targetMode === "manual" && (
+            <label style={labelStyle}>
+              {tr("Recipient", "수신자", "宛先", "Destinataire")}
+              <input value={form.to} onChange={(e) => setForm((p) => ({ ...p, to: e.target.value }))} placeholder="gallery@example.com" style={inp} />
+            </label>
+          )}
 
           <label style={labelStyle}>
             {tr("Reply-To", "회신 주소", "返信先", "Adresse de reponse")}
@@ -253,7 +432,9 @@ export default function AdminMailPage() {
             >
               {sending
                 ? tr("Sending...", "전송 중...", "送信中...", "Envoi...")
-                : tr("Send Email", "메일 발송", "メール送信", "Envoyer")}
+                : targetMode === "platform"
+                  ? tr("Send to selected users", "선택 사용자에게 발송", "選択ユーザーへ送信", "Envoyer aux utilisateurs")
+                  : tr("Send Email", "메일 발송", "メール送信", "Envoyer")}
             </button>
 
             {result ? <span style={{ fontFamily: F, fontSize: 12, color: "#6A6A6A" }}>{result}</span> : null}
@@ -343,5 +524,28 @@ const inp = {
   outline: "none",
   textTransform: "none",
   letterSpacing: "normal",
+} as const;
+
+const modeBtn = {
+  border: "1px solid #E8E3DB",
+  background: "#FFFFFF",
+  padding: "8px 10px",
+  fontFamily: F,
+  fontSize: 10,
+  letterSpacing: "0.08em",
+  textTransform: "uppercase",
+  cursor: "pointer",
+} as const;
+
+const smallBtn = {
+  border: "1px solid #E8E3DB",
+  background: "#FFFFFF",
+  color: "#8A8580",
+  padding: "6px 8px",
+  fontFamily: F,
+  fontSize: 10,
+  letterSpacing: "0.04em",
+  textTransform: "uppercase",
+  cursor: "pointer",
 } as const;
 
