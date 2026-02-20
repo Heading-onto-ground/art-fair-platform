@@ -710,7 +710,7 @@ async function crawlKoreanArtBlogsWithDebug() {
       xml,
       country: "한국",
       city: "Seoul",
-      galleryLabel: "Korean Art Blog",
+      galleryLabel: "Open Call",
       email,
       baseUrl: url,
     });
@@ -728,7 +728,7 @@ async function crawlKoreanArtBlogsWithDebug() {
       baseUrl: url,
       country: "한국",
       city: "Seoul",
-      galleryLabel: "Korean Art Blog",
+      galleryLabel: "Open Call",
       email,
       isRelevant: containsKoreanOpenCallKeyword,
     });

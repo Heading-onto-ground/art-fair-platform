@@ -39,10 +39,12 @@ const SEED_OPEN_CALLS: Omit<OpenCall, "createdAt">[] = [
 ];
 
 function toOpenCall(row: any): OpenCall {
+  const rawGallery = String(row.gallery || "").trim();
+  const gallery = /korean\s*art\s*blog/i.test(rawGallery) ? "Open Call" : rawGallery;
   return {
     id: row.id,
     galleryId: row.galleryId,
-    gallery: row.gallery,
+    gallery,
     city: row.city,
     country: row.country,
     theme: row.theme,
