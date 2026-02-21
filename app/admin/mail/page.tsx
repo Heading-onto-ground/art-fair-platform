@@ -26,6 +26,11 @@ export default function AdminMailPage() {
   >([]);
   const [loadingLogs, setLoadingLogs] = useState(false);
   const [templateId, setTemplateId] = useState("custom");
+  const [savingTemplate, setSavingTemplate] = useState(false);
+  const [savedTemplates, setSavedTemplates] = useState<{
+    artist: { subject: string; message: string } | null;
+    gallery: { subject: string; message: string } | null;
+  }>({ artist: null, gallery: null });
   const [platformUsers, setPlatformUsers] = useState<
     Array<{
       id: string;
@@ -49,6 +54,41 @@ export default function AdminMailPage() {
   });
   const tr = (en: string, ko: string, ja: string, fr: string) =>
     lang === "ko" ? ko : lang === "ja" ? ja : lang === "fr" ? fr : en;
+  const defaultArtistTemplate = {
+    subject: tr(
+      "[ROB] Welcome, Artist — Your Next Opportunity Starts Here",
+      "[ROB] 작가님, ROB에 오신 것을 환영합니다",
+      "[ROB] アーティストの皆さまへ — ROBへようこそ",
+      "[ROB] Bienvenue artiste — Votre prochaine opportunite commence ici"
+    ),
+    message: tr(
+      "Hello,\n\nThank you for joining ROB, a global platform connecting artists and galleries.\nYou can discover open calls, apply internationally, and build your profile to be seen by galleries.\n\nIf you need help setting up your profile or portfolio, reply to this email anytime.\n\nBest regards,\nROB Team",
+      "안녕하세요,\n\n글로벌 아트 플랫폼 ROB에 가입해주셔서 감사합니다.\nROB에서는 국내외 오픈콜 탐색, 지원, 포트폴리오 노출을 통해 갤러리와 연결될 수 있습니다.\n\n프로필/포트폴리오 설정이 필요하시면 언제든 회신해주세요.\n\n감사합니다.\nROB 팀",
+      "こんにちは。\n\nアーティストとギャラリーをつなぐグローバルプラットフォーム ROB にご登録いただきありがとうございます。\nROB ではオープンコール検索・応募・プロフィール公開を通じて、ギャラリーとの接点を広げられます。\n\nプロフィールやポートフォリオ設定でお困りの際は、いつでもご返信ください。\n\nよろしくお願いいたします。\nROBチーム",
+      "Bonjour,\n\nMerci d'avoir rejoint ROB, une plateforme mondiale reliant artistes et galeries.\nVous pouvez decouvrir des open calls, candidater a l'international et valoriser votre profil aupres des galeries.\n\nSi vous souhaitez de l'aide pour votre profil ou portfolio, repondez a cet email a tout moment.\n\nCordialement,\nEquipe ROB"
+    ),
+  };
+  const defaultGalleryTemplate = {
+    subject: tr(
+      "[ROB] Welcome, Gallery — Meet Global Artists on ROB",
+      "[ROB] 갤러리님, ROB에 오신 것을 환영합니다",
+      "[ROB] ギャラリーの皆さまへ — ROBへようこそ",
+      "[ROB] Bienvenue galerie — Rencontrez des artistes internationaux sur ROB"
+    ),
+    message: tr(
+      "Hello,\n\nThank you for joining ROB.\nYou can publish open calls, discover artist portfolios, and connect with artists worldwide.\n\nIf you'd like, we can help you create your first open call listing.\n\nBest regards,\nROB Team",
+      "안녕하세요,\n\nROB에 가입해주셔서 감사합니다.\n갤러리 계정으로 오픈콜 등록, 작가 포트폴리오 탐색, 글로벌 작가와의 연결이 가능합니다.\n\n원하시면 첫 오픈콜 등록을 저희가 도와드리겠습니다.\n\n감사합니다.\nROB 팀",
+      "こんにちは。\n\nROB にご登録いただきありがとうございます。\nギャラリーアカウントでは、オープンコール掲載、アーティストポートフォリオ閲覧、世界中の作家との接点づくりが可能です。\n\nご希望であれば初回のオープンコール掲載をサポートいたします。\n\nよろしくお願いいたします。\nROBチーム",
+      "Bonjour,\n\nMerci d'avoir rejoint ROB.\nAvec votre compte galerie, vous pouvez publier des open calls, consulter des portfolios d'artistes et echanger avec des artistes du monde entier.\n\nSi vous le souhaitez, nous pouvons vous aider a creer votre premier open call.\n\nCordialement,\nEquipe ROB"
+    ),
+  };
+
+  const templateForRole = (role: "artist" | "gallery") => {
+    const saved = role === "artist" ? savedTemplates.artist : savedTemplates.gallery;
+    if (saved?.subject && saved?.message) return saved;
+    return role === "artist" ? defaultArtistTemplate : defaultGalleryTemplate;
+  };
+
   const templates = [
     {
       id: "custom",
@@ -104,6 +144,12 @@ export default function AdminMailPage() {
         "Bonjour,\n\nMerci pour votre interet et votre candidature.\nNous examinons actuellement les dossiers et reviendrons vers vous apres evaluation.\n\nCordialement,\nEquipe ROB"
       ),
     },
+    {
+      id: "role_default",
+      name: tr("Audience Default (Artist/Gallery)", "대상별 기본 템플릿(작가/갤러리)", "対象別デフォルトテンプレート", "Modele cible par role"),
+      subject: "",
+      message: "",
+    },
   ];
 
   useEffect(() => {
@@ -119,6 +165,7 @@ export default function AdminMailPage() {
         setAuthenticated(true);
         await loadLogs();
         await loadUsers();
+        await loadSavedTemplates();
       } catch {
         setAuthenticated(false);
         router.replace("/admin/login");
@@ -139,6 +186,34 @@ export default function AdminMailPage() {
       }
     } finally {
       setLoadingLogs(false);
+    }
+  }
+
+  async function loadSavedTemplates() {
+    try {
+      const res = await fetch("/api/admin/mail-templates", {
+        cache: "no-store",
+        credentials: "include",
+      });
+      const data = await res.json().catch(() => null);
+      if (res.ok && data?.ok && data?.templates) {
+        setSavedTemplates({
+          artist: data.templates.artist
+            ? {
+                subject: String(data.templates.artist.subject || ""),
+                message: String(data.templates.artist.message || ""),
+              }
+            : null,
+          gallery: data.templates.gallery
+            ? {
+                subject: String(data.templates.gallery.subject || ""),
+                message: String(data.templates.gallery.message || ""),
+              }
+            : null,
+        });
+      }
+    } catch {
+      // Ignore template load errors to keep mail screen usable.
     }
   }
 
@@ -204,6 +279,10 @@ export default function AdminMailPage() {
       setResult(tr("Select at least one user.", "최소 1명 이상 선택하세요.", "少なくとも1人を選択してください。", "Selectionnez au moins un utilisateur."));
       return;
     }
+    if (targetMode === "platform" && templateId === "role_default" && roleFilter === "all") {
+      setResult(tr("For role-default template, choose artist or gallery filter.", "대상별 기본 템플릿은 작가/갤러리 필터를 선택해서 보내주세요.", "対象別デフォルトテンプレートは作家/ギャラリーフィルタを選択して送信してください。", "Pour ce modele, choisissez d'abord le filtre artiste ou galerie."));
+      return;
+    }
     setSending(true);
     setResult(null);
     try {
@@ -239,8 +318,53 @@ export default function AdminMailPage() {
     }
   }
 
+  async function saveCurrentAsRoleTemplate(role: "artist" | "gallery") {
+    if (!form.subject.trim() || !form.message.trim()) {
+      setResult(tr("Write subject and message first.", "먼저 제목과 내용을 입력하세요.", "先に件名と本文を入力してください。", "Saisissez d'abord un sujet et un message."));
+      return;
+    }
+    setSavingTemplate(true);
+    setResult(null);
+    try {
+      const res = await fetch("/api/admin/mail-templates", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({
+          role,
+          subject: form.subject,
+          message: form.message,
+        }),
+      });
+      const data = await res.json().catch(() => null);
+      if (!res.ok || !data?.ok) throw new Error(data?.error || "save failed");
+      setSavedTemplates((prev) => ({
+        ...prev,
+        [role]: { subject: form.subject, message: form.message },
+      }));
+      setResult(
+        role === "artist"
+          ? tr("Saved as artist default template.", "작가 기본 템플릿으로 저장했습니다.", "作家デフォルトテンプレートとして保存しました。", "Enregistre comme modele artiste par defaut.")
+          : tr("Saved as gallery default template.", "갤러리 기본 템플릿으로 저장했습니다.", "ギャラリーデフォルトテンプレートとして保存しました。", "Enregistre comme modele galerie par defaut.")
+      );
+    } catch (e: any) {
+      setResult(e?.message || tr("Failed to save template.", "템플릿 저장 실패.", "テンプレート保存に失敗しました。", "Echec de l'enregistrement du modele."));
+    } finally {
+      setSavingTemplate(false);
+    }
+  }
+
   function applyTemplate(nextId: string) {
     setTemplateId(nextId);
+    if (nextId === "role_default") {
+      if (roleFilter === "all") {
+        setResult(tr("Choose artist or gallery filter first.", "먼저 작가/갤러리 필터를 선택하세요.", "先に作家/ギャラリーフィルタを選択してください。", "Choisissez d'abord le filtre artiste ou galerie."));
+        return;
+      }
+      const selected = templateForRole(roleFilter);
+      setForm((p) => ({ ...p, subject: selected.subject, message: selected.message }));
+      return;
+    }
     const selected = templates.find((t) => t.id === nextId);
     if (!selected || nextId === "custom") return;
     setForm((p) => ({ ...p, subject: selected.subject, message: selected.message }));
@@ -390,6 +514,45 @@ export default function AdminMailPage() {
               ))}
             </select>
           </label>
+
+          {targetMode === "platform" ? (
+            <div style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center" }}>
+              <button
+                onClick={() => {
+                  const t = templateForRole("artist");
+                  setTemplateId("role_default");
+                  setForm((p) => ({ ...p, subject: t.subject, message: t.message }));
+                }}
+                style={smallBtn}
+              >
+                {tr("Load artist default", "작가 기본 불러오기", "作家デフォルト読込", "Charger modele artiste")}
+              </button>
+              <button
+                onClick={() => {
+                  const t = templateForRole("gallery");
+                  setTemplateId("role_default");
+                  setForm((p) => ({ ...p, subject: t.subject, message: t.message }));
+                }}
+                style={smallBtn}
+              >
+                {tr("Load gallery default", "갤러리 기본 불러오기", "ギャラリーデフォルト読込", "Charger modele galerie")}
+              </button>
+              <button
+                onClick={() => saveCurrentAsRoleTemplate("artist")}
+                disabled={savingTemplate}
+                style={{ ...smallBtn, opacity: savingTemplate ? 0.7 : 1 }}
+              >
+                {tr("Save as artist default", "현재 내용을 작가 기본으로 저장", "現在内容を作家デフォルト保存", "Enregistrer comme modele artiste")}
+              </button>
+              <button
+                onClick={() => saveCurrentAsRoleTemplate("gallery")}
+                disabled={savingTemplate}
+                style={{ ...smallBtn, opacity: savingTemplate ? 0.7 : 1 }}
+              >
+                {tr("Save as gallery default", "현재 내용을 갤러리 기본으로 저장", "現在内容をギャラリーデフォルト保存", "Enregistrer comme modele galerie")}
+              </button>
+            </div>
+          ) : null}
 
           {targetMode === "manual" && (
             <label style={labelStyle}>

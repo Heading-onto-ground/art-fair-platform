@@ -2,8 +2,9 @@ import { NextResponse } from "next/server";
 import bcrypt from "bcryptjs";
 import type { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
-import { sendVerificationEmail, detectEmailLang } from "@/lib/email";
+import { sendVerificationEmail, detectEmailLang, sendPlatformEmail } from "@/lib/email";
 import { createOrRefreshVerificationToken } from "@/lib/emailVerification";
+import { getRoleWelcomeTemplate } from "@/lib/adminMailTemplates";
 
 type Role = "artist" | "gallery";
 
@@ -117,6 +118,33 @@ export async function POST(req: Request) {
       lang,
     });
 
+    let welcomeSent = false;
+    let welcomeError: string | null = null;
+    try {
+      const welcomeTemplate = await getRoleWelcomeTemplate(role);
+      const welcomeText = `${welcomeTemplate.message}\n\n---\nSent from ROB`;
+      const welcomeHtml = `
+        <div style="font-family:Arial,sans-serif;max-width:640px;margin:0 auto;padding:20px">
+          <div style="white-space:pre-wrap;line-height:1.6">${welcomeTemplate.message}</div>
+          <hr style="margin:20px 0;border:none;border-top:1px solid #eee"/>
+          <div style="font-size:12px;color:#666">Sent from ROB</div>
+        </div>
+      `;
+      const welcome = await sendPlatformEmail({
+        emailType: role === "artist" ? "welcome_artist" : "welcome_gallery",
+        to: email,
+        subject: welcomeTemplate.subject,
+        text: welcomeText,
+        html: welcomeHtml,
+        meta: { role, source: "signup", lang },
+      });
+      welcomeSent = !!welcome.ok;
+      if (!welcome.ok) welcomeError = welcome.error || "welcome email send failed";
+    } catch (e: any) {
+      welcomeError = String(e?.message || "welcome email send failed");
+      console.error("Welcome email send failed:", e);
+    }
+
     if (!sent.ok) {
       console.error("Verification email send failed:", sent.error || "unknown error");
       return NextResponse.json(
@@ -124,16 +152,25 @@ export async function POST(req: Request) {
           ok: true,
           requiresEmailVerification: true,
           verificationEmailSent: false,
+          welcomeEmailSent: welcomeSent,
           email,
           error: "verification email send failed",
           details: sent.error || "failed to send verification email",
+          welcomeError,
         },
         { status: 200 }
       );
     }
 
     return NextResponse.json(
-      { ok: true, requiresEmailVerification: true, verificationEmailSent: true, email },
+      {
+        ok: true,
+        requiresEmailVerification: true,
+        verificationEmailSent: true,
+        welcomeEmailSent: welcomeSent,
+        welcomeError,
+        email,
+      },
       { status: 200 }
     );
   } catch (e: any) {
