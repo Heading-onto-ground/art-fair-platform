@@ -5,16 +5,23 @@
 
 import crypto from "crypto";
 
-const SECRET =
-  process.env.SESSION_SECRET || "rob-art-fair-platform-default-secret-change-in-production";
+function getSessionSecret() {
+  const secret = String(process.env.SESSION_SECRET || "").trim();
+  if (secret) return secret;
+  if (process.env.NODE_ENV === "production") {
+    throw new Error("SESSION_SECRET is required in production");
+  }
+  return "dev-insecure-session-secret";
+}
 
 /**
  * Sign a session object → base64payload.hmacSignature
  */
 export function signSession(data: Record<string, unknown>): string {
+  const secret = getSessionSecret();
   const payload = JSON.stringify(data);
   const b64 = Buffer.from(payload).toString("base64url");
-  const sig = crypto.createHmac("sha256", SECRET).update(b64).digest("hex");
+  const sig = crypto.createHmac("sha256", secret).update(b64).digest("hex");
   return `${b64}.${sig}`;
 }
 
@@ -26,6 +33,7 @@ export function verifySession<T = Record<string, unknown>>(
   token: string
 ): T | null {
   try {
+    const secret = getSessionSecret();
     const dotIdx = token.lastIndexOf(".");
     if (dotIdx < 1) return null;
 
@@ -33,7 +41,7 @@ export function verifySession<T = Record<string, unknown>>(
     const sig = token.substring(dotIdx + 1);
 
     const expected = crypto
-      .createHmac("sha256", SECRET)
+      .createHmac("sha256", secret)
       .update(b64)
       .digest("hex");
 

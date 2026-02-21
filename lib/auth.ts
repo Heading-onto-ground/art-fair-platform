@@ -64,21 +64,11 @@ export function getServerSession(): Session | null {
     const raw = cookies().get(COOKIE_NAME)?.value;
     if (!raw) return null;
 
-    // Try signed session first (new format)
+    // Only accept signed session payloads.
     const verified = verifySession<Session>(raw);
     if (verified && verified.userId && verified.role) {
       return verified;
     }
-
-    // Fallback: accept unsigned JSON for backward compatibility
-    // (existing sessions before signing was added)
-    try {
-      const parsed = JSON.parse(raw);
-      if (parsed?.userId && parsed?.role) return parsed as Session;
-    } catch {
-      // not JSON either
-    }
-
     return null;
   } catch {
     return null;

@@ -6,10 +6,10 @@ import { signSession, verifySession } from "@/lib/session";
 
 const ADMIN_COOKIE = "afp_admin_session";
 
-// Default admin credentials (override via env vars in production)
+// Default admin credentials (development only)
 const ADMIN_EMAIL = process.env.ADMIN_EMAIL || "admin@rob-roleofbridge.com";
 const LEGACY_ADMIN_EMAIL = "admin@rob.art";
-const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || "rob-admin-2026";
+const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || "rob-admin-dev";
 
 export type AdminSession = {
   email: string;
@@ -19,6 +19,10 @@ export type AdminSession = {
 
 /** Verify admin credentials */
 export function verifyAdminCredentials(email: string, password: string): boolean {
+  if (process.env.NODE_ENV === "production" && !String(process.env.ADMIN_PASSWORD || "").trim()) {
+    console.error("ADMIN_PASSWORD is required in production");
+    return false;
+  }
   const normalized = email.toLowerCase().trim();
   const matchesPrimary = normalized === ADMIN_EMAIL.toLowerCase().trim();
   const matchesLegacy = !process.env.ADMIN_EMAIL && normalized === LEGACY_ADMIN_EMAIL;

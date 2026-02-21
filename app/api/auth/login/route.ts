@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { findUserByEmailRole, verifyPassword, createSignedSessionValue } from "@/lib/auth";
 import { createOrRefreshVerificationToken, getEmailVerificationState } from "@/lib/emailVerification";
 import { sendVerificationEmail, detectEmailLang } from "@/lib/email";
+import { clearRateLimit, consumeRateLimit, getClientIp } from "@/lib/rateLimit";
 
 type Role = "artist" | "gallery";
 
@@ -9,6 +10,8 @@ export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 const RESEND_COOLDOWN_MS = 2 * 60 * 1000;
 const EMAIL_VERIFICATION_REQUIRED = true;
+const LOGIN_WINDOW_MS = 10 * 60 * 1000;
+const LOGIN_MAX_ATTEMPTS = 10;
 
 export async function GET() {
   const hasDb = !!process.env.DATABASE_URL;
@@ -40,6 +43,9 @@ export async function POST(req: Request) {
     const role = String(body?.role ?? "") as Role;
     const email = String(body?.email ?? "").trim();
     const password = String(body?.password ?? "").trim();
+    const emailLower = email.toLowerCase();
+    const ip = getClientIp(req);
+    const rateKey = `auth-login:${ip}:${emailLower}:${role}`;
 
     if (role !== "artist" && role !== "gallery") {
       return NextResponse.json({ ok: false, error: "invalid role" }, { status: 400 });
@@ -51,13 +57,26 @@ export async function POST(req: Request) {
       return NextResponse.json({ ok: false, error: "password required" }, { status: 400 });
     }
 
-    const user = await findUserByEmailRole(email.toLowerCase(), role);
+    const rate = consumeRateLimit({
+      key: rateKey,
+      max: LOGIN_MAX_ATTEMPTS,
+      windowMs: LOGIN_WINDOW_MS,
+    });
+    if (!rate.allowed) {
+      const retryAfter = Math.max(1, Math.ceil((rate.resetAt - Date.now()) / 1000));
+      return NextResponse.json(
+        { ok: false, error: "too many login attempts", retryAfterSeconds: retryAfter },
+        { status: 429, headers: { "Retry-After": String(retryAfter) } }
+      );
+    }
+
+    const user = await findUserByEmailRole(emailLower, role);
     if (!user || !verifyPassword(user, password)) {
       return NextResponse.json({ ok: false, error: "wrong password" }, { status: 401 });
     }
     if (EMAIL_VERIFICATION_REQUIRED) {
       const verification = await getEmailVerificationState({
-        email: email.toLowerCase(),
+        email: emailLower,
         role,
       });
       if (verification.exists && !verification.verified) {
@@ -71,14 +90,14 @@ export async function POST(req: Request) {
         if (shouldResend) {
           try {
             const { token } = await createOrRefreshVerificationToken({
-              email: email.toLowerCase(),
+              email: emailLower,
               role,
             });
             const appUrl = process.env.NEXT_PUBLIC_APP_URL || "https://rob-roleofbridge.com";
-            const verifyUrl = `${appUrl}/api/auth/verify?token=${encodeURIComponent(token)}&email=${encodeURIComponent(email.toLowerCase())}&role=${encodeURIComponent(role)}`;
+            const verifyUrl = `${appUrl}/api/auth/verify?token=${encodeURIComponent(token)}&email=${encodeURIComponent(emailLower)}&role=${encodeURIComponent(role)}`;
             const acceptLang = req.headers.get("accept-language");
             const sent = await sendVerificationEmail({
-              to: email.toLowerCase(),
+              to: emailLower,
               role,
               verifyUrl,
               lang: detectEmailLang(acceptLang),
@@ -104,6 +123,7 @@ export async function POST(req: Request) {
     }
 
     const userId = user.id;
+    clearRateLimit(rateKey);
 
     const res = NextResponse.json(
       { ok: true, session: { userId, role, email } },
