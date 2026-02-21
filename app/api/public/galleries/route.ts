@@ -6,8 +6,6 @@ import { listGalleryEmailDirectory } from "@/lib/galleryEmailDirectory";
 import { PORTAL_GALLERY_SEEDS } from "@/lib/portalGallerySeeds";
 import { resolveGalleryContactEmail } from "@/lib/galleryContactEmail";
 
-export const dynamic = "force-dynamic";
-
 function normalizeCountry(input: string) {
   const v = String(input || "").trim();
   if (!v) return v;

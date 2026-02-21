@@ -124,16 +124,32 @@ export default function TopBar() {
 
   useEffect(() => {
     if (!me?.session) return;
+    let cancelled = false;
     async function fetchNotifications() {
+      if (typeof document !== "undefined" && document.visibilityState !== "visible") return;
       try {
-        const res = await fetch("/api/notifications", { cache: "no-store", credentials: "include" });
+        const res = await fetch("/api/notifications", { cache: "default", credentials: "include" });
         const data = await res.json();
-        if (data.notifications) { setNotifications(data.notifications); setUnreadCount(data.unreadCount || 0); }
-      } catch (e) { console.error("Failed to fetch notifications:", e); }
+        if (cancelled) return;
+        if (data.notifications) {
+          setNotifications(data.notifications);
+          setUnreadCount(data.unreadCount || 0);
+        }
+      } catch (e) {
+        console.error("Failed to fetch notifications:", e);
+      }
     }
+    const onVisible = () => {
+      if (document.visibilityState === "visible") fetchNotifications();
+    };
     fetchNotifications();
-    const interval = setInterval(fetchNotifications, 30000);
-    return () => clearInterval(interval);
+    const interval = setInterval(fetchNotifications, 90000);
+    document.addEventListener("visibilitychange", onVisible);
+    return () => {
+      cancelled = true;
+      clearInterval(interval);
+      document.removeEventListener("visibilitychange", onVisible);
+    };
   }, [me?.session]);
 
   useEffect(() => {

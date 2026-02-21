@@ -12,7 +12,7 @@ export function useRequireRole(required: Role) {
   useEffect(() => {
     (async () => {
       setLoading(true);
-      const m = await fetchMe();
+      const m = await fetchMe({ preferCache: true });
       const role = m?.session?.role;
 
       // 로그인 안함
