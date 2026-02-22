@@ -25,6 +25,11 @@ function requireCronSecret(req: Request, url: URL) {
     return NextResponse.json({ error: "server error", detail: "CRON_SECRET is not set" }, { status: 500 });
   }
   const provided = getCronSecretFromRequest(req, url);
+  console.log("[cron] crawl-opencalls secret check", {
+    expected6: expected.slice(0, 6),
+    provided6: String(provided || "").slice(0, 6),
+    hasProvided: !!provided,
+  });
   if (!provided || provided !== expected) {
     return NextResponse.json({ error: "unauthorized" }, { status: 401 });
   }
