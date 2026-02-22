@@ -27,8 +27,6 @@ function requireCronSecret(req: Request, url: URL) {
     return NextResponse.json({ error: "server error", detail: "CRON_SECRET is not set" }, { status: 500 });
   }
   const { provided, source } = getCronSecretFromRequest(req, url);
-  const expectedSecret = expected;
-  const providedSecret = provided;
   const authSource = source;
   const expected6 = expected.slice(0, 6);
   const provided6 = provided.slice(0, 6);
@@ -39,16 +37,7 @@ function requireCronSecret(req: Request, url: URL) {
     hasProvided: !!provided,
   });
   if (!provided || provided !== expected) {
-    return NextResponse.json({
-      authSource,
-      expected6,
-      provided6,
-      expectedLen: expectedSecret.length,
-      providedLen: providedSecret.length,
-      equals: providedSecret === expectedSecret,
-      expectedLast4: expectedSecret.slice(-4),
-      providedLast4: providedSecret.slice(-4),
-    });
+    return NextResponse.json({ error: "unauthorized" }, { status: 401 });
   }
   return null;
 }
@@ -1108,8 +1097,9 @@ async function runCrawlJob() {
 }
 
 export async function POST() {
+  let runId: string | null = null;
   try {
-    const runId = await insertCrawlRun("crawl-opencalls");
+    runId = await insertCrawlRun("crawl-opencalls");
     const data = await runCrawlJob();
     const itemsNew = Array.isArray((data as any)?.imported) ? (data as any).imported.length : 0;
     await finishCrawlRun({ id: runId, status: "success", itemsNew, itemsUpdated: 0, error: null });
@@ -1117,14 +1107,12 @@ export async function POST() {
     return NextResponse.json({ ...data, lastCrawl });
   } catch (e: any) {
     console.error("POST /api/cron/crawl-opencalls failed:", e);
-    const runId = await insertCrawlRun("crawl-opencalls");
     await finishCrawlRun({ id: runId, status: "error", itemsNew: 0, itemsUpdated: 0, error: String(e?.message || "unknown") });
     return NextResponse.json({ error: "server error", detail: String(e?.message || "unknown") }, { status: 500 });
   }
 }
 
 export async function GET(req: Request) {
-  console.log("[cron] reached handler");
   const url = new URL(req.url);
   const auth = requireCronSecret(req, url);
   if (auth) return auth;
@@ -1133,8 +1121,9 @@ export async function GET(req: Request) {
   const forceRun = url.searchParams.get("run") === "1";
 
   if (isCron || forceRun) {
+    let runId: string | null = null;
     try {
-      const runId = await insertCrawlRun("crawl-opencalls");
+      runId = await insertCrawlRun("crawl-opencalls");
       const data = await runCrawlJob();
       const itemsNew = Array.isArray((data as any)?.imported) ? (data as any).imported.length : 0;
       await finishCrawlRun({ id: runId, status: "success", itemsNew, itemsUpdated: 0, error: null });
@@ -1142,7 +1131,6 @@ export async function GET(req: Request) {
       return NextResponse.json({ triggeredBy: isCron ? "vercel-cron" : "query", ...data, lastCrawl });
     } catch (e: any) {
       console.error("GET /api/cron/crawl-opencalls run failed:", e);
-      const runId = await insertCrawlRun("crawl-opencalls");
       await finishCrawlRun({ id: runId, status: "error", itemsNew: 0, itemsUpdated: 0, error: String(e?.message || "unknown") });
       return NextResponse.json({ error: "crawler run failed", detail: String(e?.message || "unknown") }, { status: 500 });
     }
