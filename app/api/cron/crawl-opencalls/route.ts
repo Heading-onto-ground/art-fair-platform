@@ -27,6 +27,8 @@ function requireCronSecret(req: Request, url: URL) {
     return NextResponse.json({ error: "server error", detail: "CRON_SECRET is not set" }, { status: 500 });
   }
   const { provided, source } = getCronSecretFromRequest(req, url);
+  const expectedSecret = expected;
+  const providedSecret = provided;
   const authSource = source;
   const expected6 = expected.slice(0, 6);
   const provided6 = provided.slice(0, 6);
@@ -41,6 +43,11 @@ function requireCronSecret(req: Request, url: URL) {
       authSource,
       expected6,
       provided6,
+      expectedLen: expectedSecret.length,
+      providedLen: providedSecret.length,
+      equals: providedSecret === expectedSecret,
+      expectedLast4: expectedSecret.slice(-4),
+      providedLast4: providedSecret.slice(-4),
     });
   }
   return null;
