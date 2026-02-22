@@ -8,6 +8,98 @@ export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
 export const maxDuration = 300;
 
+function getCronSecretFromRequest(req: Request, url: URL) {
+  const qp = String(url.searchParams.get("secret") || "").trim();
+  if (qp) return qp;
+  const header = String(req.headers.get("x-cron-secret") || "").trim();
+  if (header) return header;
+  const auth = String(req.headers.get("authorization") || "").trim();
+  const m = auth.match(/^Bearer\s+(.+)$/i);
+  if (m?.[1]) return m[1].trim();
+  return "";
+}
+
+function requireCronSecret(req: Request, url: URL) {
+  const expected = String(process.env.CRON_SECRET || "").trim();
+  if (!expected) {
+    return NextResponse.json({ error: "server error", detail: "CRON_SECRET is not set" }, { status: 500 });
+  }
+  const provided = getCronSecretFromRequest(req, url);
+  if (!provided || provided !== expected) {
+    return NextResponse.json({ error: "unauthorized" }, { status: 401 });
+  }
+  return null;
+}
+
+async function ensureCrawlRunsTable() {
+  try {
+    await prisma.$executeRawUnsafe(`SELECT 1 FROM crawl_runs LIMIT 1`);
+    return;
+  } catch {
+    // ignore and create below
+  }
+
+  await prisma.$executeRawUnsafe(`CREATE EXTENSION IF NOT EXISTS "pgcrypto"`);
+  await prisma.$executeRawUnsafe(`
+    CREATE TABLE IF NOT EXISTS crawl_runs (
+      id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+      job_name text NOT NULL,
+      started_at timestamptz DEFAULT now(),
+      finished_at timestamptz,
+      status text,
+      items_new int,
+      items_updated int,
+      error text
+    )
+  `);
+  await prisma.$executeRawUnsafe(`CREATE INDEX IF NOT EXISTS crawl_runs_job_started_idx ON crawl_runs(job_name, started_at DESC)`);
+}
+
+async function insertCrawlRun(jobName: string) {
+  await ensureCrawlRunsTable();
+  const rows = (await prisma.$queryRawUnsafe(
+    `INSERT INTO crawl_runs(job_name, status) VALUES ($1, $2) RETURNING id`,
+    jobName,
+    "running"
+  )) as Array<{ id: string }>;
+  return rows?.[0]?.id || null;
+}
+
+async function finishCrawlRun(input: {
+  id: string | null;
+  status: "success" | "error";
+  itemsNew?: number;
+  itemsUpdated?: number;
+  error?: string | null;
+}) {
+  if (!input.id) return;
+  await ensureCrawlRunsTable();
+  await prisma.$executeRawUnsafe(
+    `UPDATE crawl_runs
+     SET finished_at = now(),
+         status = $2,
+         items_new = $3,
+         items_updated = $4,
+         error = $5
+     WHERE id = $1`,
+    input.id,
+    input.status,
+    Number(input.itemsNew || 0),
+    Number(input.itemsUpdated || 0),
+    input.error ? String(input.error).slice(0, 5000) : null
+  );
+}
+
+async function getLastCrawl(jobName: string): Promise<string | null> {
+  await ensureCrawlRunsTable();
+  const rows = (await prisma.$queryRawUnsafe(
+    `SELECT finished_at, started_at FROM crawl_runs WHERE job_name = $1 ORDER BY started_at DESC LIMIT 1`,
+    jobName
+  )) as Array<{ finished_at: string | null; started_at: string | null }>;
+  const row = rows?.[0];
+  return (row?.finished_at || row?.started_at || null) as any;
+}
+
 type CrawledOpenCall = {
   source: string;
   gallery: string;
@@ -995,31 +1087,47 @@ async function runCrawlJob() {
 
 export async function POST() {
   try {
+    const runId = await insertCrawlRun("crawl-opencalls");
     const data = await runCrawlJob();
-    return NextResponse.json(data);
+    const itemsNew = Array.isArray((data as any)?.imported) ? (data as any).imported.length : 0;
+    await finishCrawlRun({ id: runId, status: "success", itemsNew, itemsUpdated: 0, error: null });
+    const lastCrawl = await getLastCrawl("crawl-opencalls");
+    return NextResponse.json({ ...data, lastCrawl });
   } catch (e: any) {
     console.error("POST /api/cron/crawl-opencalls failed:", e);
+    const runId = await insertCrawlRun("crawl-opencalls");
+    await finishCrawlRun({ id: runId, status: "error", itemsNew: 0, itemsUpdated: 0, error: String(e?.message || "unknown") });
     return NextResponse.json({ error: "server error", detail: String(e?.message || "unknown") }, { status: 500 });
   }
 }
 
 export async function GET(req: Request) {
   const url = new URL(req.url);
+  const auth = requireCronSecret(req, url);
+  if (auth) return auth;
+
   const isCron = req.headers.get("x-vercel-cron") === "1";
   const forceRun = url.searchParams.get("run") === "1";
 
   if (isCron || forceRun) {
     try {
+      const runId = await insertCrawlRun("crawl-opencalls");
       const data = await runCrawlJob();
-      return NextResponse.json({ triggeredBy: isCron ? "vercel-cron" : "query", ...data });
+      const itemsNew = Array.isArray((data as any)?.imported) ? (data as any).imported.length : 0;
+      await finishCrawlRun({ id: runId, status: "success", itemsNew, itemsUpdated: 0, error: null });
+      const lastCrawl = await getLastCrawl("crawl-opencalls");
+      return NextResponse.json({ triggeredBy: isCron ? "vercel-cron" : "query", ...data, lastCrawl });
     } catch (e: any) {
       console.error("GET /api/cron/crawl-opencalls run failed:", e);
+      const runId = await insertCrawlRun("crawl-opencalls");
+      await finishCrawlRun({ id: runId, status: "error", itemsNew: 0, itemsUpdated: 0, error: String(e?.message || "unknown") });
       return NextResponse.json({ error: "crawler run failed", detail: String(e?.message || "unknown") }, { status: 500 });
     }
   }
 
   const existing = await listOpenCalls();
   const externalCount = existing.filter((oc) => oc.isExternal).length;
+  const lastCrawl = await getLastCrawl("crawl-opencalls");
 
   return NextResponse.json({
     sources: [
@@ -1034,6 +1142,6 @@ export async function GET(req: Request) {
     currentOpenCalls: existing.length,
     externalOpenCalls: externalCount,
     internalOpenCalls: existing.length - externalCount,
-    lastCrawl: null,
+    lastCrawl,
   });
 }

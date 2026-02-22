@@ -2,7 +2,7 @@
   "crons": [
     {
       "path": "/api/cron/crawl-opencalls",
-      "schedule": "10 3 * * *"
+      "schedule": "0 19 * * *"
     },
     {
       "path": "/api/cron/sync-gallery-directory",
