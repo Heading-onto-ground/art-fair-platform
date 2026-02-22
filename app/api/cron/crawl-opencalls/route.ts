@@ -1,10 +1,10 @@
+export const runtime = "nodejs";
 import { NextResponse } from "next/server";
 import { createOpenCall, listOpenCalls } from "@/app/data/openCalls";
 import { prisma } from "@/lib/prisma";
 import { syncGalleryEmailDirectory } from "@/lib/galleryEmailDirectory";
 import { validateExternalOpenCalls } from "@/lib/openCallValidation";
 
-export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 export const maxDuration = 300;
 
@@ -27,14 +27,21 @@ function requireCronSecret(req: Request, url: URL) {
     return NextResponse.json({ error: "server error", detail: "CRON_SECRET is not set" }, { status: 500 });
   }
   const { provided, source } = getCronSecretFromRequest(req, url);
+  const authSource = source;
+  const expected6 = expected.slice(0, 6);
+  const provided6 = provided.slice(0, 6);
   console.log("[cron] crawl-opencalls secret check", {
-    authSource: source,
-    expected6: expected.slice(0, 6),
-    provided6: provided.slice(0, 6),
+    authSource,
+    expected6,
+    provided6,
     hasProvided: !!provided,
   });
   if (!provided || provided !== expected) {
-    return NextResponse.json({ error: "unauthorized" }, { status: 401 });
+    return NextResponse.json({
+      authSource,
+      expected6,
+      provided6,
+    });
   }
   return null;
 }
@@ -1110,6 +1117,7 @@ export async function POST() {
 }
 
 export async function GET(req: Request) {
+  console.log("[cron] reached handler");
   const url = new URL(req.url);
   const auth = requireCronSecret(req, url);
   if (auth) return auth;
