@@ -4,19 +4,21 @@ import { prisma } from "@/lib/prisma";
 import { syncGalleryEmailDirectory } from "@/lib/galleryEmailDirectory";
 import { validateExternalOpenCalls } from "@/lib/openCallValidation";
 
-export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
+export const dynamic = "force-dynamic";
 export const maxDuration = 300;
 
-function getCronSecretFromRequest(req: Request, url: URL) {
+type CronSecretAuthSource = "query" | "header" | "bearer" | "none";
+
+function getCronSecretFromRequest(req: Request, url: URL): { provided: string; source: CronSecretAuthSource } {
   const qp = String(url.searchParams.get("secret") || "").trim();
-  if (qp) return qp;
+  if (qp) return { provided: qp, source: "query" };
   const header = String(req.headers.get("x-cron-secret") || "").trim();
-  if (header) return header;
+  if (header) return { provided: header, source: "header" };
   const auth = String(req.headers.get("authorization") || "").trim();
   const m = auth.match(/^Bearer\s+(.+)$/i);
-  if (m?.[1]) return m[1].trim();
-  return "";
+  if (m?.[1]) return { provided: m[1].trim(), source: "bearer" };
+  return { provided: "", source: "none" };
 }
 
 function requireCronSecret(req: Request, url: URL) {
@@ -24,10 +26,11 @@ function requireCronSecret(req: Request, url: URL) {
   if (!expected) {
     return NextResponse.json({ error: "server error", detail: "CRON_SECRET is not set" }, { status: 500 });
   }
-  const provided = getCronSecretFromRequest(req, url);
+  const { provided, source } = getCronSecretFromRequest(req, url);
   console.log("[cron] crawl-opencalls secret check", {
+    authSource: source,
     expected6: expected.slice(0, 6),
-    provided6: String(provided || "").slice(0, 6),
+    provided6: provided.slice(0, 6),
     hasProvided: !!provided,
   });
   if (!provided || provided !== expected) {
