@@ -301,3 +301,18 @@ model ShipmentEvent {
 
   @@index([shipmentId])
 }
+
+model PasswordResetOtp {
+  id                   String   @id @default(cuid())
+  email                String
+  role                 Role
+  otpHash              String
+  otpExpiresAt         DateTime
+  attempts             Int      @default(0)
+  resetSessionId       String?  @unique
+  resetSessionExpiresAt DateTime?
+
+  @@unique([email, role])
+  @@index([email])
+  @@index([resetSessionId])
+}

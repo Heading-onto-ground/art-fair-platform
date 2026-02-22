@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
+import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import TopBar from "@/app/components/TopBar";
 import { useLanguage } from "@/lib/useLanguage";
@@ -73,27 +74,10 @@ export default function LoginPage() {
       const res = await fetch("/api/auth/login", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ role, email: e, password: p }) });
       const data = await res.json().catch(() => null);
       if (!res.ok || !data?.ok) {
-        if (data?.error === "email not verified") {
+        const serverError = typeof data?.error === "string" ? data.error : null;
+        setErr(serverError ?? `Login failed (${res.status})`);
+        if (serverError === "email not verified") {
           setNeedsVerification(true);
-          if (data?.verificationReason === "expired") {
-            setErr(
-              tr(
-                "Verification link expired. We sent a new verification email automatically.",
-                "인증 링크가 만료되었습니다. 새 인증 메일을 자동으로 다시 보냈습니다.",
-                "認証リンクの有効期限が切れました。新しい認証メールを自動再送しました。",
-                "Le lien de verification a expire. Un nouvel email de verification a ete renvoye automatiquement."
-              )
-            );
-          } else {
-            setErr(
-              tr(
-                "Email is not verified. Please verify your email first.",
-                "이메일 인증이 완료되지 않았습니다. 먼저 이메일 인증을 해주세요.",
-                "メール認証が完了していません。先に認証してください。",
-                "Votre email n'est pas verifie. Veuillez d'abord verifier votre email."
-              )
-            );
-          }
           if (data?.autoResent) {
             setInfo(
               tr(
@@ -113,8 +97,6 @@ export default function LoginPage() {
               )
             );
           }
-        } else {
-          setErr(data?.error ?? `Login failed (${res.status})`);
         }
         return;
       }
@@ -262,6 +244,24 @@ export default function LoginPage() {
             ))}
           </div>
 
+          {err && (
+            <p
+              style={{
+                marginTop: 0,
+                marginBottom: 16,
+                padding: "12px 16px",
+                background: "rgba(139,74,74,0.06)",
+                border: "1px solid rgba(139,74,74,0.2)",
+                color: "#8B4A4A",
+                fontFamily: F,
+                fontSize: 12,
+                fontWeight: 400,
+              }}
+            >
+              {err}
+            </p>
+          )}
+
           <div className="signup-fields" style={{ display: "grid", gap: 18 }}>
             <Lbl label={t("email", lang)}><input value={email} onChange={(e) => setEmail(e.target.value)} placeholder={t("login_email_placeholder", lang)} autoComplete="email" style={inp} /></Lbl>
             <Lbl label={t("password", lang)}><input value={password} onChange={(e) => setPassword(e.target.value)} placeholder={t("login_password_placeholder", lang)} type="password" autoComplete="current-password" style={inp} onKeyDown={(e) => { if (e.key === "Enter" && mode === "login") onLogin(); }} /></Lbl>
@@ -303,11 +303,6 @@ export default function LoginPage() {
               {info}
             </div>
           )}
-          {err && (
-            <div style={{ marginTop: 20, padding: "12px 16px", background: "rgba(139,74,74,0.06)", border: "1px solid rgba(139,74,74,0.2)", color: "#8B4A4A", fontFamily: F, fontSize: 12, fontWeight: 400 }}>
-              {err}
-            </div>
-          )}
           {mode === "login" && needsVerification && (
             <button
               onClick={onResendVerification}
@@ -331,6 +326,29 @@ export default function LoginPage() {
                 ? "..."
                 : tr("Resend Verification Email", "인증 메일 다시 보내기", "認証メールを再送", "Renvoyer l'email de verification")}
             </button>
+          )}
+
+          {mode === "login" && (
+            <div style={{ textAlign: "center", marginTop: 10, marginBottom: 10 }}>
+              <Link
+                href="/forgot-password"
+                style={{
+                  display: "inline-block",
+                  color: "#8B7355",
+                  fontFamily: F,
+                  fontSize: 14,
+                  fontWeight: 500,
+                  cursor: "pointer",
+                  padding: 0,
+                  textDecoration: "underline",
+                  textTransform: "none",
+                  letterSpacing: "normal",
+                  margin: 0,
+                }}
+              >
+                비밀번호를 잊으셨나요?
+              </Link>
+            </div>
           )}
 
           <button onClick={mode === "login" ? onLogin : onSignup} disabled={loading} style={{ marginTop: 28, width: "100%", padding: "16px", border: "none", background: loading ? "#E8E3DB" : "#1A1A1A", color: loading ? "#8A8580" : "#FDFBF7", fontFamily: F, fontSize: 11, fontWeight: 500, letterSpacing: "0.1em", textTransform: "uppercase", cursor: loading ? "not-allowed" : "pointer", transition: "all 0.3s" }}
