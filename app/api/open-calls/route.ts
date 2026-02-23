@@ -6,6 +6,7 @@ import {
   isOpenCallDeadlineActive,
   shouldHideOpenCallByValidation,
 } from "@/lib/openCallValidation";
+import { getPinnedOpenCallGalleryId } from "@/lib/adminSettings";
 
 function normalizeCountry(input: string) {
   const v = String(input || "").trim();
@@ -34,7 +35,7 @@ export async function GET() {
     // Validation lookup is best-effort; keep API available on infra mismatch.
     console.error("open-call validation map load failed (non-blocking):", validationError);
   }
-  const openCalls = allOpenCalls
+  let openCalls = allOpenCalls
     .filter((oc) => {
       if (!isOpenCallDeadlineActive(String(oc.deadline || ""))) return false;
       // Only hide clearly invalid external entries. Keep internal and temporary-unreachable entries visible.
@@ -47,6 +48,20 @@ export async function GET() {
     country: normalizeCountry(oc.country),
     city: normalizeCity(oc.city),
   }));
+
+  // Admin-curated ordering: pinned gallery open calls first (best-effort).
+  try {
+    const pinnedGalleryId = await getPinnedOpenCallGalleryId();
+    if (pinnedGalleryId) {
+      const pinned = openCalls.filter((oc) => String(oc.galleryId || "").trim() === pinnedGalleryId);
+      if (pinned.length > 0) {
+        const rest = openCalls.filter((oc) => String(oc.galleryId || "").trim() !== pinnedGalleryId);
+        openCalls = [...pinned, ...rest];
+      }
+    }
+  } catch (e) {
+    console.error("Pinned open-call ordering failed (non-fatal):", e);
+  }
   const res = NextResponse.json({ openCalls });
   res.headers.set("Cache-Control", "public, s-maxage=15, stale-while-revalidate=120");
   return res;

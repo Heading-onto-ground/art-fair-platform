@@ -18,6 +18,7 @@ export default function AdminTopBar() {
     lang === "ko" ? ko : lang === "ja" ? ja : lang === "fr" ? fr : en;
   const isHomeActive = pathname === "/admin";
   const isDashboardActive = pathname === "/admin/outreach";
+  const isOpenCallsActive = pathname === "/admin/open-calls";
   const isUsersActive = pathname === "/admin/users";
   const isSourcesActive = pathname === "/admin/sources";
   const isAboutActive = pathname === "/admin/about";
@@ -128,6 +129,7 @@ export default function AdminTopBar() {
         <nav style={{ display: "flex", alignItems: "center", gap: 18 }}>
           <NavLink onClick={() => router.push("/admin")} label={tr("Home", "홈", "ホーム", "Accueil")} active={isHomeActive} />
           <NavLink onClick={() => router.push("/admin/outreach")} label={tr("Dashboard", "대시보드", "ダッシュボード", "Tableau")} active={isDashboardActive} />
+          <NavLink onClick={() => router.push("/admin/open-calls")} label={tr("Open Calls", "오픈콜", "オープンコール", "Open Calls")} active={isOpenCallsActive} />
           <NavLink onClick={() => router.push("/admin/users")} label={tr("Users", "가입자", "ユーザー", "Utilisateurs")} active={isUsersActive} />
           <NavLink onClick={() => router.push("/admin/sources")} label={tr("Sources", "소스", "ソース", "Sources")} active={isSourcesActive} />
           <NavLink onClick={() => router.push("/admin/about")} label={tr("About", "소개", "About", "About")} active={isAboutActive} />

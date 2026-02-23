@@ -316,3 +316,11 @@ model PasswordResetOtp {
   @@index([email])
   @@index([resetSessionId])
 }
+
+// ========== 관리자 설정 ==========
+
+model AdminSetting {
+  key       String   @id
+  value     String
+  updatedAt DateTime @updatedAt
+}
