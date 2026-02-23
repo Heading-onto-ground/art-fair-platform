@@ -350,6 +350,16 @@ export default function ArtistPage() {
     return ["ALL", ...ordered];
   }, [openCalls, preferredCountry]);
 
+  const openCallCountryCounts = useMemo(() => {
+    const counts: Record<string, number> = { ALL: openCalls.length };
+    for (const o of openCalls) {
+      const c = normalizeCountry((o.country ?? "").trim());
+      if (!c) continue;
+      counts[c] = (counts[c] || 0) + 1;
+    }
+    return counts;
+  }, [openCalls]);
+
   const filtered = useMemo(() => {
     if (countryFilter === "ALL") return openCalls;
     return openCalls.filter((o) => normalizeCountry((o.country ?? "").trim()) === countryFilter);
@@ -707,8 +717,41 @@ export default function ArtistPage() {
               {countries.map((c) => {
                 const active = c === countryFilter;
                 return (
-                  <button key={c} onClick={() => setCountryFilter(c)} style={{ padding: "14px 20px", border: "none", borderBottom: active ? "1px solid #1A1A1A" : "1px solid transparent", background: "transparent", fontFamily: F, fontSize: 10, fontWeight: 500, letterSpacing: "0.08em", textTransform: "uppercase", color: active ? "#1A1A1A" : "#B0AAA2", cursor: "pointer", marginBottom: -1, whiteSpace: "nowrap", transition: "all 0.3s" }}>
-                    {c}
+                  <button
+                    key={c}
+                    onClick={() => setCountryFilter(c)}
+                    style={{
+                      padding: "14px 20px",
+                      border: "none",
+                      borderBottom: active ? "1px solid #1A1A1A" : "1px solid transparent",
+                      background: "transparent",
+                      fontFamily: F,
+                      fontSize: 10,
+                      fontWeight: 500,
+                      letterSpacing: "0.08em",
+                      textTransform: "uppercase",
+                      color: active ? "#1A1A1A" : "#B0AAA2",
+                      cursor: "pointer",
+                      marginBottom: -1,
+                      whiteSpace: "nowrap",
+                      transition: "all 0.3s",
+                      display: "flex",
+                      alignItems: "center",
+                      gap: 8,
+                    }}
+                  >
+                    <span>{c}</span>
+                    <span
+                      style={{
+                        fontSize: 9,
+                        opacity: 0.85,
+                        padding: "2px 6px",
+                        background: active ? "rgba(26,26,26,0.08)" : "#F5F0EB",
+                        color: active ? "#1A1A1A" : "#8A8580",
+                      }}
+                    >
+                      {openCallCountryCounts[c] || 0}
+                    </span>
                   </button>
                 );
               })}
