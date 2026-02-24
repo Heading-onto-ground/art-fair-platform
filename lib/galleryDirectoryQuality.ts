@@ -8,6 +8,9 @@ export type RawDirectoryGallery = {
   sourcePortal?: string;
   sourceUrl?: string;
   externalEmail?: string;
+  instagram?: string;
+  foundedYear?: number;
+  spaceSize?: string;
 };
 
 export type CanonicalDirectoryGallery = {
@@ -22,6 +25,9 @@ export type CanonicalDirectoryGallery = {
   sourceUrl?: string;
   externalEmail?: string;
   qualityScore: number;
+  instagram?: string;
+  foundedYear?: number;
+  spaceSize?: string;
 };
 
 function normalizeText(input: string) {
@@ -110,6 +116,9 @@ export function canonicalizeDirectoryGalleries(
           hasBio: !!row.bio,
           sourcePortals,
         }),
+        instagram: row.instagram?.trim() || undefined,
+        foundedYear: row.foundedYear,
+        spaceSize: row.spaceSize?.trim() || undefined,
       });
       continue;
     }
@@ -121,6 +130,9 @@ export function canonicalizeDirectoryGalleries(
     const bio = prev.bio || row.bio?.trim() || undefined;
     const sourceUrl = prev.sourceUrl || row.sourceUrl?.trim() || undefined;
     const externalEmail = prev.externalEmail || row.externalEmail?.trim() || undefined;
+    const instagram = prev.instagram || row.instagram?.trim() || undefined;
+    const foundedYear = prev.foundedYear ?? row.foundedYear;
+    const spaceSize = prev.spaceSize || row.spaceSize?.trim() || undefined;
 
     const merged: CanonicalDirectoryGallery = {
       ...prev,
@@ -128,6 +140,9 @@ export function canonicalizeDirectoryGalleries(
       bio,
       sourceUrl,
       externalEmail,
+      instagram,
+      foundedYear,
+      spaceSize,
       sourcePortals: mergedPortals,
       qualityScore: computeQualityScore({
         hasWebsite: !!website,

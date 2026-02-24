@@ -16,6 +16,9 @@ export type ExternalGalleryDirectoryItem = {
   qualityScore: number | null;
   sourceUrl: string | null;
   externalEmail: string | null;
+  instagram: string | null;
+  foundedYear: number | null;
+  spaceSize: string | null;
   createdAt: Date;
   updatedAt: Date;
 };
@@ -59,6 +62,15 @@ export async function ensureExternalGalleryDirectoryTable() {
   await prisma.$executeRawUnsafe(
     `CREATE UNIQUE INDEX IF NOT EXISTS "ExternalGalleryDirectory_matchKey_key" ON "ExternalGalleryDirectory" ("matchKey") WHERE "matchKey" IS NOT NULL;`
   );
+  await prisma.$executeRawUnsafe(
+    `ALTER TABLE "ExternalGalleryDirectory" ADD COLUMN IF NOT EXISTS "instagram" TEXT;`
+  );
+  await prisma.$executeRawUnsafe(
+    `ALTER TABLE "ExternalGalleryDirectory" ADD COLUMN IF NOT EXISTS "foundedYear" INTEGER;`
+  );
+  await prisma.$executeRawUnsafe(
+    `ALTER TABLE "ExternalGalleryDirectory" ADD COLUMN IF NOT EXISTS "spaceSize" TEXT;`
+  );
   ensured = true;
 }
 
@@ -86,6 +98,9 @@ export async function upsertExternalGalleryDirectory(items: CanonicalDirectoryGa
         qualityScore: item.qualityScore,
         sourceUrl: item.sourceUrl || null,
         externalEmail: item.externalEmail || null,
+        instagram: item.instagram || null,
+        foundedYear: item.foundedYear ?? null,
+        spaceSize: item.spaceSize || null,
       };
     })
     .filter((x): x is NonNullable<typeof x> => !!x);
@@ -115,17 +130,20 @@ export async function upsertExternalGalleryDirectory(items: CanonicalDirectoryGa
         row.sourceCount,
         row.qualityScore,
         row.sourceUrl,
-        row.externalEmail
+        row.externalEmail,
+        row.instagram,
+        row.foundedYear,
+        row.spaceSize
       );
       tuples.push(
-        `($${offset + 1}, $${offset + 2}, $${offset + 3}, $${offset + 4}, $${offset + 5}, $${offset + 6}, $${offset + 7}, $${offset + 8}, $${offset + 9}, $${offset + 10}, $${offset + 11}, $${offset + 12}, NOW())`
+        `($${offset + 1}, $${offset + 2}, $${offset + 3}, $${offset + 4}, $${offset + 5}, $${offset + 6}, $${offset + 7}, $${offset + 8}, $${offset + 9}, $${offset + 10}, $${offset + 11}, $${offset + 12}, $${offset + 13}, $${offset + 14}, $${offset + 15}, NOW())`
       );
     }
 
     await prisma.$executeRawUnsafe(
       `
       INSERT INTO "ExternalGalleryDirectory"
-        ("galleryId", "matchKey", "name", "country", "city", "website", "bio", "sourcePortal", "sourceCount", "qualityScore", "sourceUrl", "externalEmail", "updatedAt")
+        ("galleryId", "matchKey", "name", "country", "city", "website", "bio", "sourcePortal", "sourceCount", "qualityScore", "sourceUrl", "externalEmail", "instagram", "foundedYear", "spaceSize", "updatedAt")
       VALUES
         ${tuples.join(",\n")}
       ON CONFLICT ("galleryId")
@@ -141,6 +159,9 @@ export async function upsertExternalGalleryDirectory(items: CanonicalDirectoryGa
         "qualityScore" = EXCLUDED."qualityScore",
         "sourceUrl" = EXCLUDED."sourceUrl",
         "externalEmail" = EXCLUDED."externalEmail",
+        "instagram" = COALESCE(EXCLUDED."instagram", "ExternalGalleryDirectory"."instagram"),
+        "foundedYear" = COALESCE(EXCLUDED."foundedYear", "ExternalGalleryDirectory"."foundedYear"),
+        "spaceSize" = COALESCE(EXCLUDED."spaceSize", "ExternalGalleryDirectory"."spaceSize"),
         "updatedAt" = NOW();
       `,
       ...values
@@ -165,6 +186,9 @@ export async function listExternalGalleryDirectory() {
         "qualityScore",
         "sourceUrl",
         "externalEmail",
+        "instagram",
+        "foundedYear",
+        "spaceSize",
         "createdAt",
         "updatedAt"
       FROM "ExternalGalleryDirectory"
@@ -191,6 +215,9 @@ export async function getExternalGalleryDirectoryById(galleryId: string) {
         "qualityScore",
         "sourceUrl",
         "externalEmail",
+        "instagram",
+        "foundedYear",
+        "spaceSize",
         "createdAt",
         "updatedAt"
       FROM "ExternalGalleryDirectory"
