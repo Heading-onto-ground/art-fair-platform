@@ -46,7 +46,6 @@ const CATEGORIES = [
   { key: "art_chat", emoji: "🎨" },
   { key: "meetup", emoji: "📍" },
   { key: "find_exhibit", emoji: "🏛️" },
-  { key: "general", emoji: "💬" },
 ];
 
 export default function CommunityPage() {
@@ -67,7 +66,7 @@ export default function CommunityPage() {
   const [showNewPost, setShowNewPost] = useState(false);
   const [newTitle, setNewTitle] = useState("");
   const [newContent, setNewContent] = useState("");
-  const [newCategory, setNewCategory] = useState("general");
+  const [newCategory, setNewCategory] = useState("find_collab");
   const [posting, setPosting] = useState(false);
 
   // Expanded post (for comments)
@@ -107,7 +106,7 @@ export default function CommunityPage() {
       if (res.ok) {
         setNewTitle("");
         setNewContent("");
-        setNewCategory("general");
+        setNewCategory("find_collab");
         setShowNewPost(false);
         mutatePosts();
       }

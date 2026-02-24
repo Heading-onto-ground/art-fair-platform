@@ -40,41 +40,17 @@ export type PostResponse = {
   updatedAt: number;
 };
 
-// ── Seed data ──
-const SEED_POSTS = [
-  { authorId: "user_artist_yuna", authorName: "Yuna Kim", authorRole: "artist", category: "tips", title: "Tips for applying to European open calls", content: "After applying to over 30 open calls across Europe, here are my key takeaways:\n\n1. Always tailor your artist statement to the specific theme\n2. High-quality documentation of your work is essential\n3. Don't underestimate the cover letter — curators read them\n4. Apply early, some galleries review on a rolling basis\n5. Follow up politely after 2-3 weeks if you haven't heard back", pinned: true },
-  { authorId: "user_artist_leon", authorName: "Léon Dubois", authorRole: "artist", category: "exhibition", title: "Just got accepted to Whitechapel Gallery open call!", content: "I'm thrilled to share that my installation piece 'Traces of Light' has been selected for the Whitechapel Gallery's emerging artists program.", pinned: false },
-  { authorId: "user_artist_sofia", authorName: "Sofia Rossi", authorRole: "artist", category: "critique", title: "Feedback on my new series — 'Urban Silence'", content: "I've been working on a new photography series exploring empty urban spaces at dawn. The series documents the quiet moments before cities wake up.", pinned: false },
-  { authorId: "user_artist_kenji", authorName: "Kenji Sato", authorRole: "artist", category: "collaboration", title: "Looking for a painter to collaborate on mixed-media project", content: "I'm a sculptor based in Tokyo working primarily with ceramics and found objects. I'm looking for a painter interested in exploring the intersection of 2D and 3D art.", pinned: false },
-  { authorId: "user_artist_mika", authorName: "Mika Tanaka", authorRole: "artist", category: "general", title: "How do you handle art shipping insurance?", content: "I just shipped my first international piece (from Osaka to Berlin) and I'm quite nervous about it. What's your experience with art shipping insurance?", pinned: false },
-  { authorId: "user_artist_anna", authorName: "Anna Weber", authorRole: "artist", category: "inspiration", title: "Berlin gallery district — must-visit spaces", content: "Just spent a week gallery hopping in Berlin and wanted to share my favorites: KW Institute, Galerie Eigen + Art, Hamburger Bahnhof, König Galerie, Schinkel Pavillon.", pinned: false },
-  { authorId: "user_artist_jimin", authorName: "지민 (Jimin Park)", authorRole: "artist", category: "find_collab", title: "영상 작업 가능한 작가님 찾습니다 — 퍼포먼스 x 영상 프로젝트", content: "안녕하세요, 서울에서 퍼포먼스 작업을 하고 있는 지민입니다. 다음 프로젝트로 퍼포먼스와 영상을 결합한 작업을 계획하고 있어요.", pinned: false },
-  { authorId: "user_artist_hana", authorName: "Hana Lee", authorRole: "artist", category: "art_chat", title: "요즘 AI 아트 논쟁 어떻게 생각하세요?", content: "최근에 AI로 생성한 이미지가 공모전에서 수상해서 큰 논란이 됐잖아요. 작가로서 이 주제에 대해 다들 어떻게 생각하시나요?", pinned: false },
-  { authorId: "user_artist_sofia", authorName: "Sofia Rossi", authorRole: "artist", category: "daily", title: "작업실 구하기 대작전... 다들 어디서 작업하세요?", content: "밀라노에서 작업실 임대료가 너무 올라서 고민이에요. 다른 도시에서 작업하시는 분들은 어떤가요?", pinned: false },
-  { authorId: "user_artist_kenji", authorName: "Kenji Sato", authorRole: "artist", category: "meetup", title: "도쿄 아티스트 정기 모임 — 매월 첫째 주 토요일", content: "도쿄에 계신 작가님들! 매월 첫째 주 토요일에 아티스트 모임을 하고 있어요. 참여하고 싶으신 분은 댓글 남겨주세요!", pinned: false },
+const SEED_AUTHOR_IDS = [
+  "user_artist_yuna", "user_artist_leon", "user_artist_sofia",
+  "user_artist_kenji", "user_artist_mika", "user_artist_anna",
+  "user_artist_jimin", "user_artist_hana",
 ];
 
 async function ensureSeeded() {
   try {
-    const count = await prisma.communityPost.count();
-    if (count === 0) {
-      for (const p of SEED_POSTS) {
-        await prisma.communityPost.create({
-          data: {
-            authorId: p.authorId,
-            authorName: p.authorName,
-            authorRole: p.authorRole,
-            category: p.category,
-            title: p.title,
-            content: p.content,
-            pinned: p.pinned,
-          },
-        });
-      }
-      console.log(`✅ Seeded ${SEED_POSTS.length} community posts`);
-    }
+    await prisma.communityPost.deleteMany({ where: { authorId: { in: SEED_AUTHOR_IDS } } });
   } catch (e) {
-    console.error("Community seed error (non-fatal):", e);
+    console.error("Community seed cleanup error (non-fatal):", e);
   }
 }
 
