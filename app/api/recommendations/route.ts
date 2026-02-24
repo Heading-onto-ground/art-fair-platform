@@ -2,12 +2,13 @@ import { NextResponse } from "next/server";
 import { getServerSession, getProfileByUserId } from "@/lib/auth";
 import { listOpenCalls } from "@/app/data/openCalls";
 import { listApplicationsByArtist } from "@/app/data/applications";
-import { getTopRecommendations } from "@/lib/matcher";
+import { matchArtistToOpenCalls } from "@/lib/matcher";
 import {
   getOpenCallValidationMap,
   isOpenCallDeadlineActive,
   shouldHideOpenCallByValidation,
 } from "@/lib/openCallValidation";
+import { getPinnedOpenCallGalleryId, getPinnedOpenCallId } from "@/lib/adminSettings";
 
 export const dynamic = "force-dynamic";
 
@@ -70,18 +71,35 @@ export async function GET() {
     const appliedIds = new Set(applications.map((a) => a.openCallId));
 
     const genre = "genre" in profile ? (profile as any).genre ?? "" : "";
-    const recommendations = getTopRecommendations(
+    const artist = {
+      userId: session.userId,
+      name: profile.name ?? "",
+      genre,
+      country: profile.country ?? "",
+      city: profile.city ?? "",
+    };
+
+    const matched = matchArtistToOpenCalls(
       {
-        userId: session.userId,
-        name: profile.name ?? "",
-        genre,
-        country: profile.country ?? "",
-        city: profile.city ?? "",
+        ...artist,
       },
       openCalls,
-      appliedIds,
-      5
+      appliedIds
     );
+
+    const pinnedOpenCallId = await getPinnedOpenCallId();
+    const pinnedGalleryId = pinnedOpenCallId ? null : await getPinnedOpenCallGalleryId(); // legacy fallback
+
+    const pinnedOpenCall = pinnedOpenCallId ? openCalls.find((oc) => oc.id === pinnedOpenCallId) || null : null;
+    const pinnedMatched = pinnedOpenCall ? matchArtistToOpenCalls(artist, [pinnedOpenCall], new Set())?.[0] || null : null;
+
+    const recommendations = (
+      pinnedMatched
+        ? [pinnedMatched, ...matched.filter((m) => m.id !== pinnedMatched.id)]
+        : pinnedGalleryId
+          ? [...matched.filter((m) => m.galleryId === pinnedGalleryId), ...matched.filter((m) => m.galleryId !== pinnedGalleryId)]
+          : matched
+    ).slice(0, 5);
 
     return NextResponse.json({
       recommendations,

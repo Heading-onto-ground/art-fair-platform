@@ -22,6 +22,7 @@ async function ensureAdminSettingTable() {
 }
 
 const PINNED_OPEN_CALL_GALLERY_ID_KEY = "pinned_open_call_gallery_id";
+const PINNED_OPEN_CALL_ID_KEY = "pinned_open_call_id";
 
 export async function getPinnedOpenCallGalleryId(): Promise<string | null> {
   await ensureAdminSettingTable();
@@ -52,6 +53,39 @@ export async function setPinnedOpenCallGalleryId(galleryId: string | null): Prom
   await prisma.adminSetting.upsert({
     where: { key: PINNED_OPEN_CALL_GALLERY_ID_KEY },
     create: { key: PINNED_OPEN_CALL_GALLERY_ID_KEY, value: v },
+    update: { value: v },
+  });
+}
+
+export async function getPinnedOpenCallId(): Promise<string | null> {
+  await ensureAdminSettingTable();
+  try {
+    const row = await prisma.adminSetting.findUnique({
+      where: { key: PINNED_OPEN_CALL_ID_KEY },
+    });
+    const v = String(row?.value || "").trim();
+    return v ? v : null;
+  } catch (e) {
+    console.error("getPinnedOpenCallId failed (non-fatal):", e);
+    return null;
+  }
+}
+
+export async function setPinnedOpenCallId(openCallId: string | null): Promise<void> {
+  await ensureAdminSettingTable();
+  const v = String(openCallId || "").trim();
+  if (!v) {
+    try {
+      await prisma.adminSetting.delete({ where: { key: PINNED_OPEN_CALL_ID_KEY } });
+    } catch {
+      // ignore if missing
+    }
+    return;
+  }
+
+  await prisma.adminSetting.upsert({
+    where: { key: PINNED_OPEN_CALL_ID_KEY },
+    create: { key: PINNED_OPEN_CALL_ID_KEY, value: v },
     update: { value: v },
   });
 }

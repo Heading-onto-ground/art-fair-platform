@@ -12,16 +12,19 @@ type OpenCall = {
   gallery: string;
   city: string;
   country: string;
+  theme?: string;
   deadline: string;
   isExternal?: boolean;
 };
 
-type GalleryOption = {
+type OpenCallOption = {
+  id: string;
   galleryId: string;
   gallery: string;
   city: string;
   country: string;
-  openCallCount: number;
+  theme: string;
+  deadline: string;
   isExternal: boolean;
 };
 
@@ -37,7 +40,7 @@ export default function AdminOpenCallsPage() {
   const [error, setError] = useState<string | null>(null);
 
   const [openCalls, setOpenCalls] = useState<OpenCall[]>([]);
-  const [pinnedGalleryId, setPinnedGalleryId] = useState<string | null>(null);
+  const [pinnedOpenCallId, setPinnedOpenCallId] = useState<string | null>(null);
   const [query, setQuery] = useState("");
 
   useEffect(() => {
@@ -74,7 +77,7 @@ export default function AdminOpenCallsPage() {
       const ocData = await ocRes.json().catch(() => null);
       const pinData = await pinRes.json().catch(() => null);
       setOpenCalls(Array.isArray(ocData?.openCalls) ? (ocData.openCalls as OpenCall[]) : []);
-      setPinnedGalleryId(typeof pinData?.pinnedGalleryId === "string" ? pinData.pinnedGalleryId : null);
+      setPinnedOpenCallId(typeof pinData?.pinnedOpenCallId === "string" ? pinData.pinnedOpenCallId : null);
     } catch (e: unknown) {
       setError(e instanceof Error ? e.message : "Failed to load");
     } finally {
@@ -88,50 +91,48 @@ export default function AdminOpenCallsPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [authenticated]);
 
-  const galleryOptions = useMemo(() => {
-    const map = new Map<string, GalleryOption>();
-    for (const oc of openCalls) {
-      const gid = String(oc.galleryId || "").trim();
-      if (!gid) continue;
-      const prev = map.get(gid);
-      if (!prev) {
-        map.set(gid, {
-          galleryId: gid,
-          gallery: String(oc.gallery || "").trim() || gid,
-          city: String(oc.city || "").trim(),
-          country: String(oc.country || "").trim(),
-          openCallCount: 1,
-          isExternal: !!oc.isExternal,
-        });
-      } else {
-        map.set(gid, { ...prev, openCallCount: prev.openCallCount + 1 });
-      }
-    }
-    return Array.from(map.values()).sort((a, b) => {
-      if (b.openCallCount !== a.openCallCount) return b.openCallCount - a.openCallCount;
-      return a.gallery.localeCompare(b.gallery);
-    });
+  const openCallOptions = useMemo(() => {
+    return openCalls
+      .map((oc) => ({
+        id: String(oc.id || "").trim(),
+        galleryId: String(oc.galleryId || "").trim(),
+        gallery: String(oc.gallery || "").trim(),
+        city: String(oc.city || "").trim(),
+        country: String(oc.country || "").trim(),
+        theme: String((oc as any)?.theme || "").trim(),
+        deadline: String(oc.deadline || "").trim(),
+        isExternal: !!oc.isExternal,
+      }))
+      .filter((o) => o.id && o.gallery)
+      .sort((a, b) => {
+        const ad = Date.parse(a.deadline);
+        const bd = Date.parse(b.deadline);
+        if (Number.isFinite(ad) && Number.isFinite(bd) && ad !== bd) return ad - bd;
+        return a.gallery.localeCompare(b.gallery);
+      });
   }, [openCalls]);
 
   const pinnedOption = useMemo(
-    () => (pinnedGalleryId ? galleryOptions.find((g) => g.galleryId === pinnedGalleryId) || null : null),
-    [galleryOptions, pinnedGalleryId]
+    () => (pinnedOpenCallId ? openCallOptions.find((o) => o.id === pinnedOpenCallId) || null : null),
+    [openCallOptions, pinnedOpenCallId]
   );
 
   const filteredOptions = useMemo(() => {
     const q = query.trim().toLowerCase();
-    if (!q) return galleryOptions;
-    return galleryOptions.filter((g) => {
+    if (!q) return openCallOptions;
+    return openCallOptions.filter((g) => {
       return (
         g.gallery.toLowerCase().includes(q) ||
+        g.id.toLowerCase().includes(q) ||
         g.galleryId.toLowerCase().includes(q) ||
+        (g.theme || "").toLowerCase().includes(q) ||
         (g.country || "").toLowerCase().includes(q) ||
         (g.city || "").toLowerCase().includes(q)
       );
     });
-  }, [galleryOptions, query]);
+  }, [openCallOptions, query]);
 
-  async function savePin(nextGalleryId: string | null) {
+  async function savePin(nextOpenCallId: string | null) {
     setSaving(true);
     setError(null);
     try {
@@ -139,14 +140,14 @@ export default function AdminOpenCallsPage() {
         method: "POST",
         credentials: "include",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ galleryId: nextGalleryId }),
+        body: JSON.stringify({ openCallId: nextOpenCallId }),
       });
       if (res.status === 401) {
         router.replace("/admin/login");
         return;
       }
       const data = await res.json().catch(() => null);
-      setPinnedGalleryId(typeof data?.pinnedGalleryId === "string" ? data.pinnedGalleryId : null);
+      setPinnedOpenCallId(typeof data?.pinnedOpenCallId === "string" ? data.pinnedOpenCallId : null);
     } catch (e: unknown) {
       setError(e instanceof Error ? e.message : "Failed to save");
     } finally {
@@ -179,10 +180,10 @@ export default function AdminOpenCallsPage() {
           </h1>
           <p style={{ fontFamily: F, fontSize: 12, fontWeight: 300, color: "#8A8580", marginTop: 8 }}>
             {tr(
-              "Pin a gallery to prioritize its open calls at the top.",
-              "특정 갤러리를 핀하여 해당 오픈콜을 최상단에 우선 노출합니다.",
-              "ギャラリーをピン留めして、オープンコールを最上部に表示します。",
-              "Épinglez une galerie pour prioriser ses open calls."
+              "Pin an open call to force it to the top of recommendations.",
+              "특정 오픈콜을 핀하여 추천 목록 최상단에 고정합니다.",
+              "オープンコールをピン留めして、推薦の最上部に固定します。",
+              "Épinglez un open call pour le fixer en haut des recommandations."
             )}
           </p>
         </div>
@@ -207,17 +208,17 @@ export default function AdminOpenCallsPage() {
           </button>
           <button
             onClick={() => savePin(null)}
-            disabled={saving || !pinnedGalleryId}
+            disabled={saving || !pinnedOpenCallId}
             style={{
               padding: "10px 18px",
               border: "1px solid #E8E3DB",
-              background: pinnedGalleryId ? "#1A1A1A" : "#FFFFFF",
-              color: pinnedGalleryId ? "#FFFFFF" : "#C8C2B9",
+              background: pinnedOpenCallId ? "#1A1A1A" : "#FFFFFF",
+              color: pinnedOpenCallId ? "#FFFFFF" : "#C8C2B9",
               fontFamily: F,
               fontSize: 10,
               letterSpacing: "0.1em",
               textTransform: "uppercase",
-              cursor: saving || !pinnedGalleryId ? "not-allowed" : "pointer",
+              cursor: saving || !pinnedOpenCallId ? "not-allowed" : "pointer",
               opacity: saving ? 0.7 : 1,
             }}
           >
@@ -226,7 +227,7 @@ export default function AdminOpenCallsPage() {
           <input
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            placeholder={tr("Search gallery...", "갤러리 검색...", "検索...", "Rechercher...")}
+            placeholder={tr("Search open calls...", "오픈콜 검색...", "検索...", "Rechercher...")}
             style={{
               flex: "1 1 280px",
               minWidth: 220,
@@ -256,10 +257,15 @@ export default function AdminOpenCallsPage() {
               <div>
                 <div style={{ fontFamily: S, fontSize: 20, color: "#1A1A1A" }}>{pinnedOption.gallery}</div>
                 <div style={{ fontFamily: F, fontSize: 11, color: "#8A8580", marginTop: 6 }}>
-                  {[pinnedOption.country, pinnedOption.city].filter(Boolean).join(" / ")} · {pinnedOption.openCallCount} {tr("open calls", "개 오픈콜", "件", "open calls")}
+                  {[pinnedOption.country, pinnedOption.city].filter(Boolean).join(" / ")} · {pinnedOption.deadline}
                 </div>
+                {pinnedOption.theme ? (
+                  <div style={{ fontFamily: F, fontSize: 11, color: "#8A8580", marginTop: 6 }}>
+                    {pinnedOption.theme}
+                  </div>
+                ) : null}
                 <div style={{ fontFamily: F, fontSize: 10, color: "#B0AAA2", marginTop: 6 }}>
-                  ID: {pinnedOption.galleryId}
+                  ID: {pinnedOption.id}
                 </div>
               </div>
               <span style={{ fontFamily: F, fontSize: 9, letterSpacing: "0.1em", textTransform: "uppercase", padding: "4px 10px", border: "1px solid #1A1A1A", color: "#1A1A1A" }}>
@@ -268,7 +274,7 @@ export default function AdminOpenCallsPage() {
             </div>
           ) : (
             <p style={{ fontFamily: F, fontSize: 12, color: "#B0AAA2", margin: 0 }}>
-              {tr("No pinned gallery.", "핀된 갤러리가 없습니다.", "ピン留めなし。", "Aucune galerie épinglée.")}
+              {tr("No pinned open call.", "핀된 오픈콜이 없습니다.", "ピン留めなし。", "Aucun open call épinglé.")}
             </p>
           )}
         </div>
@@ -284,11 +290,11 @@ export default function AdminOpenCallsPage() {
             </div>
           ) : (
             filteredOptions.map((g) => {
-              const active = g.galleryId === pinnedGalleryId;
+              const active = g.id === pinnedOpenCallId;
               return (
                 <button
-                  key={g.galleryId}
-                  onClick={() => savePin(g.galleryId)}
+                  key={g.id}
+                  onClick={() => savePin(g.id)}
                   disabled={saving}
                   style={{
                     textAlign: "left",
@@ -307,11 +313,16 @@ export default function AdminOpenCallsPage() {
                       {g.gallery}
                     </div>
                     <div style={{ fontFamily: F, fontSize: 11, color: "#8A8580", marginTop: 6 }}>
-                      {[g.country, g.city].filter(Boolean).join(" / ")} · {g.openCallCount} {tr("open calls", "개 오픈콜", "件", "open calls")}
+                      {[g.country, g.city].filter(Boolean).join(" / ")} · {g.deadline}
                       {g.isExternal ? ` · ${tr("external", "외부", "外部", "externe")}` : ""}
                     </div>
+                    {g.theme ? (
+                      <div style={{ fontFamily: F, fontSize: 11, color: "#8A8580", marginTop: 6, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+                        {g.theme}
+                      </div>
+                    ) : null}
                     <div style={{ fontFamily: F, fontSize: 10, color: "#B0AAA2", marginTop: 6 }}>
-                      ID: {g.galleryId}
+                      ID: {g.id}
                     </div>
                   </div>
                   <span style={{ fontFamily: F, fontSize: 9, letterSpacing: "0.1em", textTransform: "uppercase", padding: "4px 10px", border: `1px solid ${active ? "#8B7355" : "#E8E3DB"}`, color: active ? "#8B7355" : "#8A8580" }}>

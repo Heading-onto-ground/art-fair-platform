@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { getAdminSession } from "@/lib/adminAuth";
-import { getPinnedOpenCallGalleryId, setPinnedOpenCallGalleryId } from "@/lib/adminSettings";
+import { getPinnedOpenCallId, setPinnedOpenCallId } from "@/lib/adminSettings";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -10,8 +10,8 @@ export async function GET() {
   if (!session) {
     return NextResponse.json({ error: "unauthorized" }, { status: 401 });
   }
-  const pinnedGalleryId = await getPinnedOpenCallGalleryId();
-  return NextResponse.json({ pinnedGalleryId }, { status: 200 });
+  const pinnedOpenCallId = await getPinnedOpenCallId();
+  return NextResponse.json({ pinnedOpenCallId }, { status: 200 });
 }
 
 export async function POST(req: Request) {
@@ -20,9 +20,9 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "unauthorized" }, { status: 401 });
   }
   const body = await req.json().catch(() => ({}));
-  const galleryId = typeof body?.galleryId === "string" ? body.galleryId : null;
-  await setPinnedOpenCallGalleryId(galleryId);
-  const pinnedGalleryId = await getPinnedOpenCallGalleryId();
-  return NextResponse.json({ ok: true, pinnedGalleryId }, { status: 200 });
+  const openCallId = typeof body?.openCallId === "string" ? body.openCallId : null;
+  await setPinnedOpenCallId(openCallId);
+  const pinnedOpenCallId = await getPinnedOpenCallId();
+  return NextResponse.json({ ok: true, pinnedOpenCallId }, { status: 200 });
 }
 

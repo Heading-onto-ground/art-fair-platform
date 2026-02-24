@@ -76,6 +76,21 @@ async function insertCrawlRun(jobName: string) {
   return rows?.[0]?.id || null;
 }
 
+async function findActiveRunningCrawlRun(jobName: string): Promise<string | null> {
+  await ensureCrawlRunsTable();
+  const rows = (await prisma.$queryRawUnsafe(
+    `SELECT id
+     FROM crawl_runs
+     WHERE job_name = $1
+       AND status = 'running'
+       AND started_at > now() - interval '30 minutes'
+     ORDER BY started_at DESC
+     LIMIT 1`,
+    jobName
+  )) as Array<{ id: string }>;
+  return rows?.[0]?.id || null;
+}
+
 async function finishCrawlRun(input: {
   id: string | null;
   status: "success" | "error";
@@ -109,6 +124,15 @@ async function getLastCrawl(jobName: string): Promise<string | null> {
   )) as Array<{ finished_at: string | null; started_at: string | null }>;
   const row = rows?.[0];
   return (row?.finished_at || row?.started_at || null) as any;
+}
+
+function toIsoStringOrNull(value: any): string | null {
+  if (!value) return null;
+  if (value instanceof Date) return value.toISOString();
+  const s = String(value);
+  const d = new Date(s);
+  if (!Number.isNaN(d.getTime())) return d.toISOString();
+  return s;
 }
 
 type CrawledOpenCall = {
@@ -1097,19 +1121,34 @@ async function runCrawlJob() {
 }
 
 export async function POST() {
-  let runId: string | null = null;
-  try {
-    runId = await insertCrawlRun("crawl-opencalls");
-    const data = await runCrawlJob();
-    const itemsNew = Array.isArray((data as any)?.imported) ? (data as any).imported.length : 0;
-    await finishCrawlRun({ id: runId, status: "success", itemsNew, itemsUpdated: 0, error: null });
-    const lastCrawl = await getLastCrawl("crawl-opencalls");
-    return NextResponse.json({ ...data, lastCrawl });
-  } catch (e: any) {
-    console.error("POST /api/cron/crawl-opencalls failed:", e);
-    await finishCrawlRun({ id: runId, status: "error", itemsNew: 0, itemsUpdated: 0, error: String(e?.message || "unknown") });
-    return NextResponse.json({ error: "server error", detail: String(e?.message || "unknown") }, { status: 500 });
+  const jobName = "crawl-opencalls";
+  const activeRunId = await findActiveRunningCrawlRun(jobName);
+  if (activeRunId) {
+    return NextResponse.json({ ok: true, skipped: true, reason: "already_running" });
   }
+
+  let runId: string | null = null;
+  let status: "success" | "error" = "success";
+  let error: string | null = null;
+  let itemsNew = 0;
+
+  try {
+    runId = await insertCrawlRun(jobName);
+    const data = await runCrawlJob();
+    itemsNew = Array.isArray((data as any)?.imported) ? (data as any).imported.length : 0;
+  } catch (e: any) {
+    status = "error";
+    error = String(e?.message || "unknown").slice(0, 500);
+  } finally {
+    try {
+      await finishCrawlRun({ id: runId, status, itemsNew, itemsUpdated: 0, error });
+    } catch (e: any) {
+      console.error("POST /api/cron/crawl-opencalls finishCrawlRun failed:", e);
+    }
+  }
+
+  const lastCrawl = toIsoStringOrNull(await getLastCrawl(jobName));
+  return NextResponse.json({ ok: true, lastCrawl, runId, status });
 }
 
 export async function GET(req: Request) {
@@ -1121,19 +1160,33 @@ export async function GET(req: Request) {
   const forceRun = url.searchParams.get("run") === "1";
 
   if (isCron || forceRun) {
-    let runId: string | null = null;
-    try {
-      runId = await insertCrawlRun("crawl-opencalls");
-      const data = await runCrawlJob();
-      const itemsNew = Array.isArray((data as any)?.imported) ? (data as any).imported.length : 0;
-      await finishCrawlRun({ id: runId, status: "success", itemsNew, itemsUpdated: 0, error: null });
-      const lastCrawl = await getLastCrawl("crawl-opencalls");
-      return NextResponse.json({ triggeredBy: isCron ? "vercel-cron" : "query", ...data, lastCrawl });
-    } catch (e: any) {
-      console.error("GET /api/cron/crawl-opencalls run failed:", e);
-      await finishCrawlRun({ id: runId, status: "error", itemsNew: 0, itemsUpdated: 0, error: String(e?.message || "unknown") });
-      return NextResponse.json({ error: "crawler run failed", detail: String(e?.message || "unknown") }, { status: 500 });
+    const jobName = "crawl-opencalls";
+    const activeRunId = await findActiveRunningCrawlRun(jobName);
+    if (activeRunId) {
+      return NextResponse.json({ ok: true, skipped: true, reason: "already_running" });
     }
+
+    let runId: string | null = null;
+    let status: "success" | "error" = "success";
+    let error: string | null = null;
+    let itemsNew = 0;
+    try {
+      runId = await insertCrawlRun(jobName);
+      const data = await runCrawlJob();
+      itemsNew = Array.isArray((data as any)?.imported) ? (data as any).imported.length : 0;
+    } catch (e: any) {
+      status = "error";
+      error = String(e?.message || "unknown").slice(0, 500);
+    } finally {
+      try {
+        await finishCrawlRun({ id: runId, status, itemsNew, itemsUpdated: 0, error });
+      } catch (e: any) {
+        console.error("GET /api/cron/crawl-opencalls finishCrawlRun failed:", e);
+      }
+    }
+
+    const lastCrawl = toIsoStringOrNull(await getLastCrawl(jobName));
+    return NextResponse.json({ ok: true, lastCrawl, runId, status });
   }
 
   const existing = await listOpenCalls();
