@@ -96,3 +96,22 @@ export async function POST(req: Request) {
   }
 }
 
+export async function DELETE(req: Request) {
+  try {
+    const admin = getAdminSession();
+    if (!admin) return NextResponse.json({ ok: false, error: "unauthorized" }, { status: 401 });
+    const body = await req.json().catch(() => ({}));
+    const ids: string[] = Array.isArray(body?.ids) ? body.ids.map(String).filter(Boolean) : [];
+    if (!ids.length) return NextResponse.json({ ok: false, error: "ids required" }, { status: 400 });
+    const { prisma } = await import("@/lib/prisma");
+    const deleted = await prisma.$executeRawUnsafe(
+      `DELETE FROM "GalleryEmailDirectory" WHERE id = ANY($1::text[])`,
+      ids
+    );
+    return NextResponse.json({ ok: true, deleted });
+  } catch (e) {
+    console.error("DELETE /api/admin/gallery-emails failed:", e);
+    return NextResponse.json({ ok: false, error: "server error" }, { status: 500 });
+  }
+}
+
