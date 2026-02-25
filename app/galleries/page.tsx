@@ -458,15 +458,6 @@ export default function GalleriesPage() {
                     )}
                   </div>
 
-                  {/* Email */}
-                  <p style={{
-                    fontFamily: F,
-                    fontSize: 11,
-                    color: "#8A8580",
-                    letterSpacing: "0.02em",
-                  }}>
-                    {g.email}
-                  </p>
                 </div>
 
                 {/* Favorite button */}

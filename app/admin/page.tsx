@@ -132,6 +132,16 @@ export default function AdminHomePage() {
       ),
       href: "/admin/mail",
     },
+    {
+      title: tr("Gallery Emails", "갤러리 이메일", "ギャラリーメール", "Emails galeries"),
+      description: tr(
+        "View all gallery email addresses in the directory.",
+        "디렉토리에 등록된 모든 갤러리 이메일 주소를 확인합니다.",
+        "ディレクトリ登録済みの全ギャラリーメールを確認します。",
+        "Consultez tous les emails de galeries dans le repertoire."
+      ),
+      href: "/admin/gallery-emails",
+    },
   ];
 
   return (
