@@ -173,7 +173,6 @@ export default function GalleriesPage() {
       if (!q) return true;
       return (
         g.name.toLowerCase().includes(q) ||
-        g.email.toLowerCase().includes(q) ||
         normalizeDirectoryCity(g.country ?? "", g.city ?? "").toLowerCase().includes(q) ||
         g.city.toLowerCase().includes(q)
       );
@@ -330,7 +329,7 @@ export default function GalleriesPage() {
           <input
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            placeholder="Search by name, email, or city..."
+            placeholder="Search by name or city..."
             style={{
               width: "100%",
               maxWidth: 400,

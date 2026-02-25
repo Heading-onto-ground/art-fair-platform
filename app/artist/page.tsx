@@ -455,7 +455,6 @@ export default function ArtistPage() {
       if (!q) return true;
       return (
         (g.name || "").toLowerCase().includes(q) ||
-        (g.email || "").toLowerCase().includes(q) ||
         normalizeDirectoryCity(g.country || "", g.city || "").toLowerCase().includes(q) ||
         (g.city || "").toLowerCase().includes(q)
       );
@@ -900,7 +899,7 @@ export default function ArtistPage() {
               <input
                 value={galleryQuery}
                 onChange={(e) => setGalleryQuery(e.target.value)}
-                placeholder={lang === "ko" ? "갤러리명/이메일/도시 검색..." : lang === "ja" ? "ギャラリー名/メール/都市を検索..." : "Search gallery name/email/city..."}
+                placeholder={lang === "ko" ? "갤러리명/도시 검색..." : lang === "ja" ? "ギャラリー名/都市を検索..." : "Search gallery name/city..."}
                 style={{ width: "100%", maxWidth: 420, padding: "12px 14px", border: "1px solid #E8E3DB", background: "#FFFFFF", fontFamily: F, fontSize: 12, color: "#1A1A1A", outline: "none" }}
               />
             </div>
@@ -929,7 +928,6 @@ export default function ArtistPage() {
                           </span>
                         </div>
                         <h3 style={{ fontFamily: S, fontSize: 22, fontWeight: 400, color: "#1A1A1A", margin: 0 }}>{g.name}</h3>
-                        <p style={{ fontFamily: F, fontSize: 11, color: "#8A8580", marginTop: 6 }}>{g.email}</p>
                       </div>
                       <button
                         onClick={(e) => { e.stopPropagation(); router.push(`/galleries/${encodeURIComponent(g.userId)}`); }}
