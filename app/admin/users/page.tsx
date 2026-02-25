@@ -83,6 +83,7 @@ export default function AdminUsersPage() {
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
     return users.filter((u) => {
+      if (u.email.includes("@invalid.local")) return false;
       if (roleFilter !== "ALL" && u.role !== roleFilter) return false;
       if (!q) return true;
       return (
