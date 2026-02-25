@@ -418,7 +418,14 @@ export default function AdminUsersPage() {
                     />
                   </div>
                   <div>
-                    <div style={{ fontWeight: 500 }}>{u.email}</div>
+                    <div style={{ fontWeight: 500, display: "flex", alignItems: "center", gap: 6 }}>
+                      {u.email}
+                      {u.role === "gallery" && ["suegallery", "noas"].includes(u.profileId) && (
+                        <span style={{ fontFamily: F, fontSize: 9, fontWeight: 600, letterSpacing: "0.08em", color: "#4A7C59", background: "#EDF5F0", padding: "2px 6px", border: "1px solid #C2DCCC" }}>
+                          ORGANIC
+                        </span>
+                      )}
+                    </div>
                     <div style={{ color: "#8A8580", marginTop: 2 }}>{u.name || "-"}</div>
                   </div>
                   <div style={{ textTransform: "uppercase", color: u.role === "artist" ? "#8B7355" : "#5A6A8B" }}>
