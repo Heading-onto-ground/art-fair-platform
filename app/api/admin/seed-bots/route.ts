@@ -23,7 +23,7 @@ export async function GET() {
   if (!admin) return NextResponse.json({ error: "unauthorized" }, { status: 401 });
   const botEmails = BOTS.map((b) => b.email);
   const users = await prisma.user.findMany({ where: { email: { in: botEmails } }, select: { email: true, artistProfile: { select: { name: true, genre: true, city: true, country: true } } } });
-  return NextResponse.json({ bots: users.map((u) => ({ name: u.artistProfile?.name ?? "-", genre: u.artistProfile?.genre ?? "-", location: `${u.artistProfile?.city}, ${u.artistProfile?.country}` })) });
+  return NextResponse.json({ bots: users.map((u: { email: string; artistProfile: { name: string; genre: string; city: string | null; country: string | null } | null }) => ({ name: u.artistProfile?.name ?? "-", genre: u.artistProfile?.genre ?? "-", location: `${u.artistProfile?.city}, ${u.artistProfile?.country}` })) });
 }
 
 export async function POST() {
