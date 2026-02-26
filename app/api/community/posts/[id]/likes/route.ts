@@ -5,7 +5,7 @@ export const dynamic = "force-dynamic";
 
 export async function GET(_req: NextRequest, { params }: { params: { id: string } }) {
   const likes = await prisma.communityLike.findMany({ where: { postId: params.id }, select: { userId: true } });
-  const userIds = likes.map((l) => l.userId);
+  const userIds = likes.map((l: { userId: string }) => l.userId);
   if (!userIds.length) return NextResponse.json({ names: [] });
 
   const [artists, galleries] = await Promise.all([
