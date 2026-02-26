@@ -79,8 +79,8 @@ export async function GET(req: Request) {
   }
 
   // Each of the 2 bots comments on a recent post by a different bot
-  const botIds = (await prisma.user.findMany({ where: { email: { in: BOT_EMAILS } }, select: { id: true, artistProfile: { select: { name: true } } } }));
-  const recentPosts = await prisma.communityPost.findMany({ where: { authorId: { in: botIds.map((b) => b.id) } }, orderBy: { createdAt: "desc" }, take: 20, select: { id: true, authorId: true } });
+  const botIds = (await prisma.user.findMany({ where: { email: { in: BOT_EMAILS } }, select: { id: true, artistProfile: { select: { name: true } } } })) as { id: string; artistProfile: { name: string } | null }[];
+  const recentPosts = await prisma.communityPost.findMany({ where: { authorId: { in: botIds.map((b) => b.id) } }, orderBy: { createdAt: "desc" }, take: 20, select: { id: true, authorId: true } }) as { id: string; authorId: string }[];
 
   for (const botEmail of [email1, email2]) {
     const commenter = await prisma.user.findUnique({ where: { email: botEmail }, include: { artistProfile: true } });
