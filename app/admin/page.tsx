@@ -17,14 +17,27 @@ export default function AdminHomePage() {
   const { lang } = useLanguage();
   const [authenticated, setAuthenticated] = useState<boolean | null>(null);
   const [seedMsg, setSeedMsg] = useState<string | null>(null);
-  const [bots, setBots] = useState<{ name: string; genre: string; location: string }[]>([]);
+  const [botsSeeded, setBotsSeeded] = useState(false);
 
-  const loadBots = () => {
-    fetch("/api/admin/seed-bots", { credentials: "include" }).then((r) => r.json()).then((d) => { if (Array.isArray(d.bots)) setBots(d.bots); }).catch(() => {});
-  };
+  const BOT_LIST = [
+    { name: "Yuna Kim", genre: "Photography", location: "Seoul, Korea" },
+    { name: "Marco Rossi", genre: "Painting", location: "Milan, Italy" },
+    { name: "Aiko Tanaka", genre: "Sculpture", location: "Tokyo, Japan" },
+    { name: "Léa Dubois", genre: "Mixed Media", location: "Paris, France" },
+    { name: "Sofia Moreau", genre: "Drawing", location: "Lyon, France" },
+    { name: "James Park", genre: "Video Art", location: "Busan, Korea" },
+    { name: "Nina Vogel", genre: "Textile", location: "Berlin, Germany" },
+    { name: "Carlos Vega", genre: "Printmaking", location: "Barcelona, Spain" },
+    { name: "Mia Chen", genre: "Ceramics", location: "Shanghai, China" },
+    { name: "Oliver Berg", genre: "Installation", location: "Stockholm, Sweden" },
+  ];
 
   useEffect(() => {
-    if (authenticated) loadBots();
+    if (!authenticated) return;
+    fetch("/api/admin/seed-bots", { credentials: "include" })
+      .then((r) => r.json())
+      .then((d) => { if (Array.isArray(d.bots) && d.bots.length > 0) setBotsSeeded(true); })
+      .catch(() => {});
   }, [authenticated]);
 
   const tr = (en: string, ko: string, ja: string, fr: string) =>
@@ -233,8 +246,8 @@ export default function AdminHomePage() {
               setSeedMsg("...");
               const res = await fetch("/api/admin/seed-bots", { method: "POST", credentials: "include" });
               const data = await res.json().catch(() => null);
-              setSeedMsg(data?.created?.length ? `봇 생성: ${data.created.join(", ")}` : "이미 모두 존재합니다.");
-              loadBots();
+              setSeedMsg(data?.created?.length ? `봇 생성 완료 (${data.created.length}개)` : "이미 모두 존재합니다.");
+              setBotsSeeded(true);
             }}
             style={{ padding: "10px 24px", border: "1px solid #E8E3DB", background: "#1A1A1A", color: "#FDFBF7", fontFamily: F, fontSize: 10, fontWeight: 500, letterSpacing: "0.1em", textTransform: "uppercase", cursor: "pointer" }}
           >
@@ -242,9 +255,9 @@ export default function AdminHomePage() {
           </button>
           {seedMsg && <span style={{ fontFamily: F, fontSize: 12, color: "#8A8580" }}>{seedMsg}</span>}
         </div>
-        {bots.length > 0 && (
+        {botsSeeded && (
           <div style={{ marginTop: 16, display: "flex", flexWrap: "wrap", gap: 8 }}>
-            {bots.map((b) => (
+            {BOT_LIST.map((b) => (
               <div key={b.name} style={{ padding: "8px 14px", border: "1px solid #E8E3DB", background: "#FFFFFF", fontFamily: F, fontSize: 11, color: "#8A8580" }}>
                 <span style={{ color: "#1A1A1A", fontWeight: 500 }}>{b.name}</span> · {b.genre} · {b.location}
               </div>
