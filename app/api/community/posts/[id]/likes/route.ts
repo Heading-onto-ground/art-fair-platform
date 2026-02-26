@@ -14,6 +14,6 @@ export async function GET(_req: NextRequest, { params }: { params: { id: string 
   ]);
   const nameMap: Record<string, string> = {};
   [...artists, ...galleries].forEach((p) => { nameMap[p.userId] = p.name; });
-  const names = userIds.map((id) => nameMap[id] || "Unknown");
+  const names = userIds.map((id: string) => nameMap[id] || "Unknown");
   return NextResponse.json({ names });
 }
