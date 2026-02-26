@@ -437,6 +437,13 @@ export default function AdminUsersPage() {
                   <div>{[u.city, u.country].filter(Boolean).join(", ") || "-"}</div>
                   <div>{u.profileId || "-"}</div>
                   <div style={{ color: "#6A6A6A" }}>{new Date(u.createdAt).toLocaleDateString()}</div>
+                  <div>
+                    {u.role === "artist" && u.profileId && (
+                      <a href={`/artist/me?adminView=1&userId=${u.id}`} target="_blank" rel="noreferrer" style={{ fontFamily: F, fontSize: 10, fontWeight: 500, letterSpacing: "0.08em", textTransform: "uppercase", color: "#8B7355", textDecoration: "none", padding: "4px 10px", border: "1px solid #E8E3DB" }}>
+                        View
+                      </a>
+                    )}
+                  </div>
                 </div>
               ))}
 

@@ -20,12 +20,14 @@ export default function ArtistMePage() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const isAdminView = searchParams.get("adminView") === "1";
+  const adminUserId = searchParams.get("userId");
   const [adminReadOnly, setAdminReadOnly] = useState(false);
   const { lang } = useLanguage();
   const [me, setMe] = useState<MeResponse | null>(null);
   const [loadingMe, setLoadingMe] = useState(true);
   const [name, setName] = useState(""); const [artistId, setArtistId] = useState(""); const [startedYear, setStartedYear] = useState(""); const [genre, setGenre] = useState(""); const [instagram, setInstagram] = useState(""); const [country, setCountry] = useState(""); const [city, setCity] = useState(""); const [website, setWebsite] = useState(""); const [bio, setBio] = useState("");
   const [saving, setSaving] = useState(false); const [saveMsg, setSaveMsg] = useState<string | null>(null);
+  const [notifyPost, setNotifyPost] = useState(false);
   const [file, setFile] = useState<File | null>(null); const [uploading, setUploading] = useState(false); const [uploadMsg, setUploadMsg] = useState<string | null>(null);
   const [applications, setApplications] = useState<Application[]>([]); const [openCallMap, setOpenCallMap] = useState<Record<string, OpenCall>>({}); const [invites, setInvites] = useState<Invite[]>([]);
 
@@ -37,7 +39,19 @@ export default function ArtistMePage() {
         const adminData = adminRes ? await adminRes.json().catch(() => null) : null;
         if (adminData?.authenticated) {
           setAdminReadOnly(true);
-          setMe({ session: { userId: "__admin_preview__", role: "artist", email: adminData?.session?.email || "admin@rob-roleofbridge.com" }, profile: null });
+          if (adminUserId) {
+            const profRes = await fetch(`/api/admin/artist-profile?userId=${adminUserId}`, { cache: "no-store", credentials: "include" }).catch(() => null);
+            const profData = profRes?.ok ? await profRes.json().catch(() => null) : null;
+            const p = profData?.profile ?? null;
+            if (p) {
+              setArtistId(p.artistId ?? ""); setName(p.name ?? ""); setStartedYear(p.startedYear ? String(p.startedYear) : "");
+              setGenre(p.genre ?? ""); setInstagram(p.instagram ?? ""); setCountry(p.country ?? "");
+              setCity(p.city ?? ""); setWebsite(p.website ?? ""); setBio(p.bio ?? "");
+            }
+            setMe({ session: { userId: adminUserId, role: "artist", email: "" }, profile: p });
+          } else {
+            setMe({ session: { userId: "__admin_preview__", role: "artist", email: adminData?.session?.email || "admin@rob-roleofbridge.com" }, profile: null });
+          }
           return;
         }
       }
@@ -56,12 +70,13 @@ export default function ArtistMePage() {
       setCity(p?.city ?? "");
       setWebsite(p?.website ?? "");
       setBio(p?.bio ?? "");
+      setNotifyPost((p as any)?.notify_new_community_post ?? false);
     } finally {
       setLoadingMe(false);
     }
   };
 
-  useEffect(() => { loadMe(); }, [isAdminView]);
+  useEffect(() => { loadMe(); }, [isAdminView, adminUserId]);
   useEffect(() => { if (!me?.session || adminReadOnly) return; loadApplications(); loadInvites(); }, [me?.session?.userId, adminReadOnly]);
 
   const loadApplications = async () => { const [appsRes, ocRes] = await Promise.all([fetch("/api/applications", { cache: "default", credentials: "include" }), fetch("/api/open-calls", { cache: "default" })]); const appsJson = await appsRes.json().catch(() => null); const ocJson = await ocRes.json().catch(() => null); const map: Record<string, OpenCall> = {}; for (const oc of ocJson?.openCalls ?? []) map[oc.id] = oc; setOpenCallMap(map); setApplications(appsJson?.applications ?? []); };
@@ -69,6 +84,12 @@ export default function ArtistMePage() {
   const updateInviteStatus = async (id: string, status: string) => { if (adminReadOnly) return; const res = await fetch("/api/artist/invites", { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ id, status }) }); const data = await res.json().catch(() => null); if (res.ok && data?.invite) setInvites((p) => p.map((i) => (i.id === id ? data.invite : i))); };
 
   const canSave = useMemo(() => name.trim() && artistId.trim() && startedYear.trim() && genre.trim() && country.trim() && city.trim(), [name, artistId, startedYear, genre, country, city]);
+
+  const onToggleNotify = async (val: boolean) => {
+    setNotifyPost(val);
+    try { await fetch("/artist/profile/save", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ notify_new_community_post: val }) }); }
+    catch (e) { console.error(e); setNotifyPost(!val); }
+  };
 
   const onSaveProfile = async () => { if (adminReadOnly) { setSaveMsg(lang === "ko" ? "관리자 미리보기 모드에서는 저장할 수 없습니다." : "Save is disabled in admin preview mode."); return; } setSaveMsg(null); if (!canSave) { setSaveMsg("Fill in all required fields"); return; } setSaving(true); try { const res = await fetch("/api/profile/save", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ artistId: artistId.trim(), name: name.trim(), startedYear: Number(startedYear), genre: genre.trim(), instagram: instagram.trim(), country: country.trim(), city: city.trim(), website: website.trim() || undefined, bio: bio || undefined }) }); const data = await res.json().catch(() => null); if (!res.ok || !data?.ok) { setSaveMsg(data?.error ?? "Save failed"); return; } setSaveMsg("Profile saved"); await loadMe(); } finally { setSaving(false); } };
   const onUploadPdf = async () => { if (adminReadOnly) { setUploadMsg(lang === "ko" ? "관리자 미리보기 모드에서는 업로드할 수 없습니다." : "Upload is disabled in admin preview mode."); return; } setUploadMsg(null); if (!file || file.type !== "application/pdf") { setUploadMsg("Select a PDF file"); return; } setUploading(true); try { const form = new FormData(); form.append("file", file); const res = await fetch("/api/profile/upload", { method: "POST", body: form }); const data = await res.json().catch(() => null); if (!res.ok || !data?.ok) { setUploadMsg(data?.error ?? "Upload failed"); return; } setUploadMsg("Portfolio uploaded"); setFile(null); await loadMe(); } finally { setUploading(false); } };
@@ -168,6 +189,14 @@ export default function ArtistMePage() {
                   ); })}
                 </div>
               )}
+            </Section>
+
+            {/* Notifications */}
+            <Section number="06" title="Notifications">
+              <label style={{ display: "flex", alignItems: "center", gap: 12, cursor: "pointer", fontFamily: F, fontSize: 13, color: "#1A1A1A" }}>
+                <input type="checkbox" checked={notifyPost} onChange={(e) => onToggleNotify(e.target.checked)} />
+                새 커뮤니티 글 알림 받기
+              </label>
             </Section>
 
             {/* Invites */}
