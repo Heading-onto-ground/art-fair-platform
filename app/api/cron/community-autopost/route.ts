@@ -1,7 +1,7 @@
 export const runtime = "nodejs";
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { createPost } from "@/app/data/community";
+import { createPost, addComment } from "@/app/data/community";
 
 export const dynamic = "force-dynamic";
 
@@ -29,6 +29,21 @@ const BOT_EMAILS = [
   "carlos.v.bot@rob-roleofbridge.com",
   "mia.chen.bot@rob-roleofbridge.com",
   "oliver.b.bot@rob-roleofbridge.com",
+];
+
+const COMMENTS = [
+  "This really resonates with me. Thanks for sharing!",
+  "Would love to connect — I'm working on something similar.",
+  "Great idea. I've been thinking about this too.",
+  "Interesting perspective. Have you shown this work anywhere yet?",
+  "I'd be open to collaborating on something like this.",
+  "This is exactly what I needed to read today.",
+  "Totally agree. The pricing question never gets easier.",
+  "Love the concept. Where are you based?",
+  "I went through the same thing — happy to chat about it.",
+  "Following this thread. Very useful discussion.",
+  "Count me in if you're still looking for collaborators!",
+  "Really appreciate you bringing this up.",
 ];
 
 function pick<T>(arr: T[]): T { return arr[Math.floor(Math.random() * arr.length)]; }
@@ -61,6 +76,19 @@ export async function GET(req: Request) {
       content: item.content,
     });
     results.push({ bot: user.artistProfile.name, title: item.title });
+  }
+
+  // Each of the 2 bots comments on a recent post by a different bot
+  const botIds = (await prisma.user.findMany({ where: { email: { in: BOT_EMAILS } }, select: { id: true, artistProfile: { select: { name: true } } } }));
+  const recentPosts = await prisma.communityPost.findMany({ where: { authorId: { in: botIds.map((b) => b.id) } }, orderBy: { createdAt: "desc" }, take: 20, select: { id: true, authorId: true } });
+
+  for (const botEmail of [email1, email2]) {
+    const commenter = await prisma.user.findUnique({ where: { email: botEmail }, include: { artistProfile: true } });
+    if (!commenter || !commenter.artistProfile) continue;
+    const eligible = recentPosts.filter((p) => p.authorId !== commenter.id);
+    if (!eligible.length) continue;
+    const target = pick(eligible);
+    await addComment({ postId: target.id, authorId: commenter.id, authorName: commenter.artistProfile.name, authorRole: "artist", content: pick(COMMENTS) });
   }
 
   return NextResponse.json({ ok: true, results });
