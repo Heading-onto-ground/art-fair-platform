@@ -224,7 +224,8 @@ export default function CommunityPage() {
         </div>
 
         {/* Category Tabs */}
-        <div style={{ display: "flex", gap: 8, marginBottom: 32, flexWrap: "wrap" }}>
+        <div style={{ display: "flex", gap: 8, marginBottom: 32, flexWrap: "wrap", alignItems: "center", justifyContent: "space-between" }}>
+          <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
           {CATEGORIES.map((cat) => (
             <button
               key={cat.key}
@@ -258,7 +259,15 @@ export default function CommunityPage() {
               {cat.emoji ? `${cat.emoji} ` : ""}{categoryLabel(cat.key)}
             </button>
           ))}
-        </div>
+          </div>
+          {session && (
+            <button
+              onClick={() => { setShowNewPost(true); window.scrollTo({ top: 0, behavior: "smooth" }); }}
+              style={{ padding: "8px 20px", border: "none", background: "#1A1A1A", color: "#FDFBF7", fontFamily: F, fontSize: 10, fontWeight: 500, letterSpacing: "0.1em", textTransform: "uppercase", cursor: "pointer", whiteSpace: "nowrap" }}
+            >
+              + {t("community_new_post", lang)}
+            </button>
+          )}
 
         {/* New Post Button / Form */}
         {session ? (
