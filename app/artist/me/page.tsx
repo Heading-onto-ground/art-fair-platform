@@ -160,7 +160,7 @@ export default function ArtistMePage() {
             <Section number="03" title={t("profile_portfolio", lang)}>
               {profile?.portfolioUrl && (
                 <div style={{ marginBottom: 20 }}>
-                  <a href={profile.portfolioUrl} target="_blank" rel="noreferrer" style={{ padding: "12px 24px", background: "#1A1A1A", color: "#FDFBF7", fontFamily: F, fontSize: 10, fontWeight: 500, letterSpacing: "0.1em", textTransform: "uppercase", textDecoration: "none" }}>{t("profile_view_pdf", lang)}</a>
+                  <button onClick={() => { const base64 = profile.portfolioUrl!.split(",")[1]; const bytes = Uint8Array.from(atob(base64), c => c.charCodeAt(0)); const url = URL.createObjectURL(new Blob([bytes], { type: "application/pdf" })); window.open(url, "_blank"); }} style={{ padding: "12px 24px", background: "#1A1A1A", color: "#FDFBF7", fontFamily: F, fontSize: 10, fontWeight: 500, letterSpacing: "0.1em", textTransform: "uppercase", border: "none", cursor: "pointer" }}>{t("profile_view_pdf", lang)}</button>
                 </div>
               )}
               <div style={{ padding: 24, border: "1px dashed #E8E3DB", background: "#FAF8F4" }}>
