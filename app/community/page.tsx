@@ -75,6 +75,8 @@ export default function CommunityPage() {
   const [commenting, setCommenting] = useState(false);
   const [editingCommentId, setEditingCommentId] = useState<string | null>(null);
   const [editingCommentText, setEditingCommentText] = useState("");
+  const [likedByMap, setLikedByMap] = useState<Record<string, string[]>>({});
+  const [showLikedByPostId, setShowLikedByPostId] = useState<string | null>(null);
 
   // Translation state: { [postId]: { title, content, comments: { [commentId]: string }, loading } }
   const [translations, setTranslations] = useState<Record<string, {
@@ -158,14 +160,26 @@ export default function CommunityPage() {
   }
 
   async function handleDeleteComment(postId: string, commentId: string) {
+    if (!window.confirm("댓글을 삭제하시겠습니까?")) return;
     const res = await fetch(`/api/community/posts/${postId}/comment`, { method: "DELETE", headers: { "Content-Type": "application/json" }, credentials: "include", body: JSON.stringify({ commentId }) });
     if (res.ok) { const d = await res.json(); if (d.post) mutatePosts(); }
   }
 
   async function handleEditComment(postId: string, commentId: string) {
     if (!editingCommentText.trim()) return;
+    if (!window.confirm("댓글을 수정하시겠습니까?")) return;
     const res = await fetch(`/api/community/posts/${postId}/comment`, { method: "PATCH", headers: { "Content-Type": "application/json" }, credentials: "include", body: JSON.stringify({ commentId, content: editingCommentText }) });
     if (res.ok) { const d = await res.json(); if (d.post) { mutatePosts(); setEditingCommentId(null); } }
+  }
+
+  async function handleShowLikedBy(postId: string) {
+    if (showLikedByPostId === postId) { setShowLikedByPostId(null); return; }
+    if (!likedByMap[postId]) {
+      const res = await fetch(`/api/community/posts/${postId}/likes`);
+      const d = await res.json().catch(() => ({ names: [] }));
+      setLikedByMap((prev) => ({ ...prev, [postId]: d.names ?? [] }));
+    }
+    setShowLikedByPostId(postId);
   }
 
   async function translatePost(post: Post) {
@@ -557,6 +571,14 @@ export default function CommunityPage() {
                     <span style={{ fontSize: 14 }}>{post.liked ? "♥" : "♡"}</span>
                     <span>{post.likeCount}</span>
                   </button>
+                  {post.likeCount > 0 && (
+                    <button onClick={() => handleShowLikedBy(post.id)} style={{ background: "none", border: "none", fontFamily: F, fontSize: 10, color: "#B0AAA2", cursor: "pointer", padding: 0 }}>
+                      {showLikedByPostId === post.id ? "▲" : "누가 좋아했나요?"}
+                    </button>
+                  )}
+                  {showLikedByPostId === post.id && likedByMap[post.id] && (
+                    <span style={{ fontFamily: F, fontSize: 11, color: "#8A8580" }}>{likedByMap[post.id].join(", ")}</span>
+                  )}
 
                   <button
                     onClick={() => setExpandedPostId(expandedPostId === post.id ? null : post.id)}
