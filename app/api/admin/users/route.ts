@@ -13,6 +13,7 @@ type AdminUserRow = {
   country: string;
   city: string;
   profileId: string;
+  hasPortfolio: boolean;
 };
 
 type UserWithProfiles = {
@@ -25,6 +26,7 @@ type UserWithProfiles = {
     name: string;
     country: string | null;
     city: string | null;
+    portfolioUrl: string | null;
   } | null;
   galleryProfile: {
     galleryId: string;
@@ -54,6 +56,7 @@ export async function GET() {
             name: true,
             country: true,
             city: true,
+            portfolioUrl: true,
           },
         },
         galleryProfile: {
@@ -81,6 +84,7 @@ export async function GET() {
         profileId: isArtist
           ? (u.artistProfile?.artistId ?? "")
           : (u.galleryProfile?.galleryId ?? ""),
+        hasPortfolio: isArtist ? !!u.artistProfile?.portfolioUrl : false,
       };
     });
 
@@ -89,6 +93,7 @@ export async function GET() {
       artists: users.filter((u) => u.role === "artist").length,
       galleries: users.filter((u) => u.role === "gallery").length,
       withProfile: users.filter((u) => u.name !== "-").length,
+      withPortfolio: users.filter((u) => u.hasPortfolio).length,
     };
 
     return NextResponse.json({ users, stats }, { status: 200 });

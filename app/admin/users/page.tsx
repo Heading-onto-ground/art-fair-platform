@@ -16,6 +16,7 @@ type AdminUser = {
   country: string;
   city: string;
   profileId: string;
+  hasPortfolio: boolean;
 };
 
 type Stats = {
@@ -23,6 +24,7 @@ type Stats = {
   artists: number;
   galleries: number;
   withProfile: number;
+  withPortfolio: number;
 };
 
 export default function AdminUsersPage() {
@@ -35,6 +37,7 @@ export default function AdminUsersPage() {
   const [stats, setStats] = useState<Stats | null>(null);
   const [roleFilter, setRoleFilter] = useState<"ALL" | "artist" | "gallery">("ALL");
   const [profileOnly, setProfileOnly] = useState(false);
+  const [portfolioOnly, setPortfolioOnly] = useState(false);
   const [query, setQuery] = useState("");
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [deleting, setDeleting] = useState(false);
@@ -87,6 +90,7 @@ export default function AdminUsersPage() {
       if (u.email.includes("@invalid.local")) return false;
       if (roleFilter !== "ALL" && u.role !== roleFilter) return false;
       if (profileOnly && u.name === "-") return false;
+      if (portfolioOnly && !u.hasPortfolio) return false;
       if (!q) return true;
       return (
         u.email.toLowerCase().includes(q) ||
@@ -314,6 +318,7 @@ export default function AdminUsersPage() {
               <StatCard label={tr("Artists", "작가", "アーティスト", "Artistes")} value={stats?.artists ?? users.filter((u) => u.role === "artist").length} />
               <StatCard label={tr("Galleries", "갤러리", "ギャラリー", "Galeries")} value={stats?.galleries ?? users.filter((u) => u.role === "gallery").length} />
               <StatCard label={tr("With profile", "프로필 보유", "プロフィール有り", "Avec profil")} value={stats?.withProfile ?? users.filter((u) => u.name !== "-").length} onClick={() => setProfileOnly((v) => !v)} active={profileOnly} />
+              <StatCard label={tr("With portfolio", "포트폴리오 보유", "ポートフォリオ有り", "Avec portfolio")} value={stats?.withPortfolio ?? users.filter((u) => u.hasPortfolio).length} onClick={() => setPortfolioOnly((v) => !v)} active={portfolioOnly} />
             </div>
 
             <div style={{ border: "1px solid #E5E0DB", background: "#FFFFFF", padding: 16, marginBottom: 16 }}>
