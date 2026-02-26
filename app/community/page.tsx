@@ -119,12 +119,12 @@ export default function CommunityPage() {
   }
 
   async function handleLike(postId: string) {
-    if (!session) { router.push("/login"); return; }
     try {
       const res = await fetch(`/api/community/posts/${postId}/like`, {
         method: "POST",
         credentials: "include",
       });
+      if (res.status === 401) { router.push("/login"); return; }
       const data = await res.json();
       if (data.post) {
         mutatePosts();
