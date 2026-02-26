@@ -48,7 +48,7 @@ async function resolvePlatformRecipients(input: {
     where: { role: { in: roles } as any },
     select: { email: true },
   });
-  return dedupeEmails(rows.map((r: { email: string }) => String(r.email || ""))).filter(isValidEmail);
+  return dedupeEmails(rows.map((r: { email: string }) => String(r.email || ""))).filter(isValidEmail).filter((e) => !e.includes("@invalid.local"));
 }
 
 export async function POST(req: NextRequest) {
