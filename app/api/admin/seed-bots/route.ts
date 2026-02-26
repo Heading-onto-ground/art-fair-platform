@@ -18,6 +18,14 @@ const BOTS = [
   { email: "oliver.b.bot@rob-roleofbridge.com", artistId: "bot-oliver-b", name: "Oliver Berg", genre: "Installation", country: "Sweden", city: "Stockholm", startedYear: 2010 },
 ];
 
+export async function GET() {
+  const admin = getAdminSession();
+  if (!admin) return NextResponse.json({ error: "unauthorized" }, { status: 401 });
+  const botEmails = BOTS.map((b) => b.email);
+  const users = await prisma.user.findMany({ where: { email: { in: botEmails } }, select: { email: true, artistProfile: { select: { name: true, genre: true, city: true, country: true } } } });
+  return NextResponse.json({ bots: users.map((u) => ({ name: u.artistProfile?.name ?? "-", genre: u.artistProfile?.genre ?? "-", location: `${u.artistProfile?.city}, ${u.artistProfile?.country}` })) });
+}
+
 export async function POST() {
   const admin = getAdminSession();
   if (!admin) return NextResponse.json({ error: "unauthorized" }, { status: 401 });

@@ -17,6 +17,11 @@ export default function AdminHomePage() {
   const { lang } = useLanguage();
   const [authenticated, setAuthenticated] = useState<boolean | null>(null);
   const [seedMsg, setSeedMsg] = useState<string | null>(null);
+  const [bots, setBots] = useState<{ name: string; genre: string; location: string }[]>([]);
+
+  useEffect(() => {
+    fetch("/api/admin/seed-bots", { credentials: "include" }).then((r) => r.json()).then((d) => { if (d.bots) setBots(d.bots); }).catch(() => {});
+  }, []);
 
   const tr = (en: string, ko: string, ja: string, fr: string) =>
     lang === "ko" ? ko : lang === "ja" ? ja : lang === "fr" ? fr : en;
@@ -232,6 +237,15 @@ export default function AdminHomePage() {
           </button>
           {seedMsg && <span style={{ fontFamily: F, fontSize: 12, color: "#8A8580" }}>{seedMsg}</span>}
         </div>
+        {bots.length > 0 && (
+          <div style={{ marginTop: 16, display: "flex", flexWrap: "wrap", gap: 8 }}>
+            {bots.map((b) => (
+              <div key={b.name} style={{ padding: "8px 14px", border: "1px solid #E8E3DB", background: "#FFFFFF", fontFamily: F, fontSize: 11, color: "#8A8580" }}>
+                <span style={{ color: "#1A1A1A", fontWeight: 500 }}>{b.name}</span> · {b.genre} · {b.location}
+              </div>
+            ))}
+          </div>
+        )}
       </main>
     </>
   );
