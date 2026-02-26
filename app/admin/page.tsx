@@ -16,6 +16,7 @@ export default function AdminHomePage() {
   const router = useRouter();
   const { lang } = useLanguage();
   const [authenticated, setAuthenticated] = useState<boolean | null>(null);
+  const [seedMsg, setSeedMsg] = useState<string | null>(null);
 
   const tr = (en: string, ko: string, ja: string, fr: string) =>
     lang === "ko" ? ko : lang === "ja" ? ja : lang === "fr" ? fr : en;
@@ -215,6 +216,21 @@ export default function AdminHomePage() {
               </div>
             </button>
           ))}
+        </div>
+
+        <div style={{ marginTop: 32, paddingTop: 24, borderTop: "1px solid #E8E3DB", display: "flex", alignItems: "center", gap: 16 }}>
+          <button
+            onClick={async () => {
+              setSeedMsg("...");
+              const res = await fetch("/api/admin/seed-bots", { method: "POST", credentials: "include" });
+              const data = await res.json().catch(() => null);
+              setSeedMsg(data?.created?.length ? `봇 생성: ${data.created.join(", ")}` : "이미 모두 존재합니다.");
+            }}
+            style={{ padding: "10px 24px", border: "1px solid #E8E3DB", background: "#1A1A1A", color: "#FDFBF7", fontFamily: F, fontSize: 10, fontWeight: 500, letterSpacing: "0.1em", textTransform: "uppercase", cursor: "pointer" }}
+          >
+            {tr("Seed Bot Accounts", "봇 계정 생성", "ボットアカウント生成", "Créer bots")}
+          </button>
+          {seedMsg && <span style={{ fontFamily: F, fontSize: 12, color: "#8A8580" }}>{seedMsg}</span>}
         </div>
       </main>
     </>

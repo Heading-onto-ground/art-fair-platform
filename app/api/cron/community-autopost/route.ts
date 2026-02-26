@@ -23,9 +23,21 @@ const BOT_EMAILS = [
   "marco.rossi.bot@rob-roleofbridge.com",
   "aiko.tanaka.bot@rob-roleofbridge.com",
   "lea.dubois.bot@rob-roleofbridge.com",
+  "sofia.m.bot@rob-roleofbridge.com",
+  "james.park.bot@rob-roleofbridge.com",
+  "nina.vogel.bot@rob-roleofbridge.com",
+  "carlos.v.bot@rob-roleofbridge.com",
+  "mia.chen.bot@rob-roleofbridge.com",
+  "oliver.b.bot@rob-roleofbridge.com",
 ];
 
 function pick<T>(arr: T[]): T { return arr[Math.floor(Math.random() * arr.length)]; }
+function pickTwo<T>(arr: T[]): [T, T] {
+  const i = Math.floor(Math.random() * arr.length);
+  let j = Math.floor(Math.random() * (arr.length - 1));
+  if (j >= i) j++;
+  return [arr[i], arr[j]];
+}
 
 export async function GET(req: Request) {
   const secret = process.env.CRON_SECRET;
@@ -33,20 +45,23 @@ export async function GET(req: Request) {
   const provided = url.searchParams.get("secret") || req.headers.get("x-cron-secret") || "";
   if (secret && provided !== secret) return NextResponse.json({ error: "unauthorized" }, { status: 401 });
 
-  const botEmail = pick(BOT_EMAILS);
-  const user = await prisma.user.findUnique({ where: { email: botEmail }, include: { artistProfile: true } });
-  if (!user || !user.artistProfile) return NextResponse.json({ ok: false, error: "bot not found" });
+  const [email1, email2] = pickTwo(BOT_EMAILS);
+  const results = [];
 
-  const item = pick(POOL);
+  for (const botEmail of [email1, email2]) {
+    const user = await prisma.user.findUnique({ where: { email: botEmail }, include: { artistProfile: true } });
+    if (!user || !user.artistProfile) continue;
+    const item = pick(POOL);
+    await createPost({
+      authorId: user.id,
+      authorName: user.artistProfile.name,
+      authorRole: "artist",
+      category: item.category as any,
+      title: item.title,
+      content: item.content,
+    });
+    results.push({ bot: user.artistProfile.name, title: item.title });
+  }
 
-  await createPost({
-    authorId: user.id,
-    authorName: user.artistProfile.name,
-    authorRole: "artist",
-    category: item.category as any,
-    title: item.title,
-    content: item.content,
-  });
-
-  return NextResponse.json({ ok: true, bot: user.artistProfile.name, title: item.title });
+  return NextResponse.json({ ok: true, results });
 }

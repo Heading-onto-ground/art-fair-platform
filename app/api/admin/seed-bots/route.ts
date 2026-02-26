@@ -10,6 +10,12 @@ const BOTS = [
   { email: "marco.rossi.bot@rob-roleofbridge.com", artistId: "bot-marco-rossi", name: "Marco Rossi", genre: "Painting", country: "Italy", city: "Milan", startedYear: 2012 },
   { email: "aiko.tanaka.bot@rob-roleofbridge.com", artistId: "bot-aiko-tanaka", name: "Aiko Tanaka", genre: "Sculpture", country: "Japan", city: "Tokyo", startedYear: 2014 },
   { email: "lea.dubois.bot@rob-roleofbridge.com", artistId: "bot-lea-dubois", name: "Léa Dubois", genre: "Mixed Media", country: "France", city: "Paris", startedYear: 2018 },
+  { email: "sofia.m.bot@rob-roleofbridge.com", artistId: "bot-sofia-m", name: "Sofia Moreau", genre: "Drawing", country: "France", city: "Lyon", startedYear: 2017 },
+  { email: "james.park.bot@rob-roleofbridge.com", artistId: "bot-james-park", name: "James Park", genre: "Video Art", country: "Korea", city: "Busan", startedYear: 2015 },
+  { email: "nina.vogel.bot@rob-roleofbridge.com", artistId: "bot-nina-vogel", name: "Nina Vogel", genre: "Textile", country: "Germany", city: "Berlin", startedYear: 2013 },
+  { email: "carlos.v.bot@rob-roleofbridge.com", artistId: "bot-carlos-v", name: "Carlos Vega", genre: "Printmaking", country: "Spain", city: "Barcelona", startedYear: 2011 },
+  { email: "mia.chen.bot@rob-roleofbridge.com", artistId: "bot-mia-chen", name: "Mia Chen", genre: "Ceramics", country: "China", city: "Shanghai", startedYear: 2019 },
+  { email: "oliver.b.bot@rob-roleofbridge.com", artistId: "bot-oliver-b", name: "Oliver Berg", genre: "Installation", country: "Sweden", city: "Stockholm", startedYear: 2010 },
 ];
 
 export async function POST() {
