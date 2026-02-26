@@ -151,7 +151,7 @@ export default function ArtistMePage() {
               </div>
               <Lbl label="Bio" style={{ marginTop: 18 }}><textarea value={bio} onChange={(e) => setBio(e.target.value)} placeholder="Write a short bio..." rows={4} style={{ ...inp, width: "100%", resize: "vertical" }} /></Lbl>
               <div style={{ marginTop: 20, display: "flex", gap: 16, alignItems: "center" }}>
-                <button onClick={onSaveProfile} disabled={saving || !canSave} style={btnStyle(saving || !canSave)}>{saving ? t("profile_saving", lang) : t("profile_save", lang)}</button>
+                <button onClick={onSaveProfile} disabled={saving} style={btnStyle(saving)}>{saving ? t("profile_saving", lang) : t("profile_save", lang)}</button>
                 {saveMsg && <span style={{ fontFamily: F, fontSize: 12, color: saveMsg.includes("saved") ? "#5A7A5A" : "#8B4A4A" }}>{saveMsg}</span>}
               </div>
             </Section>
