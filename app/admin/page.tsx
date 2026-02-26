@@ -19,9 +19,12 @@ export default function AdminHomePage() {
   const [seedMsg, setSeedMsg] = useState<string | null>(null);
   const [bots, setBots] = useState<{ name: string; genre: string; location: string }[]>([]);
 
+  const loadBots = () => {
+    fetch("/api/admin/seed-bots", { credentials: "include" }).then((r) => r.json()).then((d) => { if (Array.isArray(d.bots)) setBots(d.bots); }).catch(() => {});
+  };
+
   useEffect(() => {
-    if (!authenticated) return;
-    fetch("/api/admin/seed-bots", { credentials: "include" }).then((r) => r.json()).then((d) => { if (d.bots) setBots(d.bots); }).catch(() => {});
+    if (authenticated) loadBots();
   }, [authenticated]);
 
   const tr = (en: string, ko: string, ja: string, fr: string) =>
@@ -231,6 +234,7 @@ export default function AdminHomePage() {
               const res = await fetch("/api/admin/seed-bots", { method: "POST", credentials: "include" });
               const data = await res.json().catch(() => null);
               setSeedMsg(data?.created?.length ? `봇 생성: ${data.created.join(", ")}` : "이미 모두 존재합니다.");
+              loadBots();
             }}
             style={{ padding: "10px 24px", border: "1px solid #E8E3DB", background: "#1A1A1A", color: "#FDFBF7", fontFamily: F, fontSize: 10, fontWeight: 500, letterSpacing: "0.1em", textTransform: "uppercase", cursor: "pointer" }}
           >
