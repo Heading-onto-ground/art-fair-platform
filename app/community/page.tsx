@@ -268,6 +268,7 @@ export default function CommunityPage() {
               + {t("community_new_post", lang)}
             </button>
           )}
+        </div>
 
         {/* New Post Button / Form */}
         {session ? (
