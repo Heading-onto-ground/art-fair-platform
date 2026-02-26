@@ -15,6 +15,10 @@
     {
       "path": "/api/cron/crawl-gallery-info",
       "schedule": "0 4 * * *"
+    },
+    {
+      "path": "/api/cron/community-autopost",
+      "schedule": "0 10 * * *"
     }
   ]
 }
