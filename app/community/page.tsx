@@ -73,6 +73,8 @@ export default function CommunityPage() {
   const [expandedPostId, setExpandedPostId] = useState<string | null>(null);
   const [commentText, setCommentText] = useState("");
   const [commenting, setCommenting] = useState(false);
+  const [editingCommentId, setEditingCommentId] = useState<string | null>(null);
+  const [editingCommentText, setEditingCommentText] = useState("");
 
   // Translation state: { [postId]: { title, content, comments: { [commentId]: string }, loading } }
   const [translations, setTranslations] = useState<Record<string, {
@@ -153,6 +155,17 @@ export default function CommunityPage() {
       console.error(e);
     }
     setCommenting(false);
+  }
+
+  async function handleDeleteComment(postId: string, commentId: string) {
+    const res = await fetch(`/api/community/posts/${postId}/comment`, { method: "DELETE", headers: { "Content-Type": "application/json" }, credentials: "include", body: JSON.stringify({ commentId }) });
+    if (res.ok) { const d = await res.json(); if (d.post) mutatePosts(); }
+  }
+
+  async function handleEditComment(postId: string, commentId: string) {
+    if (!editingCommentText.trim()) return;
+    const res = await fetch(`/api/community/posts/${postId}/comment`, { method: "PATCH", headers: { "Content-Type": "application/json" }, credentials: "include", body: JSON.stringify({ commentId, content: editingCommentText }) });
+    if (res.ok) { const d = await res.json(); if (d.post) { mutatePosts(); setEditingCommentId(null); } }
   }
 
   async function translatePost(post: Post) {
@@ -598,9 +611,23 @@ export default function CommunityPage() {
                                 · {timeAgo(comment.createdAt)}
                               </span>
                             </div>
-                            <p style={{ fontFamily: F, fontSize: 12, color: "#4A4A4A", lineHeight: 1.6, margin: 0 }}>
-                              {translations[post.id]?.comments?.[comment.id] || comment.content}
-                            </p>
+                            {editingCommentId === comment.id ? (
+                              <div style={{ display: "flex", gap: 8, marginTop: 4 }}>
+                                <input value={editingCommentText} onChange={(e) => setEditingCommentText(e.target.value)} style={{ flex: 1, padding: "8px 12px", border: "1px solid #E8E3DB", fontFamily: F, fontSize: 12, outline: "none" }} />
+                                <button onClick={() => handleEditComment(post.id, comment.id)} style={{ padding: "8px 14px", background: "#1A1A1A", color: "#FDFBF7", border: "none", fontFamily: F, fontSize: 10, cursor: "pointer" }}>저장</button>
+                                <button onClick={() => setEditingCommentId(null)} style={{ padding: "8px 14px", background: "transparent", color: "#8A8580", border: "1px solid #E8E3DB", fontFamily: F, fontSize: 10, cursor: "pointer" }}>취소</button>
+                              </div>
+                            ) : (
+                              <p style={{ fontFamily: F, fontSize: 12, color: "#4A4A4A", lineHeight: 1.6, margin: 0 }}>
+                                {translations[post.id]?.comments?.[comment.id] || comment.content}
+                                {session?.userId === comment.authorId && (
+                                  <span style={{ marginLeft: 10 }}>
+                                    <button onClick={() => { setEditingCommentId(comment.id); setEditingCommentText(comment.content); }} style={{ background: "none", border: "none", fontFamily: F, fontSize: 10, color: "#B0AAA2", cursor: "pointer" }}>수정</button>
+                                    <button onClick={() => handleDeleteComment(post.id, comment.id)} style={{ background: "none", border: "none", fontFamily: F, fontSize: 10, color: "#B0AAA2", cursor: "pointer", marginLeft: 6 }}>삭제</button>
+                                  </span>
+                                )}
+                              </p>
+                            )}
                           </div>
                         ))}
                       </div>

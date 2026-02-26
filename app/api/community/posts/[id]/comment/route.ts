@@ -3,6 +3,30 @@ import { getServerSession, getProfileByUserId } from "@/lib/auth";
 import { addComment, getPost, serializePost } from "@/app/data/community";
 import { prisma } from "@/lib/prisma";
 
+export async function DELETE(req: NextRequest, { params }: { params: { id: string } }) {
+  const session = getServerSession();
+  if (!session) return NextResponse.json({ error: "unauthorized" }, { status: 401 });
+  const { commentId } = await req.json().catch(() => ({}));
+  if (!commentId) return NextResponse.json({ error: "commentId required" }, { status: 400 });
+  const comment = await prisma.communityComment.findUnique({ where: { id: commentId } });
+  if (!comment || comment.authorId !== session.userId) return NextResponse.json({ error: "forbidden" }, { status: 403 });
+  await prisma.communityComment.delete({ where: { id: commentId } });
+  const updatedPost = await getPost(params.id);
+  return NextResponse.json({ ok: true, post: updatedPost ? serializePost(updatedPost, session.userId) : null });
+}
+
+export async function PATCH(req: NextRequest, { params }: { params: { id: string } }) {
+  const session = getServerSession();
+  if (!session) return NextResponse.json({ error: "unauthorized" }, { status: 401 });
+  const { commentId, content } = await req.json().catch(() => ({}));
+  if (!commentId || !content?.trim()) return NextResponse.json({ error: "invalid" }, { status: 400 });
+  const comment = await prisma.communityComment.findUnique({ where: { id: commentId } });
+  if (!comment || comment.authorId !== session.userId) return NextResponse.json({ error: "forbidden" }, { status: 403 });
+  await prisma.communityComment.update({ where: { id: commentId }, data: { content: content.trim() } });
+  const updatedPost = await getPost(params.id);
+  return NextResponse.json({ ok: true, post: updatedPost ? serializePost(updatedPost, session.userId) : null });
+}
+
 export const dynamic = "force-dynamic";
 
 /** POST — add a comment to a post */
