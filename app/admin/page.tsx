@@ -20,8 +20,9 @@ export default function AdminHomePage() {
   const [bots, setBots] = useState<{ name: string; genre: string; location: string }[]>([]);
 
   useEffect(() => {
+    if (!authenticated) return;
     fetch("/api/admin/seed-bots", { credentials: "include" }).then((r) => r.json()).then((d) => { if (d.bots) setBots(d.bots); }).catch(() => {});
-  }, []);
+  }, [authenticated]);
 
   const tr = (en: string, ko: string, ja: string, fr: string) =>
     lang === "ko" ? ko : lang === "ja" ? ja : lang === "fr" ? fr : en;
