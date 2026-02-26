@@ -34,6 +34,7 @@ export default function AdminUsersPage() {
   const [users, setUsers] = useState<AdminUser[]>([]);
   const [stats, setStats] = useState<Stats | null>(null);
   const [roleFilter, setRoleFilter] = useState<"ALL" | "artist" | "gallery">("ALL");
+  const [profileOnly, setProfileOnly] = useState(false);
   const [query, setQuery] = useState("");
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [deleting, setDeleting] = useState(false);
@@ -85,6 +86,7 @@ export default function AdminUsersPage() {
     return users.filter((u) => {
       if (u.email.includes("@invalid.local")) return false;
       if (roleFilter !== "ALL" && u.role !== roleFilter) return false;
+      if (profileOnly && u.name === "-") return false;
       if (!q) return true;
       return (
         u.email.toLowerCase().includes(q) ||
@@ -311,7 +313,7 @@ export default function AdminUsersPage() {
               <StatCard label={tr("Total", "전체", "合計", "Total")} value={stats?.total ?? users.length} />
               <StatCard label={tr("Artists", "작가", "アーティスト", "Artistes")} value={stats?.artists ?? users.filter((u) => u.role === "artist").length} />
               <StatCard label={tr("Galleries", "갤러리", "ギャラリー", "Galeries")} value={stats?.galleries ?? users.filter((u) => u.role === "gallery").length} />
-              <StatCard label={tr("With profile", "프로필 보유", "プロフィール有り", "Avec profil")} value={stats?.withProfile ?? users.filter((u) => u.name !== "-").length} />
+              <StatCard label={tr("With profile", "프로필 보유", "プロフィール有り", "Avec profil")} value={stats?.withProfile ?? users.filter((u) => u.name !== "-").length} onClick={() => setProfileOnly((v) => !v)} active={profileOnly} />
             </div>
 
             <div style={{ border: "1px solid #E5E0DB", background: "#FFFFFF", padding: 16, marginBottom: 16 }}>
@@ -460,10 +462,10 @@ export default function AdminUsersPage() {
   );
 }
 
-function StatCard({ label, value }: { label: string; value: number }) {
+function StatCard({ label, value, onClick, active }: { label: string; value: number; onClick?: () => void; active?: boolean }) {
   return (
-    <div style={{ border: "1px solid #E5E0DB", background: "#FFFFFF", padding: "14px 16px" }}>
-      <div style={{ fontFamily: F, fontSize: 9, letterSpacing: "0.1em", textTransform: "uppercase", color: "#8A8580", marginBottom: 8 }}>
+    <div onClick={onClick} style={{ border: `1px solid ${active ? "#8B7355" : "#E5E0DB"}`, background: active ? "#FAF6F0" : "#FFFFFF", padding: "14px 16px", cursor: onClick ? "pointer" : "default" }}>
+      <div style={{ fontFamily: F, fontSize: 9, letterSpacing: "0.1em", textTransform: "uppercase", color: active ? "#8B7355" : "#8A8580", marginBottom: 8 }}>
         {label}
       </div>
       <div style={{ fontFamily: S, fontSize: 26, color: "#1A1A1A", fontWeight: 300 }}>{value}</div>
