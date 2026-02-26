@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getServerSession, getProfileByUserId } from "@/lib/auth";
 import { addComment, getPost, serializePost } from "@/app/data/community";
-import { createNotification } from "@/app/data/notifications";
+import { prisma } from "@/lib/prisma";
 
 export const dynamic = "force-dynamic";
 
@@ -18,7 +18,7 @@ export async function POST(
 
     const profile = await getProfileByUserId(session.userId);
     const body = await req.json();
-    const { content } = body;
+    const { content, parentCommentId } = body;
 
     if (!content?.trim()) {
       return NextResponse.json(
@@ -46,16 +46,18 @@ export async function POST(
       return NextResponse.json({ error: "Failed to add comment" }, { status: 500 });
     }
 
-    // Notify post author if different from commenter
-    if (post.authorId !== session.userId) {
-      createNotification({
-        userId: post.authorId,
-        type: "new_message",
-        title: "New comment on your post",
-        message: `${authorName} commented on "${post.title}"`,
-        link: `/community`,
-      });
-    }
+    try {
+      const byUserId = session.userId;
+      const targets = new Set<string>();
+      if (post.authorId !== byUserId) targets.add(post.authorId);
+      if (parentCommentId) {
+        const parent = await prisma.communityComment.findUnique({ where: { id: parentCommentId }, select: { authorId: true } });
+        if (parent && parent.authorId !== byUserId) targets.add(parent.authorId);
+      }
+        if (targets.size > 0) {
+          await prisma.notification.createMany({ data: [...targets].map(uid => ({ userId: uid, type: "community.comment.new", payload: { postId: params.id, commentId: comment.id, parentCommentId: parentCommentId ?? null, byUserId } })) });
+        }
+    } catch (e) { console.error("comment notification error:", e); }
 
     const updatedPost = await getPost(params.id);
     return NextResponse.json({

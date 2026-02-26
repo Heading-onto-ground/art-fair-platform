@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "@/lib/auth";
+import { prisma } from "@/lib/prisma";
 import { toggleLike, getPost, serializePost } from "@/app/data/community";
 
 export const dynamic = "force-dynamic";
@@ -21,6 +22,15 @@ export async function POST(
     }
 
     const liked = await toggleLike(params.id, session.userId);
+    if (liked) {
+      try {
+        const byUserId = session.userId;
+        const authorUserId = post.authorId;
+        if (byUserId !== authorUserId) {
+          await prisma.notification.create({ data: { userId: authorUserId, type: "community.post.like", payload: { postId: params.id, byUserId } } });
+        }
+      } catch (e) { console.error("like notification error:", e); }
+    }
 
     const updatedPost = await getPost(params.id);
     return NextResponse.json({
