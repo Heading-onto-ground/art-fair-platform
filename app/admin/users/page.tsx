@@ -100,7 +100,7 @@ export default function AdminUsersPage() {
         (u.profileId ?? "").toLowerCase().includes(q)
       );
     });
-  }, [users, roleFilter, query]);
+  }, [users, roleFilter, query, profileOnly, portfolioOnly]);
 
   const countryStats = useMemo(() => {
     const counts: Record<string, number> = {};
