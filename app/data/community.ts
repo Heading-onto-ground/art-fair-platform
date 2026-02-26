@@ -10,7 +10,8 @@ export type PostCategory =
   | "find_collab"
   | "art_chat"
   | "daily"
-  | "meetup";
+  | "meetup"
+  | "find_exhibit";
 
 export type Comment = {
   id: string;
@@ -86,7 +87,7 @@ export async function createPost(input: {
   content: string;
   imageUrl?: string;
 }) {
-  return prisma.communityPost.create({
+  const post = await prisma.communityPost.create({
     data: {
       authorId: input.authorId,
       authorName: input.authorName,
@@ -98,6 +99,25 @@ export async function createPost(input: {
     },
     include: { comments: true, likes: true, _count: { select: { comments: true, likes: true } } },
   });
+  try {
+    const [artists, galleries] = await Promise.all([
+      prisma.artistProfile.findMany({ where: { notify_new_community_post: true }, select: { userId: true } }),
+      prisma.galleryProfile.findMany({ where: { notify_new_community_post: true }, select: { userId: true } }),
+    ]);
+    const userIds = [...new Set([...artists, ...galleries].map((p) => p.userId))];
+    if (userIds.length) {
+      await prisma.notification.createMany({
+        data: userIds.map((userId) => ({
+          userId,
+          type: "community_new_post",
+          payload: { post_id: post.id, title: post.title },
+        })),
+      });
+    }
+  } catch (ne) {
+    console.error("community_new_post notification error:", ne);
+  }
+  return post;
 }
 
 export async function addComment(input: {

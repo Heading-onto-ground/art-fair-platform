@@ -20,6 +20,7 @@ const VALID_CATEGORIES: PostCategory[] = [
   "art_chat",
   "daily",
   "meetup",
+  "find_exhibit",
 ];
 
 /** GET — list posts (optional ?category=xxx) */
