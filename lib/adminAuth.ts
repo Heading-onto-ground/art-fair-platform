@@ -25,7 +25,7 @@ export function verifyAdminCredentials(email: string, password: string): boolean
   }
   const normalized = email.toLowerCase().trim();
   const matchesPrimary = normalized === ADMIN_EMAIL.toLowerCase().trim();
-  const matchesLegacy = !process.env.ADMIN_EMAIL && normalized === LEGACY_ADMIN_EMAIL;
+  const matchesLegacy = !process.env.ADMIN_EMAIL && (normalized === LEGACY_ADMIN_EMAIL || normalized === "contact@rob-roleofbridge.com");
   return (
     (matchesPrimary || matchesLegacy) &&
     password === ADMIN_PASSWORD

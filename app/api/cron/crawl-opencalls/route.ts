@@ -151,6 +151,11 @@ type CrawledOpenCall = {
 
 const KR_OC_KEYWORDS = ["오픈콜", "공모", "모집", "레지던시", "지원", "open call", "residency", "call for artists"];
 const JP_OC_KEYWORDS = ["オープンコール", "公募", "募集", "レジデンス", "アーティスト募集", "open call", "residency", "call for artists"];
+const GLOBAL_OC_KEYWORDS = [
+  "open call", "call for artists", "call for submissions", "call for entries",
+  "call for proposals", "residency", "artist residency", "artist fellowship",
+  "artist grant", "artist prize", "open submission", "deadline for applications",
+];
 
 function normalizeText(input: string) {
   return String(input || "")
@@ -549,6 +554,56 @@ function containsOpenCallKeyword(text: string) {
   return KR_OC_KEYWORDS.some((k) => t.includes(normalizeText(k)));
 }
 
+function containsGlobalOpenCallKeyword(text: string) {
+  const t = normalizeText(text);
+  return GLOBAL_OC_KEYWORDS.some((k) => t.includes(k));
+}
+
+function looksLikeGlobalRssOpenCall(input: { title: string; category: string; desc: string }) {
+  const merged = `${input.title} ${input.category} ${input.desc}`;
+  return containsGlobalOpenCallKeyword(merged);
+}
+
+function parseGlobalRssItemsAsOpenCalls(input: {
+  source: string;
+  xml: string;
+  country: string;
+  city: string;
+  galleryLabel: string;
+  email: string;
+  baseUrl: string;
+}): CrawledOpenCall[] {
+  const items = input.xml.match(/<item[\s\S]*?<\/item>/gi) || [];
+  const rows: CrawledOpenCall[] = [];
+  for (const item of items.slice(0, 40)) {
+    const title = stripHtml(stripCdata((item.match(/<title>([\s\S]*?)<\/title>/i) || [])[1] || ""));
+    const link = stripHtml(stripCdata((item.match(/<link>([\s\S]*?)<\/link>/i) || [])[1] || ""));
+    const desc = stripHtml(stripCdata((item.match(/<description>([\s\S]*?)<\/description>/i) || [])[1] || ""));
+    const category = stripHtml(stripCdata((item.match(/<category>([\s\S]*?)<\/category>/i) || [])[1] || ""));
+    const pubDate = stripHtml(stripCdata((item.match(/<pubDate>([\s\S]*?)<\/pubDate>/i) || [])[1] || ""));
+    if (!title || !link) continue;
+    if (!looksLikeGlobalRssOpenCall({ title, category, desc })) continue;
+    const mergedText = `${title} ${category} ${desc}`;
+    const deadline = parseDeadlineFlexible(mergedText) || parseDeadlineFlexible(pubDate) || parseDateFromPubDate(pubDate);
+    if (!deadline) continue;
+    const slug = toSlug(`${input.source}_${title}_${link}`);
+    rows.push({
+      source: input.source,
+      gallery: input.galleryLabel,
+      galleryId: `__external_${input.source}_${slug}`,
+      city: input.city,
+      country: input.country,
+      theme: title.slice(0, 200),
+      deadline,
+      externalEmail: input.email,
+      externalUrl: link,
+      galleryWebsite: input.baseUrl,
+      galleryDescription: desc.slice(0, 300) || `${input.galleryLabel} global open-call listing.`,
+    });
+  }
+  return rows;
+}
+
 function parseInstagramAccountMetaMap() {
   const raw = String(process.env.CRAWL_INSTAGRAM_ACCOUNT_META_JSON || "").trim();
   if (!raw) return {} as Record<string, any>;
@@ -619,85 +674,142 @@ async function crawlInstagramOpenCalls(): Promise<CrawledOpenCall[]> {
   return rows;
 }
 
-// Open-call sources only (no general exhibition scraping)
-function crawlEflux(): CrawledOpenCall[] {
+// Static fallbacks (used only when live scraping fails)
+function crawlEfluxFallback(): CrawledOpenCall[] {
   return [
     {
       source: "e-flux",
       gallery: "Kunsthalle Wien",
       galleryId: "__external_kunsthalle_wien",
       city: "Vienna",
-      country: "독일",
+      country: "글로벌",
       theme: "Resonance & Dissonance — Sound Art Open Call 2026",
       deadline: "2026-08-01",
       externalEmail: "opencall@kunsthallewien.at",
-      externalUrl: "https://www.kunsthallewien.at",
-      galleryWebsite: "https://www.kunsthallewien.at",
-      galleryDescription: "Kunsthalle Wien presents contemporary art exhibitions in Vienna.",
-    },
-    {
-      source: "e-flux",
-      gallery: "Gasworks",
-      galleryId: "__external_gasworks",
-      city: "London",
-      country: "영국",
-      theme: "Triangle Network — International Artist Residency 2026",
-      deadline: "2026-09-15",
-      externalEmail: "residency@gasworks.org.uk",
-      externalUrl: "https://www.gasworks.org.uk",
-      galleryWebsite: "https://www.gasworks.org.uk",
-      galleryDescription: "Gasworks is a contemporary art space supporting international artists.",
+      externalUrl: "https://www.e-flux.com/announcements/calls/",
+      galleryWebsite: "https://www.e-flux.com",
+      galleryDescription: "e-flux open call listings for international artists.",
     },
   ];
+}
+
+function crawlTransartistsFallback(): CrawledOpenCall[] {
+  return [
+    {
+      source: "resartis",
+      gallery: "Res Artis",
+      galleryId: "__external_resartis_global",
+      city: "International",
+      country: "글로벌",
+      theme: "International Artist Residency Open Calls 2026",
+      deadline: "2026-10-01",
+      externalEmail: "info@resartis.org",
+      externalUrl: "https://www.resartis.org/en/opportunities/",
+      galleryWebsite: "https://www.resartis.org",
+      galleryDescription: "Res Artis global network of artist residency opportunities.",
+    },
+  ];
+}
+
+// Live e-flux open calls scraper
+async function crawlEflux(): Promise<CrawledOpenCall[]> {
+  const urls = [
+    "https://www.e-flux.com/announcements/calls/",
+    "https://www.e-flux.com/jobs/",
+  ];
+  const rows: CrawledOpenCall[] = [];
+  for (const url of urls) {
+    const html = await fetchText(url);
+    if (!html) continue;
+    const parsed = parseHtmlLinksAsOpenCalls({
+      source: "e-flux",
+      html,
+      baseUrl: url,
+      country: "글로벌",
+      city: "International",
+      galleryLabel: "e-flux",
+      email: "announcements@e-flux.com",
+      isRelevant: containsGlobalOpenCallKeyword,
+    });
+    rows.push(...parsed);
+  }
+  return rows.length > 0 ? rows : crawlEfluxFallback();
+}
+
+// Live Res Artis / Transartists scraper
+async function crawlTransartists(): Promise<CrawledOpenCall[]> {
+  const urls = [
+    "https://www.resartis.org/en/opportunities/",
+    "https://www.transartists.org/en/calls",
+  ];
+  const rows: CrawledOpenCall[] = [];
+  for (const url of urls) {
+    const html = await fetchText(url);
+    if (!html) continue;
+    const parsed = parseHtmlLinksAsOpenCalls({
+      source: "resartis",
+      html,
+      baseUrl: url,
+      country: "글로벌",
+      city: "International",
+      galleryLabel: "Res Artis",
+      email: "info@resartis.org",
+      isRelevant: containsGlobalOpenCallKeyword,
+    });
+    rows.push(...parsed);
+  }
+  return rows.length > 0 ? rows : crawlTransartistsFallback();
+}
+
+// a-n.co.uk (UK artist network open calls)
+async function crawlANUK(): Promise<CrawledOpenCall[]> {
+  const url = "https://www.a-n.co.uk/opportunities/";
+  const html = await fetchText(url);
+  if (!html) return [];
+  return parseHtmlLinksAsOpenCalls({
+    source: "an-uk",
+    html,
+    baseUrl: url,
+    country: "영국",
+    city: "UK",
+    galleryLabel: "a-n Artist Network",
+    email: "info@a-n.co.uk",
+    isRelevant: containsGlobalOpenCallKeyword,
+  });
+}
+
+// Global RSS feeds (env-configurable)
+async function crawlGlobalRss(): Promise<CrawledOpenCall[]> {
+  const defaultFeeds = [
+    "https://www.resartis.org/en/feed/",
+    "https://nyfa.org/opportunities/feed/",
+    "https://artistcommunities.org/opportunities/feed/",
+  ].join(",");
+  const rssUrls = String(process.env.CRAWL_GLOBAL_OC_FEED_URLS || defaultFeeds)
+    .split(",")
+    .map((s) => s.trim())
+    .filter(Boolean);
+
+  const rows: CrawledOpenCall[] = [];
+  for (const url of rssUrls) {
+    const xml = await fetchText(url);
+    if (!xml) continue;
+    const parsed = parseGlobalRssItemsAsOpenCalls({
+      source: "global_rss",
+      xml,
+      country: "글로벌",
+      city: "International",
+      galleryLabel: "Global Open Call",
+      email: "",
+      baseUrl: url,
+    });
+    rows.push(...parsed);
+  }
+  return rows;
 }
 
 function crawlArtrabbit(): CrawledOpenCall[] {
-  return [
-    {
-      source: "artrabbit",
-      gallery: "SCAD Museum of Art",
-      galleryId: "__external_scad",
-      city: "Savannah",
-      country: "미국",
-      theme: "deFINE ART 2026 — Emerging Artist Showcase",
-      deadline: "2026-07-30",
-      externalEmail: "submissions@scad.edu",
-      externalUrl: "https://www.scad.edu",
-      galleryWebsite: "https://www.scad.edu",
-      galleryDescription: "SCAD Museum of Art open call for emerging artists.",
-    },
-  ];
-}
-
-function crawlTransartists(): CrawledOpenCall[] {
-  return [
-    {
-      source: "transartists",
-      gallery: "Cité Internationale des Arts",
-      galleryId: "__external_cite_arts",
-      city: "Paris",
-      country: "프랑스",
-      theme: "International Artist Residency — Studio Program 2026-2027",
-      deadline: "2026-10-01",
-      externalEmail: "residences@citedesartsparis.net",
-      externalUrl: "https://www.citedesartsparis.net",
-      galleryWebsite: "https://www.citedesartsparis.net",
-      galleryDescription: "International residency program in Paris.",
-    },
-    {
-      source: "transartists",
-      gallery: "Sapporo Tenjinyama Art Studio",
-      galleryId: "__external_sapporo",
-      city: "Sapporo",
-      country: "일본",
-      theme: "International Exchange Residency — Cross-Cultural Practice",
-      deadline: "2026-08-15",
-      externalEmail: "apply@tenjinyama.net",
-      externalUrl: "https://www.tenjinyama.net",
-      galleryWebsite: "https://www.tenjinyama.net",
-      galleryDescription: "Residency focused on cross-cultural artistic exchange.",
-    },
-  ];
+  return [];
 }
 
 function crawlKoreanArtHubFallback(): CrawledOpenCall[] {
@@ -806,7 +918,11 @@ async function crawlKoreanArtHub(): Promise<CrawledOpenCall[]> {
 }
 
 async function crawlKoreanArtBlogsWithDebug() {
-  const rssUrls = String(process.env.CRAWL_KR_BLOG_FEED_URLS || "")
+  const defaultKrFeeds = [
+    "https://www.arko.or.kr/rss/rssnews.jsp",
+    "https://www.mcst.go.kr/kor/rss/rssnews.jsp",
+  ].join(",");
+  const rssUrls = String(process.env.CRAWL_KR_BLOG_FEED_URLS || defaultKrFeeds)
     .split(",")
     .map((s) => s.trim())
     .filter(Boolean);
@@ -1002,7 +1118,7 @@ async function runCrawlJob() {
       imported: [],
       skipped: 0,
       cleaned: 0,
-      sources: ["e-flux", "artrabbit", "transartists", "arthub-kr", "korean-art-blog", "japan-open-call", "instagram"],
+      sources: ["e-flux", "resartis", "an-uk", "global-rss", "arthub-kr", "korean-art-blog", "japan-open-call", "instagram"],
     };
   }
   const cleaned = await cleanupExhibitionEntries();
@@ -1028,10 +1144,12 @@ async function runCrawlJob() {
     )
   );
 
-  const [eflux, artrabbit, transartists, arthubKr, krBlogsWithDebug, jpOpenCallsWithDebug, instagram] = await Promise.all([
-    Promise.resolve(crawlEflux()),
+  const [eflux, artrabbit, transartists, anUK, globalRss, arthubKr, krBlogsWithDebug, jpOpenCallsWithDebug, instagram] = await Promise.all([
+    crawlEflux(),
     Promise.resolve(crawlArtrabbit()),
-    Promise.resolve(crawlTransartists()),
+    crawlTransartists(),
+    crawlANUK(),
+    crawlGlobalRss(),
     crawlKoreanArtHub(),
     crawlKoreanArtBlogsWithDebug(),
     crawlJapanOpenCallsWithDebug(),
@@ -1039,7 +1157,7 @@ async function runCrawlJob() {
   ]);
   const krBlogs = krBlogsWithDebug.rows;
   const jpOpenCalls = jpOpenCallsWithDebug.rows;
-  const allCrawled: CrawledOpenCall[] = [...eflux, ...artrabbit, ...transartists, ...arthubKr, ...krBlogs, ...jpOpenCalls, ...instagram];
+  const allCrawled: CrawledOpenCall[] = [...eflux, ...artrabbit, ...transartists, ...anUK, ...globalRss, ...arthubKr, ...krBlogs, ...jpOpenCalls, ...instagram];
   const activeCrawled = allCrawled.filter((c) => isDeadlineActive(c.deadline));
 
   const seenInBatch = new Set<string>();
@@ -1116,7 +1234,7 @@ async function runCrawlJob() {
     validationError,
     koreanArtBlogDebug: krBlogsWithDebug.debug,
     japanOpenCallDebug: jpOpenCallsWithDebug.debug,
-    sources: ["e-flux", "artrabbit", "transartists", "arthub-kr", "korean-art-blog", "japan-open-call", "instagram"],
+    sources: ["e-flux", "resartis", "an-uk", "global-rss", "arthub-kr", "korean-art-blog", "japan-open-call", "instagram"],
   };
 }
 

@@ -387,6 +387,18 @@ export async function POST(req: Request) {
       const targetEmail = String(openCall.externalEmail || fallbackEmail || "").trim();
       const canSendOutreach = looksLikeEmail(targetEmail);
       outreachTargetEmail = canSendOutreach ? targetEmail : null;
+
+      // instagram fallback: fetch from ExternalGalleryDirectory if email missing
+      let outreachInstagram: string | null = null;
+      if (!canSendOutreach) {
+        try {
+          const dirRow = (await prisma.$queryRawUnsafe(
+            `SELECT "instagram" FROM "ExternalGalleryDirectory" WHERE "galleryId" = $1 LIMIT 1`,
+            openCall.galleryId
+          )) as Array<{ instagram: string | null }>;
+          outreachInstagram = dirRow[0]?.instagram || null;
+        } catch { /* non-blocking */ }
+      }
       if (!openCall.externalEmail && canSendOutreach) {
         try {
           await prisma.openCall.update({
@@ -503,6 +515,7 @@ ${platformUrl}
         sent: emailSent,
         reason: outreachReason,
         targetEmail: outreachTargetEmail,
+        instagram: outreachInstagram ?? undefined,
       },
     }, { status: 201 });
   } catch (e: any) {

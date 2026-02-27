@@ -13,7 +13,7 @@ type Role = "artist" | "gallery";
 type MeResponse = { session: { userId: string; role: Role; email?: string } | null; profile: any | null };
 type OpenCall = { id: string; galleryId: string; gallery: string; city: string; country: string; theme: string; exhibitionDate?: string; deadline: string; posterImage?: string | null; isExternal?: boolean; externalEmail?: string; externalUrl?: string; galleryWebsite?: string; galleryDescription?: string };
 type Application = { id: string; openCallId: string; galleryId: string; artistId: string; artistName: string; artistEmail: string; artistCountry: string; artistCity: string; artistPortfolioUrl?: string; message?: string; status: "submitted" | "reviewing" | "accepted" | "rejected"; shippingStatus: "pending" | "shipped" | "received" | "inspected" | "exhibited"; shippingNote?: string; shippingCarrier?: string; trackingNumber?: string; trackingUrl?: string; createdAt: number; updatedAt: number };
-type OutreachResult = { isExternal?: boolean; sent?: boolean; reason?: string | null; targetEmail?: string | null };
+type OutreachResult = { isExternal?: boolean; sent?: boolean; reason?: string | null; targetEmail?: string | null; instagram?: string };
 
 async function fetchMe(): Promise<MeResponse | null> { try { const res = await fetch("/api/auth/me?lite=1", { cache: "default", credentials: "include" }); return (await res.json().catch(() => null)) as MeResponse | null; } catch { return null; } }
 
@@ -264,11 +264,25 @@ export default function OpenCallDetailPage({ params }: { params: { id: string } 
                           {emailSent || outreachResult?.sent
                             ? (lang === "ko"
                               ? `외부 갤러리(${outreachResult?.targetEmail || openCall.externalEmail || "이메일"})로 자동 아웃리치 메일을 보냈습니다.`
-                              : "Auto outreach email was sent to the external gallery.")
-                            : (lang === "ko"
-                              ? "외부 갤러리 이메일이 없어 자동 메일을 보내지 못했습니다. 관리자 아웃리치에서 수동 발송이 필요합니다."
-                              : "No external gallery email was available, so auto outreach was skipped. Manual outreach is needed from admin.")}
+                              : `Auto outreach email was sent to the external gallery (${outreachResult?.targetEmail || openCall.externalEmail || ""}).`)
+                            : outreachResult?.instagram
+                              ? (lang === "ko"
+                                ? "이 갤러리의 이메일이 없어 자동 발송이 되지 않았습니다. 아래 인스타그램으로 직접 연락해보세요."
+                                : "No email found for this gallery. You can reach them directly via Instagram.")
+                              : (lang === "ko"
+                                ? "외부 갤러리 이메일이 없어 자동 메일을 보내지 못했습니다. 직접 갤러리 웹사이트를 통해 연락해보세요."
+                                : "No email found for this gallery. Please contact them directly via their website.")}
                         </p>
+                        {!outreachResult?.sent && outreachResult?.instagram && (
+                          <a
+                            href={outreachResult.instagram}
+                            target="_blank"
+                            rel="noreferrer"
+                            style={{ display: "inline-flex", alignItems: "center", gap: 6, marginTop: 8, padding: "7px 14px", border: "1px solid #C8B4A0", background: "#FFFFFF", color: "#4A4A4A", fontFamily: F, fontSize: 11, letterSpacing: "0.06em", textDecoration: "none", textTransform: "uppercase" }}
+                          >
+                            Instagram →
+                          </a>
+                        )}
                       </div>
                     )}
                     {myApplication.shippingStatus !== "pending" && (

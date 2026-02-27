@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
-import { getServerSession, upsertGalleryProfile } from "@/lib/auth";
+import { getServerSession } from "@/lib/auth";
+import { prisma } from "@/lib/prisma";
 
 export async function POST(req: Request) {
   try {
@@ -14,17 +15,8 @@ export async function POST(req: Request) {
     }
 
     const body = await req.json().catch(() => ({} as any));
-
-    const profile = upsertGalleryProfile(session.userId, {
-      email: session.email,
-      name: String(body?.name ?? "").trim(),
-      country: String(body?.country ?? "").trim(),
-      city: String(body?.city ?? "").trim(),
-      bio: String(body?.bio ?? "").trim(),
-      website: body?.website ? String(body.website).trim() : undefined,
-    });
-
-    return NextResponse.json({ ok: true, profile }, { status: 200 });
+    await prisma.galleryProfile.updateMany({ where: { userId: session.userId }, data: { notify_new_community_post: Boolean(body.notify_new_community_post) } });
+    return NextResponse.json({ ok: true });
   } catch (e) {
     console.error("POST /api/gallery/profile/save failed:", e);
     return NextResponse.json({ ok: false, error: "server error" }, { status: 500 });

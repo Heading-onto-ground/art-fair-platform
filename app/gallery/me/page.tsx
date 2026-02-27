@@ -81,7 +81,7 @@ export default function GalleryMePage() {
     summary: "",
   });
   const [exMsg, setExMsg] = useState<string | null>(null);
-
+  const [notifyPost, setNotifyPost] = useState(false);
   const loadMe = async () => {
     if (isAdminView) {
       const adminRes = await fetch("/api/admin/me", { cache: "no-store", credentials: "include" }).catch(() => null);
@@ -124,9 +124,10 @@ export default function GalleryMePage() {
         bio: p.bio ?? "",
       });
     }
-
+    setNotifyPost((p as any)?.notify_new_community_post ?? false);
     setLoading(false);
   };
+
 
   const loadExhibitions = async () => {
     setExLoading(true);
@@ -199,6 +200,12 @@ export default function GalleryMePage() {
     if (res.ok) {
       setExhibitions((p) => p.filter((e) => e.id !== id));
     }
+  };
+
+  const onToggleNotify = async (val: boolean) => {
+    setNotifyPost(val);
+    try { await fetch("/gallery/profile/save", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ notify_new_community_post: val }) }); }
+    catch (e) { console.error(e); setNotifyPost(!val); }
   };
 
   const onSave = async () => {
@@ -295,19 +302,7 @@ export default function GalleryMePage() {
               {session?.email}
             </p>
           </div>
-          <div
-            style={{
-              padding: "8px 16px",
-              border: "1px solid #1A1A1A",
-              fontFamily: F,
-              fontSize: 10,
-              letterSpacing: "0.15em",
-              textTransform: "uppercase",
-              color: "#1A1A1A",
-            }}
-          >
-            Gallery
-          </div>
+          <div style={{ padding: "8px 16px", border: "1px solid #1A1A1A", fontFamily: F, fontSize: 10, letterSpacing: "0.15em", textTransform: "uppercase", color: "#1A1A1A" }}>Gallery</div>
         </div>
 
         {loading ? (
@@ -523,6 +518,13 @@ export default function GalleryMePage() {
                   ))}
                 </div>
               )}
+            </Section>
+
+            <Section number="04" title="Notifications">
+              <label style={{ display: "flex", alignItems: "center", gap: 12, cursor: "pointer", fontFamily: F, fontSize: 13, color: "#1A1A1A" }}>
+                <input type="checkbox" checked={notifyPost} onChange={(e) => onToggleNotify(e.target.checked)} />
+                새 커뮤니티 글 알림 받기
+              </label>
             </Section>
           </>
         )}

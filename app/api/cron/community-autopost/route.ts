@@ -57,8 +57,13 @@ function pickTwo<T>(arr: T[]): [T, T] {
 export async function GET(req: Request) {
   const secret = process.env.CRON_SECRET;
   const url = new URL(req.url);
+  const authHeader = req.headers.get("authorization") || "";
   const provided = url.searchParams.get("secret") || req.headers.get("x-cron-secret") || "";
-  if (secret && provided !== secret) return NextResponse.json({ error: "unauthorized" }, { status: 401 });
+  const authorized =
+    !secret ||
+    authHeader === `Bearer ${secret}` ||
+    provided === secret;
+  if (!authorized) return NextResponse.json({ error: "unauthorized" }, { status: 401 });
 
   const [email1, email2] = pickTwo(BOT_EMAILS);
   const results = [];

@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState, useRef } from "react";
+import NotificationsBell from "./NotificationsBell";
 import { useRouter } from "next/navigation";
 import { useLanguage } from "@/lib/useLanguage";
 import { useAutoLocale } from "@/lib/useAutoLocale";
@@ -122,42 +123,25 @@ export default function TopBar() {
     fetch("/api/profile/save", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload) }).finally(() => { localStorage.setItem(key, "1"); });
   }, [me?.session, me?.profile, country]);
 
-  useEffect(() => {
-    if (!me?.session) return;
-    let cancelled = false;
-    async function fetchNotifications() {
-      if (typeof document !== "undefined" && document.visibilityState !== "visible") return;
-      try {
-        const res = await fetch("/api/notifications", { cache: "default", credentials: "include" });
-        const data = await res.json();
-        if (cancelled) return;
-        if (data.notifications) {
-          setNotifications(data.notifications);
-          setUnreadCount(data.unreadCount || 0);
-        }
-      } catch (e) {
-        console.error("Failed to fetch notifications:", e);
-      }
-    }
-    const onVisible = () => {
-      if (document.visibilityState === "visible") fetchNotifications();
-    };
-    fetchNotifications();
-    const interval = setInterval(fetchNotifications, 90000);
-    document.addEventListener("visibilitychange", onVisible);
-    return () => {
-      cancelled = true;
-      clearInterval(interval);
-      document.removeEventListener("visibilitychange", onVisible);
-    };
-  }, [me?.session]);
+  async function fetchNotifications() {
+    try {
+      const res = await fetch("/api/notifications", { cache: "no-store", credentials: "include" });
+      const data = await res.json();
+      const mapped = (data.items ?? []).map((item: any) => ({
+        id: item.id, type: "community_new_post", title: item.payload?.title ?? "새 글", message: "", read: true, createdAt: item.createdAt,
+      }));
+      setNotifications(mapped);
+    } catch (e) { console.error("Failed to fetch notifications:", e); }
+  }
 
   useEffect(() => {
     function handleClickOutside(e: MouseEvent) {
       if (notifRef.current && !notifRef.current.contains(e.target as Node)) setShowNotifications(false);
     }
+    function handleEsc(e: KeyboardEvent) { if (e.key === "Escape") setShowNotifications(false); }
     document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
+    document.addEventListener("keydown", handleEsc);
+    return () => { document.removeEventListener("mousedown", handleClickOutside); document.removeEventListener("keydown", handleEsc); };
   }, []);
 
   // Close mobile menu on route change
@@ -175,7 +159,7 @@ export default function TopBar() {
 
   async function markAllAsRead() {
     try {
-      await fetch("/api/notifications", { method: "POST", headers: { "Content-Type": "application/json" }, credentials: "include", body: JSON.stringify({ action: "mark_all_read" }) });
+      await fetch("/api/notifications", { method: "PATCH", credentials: "include" });
       setNotifications((prev) => prev.map((n) => ({ ...n, read: true })));
       setUnreadCount(0);
     } catch (e) { console.error(e); }
@@ -267,46 +251,8 @@ export default function TopBar() {
                 <NavBtn key={link.path} onClick={() => router.push(link.path)}>{link.label}</NavBtn>
               ))}
 
-              {/* Notification bell (gallery only) */}
-              {session.role === "gallery" && (
-                <div ref={notifRef} style={{ position: "relative", marginLeft: 4 }}>
-                  <button onClick={() => setShowNotifications(!showNotifications)} style={{ padding: "8px 10px", border: "none", background: "transparent", color: unreadCount > 0 ? "#8B7355" : "#B0AAA2", fontSize: 15, cursor: "pointer", position: "relative" }}>
-                    🔔
-                    {unreadCount > 0 && (
-                      <span style={{ position: "absolute", top: 2, right: 2, background: "#8B7355", color: "#FFF", fontSize: 9, fontWeight: 600, minWidth: 14, height: 14, borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center" }}>
-                        {unreadCount > 9 ? "9+" : unreadCount}
-                      </span>
-                    )}
-                  </button>
-
-                  {showNotifications && (
-                    <div style={{ position: "absolute", top: "100%", right: 0, marginTop: 8, width: 320, maxHeight: 400, overflowY: "auto", background: "#FFFFFF", border: "1px solid #E8E3DB", boxShadow: "0 8px 32px rgba(0,0,0,0.08)", zIndex: 100 }}>
-                      <div style={{ padding: "14px 18px", borderBottom: "1px solid #E8E3DB", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                        <span style={{ fontFamily: F, fontSize: 10, fontWeight: 600, letterSpacing: "0.12em", textTransform: "uppercase", color: "#8A8580" }}>{t("notifications", lang)}</span>
-                        {unreadCount > 0 && (
-                          <button onClick={markAllAsRead} style={{ background: "transparent", border: "none", color: "#8B7355", fontSize: 10, cursor: "pointer", fontFamily: F, letterSpacing: "0.08em", textTransform: "uppercase" }}>{t("mark_all_read", lang)}</button>
-                        )}
-                      </div>
-                      {notifications.length === 0 ? (
-                        <div style={{ padding: 32, textAlign: "center", color: "#B0AAA2", fontFamily: F, fontSize: 12 }}>{t("no_notifications", lang)}</div>
-                      ) : (
-                        notifications.slice(0, 10).map((notif) => (
-                          <div key={notif.id} onClick={() => handleNotificationClick(notif)} style={{ padding: "14px 18px", borderBottom: "1px solid #F0EBE3", cursor: "pointer", background: notif.read ? "transparent" : "rgba(139,115,85,0.04)", transition: "background 0.2s" }}
-                            onMouseEnter={(e) => { e.currentTarget.style.background = "#FAF8F4"; }}
-                            onMouseLeave={(e) => { e.currentTarget.style.background = notif.read ? "transparent" : "rgba(139,115,85,0.04)"; }}>
-                            <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                              {!notif.read && <span style={{ width: 5, height: 5, background: "#8B7355", borderRadius: "50%", flexShrink: 0 }} />}
-                              <span style={{ fontFamily: F, fontSize: 11, fontWeight: 600, color: notif.read ? "#B0AAA2" : "#1A1A1A", letterSpacing: "0.04em" }}>{notif.title}</span>
-                            </div>
-                            <p style={{ margin: "6px 0 0", fontFamily: F, fontSize: 12, color: notif.read ? "#B0AAA2" : "#4A4A4A", lineHeight: 1.5 }}>{notif.message}</p>
-                            <span style={{ display: "block", marginTop: 6, fontFamily: F, fontSize: 10, color: "#B0AAA2" }}>{new Date(notif.createdAt).toLocaleString()}</span>
-                          </div>
-                        ))
-                      )}
-                    </div>
-                  )}
-                </div>
-              )}
+              {/* Notification bell */}
+              {session && <NotificationsBell />}
 
               <div style={{ width: 1, height: 20, background: "#E8E3DB", margin: "0 16px" }} />
 
@@ -398,7 +344,7 @@ export default function TopBar() {
             ))}
           </select>
 
-          {session?.role === "gallery" && unreadCount > 0 && (
+          {session && unreadCount > 0 && (
             <span style={{ background: "#8B7355", color: "#FFF", fontSize: 9, fontWeight: 600, minWidth: 18, height: 18, borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", fontFamily: F }}>
               {unreadCount > 9 ? "9+" : unreadCount}
             </span>
