@@ -22,6 +22,10 @@ export default function ArtistExhibitionsPage() {
   const { lang } = useLanguage();
   const [exhibitions, setExhibitions] = useState<Exhibition[]>([]);
   const [loading, setLoading] = useState(true);
+  const [artistId, setArtistId] = useState<string | null>(null);
+  const [isPublic, setIsPublic] = useState(false);
+  const [toggling, setToggling] = useState(false);
+  const [copied, setCopied] = useState(false);
 
   useEffect(() => {
     (async () => {
@@ -31,11 +35,37 @@ export default function ArtistExhibitionsPage() {
         const res = await fetch("/api/artist/exhibitions", { credentials: "include" });
         const data = await res.json().catch(() => null);
         setExhibitions(Array.isArray(data?.exhibitions) ? data.exhibitions : []);
+        setArtistId(data?.artistId ?? null);
+        setIsPublic(!!data?.exhibitionsPublic);
       } finally {
         setLoading(false);
       }
     })();
   }, [router]);
+
+  const shareUrl = artistId ? `${typeof window !== "undefined" ? window.location.origin : "https://rob-roleofbridge.com"}/artist/public/${artistId}` : "";
+
+  async function handleToggle() {
+    if (toggling) return;
+    setToggling(true);
+    const next = !isPublic;
+    setIsPublic(next);
+    await fetch("/api/artist/exhibitions", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      credentials: "include",
+      body: JSON.stringify({ exhibitionsPublic: next }),
+    }).catch(() => setIsPublic(!next));
+    setToggling(false);
+  }
+
+  function handleCopy() {
+    if (!shareUrl) return;
+    navigator.clipboard.writeText(shareUrl).then(() => {
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    });
+  }
 
   return (
     <>
@@ -44,9 +74,53 @@ export default function ArtistExhibitionsPage() {
         <span style={{ fontFamily: F, fontSize: 10, letterSpacing: "0.2em", textTransform: "uppercase", color: "#8A8A8A" }}>
           {lang === "ko" ? "전시 이력" : lang === "ja" ? "展示履歴" : "Exhibition History"}
         </span>
-        <h1 style={{ fontFamily: S, fontSize: 36, fontWeight: 300, color: "#1A1A1A", marginTop: 8, marginBottom: 40 }}>
+        <h1 style={{ fontFamily: S, fontSize: 36, fontWeight: 300, color: "#1A1A1A", marginTop: 8, marginBottom: 32 }}>
           {lang === "ko" ? "내 전시 이력" : lang === "ja" ? "私の展示履歴" : "My Exhibitions"}
         </h1>
+
+        {/* Public toggle */}
+        {!loading && (
+          <div style={{ marginBottom: 32, padding: "16px 20px", border: "1px solid #E8E3DB", background: "#FDFCFA" }}>
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 16 }}>
+              <div>
+                <p style={{ margin: 0, fontFamily: F, fontSize: 12, fontWeight: 600, color: "#1A1A1A", letterSpacing: "0.04em" }}>
+                  {lang === "ko" ? "전시 이력 공개" : "Make exhibition history public"}
+                </p>
+                <p style={{ margin: "3px 0 0", fontFamily: F, fontSize: 11, color: "#8A8580" }}>
+                  {lang === "ko" ? "공개 링크로 포트폴리오처럼 공유할 수 있습니다." : "Share as a public portfolio link."}
+                </p>
+              </div>
+              <button
+                onClick={handleToggle}
+                disabled={toggling}
+                style={{
+                  flexShrink: 0, width: 44, height: 24, borderRadius: 12, border: "none",
+                  background: isPublic ? "#1A1A1A" : "#D8D3CB",
+                  cursor: "pointer", position: "relative", transition: "background 0.2s",
+                }}
+              >
+                <span style={{
+                  position: "absolute", top: 3, left: isPublic ? 23 : 3,
+                  width: 18, height: 18, borderRadius: "50%", background: "#FFFFFF",
+                  transition: "left 0.2s",
+                }} />
+              </button>
+            </div>
+            {isPublic && shareUrl && (
+              <div style={{ marginTop: 14, display: "flex", alignItems: "center", gap: 8 }}>
+                <span style={{ flex: 1, fontFamily: F, fontSize: 11, color: "#6A6660", background: "#F5F2EE", padding: "8px 12px", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                  {shareUrl}
+                </span>
+                <button
+                  onClick={handleCopy}
+                  style={{ flexShrink: 0, padding: "8px 14px", border: "1px solid #C8B4A0", background: "#FFFFFF", fontFamily: F, fontSize: 10, fontWeight: 600, color: copied ? "#3D6B3D" : "#8B7355", letterSpacing: "0.08em", textTransform: "uppercase", cursor: "pointer" }}
+                >
+                  {copied ? (lang === "ko" ? "복사됨 ✓" : "Copied ✓") : (lang === "ko" ? "복사" : "Copy")}
+                </button>
+              </div>
+            )}
+          </div>
+        )}
 
         {loading ? (
           <p style={{ fontFamily: F, fontSize: 13, color: "#B0AAA2" }}>Loading...</p>
