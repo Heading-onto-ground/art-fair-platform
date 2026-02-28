@@ -67,6 +67,23 @@ export default function ArtistPublicClient() {
         );
       })()}
 
+      {data.exhibitions.length > 0 && (
+        <div style={{ display: "flex", gap: 10, marginBottom: 40, flexWrap: "wrap" }}>
+          <a
+            href={`mailto:?subject=${encodeURIComponent(`ROB Verified Exhibition History - ${data.name}`)}&body=${encodeURIComponent(`Hi,\nHere is my verified exhibition history on ROB:\nhttps://rob-roleofbridge.com/artist/public/${artistId}\n`)}`}
+            style={{ padding: "9px 16px", border: "1px solid #D4C9B8", background: "#FDFBF8", fontFamily: F, fontSize: 10, fontWeight: 600, color: "#8B7355", letterSpacing: "0.1em", textTransform: "uppercase", textDecoration: "none" }}
+          >
+            Invite a Gallery →
+          </a>
+          <a
+            href="/open-calls"
+            style={{ padding: "9px 16px", border: "1px solid #E8E3DB", background: "#FFFFFF", fontFamily: F, fontSize: 10, fontWeight: 600, color: "#6A6660", letterSpacing: "0.1em", textTransform: "uppercase", textDecoration: "none" }}
+          >
+            Explore Open Calls →
+          </a>
+        </div>
+      )}
+
       {data.exhibitions.length === 0 ? (
         <p style={{ fontFamily: S, fontSize: 16, fontStyle: "italic", color: "#B0AAA2" }}>No exhibitions yet.</p>
       ) : (
