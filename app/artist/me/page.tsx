@@ -14,6 +14,7 @@ type OpenCall = { id: string; gallery: string; city: string; country: string; th
 type Invite = { id: string; galleryId: string; openCallId: string; message: string; status: string; createdAt: number };
 
 const inp: React.CSSProperties = { width: "100%", padding: "14px 16px", background: "#FFFFFF", border: "1px solid #E8E3DB", color: "#1A1A1A", fontFamily: F, fontSize: 13, fontWeight: 400, outline: "none" };
+const inpHighlight: React.CSSProperties = { ...inp, border: "1px solid #8B7355", background: "#FFFBF5" };
 const btnStyle = (disabled: boolean): React.CSSProperties => ({ padding: "14px 32px", border: "none", background: disabled ? "#E8E3DB" : "#1A1A1A", color: disabled ? "#8A8580" : "#FDFBF7", fontFamily: F, fontSize: 11, fontWeight: 500, letterSpacing: "0.1em", textTransform: "uppercase", cursor: disabled ? "not-allowed" : "pointer" });
 
 export default function ArtistMePage() {
@@ -21,12 +22,18 @@ export default function ArtistMePage() {
   const searchParams = useSearchParams();
   const isAdminView = searchParams.get("adminView") === "1";
   const adminUserId = searchParams.get("userId");
+  const focusImprove = searchParams.get("focus") === "improve";
   const [adminReadOnly, setAdminReadOnly] = useState(false);
   const { lang } = useLanguage();
   const [me, setMe] = useState<MeResponse | null>(null);
   const [loadingMe, setLoadingMe] = useState(true);
   const [name, setName] = useState(""); const [artistId, setArtistId] = useState(""); const [startedYear, setStartedYear] = useState(""); const [genre, setGenre] = useState(""); const [instagram, setInstagram] = useState(""); const [country, setCountry] = useState(""); const [city, setCity] = useState(""); const [website, setWebsite] = useState(""); const [bio, setBio] = useState("");
   const [saving, setSaving] = useState(false); const [saveMsg, setSaveMsg] = useState<string | null>(null);
+  useEffect(() => {
+    if (focusImprove && !loadingMe) {
+      setTimeout(() => document.getElementById("improve-banner")?.scrollIntoView({ behavior: "smooth", block: "center" }), 300);
+    }
+  }, [focusImprove, loadingMe]);
   const [notifyPost, setNotifyPost] = useState(false);
   const [file, setFile] = useState<File | null>(null); const [uploading, setUploading] = useState(false); const [uploadMsg, setUploadMsg] = useState<string | null>(null);
   const [applications, setApplications] = useState<Application[]>([]); const [openCallMap, setOpenCallMap] = useState<Record<string, OpenCall>>({}); const [invites, setInvites] = useState<Invite[]>([]);
@@ -139,17 +146,26 @@ export default function ArtistMePage() {
 
             {/* Edit */}
             <Section number="02" title={t("profile_edit", lang)}>
+              {focusImprove && (
+                <div id="improve-banner" style={{ marginBottom: 18, padding: "12px 16px", background: "rgba(139,115,85,0.08)", border: "1px solid rgba(139,115,85,0.35)" }}>
+                  <p style={{ margin: 0, fontFamily: F, fontSize: 12, color: "#8B7355" }}>
+                    {lang === "ko"
+                      ? "하이라이트된 필드를 채우면 오픈콜 매칭 점수가 높아집니다."
+                      : "Fill in the highlighted fields to improve your open call match score."}
+                  </p>
+                </div>
+              )}
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 18 }}>
                 <Lbl label="Artist ID *"><input value={artistId} onChange={(e) => setArtistId(e.target.value)} placeholder="art-0001" style={inp} /></Lbl>
                 <Lbl label="Name *"><input value={name} onChange={(e) => setName(e.target.value)} placeholder="Full name" style={inp} /></Lbl>
                 <Lbl label="Start year *"><input value={startedYear} onChange={(e) => setStartedYear(e.target.value)} placeholder="2018" style={inp} /></Lbl>
-                <Lbl label="Genre *"><input value={genre} onChange={(e) => setGenre(e.target.value)} placeholder="Painting" style={inp} /></Lbl>
-                <Lbl label="Country *"><input value={country} onChange={(e) => setCountry(e.target.value)} placeholder="Korea" style={inp} /></Lbl>
-                <Lbl label="City *"><input value={city} onChange={(e) => setCity(e.target.value)} placeholder="Seoul" style={inp} /></Lbl>
+                <Lbl label="Genre *"><input value={genre} onChange={(e) => setGenre(e.target.value)} placeholder="Painting" style={focusImprove ? inpHighlight : inp} /></Lbl>
+                <Lbl label="Country *"><input value={country} onChange={(e) => setCountry(e.target.value)} placeholder="Korea" style={focusImprove ? inpHighlight : inp} /></Lbl>
+                <Lbl label="City *"><input value={city} onChange={(e) => setCity(e.target.value)} placeholder="Seoul" style={focusImprove ? inpHighlight : inp} /></Lbl>
                 <Lbl label="Instagram"><input value={instagram} onChange={(e) => setInstagram(e.target.value)} placeholder="@username" style={inp} /></Lbl>
                 <Lbl label="Website"><input value={website} onChange={(e) => setWebsite(e.target.value)} placeholder="https://..." style={inp} /></Lbl>
               </div>
-              <Lbl label="Bio" style={{ marginTop: 18 }}><textarea value={bio} onChange={(e) => setBio(e.target.value)} placeholder="Write a short bio..." rows={4} style={{ ...inp, width: "100%", resize: "vertical" }} /></Lbl>
+              <Lbl label="Bio" style={{ marginTop: 18 }}><textarea value={bio} onChange={(e) => setBio(e.target.value)} placeholder="Write a short bio..." rows={4} style={{ ...(focusImprove ? inpHighlight : inp), width: "100%", resize: "vertical" }} /></Lbl>
               <div style={{ marginTop: 20, display: "flex", gap: 16, alignItems: "center" }}>
                 <button onClick={onSaveProfile} disabled={saving} style={btnStyle(saving)}>{saving ? t("profile_saving", lang) : t("profile_save", lang)}</button>
                 {saveMsg && <span style={{ fontFamily: F, fontSize: 12, color: saveMsg.includes("saved") ? "#5A7A5A" : "#8B4A4A" }}>{saveMsg}</span>}

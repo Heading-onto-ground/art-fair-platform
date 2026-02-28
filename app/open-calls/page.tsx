@@ -31,28 +31,27 @@ function normalizeCountry(input: string): string {
   return v;
 }
 
-function computeMatchScore(profile: any, oc: OpenCall): number {
-  if (!profile) return 0;
-  let score = 0;
-  // Country match: 35pts
-  if (profile.country && normalizeCountry(profile.country) === normalizeCountry(oc.country)) score += 35;
-  // Genre keyword in theme/description: 40pts
+type ScoreBreakdown = { country: number; genre: number; city: number; bio: number; total: number };
+
+function computeMatchScore(profile: any, oc: OpenCall): ScoreBreakdown {
+  const result: ScoreBreakdown = { country: 0, genre: 0, city: 0, bio: 0, total: 0 };
+  if (!profile) return result;
+  if (profile.country && normalizeCountry(profile.country) === normalizeCountry(oc.country)) result.country = 35;
   const genre = String(profile.genre || "").toLowerCase().trim();
   if (genre) {
     const haystack = `${oc.theme} ${oc.galleryDescription || ""}`.toLowerCase();
     const words = genre.split(/\s+/).filter((w: string) => w.length > 2);
     const matched = words.filter((w: string) => haystack.includes(w));
-    if (matched.length > 0) score += Math.round(40 * matched.length / Math.max(words.length, 1));
+    if (matched.length > 0) result.genre = Math.round(40 * matched.length / Math.max(words.length, 1));
   }
-  // City match: 15pts
-  if (profile.city && oc.city && profile.city.toLowerCase() === oc.city.toLowerCase()) score += 15;
-  // Bio keyword overlap with theme: 10pts
+  if (profile.city && oc.city && profile.city.toLowerCase() === oc.city.toLowerCase()) result.city = 15;
   const bio = String(profile.bio || "").toLowerCase();
   if (bio) {
     const themeWords = oc.theme.toLowerCase().split(/\s+/).filter((w: string) => w.length > 3);
-    if (themeWords.some((w: string) => bio.includes(w))) score += 10;
+    if (themeWords.some((w: string) => bio.includes(w))) result.bio = 10;
   }
-  return Math.min(score, 100);
+  result.total = Math.min(result.country + result.genre + result.city + result.bio, 100);
+  return result;
 }
 
 export default function OpenCallsPage() {
@@ -64,6 +63,7 @@ export default function OpenCallsPage() {
   const [isLoggedIn, setIsLoggedIn] = useState(true);
   const [preferredCountry, setPreferredCountry] = useState("");
   const [artistProfile, setArtistProfile] = useState<any>(null);
+  const [scoreModal, setScoreModal] = useState<{ oc: OpenCall; breakdown: ScoreBreakdown } | null>(null);
   const [hasAutoSelectedCountry, setHasAutoSelectedCountry] = useState(false);
   const [translatedById, setTranslatedById] = useState<
     Record<string, { theme?: string; galleryDescription?: string }>
@@ -342,16 +342,19 @@ export default function OpenCallsPage() {
                   </div>
                   <div style={{ textAlign: "right", flexShrink: 0, marginLeft: 24 }}>
                     {artistProfile && (() => {
-                      const score = computeMatchScore(artistProfile, o);
-                      if (score === 0) return null;
-                      const color = score >= 70 ? "#3D6B3D" : score >= 40 ? "#7A6030" : "#8A8580";
-                      const bg = score >= 70 ? "rgba(61,107,61,0.08)" : score >= 40 ? "rgba(122,96,48,0.08)" : "rgba(138,133,128,0.08)";
+                      const bd = computeMatchScore(artistProfile, o);
+                      if (bd.total === 0) return null;
+                      const color = bd.total >= 70 ? "#3D6B3D" : bd.total >= 40 ? "#7A6030" : "#8A8580";
+                      const bg = bd.total >= 70 ? "rgba(61,107,61,0.08)" : bd.total >= 40 ? "rgba(122,96,48,0.08)" : "rgba(138,133,128,0.08)";
                       return (
-                        <div style={{ marginBottom: 8, padding: "4px 10px", background: bg, border: `1px solid ${color}22`, display: "inline-block" }}>
+                        <button
+                          onClick={(e) => { e.stopPropagation(); setScoreModal({ oc: o, breakdown: bd }); }}
+                          style={{ marginBottom: 8, padding: "4px 10px", background: bg, border: `1px solid ${color}44`, display: "inline-block", cursor: "pointer" }}
+                        >
                           <span style={{ fontFamily: F, fontSize: 10, fontWeight: 600, color, letterSpacing: "0.06em" }}>
-                            {score}% {lang === "ko" ? "매칭" : lang === "ja" ? "マッチ" : "Match"}
+                            {bd.total}% {lang === "ko" ? "매칭" : lang === "ja" ? "マッチ" : "Match"} ›
                           </span>
-                        </div>
+                        </button>
                       );
                     })()}
                     <span style={{ fontFamily: F, fontSize: 9, fontWeight: 500, letterSpacing: "0.1em", textTransform: "uppercase", color: "#B0AAA2" }}>
@@ -373,6 +376,56 @@ export default function OpenCallsPage() {
 
       {/* Signup modal for non-logged-in users */}
       <SignupPromptModal isOpen={showSignup} onClose={() => setShowSignup(false)} context="view" />
+
+      {/* Match score breakdown modal */}
+      {scoreModal && (
+        <div
+          onClick={() => setScoreModal(null)}
+          style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.35)", zIndex: 1000, display: "flex", alignItems: "center", justifyContent: "center", padding: 20 }}
+        >
+          <div
+            onClick={(e) => e.stopPropagation()}
+            style={{ background: "#FFFFFF", border: "1px solid #E8E3DB", padding: 28, width: "100%", maxWidth: 360, position: "relative" }}
+          >
+            <button onClick={() => setScoreModal(null)} style={{ position: "absolute", top: 14, right: 16, background: "transparent", border: "none", fontFamily: F, fontSize: 16, color: "#B0AAA2", cursor: "pointer" }}>✕</button>
+            <p style={{ fontFamily: F, fontSize: 10, letterSpacing: "0.15em", textTransform: "uppercase", color: "#B0AAA2", margin: "0 0 6px" }}>
+              {lang === "ko" ? "매칭 분석" : "Match Breakdown"}
+            </p>
+            <p style={{ fontFamily: S, fontSize: 18, fontWeight: 400, color: "#1A1A1A", margin: "0 0 20px" }}>
+              {scoreModal.oc.gallery}
+            </p>
+            {[
+              { label: lang === "ko" ? "국가 일치" : "Country", score: scoreModal.breakdown.country, max: 35 },
+              { label: lang === "ko" ? "장르 키워드" : "Genre keywords", score: scoreModal.breakdown.genre, max: 40 },
+              { label: lang === "ko" ? "도시 일치" : "City", score: scoreModal.breakdown.city, max: 15 },
+              { label: lang === "ko" ? "바이오 키워드" : "Bio keywords", score: scoreModal.breakdown.bio, max: 10 },
+            ].map(({ label, score, max }) => (
+              <div key={label} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "8px 0", borderBottom: "1px solid #F0EDE8" }}>
+                <span style={{ fontFamily: F, fontSize: 12, color: "#6A6660" }}>{label}</span>
+                <span style={{ fontFamily: F, fontSize: 12, fontWeight: 600, color: score > 0 ? "#3D6B3D" : "#C8C0B4" }}>
+                  +{score} <span style={{ fontWeight: 300, color: "#B0AAA2" }}>/ {max}</span>
+                </span>
+              </div>
+            ))}
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "12px 0 0" }}>
+              <span style={{ fontFamily: F, fontSize: 12, fontWeight: 600, letterSpacing: "0.06em", color: "#1A1A1A" }}>
+                {lang === "ko" ? "총점" : "Total"}
+              </span>
+              <span style={{ fontFamily: S, fontSize: 22, fontWeight: 400, color: scoreModal.breakdown.total >= 70 ? "#3D6B3D" : "#1A1A1A" }}>
+                {scoreModal.breakdown.total}%
+              </span>
+            </div>
+            {scoreModal.breakdown.total < 70 && (
+              <button
+                onClick={() => { setScoreModal(null); router.push("/artist/me?focus=improve"); }}
+                style={{ marginTop: 16, width: "100%", padding: "12px 0", background: "#1A1A1A", border: "none", color: "#FFFFFF", fontFamily: F, fontSize: 11, fontWeight: 600, letterSpacing: "0.1em", textTransform: "uppercase", cursor: "pointer" }}
+              >
+                {lang === "ko" ? "매칭 점수 높이기 →" : lang === "ja" ? "スコアを改善する →" : "Improve Match Score →"}
+              </button>
+            )}
+          </div>
+        </div>
+      )}
     </>
   );
 }
