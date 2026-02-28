@@ -58,7 +58,8 @@ export async function GET(req: Request) {
   const secret = process.env.CRON_SECRET;
   const url = new URL(req.url);
   const authHeader = req.headers.get("authorization") || "";
-  const provided = url.searchParams.get("secret") || req.headers.get("x-cron-secret") || "";
+  const authHeader = req.headers.get("authorization") || "";
+  const provided = url.searchParams.get("secret") || req.headers.get("x-cron-secret") || (authHeader.startsWith("Bearer ") ? authHeader.slice(7) : "") || "";
   const authorized =
     !secret ||
     authHeader === `Bearer ${secret}` ||
