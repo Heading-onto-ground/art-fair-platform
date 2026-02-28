@@ -44,9 +44,28 @@ export default function ArtistPublicClient() {
       <h1 style={{ fontFamily: S, fontSize: 40, fontWeight: 300, color: "#1A1A1A", marginTop: 8, marginBottom: 8 }}>
         {data.name}
       </h1>
-      <p style={{ fontFamily: F, fontSize: 11, color: "#B0AAA2", letterSpacing: "0.08em", marginBottom: 48 }}>
+      <p style={{ fontFamily: F, fontSize: 11, color: "#B0AAA2", letterSpacing: "0.08em", marginBottom: 32 }}>
         {artistId}
       </p>
+
+      {data.exhibitions.length > 0 && (() => {
+        const latest = data.exhibitions.reduce((a, b) =>
+          new Date(a.acceptedAt) > new Date(b.acceptedAt) ? a : b
+        );
+        return (
+          <div style={{ display: "inline-flex", alignItems: "center", gap: 10, marginBottom: 32, padding: "8px 14px", border: "1px solid #D4C9B8", background: "#FDFBF8" }}>
+            <span style={{ fontSize: 13, lineHeight: 1 }}>✦</span>
+            <div>
+              <p style={{ margin: 0, fontFamily: F, fontSize: 10, fontWeight: 600, color: "#8B7355", letterSpacing: "0.12em", textTransform: "uppercase" }}>
+                ROB Verified Exhibition History
+              </p>
+              <p style={{ margin: "2px 0 0", fontFamily: F, fontSize: 10, color: "#B0AAA2" }}>
+                Last updated: {new Date(latest.acceptedAt).toLocaleDateString()}
+              </p>
+            </div>
+          </div>
+        );
+      })()}
 
       {data.exhibitions.length === 0 ? (
         <p style={{ fontFamily: S, fontSize: 16, fontStyle: "italic", color: "#B0AAA2" }}>No exhibitions yet.</p>
