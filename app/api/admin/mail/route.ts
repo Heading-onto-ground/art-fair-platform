@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getAdminSession } from "@/lib/adminAuth";
 import { isValidEmail, sanitizeEmail, sanitizeText } from "@/lib/sanitize";
-import { sendPlatformEmail } from "@/lib/email";
+import { sendPlatformEmail, EmailAttachment } from "@/lib/email";
 import { prisma } from "@/lib/prisma";
 
 export const dynamic = "force-dynamic";
@@ -65,6 +65,12 @@ export async function POST(req: NextRequest) {
     const message = sanitizeText(String(body?.message || ""), 5000);
     const replyToRaw = String(body?.replyTo || "").trim();
     const replyTo = replyToRaw ? sanitizeEmail(replyToRaw) : "";
+    const attachments: EmailAttachment[] = Array.isArray(body?.attachments)
+      ? body.attachments
+          .filter((a: any) => a && typeof a.filename === "string" && typeof a.content === "string")
+          .map((a: any) => ({ filename: String(a.filename), content: String(a.content) }))
+          .slice(0, 3)
+      : [];
 
     if (!subject || !message) {
       return NextResponse.json({ error: "missing fields" }, { status: 400 });
@@ -123,6 +129,7 @@ export async function POST(req: NextRequest) {
         text,
         html,
         replyTo: replyTo || undefined,
+        attachments: attachments.length > 0 ? attachments : undefined,
         meta: {
           adminEmail: admin.email,
           targetMode: mode,
@@ -140,6 +147,7 @@ export async function POST(req: NextRequest) {
             text,
             html,
             replyTo: replyTo || undefined,
+            attachments: attachments.length > 0 ? attachments : undefined,
             meta: {
               adminEmail: admin.email,
               targetMode: mode,

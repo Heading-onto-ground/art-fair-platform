@@ -52,6 +52,20 @@ export default function AdminMailPage() {
     message: "",
     replyTo: "contact@rob-roleofbridge.com",
   });
+  const [attachments, setAttachments] = useState<Array<{ filename: string; content: string }>>([]);
+
+  function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const files = Array.from(e.target.files || []);
+    files.forEach((file) => {
+      const reader = new FileReader();
+      reader.onload = () => {
+        const base64 = (reader.result as string).split(",")[1];
+        setAttachments((prev) => [...prev, { filename: file.name, content: base64 }]);
+      };
+      reader.readAsDataURL(file);
+    });
+    e.target.value = "";
+  }
   const tr = (en: string, ko: string, ja: string, fr: string) =>
     lang === "ko" ? ko : lang === "ja" ? ja : lang === "fr" ? fr : en;
   const defaultArtistTemplate = {
@@ -298,6 +312,7 @@ export default function AdminMailPage() {
           recipientMode,
           roles,
           userIds: targetMode === "platform" ? selectedUserIds : undefined,
+          attachments: attachments.length > 0 ? attachments : undefined,
         }),
       });
       const data = await res.json().catch(() => null);
@@ -310,6 +325,7 @@ export default function AdminMailPage() {
         setResult(tr("Email sent successfully.", "이메일 발송 완료.", "メールを送信しました。", "Email envoye avec succes."));
       }
       setForm((p) => ({ ...p, subject: "", message: "", ...(targetMode === "manual" ? {} : { to: "" }) }));
+      setAttachments([]);
       await loadLogs();
     } catch (e: any) {
       setResult(e?.message || tr("Failed to send email.", "이메일 발송 실패.", "メール送信に失敗しました。", "Echec de l'envoi de l'email."));
@@ -575,6 +591,33 @@ export default function AdminMailPage() {
             {tr("Message", "메시지", "メッセージ", "Message")}
             <textarea value={form.message} onChange={(e) => setForm((p) => ({ ...p, message: e.target.value }))} style={{ ...inp, minHeight: 220, resize: "vertical" }} />
           </label>
+
+          <div style={{ display: "grid", gap: 6 }}>
+            <span style={{ fontFamily: F, fontSize: 11, color: "#8A8580", letterSpacing: "0.08em", textTransform: "uppercase" }}>
+              {tr("Attachments (PDF)", "첨부 파일 (PDF)", "添付ファイル (PDF)", "Pieces jointes (PDF)")}
+            </span>
+            <label style={{ display: "inline-flex", alignItems: "center", gap: 8, cursor: "pointer" }}>
+              <span style={{ border: "1px solid #E8E3DB", background: "#FAF8F4", padding: "7px 12px", fontFamily: F, fontSize: 10, letterSpacing: "0.08em", textTransform: "uppercase", color: "#4A4A4A" }}>
+                {tr("+ Add file", "+ 파일 추가", "+ ファイル追加", "+ Ajouter")}
+              </span>
+              <input type="file" accept=".pdf,application/pdf" multiple onChange={handleFileChange} style={{ display: "none" }} />
+            </label>
+            {attachments.length > 0 && (
+              <div style={{ display: "grid", gap: 4 }}>
+                {attachments.map((a, i) => (
+                  <div key={i} style={{ display: "flex", alignItems: "center", gap: 8, background: "#F5F1EB", padding: "6px 10px", border: "1px solid #E8E3DB" }}>
+                    <span style={{ fontFamily: F, fontSize: 11, color: "#1A1A1A", flex: 1 }}>{a.filename}</span>
+                    <button
+                      onClick={() => setAttachments((prev) => prev.filter((_, idx) => idx !== i))}
+                      style={{ border: "none", background: "none", cursor: "pointer", color: "#8A4A4A", fontFamily: F, fontSize: 11, padding: "0 4px" }}
+                    >
+                      ×
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
 
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
             <button

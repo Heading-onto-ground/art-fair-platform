@@ -280,6 +280,11 @@ export async function sendVerificationEmail(input: VerificationEmailInput): Prom
   });
 }
 
+export type EmailAttachment = {
+  filename: string;
+  content: string; // base64-encoded
+};
+
 export type PlatformEmailInput = {
   emailType?: string;
   to: string;
@@ -287,6 +292,7 @@ export type PlatformEmailInput = {
   text: string;
   html?: string;
   replyTo?: string;
+  attachments?: EmailAttachment[];
   meta?: Record<string, unknown>;
 };
 
@@ -297,6 +303,7 @@ export async function sendPlatformEmail(input: PlatformEmailInput): Promise<{ ok
   const text = String(input.text || "").trim();
   const html = String(input.html || "").trim() || undefined;
   const replyTo = String(input.replyTo || "").trim() || undefined;
+  const attachments = Array.isArray(input.attachments) && input.attachments.length > 0 ? input.attachments : undefined;
   const meta = input.meta || {};
 
   if (!to || !subject || !text) {
@@ -354,6 +361,7 @@ export async function sendPlatformEmail(input: PlatformEmailInput): Promise<{ ok
         text,
         html: html || undefined,
         reply_to: replyTo,
+        attachments: attachments || undefined,
       }),
     });
     const result = await res.json().catch(() => ({}));
