@@ -82,8 +82,12 @@ export function createSignedSessionValue(session: Session): string {
 
 /** ===== Profile helpers ===== */
 export async function getProfileByUserId(userId: string): Promise<Profile | null> {
-  const artist = await prisma.artistProfile.findUnique({ where: { userId } });
-  if (artist) return { ...artist, role: "artist" } as ArtistProfile;
+  const artists = await prisma.$queryRawUnsafe(
+    `SELECT *, COALESCE("notify_new_community_post", FALSE) AS "notify_new_community_post"
+     FROM "ArtistProfile" WHERE "userId" = $1 LIMIT 1`,
+    userId
+  ).catch(() => null) as any[] | null;
+  if (artists && artists[0]) return { ...artists[0], role: "artist" } as ArtistProfile;
   const gallery = await prisma.galleryProfile.findUnique({ where: { userId } });
   if (gallery) return { ...gallery, role: "gallery" } as GalleryProfile;
   return null;
