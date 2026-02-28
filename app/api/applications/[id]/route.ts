@@ -7,6 +7,39 @@ import {
 } from "@/app/data/applications";
 import { getOpenCallById } from "@/app/data/openCalls";
 import { createChatRoom, sendMessage } from "@/lib/chat";
+import { prisma } from "@/lib/prisma";
+
+async function recordExhibition(app: Awaited<ReturnType<typeof getApplicationById>>, openCall: Awaited<ReturnType<typeof getOpenCallById>>) {
+  if (!app || !openCall) return;
+  try {
+    await prisma.$executeRawUnsafe(`
+      CREATE TABLE IF NOT EXISTS artist_exhibitions (
+        id TEXT PRIMARY KEY,
+        "artistId" TEXT NOT NULL,
+        "openCallId" TEXT NOT NULL,
+        "galleryName" TEXT NOT NULL,
+        theme TEXT NOT NULL,
+        country TEXT NOT NULL DEFAULT '',
+        city TEXT NOT NULL DEFAULT '',
+        "externalUrl" TEXT,
+        "acceptedAt" TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+        UNIQUE("artistId", "openCallId")
+      )
+    `);
+    const id = `ex_${app.artistId}_${app.openCallId}`.replace(/[^a-z0-9_]/gi, "_").slice(0, 80);
+    await prisma.$executeRawUnsafe(
+      `INSERT INTO artist_exhibitions (id, "artistId", "openCallId", "galleryName", theme, country, city, "externalUrl")
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+       ON CONFLICT ("artistId", "openCallId") DO NOTHING`,
+      id, app.artistId, app.openCallId,
+      openCall.gallery, openCall.theme,
+      openCall.country || "", openCall.city || "",
+      openCall.externalUrl || null
+    );
+  } catch (e) {
+    console.error("recordExhibition failed (non-blocking):", e);
+  }
+}
 
 export const dynamic = "force-dynamic";
 
@@ -95,6 +128,7 @@ export async function PATCH(
             ? `✅ オープンコールに合格しました。配送情報をご確認ください。`
             : `✅ Your application was accepted. Please confirm shipping details.`;
         await sendMessage(roomId, session.userId, "gallery", msg);
+        await recordExhibition(app, openCall);
       }
 
       return NextResponse.json({ application: updated }, { status: 200 });

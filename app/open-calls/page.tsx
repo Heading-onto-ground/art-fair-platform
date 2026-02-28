@@ -31,6 +31,30 @@ function normalizeCountry(input: string): string {
   return v;
 }
 
+function computeMatchScore(profile: any, oc: OpenCall): number {
+  if (!profile) return 0;
+  let score = 0;
+  // Country match: 35pts
+  if (profile.country && normalizeCountry(profile.country) === normalizeCountry(oc.country)) score += 35;
+  // Genre keyword in theme/description: 40pts
+  const genre = String(profile.genre || "").toLowerCase().trim();
+  if (genre) {
+    const haystack = `${oc.theme} ${oc.galleryDescription || ""}`.toLowerCase();
+    const words = genre.split(/\s+/).filter((w: string) => w.length > 2);
+    const matched = words.filter((w: string) => haystack.includes(w));
+    if (matched.length > 0) score += Math.round(40 * matched.length / Math.max(words.length, 1));
+  }
+  // City match: 15pts
+  if (profile.city && oc.city && profile.city.toLowerCase() === oc.city.toLowerCase()) score += 15;
+  // Bio keyword overlap with theme: 10pts
+  const bio = String(profile.bio || "").toLowerCase();
+  if (bio) {
+    const themeWords = oc.theme.toLowerCase().split(/\s+/).filter((w: string) => w.length > 3);
+    if (themeWords.some((w: string) => bio.includes(w))) score += 10;
+  }
+  return Math.min(score, 100);
+}
+
 export default function OpenCallsPage() {
   const router = useRouter();
   const { data, error, isLoading, mutate } = useFetch<{ openCalls: OpenCall[] }>("/api/open-calls");
@@ -39,6 +63,7 @@ export default function OpenCallsPage() {
   const [showSignup, setShowSignup] = useState(false);
   const [isLoggedIn, setIsLoggedIn] = useState(true);
   const [preferredCountry, setPreferredCountry] = useState("");
+  const [artistProfile, setArtistProfile] = useState<any>(null);
   const [hasAutoSelectedCountry, setHasAutoSelectedCountry] = useState(false);
   const [translatedById, setTranslatedById] = useState<
     Record<string, { theme?: string; galleryDescription?: string }>
@@ -59,6 +84,7 @@ export default function OpenCallsPage() {
       .then((data: MeResponse) => {
         setIsLoggedIn(!!data?.session);
         setPreferredCountry((data?.profile?.country ?? "").trim());
+        if (data?.session?.role === "artist") setArtistProfile(data?.profile ?? null);
       })
       .catch(() => {
         setIsLoggedIn(false);
@@ -315,6 +341,19 @@ export default function OpenCallsPage() {
                     )}
                   </div>
                   <div style={{ textAlign: "right", flexShrink: 0, marginLeft: 24 }}>
+                    {artistProfile && (() => {
+                      const score = computeMatchScore(artistProfile, o);
+                      if (score === 0) return null;
+                      const color = score >= 70 ? "#3D6B3D" : score >= 40 ? "#7A6030" : "#8A8580";
+                      const bg = score >= 70 ? "rgba(61,107,61,0.08)" : score >= 40 ? "rgba(122,96,48,0.08)" : "rgba(138,133,128,0.08)";
+                      return (
+                        <div style={{ marginBottom: 8, padding: "4px 10px", background: bg, border: `1px solid ${color}22`, display: "inline-block" }}>
+                          <span style={{ fontFamily: F, fontSize: 10, fontWeight: 600, color, letterSpacing: "0.06em" }}>
+                            {score}% {lang === "ko" ? "매칭" : lang === "ja" ? "マッチ" : "Match"}
+                          </span>
+                        </div>
+                      );
+                    })()}
                     <span style={{ fontFamily: F, fontSize: 9, fontWeight: 500, letterSpacing: "0.1em", textTransform: "uppercase", color: "#B0AAA2" }}>
                       {lang === "ko" ? "작가 지원 마감일" : t("deadline", lang)}
                     </span>
