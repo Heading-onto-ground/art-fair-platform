@@ -233,6 +233,7 @@ export async function POST(req: Request) {
     let emailSent = false;
     let outreachReason: string | null = null;
     let outreachTargetEmail: string | null = null;
+    let outreachInstagram: string | null = null;
 
     stage = "session";
     const session = getServerSession();
@@ -389,7 +390,6 @@ export async function POST(req: Request) {
       outreachTargetEmail = canSendOutreach ? targetEmail : null;
 
       // instagram fallback: fetch from ExternalGalleryDirectory if email missing
-      let outreachInstagram: string | null = null;
       if (!canSendOutreach) {
         try {
           const dirRow = (await prisma.$queryRawUnsafe(
