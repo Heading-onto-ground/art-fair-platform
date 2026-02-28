@@ -37,6 +37,7 @@ export default function ArtistMePage() {
   const [notifyPost, setNotifyPost] = useState(false);
   const [file, setFile] = useState<File | null>(null); const [uploading, setUploading] = useState(false); const [uploadMsg, setUploadMsg] = useState<string | null>(null);
   const [applications, setApplications] = useState<Application[]>([]); const [openCallMap, setOpenCallMap] = useState<Record<string, OpenCall>>({}); const [invites, setInvites] = useState<Invite[]>([]);
+  const [exhibitions, setExhibitions] = useState<any[]>([]); const [exPublic, setExPublic] = useState(false); const [exArtistId, setExArtistId] = useState<string | null>(null); const [exCopied, setExCopied] = useState(false); const [exToggling, setExToggling] = useState(false);
 
   const loadMe = async () => {
     setLoadingMe(true);
@@ -84,10 +85,12 @@ export default function ArtistMePage() {
   };
 
   useEffect(() => { loadMe(); }, [isAdminView, adminUserId]);
-  useEffect(() => { if (!me?.session || adminReadOnly) return; loadApplications(); loadInvites(); }, [me?.session?.userId, adminReadOnly]);
+  useEffect(() => { if (!me?.session || adminReadOnly) return; loadApplications(); loadInvites(); loadExhibitions(); }, [me?.session?.userId, adminReadOnly]);
 
   const loadApplications = async () => { const [appsRes, ocRes] = await Promise.all([fetch("/api/applications", { cache: "default", credentials: "include" }), fetch("/api/open-calls", { cache: "default" })]); const appsJson = await appsRes.json().catch(() => null); const ocJson = await ocRes.json().catch(() => null); const map: Record<string, OpenCall> = {}; for (const oc of ocJson?.openCalls ?? []) map[oc.id] = oc; setOpenCallMap(map); setApplications(appsJson?.applications ?? []); };
   const loadInvites = async () => { const res = await fetch("/api/artist/invites", { cache: "default", credentials: "include" }); const data = await res.json().catch(() => null); if (res.ok) setInvites(data?.invites ?? []); };
+  const loadExhibitions = async () => { const res = await fetch("/api/artist/exhibitions", { credentials: "include" }); const data = await res.json().catch(() => null); if (data) { setExhibitions(data.exhibitions ?? []); setExPublic(!!data.exhibitionsPublic); setExArtistId(data.artistId ?? null); } };
+  const toggleExPublic = async () => { if (exToggling) return; setExToggling(true); const next = !exPublic; setExPublic(next); await fetch("/api/artist/exhibitions", { method: "PATCH", headers: { "Content-Type": "application/json" }, credentials: "include", body: JSON.stringify({ exhibitionsPublic: next }) }).catch(() => setExPublic(!next)); setExToggling(false); };
   const updateInviteStatus = async (id: string, status: string) => { if (adminReadOnly) return; const res = await fetch("/api/artist/invites", { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ id, status }) }); const data = await res.json().catch(() => null); if (res.ok && data?.invite) setInvites((p) => p.map((i) => (i.id === id ? data.invite : i))); };
 
   const canSave = useMemo(() => name.trim() && artistId.trim() && startedYear.trim() && genre.trim() && country.trim() && city.trim(), [name, artistId, startedYear, genre, country, city]);
@@ -207,6 +210,49 @@ export default function ArtistMePage() {
               )}
             </Section>
 
+            {/* Exhibition History */}
+            <Section number="05" title={lang === "ko" ? "전시 이력" : lang === "ja" ? "展示履歴" : "Exhibition History"}>
+              {exhibitions.length === 0 ? (
+                <p style={{ fontFamily: F, fontSize: 13, color: "#B0AAA2" }}>
+                  {lang === "ko" ? "합격된 오픈콜이 여기에 자동으로 기록됩니다." : "Accepted open calls are recorded here automatically."}
+                </p>
+              ) : (
+                <div style={{ display: "grid", gap: 1, background: "#E8E3DB", marginBottom: 20 }}>
+                  {exhibitions.map((ex: any, i: number) => (
+                    <div key={ex.id} style={{ background: "#FFFFFF", padding: "16px 20px", display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 12 }}>
+                      <div>
+                        <span style={{ fontFamily: F, fontSize: 10, letterSpacing: "0.08em", textTransform: "uppercase", color: "#8B7355" }}>{ex.country} / {ex.city}</span>
+                        <p style={{ fontFamily: S, fontSize: 16, fontWeight: 400, color: "#1A1A1A", margin: "4px 0 2px" }}>{ex.galleryName}</p>
+                        <p style={{ fontFamily: F, fontSize: 12, color: "#6A6660", margin: 0 }}>{ex.theme}</p>
+                      </div>
+                      <div style={{ textAlign: "right", flexShrink: 0 }}>
+                        <span style={{ fontFamily: F, fontSize: 9, letterSpacing: "0.08em", textTransform: "uppercase", color: "#B0AAA2" }}>{lang === "ko" ? "합격일" : "Accepted"}</span>
+                        <p style={{ fontFamily: S, fontSize: 13, color: "#1A1A1A", margin: "3px 0 0" }}>{ex.acceptedAt ? new Date(ex.acceptedAt).toLocaleDateString() : "-"}</p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, flexWrap: "wrap" }}>
+                <label style={{ display: "flex", alignItems: "center", gap: 10, cursor: "pointer", fontFamily: F, fontSize: 12, color: "#1A1A1A" }}>
+                  <button onClick={toggleExPublic} disabled={exToggling} style={{ flexShrink: 0, width: 40, height: 22, borderRadius: 11, border: "none", background: exPublic ? "#1A1A1A" : "#D8D3CB", cursor: "pointer", position: "relative" }}>
+                    <span style={{ position: "absolute", top: 2, left: exPublic ? 20 : 2, width: 18, height: 18, borderRadius: "50%", background: "#FFFFFF", transition: "left 0.15s" }} />
+                  </button>
+                  {lang === "ko" ? "전시 이력 공개" : "Make exhibition history public"}
+                </label>
+                {exPublic && exArtistId && (
+                  <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                    <span style={{ fontFamily: F, fontSize: 11, color: "#8B7355" }}>
+                      {typeof window !== "undefined" ? `${window.location.origin}/artist/public/${exArtistId}` : `/artist/public/${exArtistId}`}
+                    </span>
+                    <button onClick={() => { navigator.clipboard.writeText(`${window.location.origin}/artist/public/${exArtistId}`); setExCopied(true); setTimeout(() => setExCopied(false), 2000); }} style={{ padding: "5px 12px", border: "1px solid #C8B4A0", background: "#FFFFFF", fontFamily: F, fontSize: 10, fontWeight: 600, color: exCopied ? "#3D6B3D" : "#8B7355", letterSpacing: "0.08em", textTransform: "uppercase", cursor: "pointer" }}>
+                      {exCopied ? (lang === "ko" ? "복사됨 ✓" : "Copied ✓") : (lang === "ko" ? "복사" : "Copy")}
+                    </button>
+                  </div>
+                )}
+              </div>
+            </Section>
+
             {/* Notifications */}
             <Section number="06" title="Notifications">
               <label style={{ display: "flex", alignItems: "center", gap: 12, cursor: "pointer", fontFamily: F, fontSize: 13, color: "#1A1A1A" }}>
@@ -216,7 +262,7 @@ export default function ArtistMePage() {
             </Section>
 
             {/* Invites */}
-            <Section number="05" title={t("profile_invites", lang)}>
+            <Section number="07" title={t("profile_invites", lang)}>
               {invites.length === 0 ? <p style={{ fontFamily: F, fontSize: 13, color: "#B0AAA2" }}>{t("profile_no_invites", lang)}</p> : (
                 <div style={{ display: "grid", gap: 1, background: "#E8E3DB" }}>
                   {invites.map((i) => (
