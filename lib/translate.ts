@@ -80,7 +80,7 @@ const dictionary: Dictionary = {
   home_artist_feat2: { en: "Portfolio hosting", ko: "포트폴리오 호스팅", ja: "ポートフォリオホスティング", fr: "Hébergement de portfolio" },
   home_artist_feat3: { en: "Direct messaging with galleries", ko: "갤러리와 다이렉트 메시지", ja: "ギャラリーとのダイレクトメッセージ", fr: "Messagerie directe avec les galeries" },
   home_artist_feat4: { en: "Find collaboration partners", ko: "콜라보 작가 찾기", ja: "コラボアーティストを探す", fr: "Trouver des partenaires de collaboration" },
-  home_artist_feat5: { en: "Share daily life & studio", ko: "작가들 생활 공유", ja: "日常をシェア", fr: "Partager la vie quotidienne" },
+  home_artist_feat5: { en: "Auto-manage artist activity history", ko: "작가 활동 이력 자동 관리", ja: "活動履歴の自動管理", fr: "Gestion automatique de l'historique" },
   home_artist_feat6: { en: "Community & networking", ko: "커뮤니티 활동", ja: "コミュニティ活動", fr: "Communauté & réseautage" },
   home_artist_feat7: { en: "Shipment tracking", ko: "배송 추적", ja: "配送追跡", fr: "Suivi d'expédition" },
   home_gallery_feat1: { en: "Publish open calls", ko: "오픈콜 게시", ja: "オープンコールを公開", fr: "Publiez des appels" },

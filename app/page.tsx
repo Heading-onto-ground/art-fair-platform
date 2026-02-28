@@ -87,7 +87,7 @@ export default function Home() {
       {/* Role Cards */}
       <section style={{ padding: "60px 24px", background: "#F5F1EB" }}>
         <div className="role-grid" style={{ maxWidth: 900, margin: "0 auto", display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: 1, background: "#E8E3DB", alignItems: "stretch" }}>
-          <RoleCard href="/login?role=artist" label={t("home_for_artists", lang)} title={t("home_artist_title", lang)} features={[t("home_artist_feat1", lang), t("home_artist_feat2", lang), t("home_artist_feat3", lang), t("home_artist_feat4", lang), t("home_artist_feat5", lang), t("home_artist_feat6", lang), t("home_artist_feat7", lang)]} lang={lang} />
+          <RoleCard href="/login?role=artist" label={t("home_for_artists", lang)} title={t("home_artist_title", lang)} features={[t("home_artist_feat1", lang), t("home_artist_feat2", lang), t("home_artist_feat3", lang), t("home_artist_feat5", lang), t("home_artist_feat6", lang), t("home_artist_feat7", lang)]} lang={lang} />
           <RoleCard href="/login?role=gallery" label={t("home_for_galleries", lang)} title={t("home_gallery_title", lang)} features={[t("home_gallery_feat1", lang), t("home_gallery_feat2", lang), t("home_gallery_feat3", lang), t("home_gallery_feat4", lang), t("home_gallery_feat5", lang)]} lang={lang} />
         </div>
       </section>

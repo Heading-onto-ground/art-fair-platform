@@ -22,6 +22,11 @@ export default function ArtistPublicClient() {
       .then(r => r.ok ? r.json() : null)
       .then(d => { if (!d || d.error) setNotFound(true); else setData(d); })
       .catch(() => setNotFound(true));
+    fetch("/api/metrics/public-view", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ artistId }),
+    }).catch(() => {});
   }, [artistId]);
 
   if (notFound) {
