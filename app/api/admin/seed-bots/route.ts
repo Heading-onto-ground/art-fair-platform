@@ -39,7 +39,7 @@ export async function POST() {
     if (existing) continue;
 
     const user = await prisma.user.create({
-      data: { email: bot.email, passwordHash: pw, role: "artist", isVerified: true },
+      data: { email: bot.email, passwordHash: pw, role: "artist" },
     });
     await prisma.artistProfile.create({
       data: {
