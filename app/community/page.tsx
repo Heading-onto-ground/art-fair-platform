@@ -191,26 +191,40 @@ export default function CommunityPage() {
     // Mark loading
     setTranslations((prev) => ({ ...prev, [postId]: { loading: true } }));
     try {
-      // Batch all texts: [title, content, ...commentContents]
-      const allTexts = [post.title, post.content, ...post.comments.map((c) => c.content)];
-      const res = await fetch("/api/translate", {
+        const res = await fetch("/api/translate", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ texts: allTexts, targetLang: lang }),
+        body: JSON.stringify({ texts: [post.title, post.content], targetLang: lang }),
       });
       const data = await res.json().catch(() => null);
-      const translated: string[] = data?.translated || allTexts;
-
-      const tComments: Record<string, string> = {};
-      post.comments.forEach((c, i) => { tComments[c.id] = translated[2 + i] || c.content; });
-
+      const translated: string[] = data?.translated || [post.title, post.content];
       setTranslations((prev) => ({
         ...prev,
-        [postId]: { title: translated[0], content: translated[1], comments: tComments, loading: false },
+        [postId]: { ...prev[postId], title: translated[0], content: translated[1], loading: false },
       }));
     } catch (e) {
       console.error("Translation failed:", e);
       setTranslations((prev) => ({ ...prev, [postId]: { loading: false } }));
+    }
+  }
+
+  async function translateComment(postId: string, comment: Comment) {
+    if (translations[postId]?.comments?.[comment.id]) {
+      setTranslations((prev) => {
+        const next = { ...prev, [postId]: { ...prev[postId], comments: { ...prev[postId]?.comments } } };
+        delete next[postId].comments![comment.id];
+        return next;
+      });
+      return;
+    }
+    setTranslations((prev) => ({ ...prev, [postId]: { ...prev[postId], loading: true } }));
+    try {
+      const res = await fetch("/api/translate", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ texts: [comment.content], targetLang: lang }) });
+      const data = await res.json().catch(() => null);
+      const translated = data?.translated?.[0] || comment.content;
+      setTranslations((prev) => ({ ...prev, [postId]: { ...prev[postId], loading: false, comments: { ...prev[postId]?.comments, [comment.id]: translated } } }));
+    } catch {
+      setTranslations((prev) => ({ ...prev, [postId]: { ...prev[postId], loading: false } }));
     }
   }
 
@@ -645,7 +659,7 @@ export default function CommunityPage() {
                               </p>
                               <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
                                 <button
-                                  onClick={() => translatePost(post)}
+                                  onClick={() => translateComment(post.id, comment)}
                                   disabled={translations[post.id]?.loading}
                                   style={{ background: "none", border: "none", fontFamily: F, fontSize: 10, color: translations[post.id]?.comments?.[comment.id] ? "#8B7355" : "#B0AAA2", cursor: "pointer", padding: 0 }}
                                 >
