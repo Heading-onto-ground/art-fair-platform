@@ -639,15 +639,24 @@ export default function CommunityPage() {
                                 <button onClick={() => setEditingCommentId(null)} style={{ padding: "8px 14px", background: "transparent", color: "#8A8580", border: "1px solid #E8E3DB", fontFamily: F, fontSize: 10, cursor: "pointer" }}>취소</button>
                               </div>
                             ) : (
-                              <p style={{ fontFamily: F, fontSize: 12, color: "#4A4A4A", lineHeight: 1.6, margin: 0 }}>
+                              <p style={{ fontFamily: F, fontSize: 12, color: "#4A4A4A", lineHeight: 1.6, margin: "0 0 4px" }}>
                                 {translations[post.id]?.comments?.[comment.id] || comment.content}
-                                {session?.userId === comment.authorId && (
-                                  <span style={{ marginLeft: 10 }}>
-                                    <button onClick={() => { setEditingCommentId(comment.id); setEditingCommentText(comment.content); }} style={{ background: "none", border: "none", fontFamily: F, fontSize: 10, color: "#B0AAA2", cursor: "pointer" }}>수정</button>
-                                    <button onClick={() => handleDeleteComment(post.id, comment.id)} style={{ background: "none", border: "none", fontFamily: F, fontSize: 10, color: "#B0AAA2", cursor: "pointer", marginLeft: 6 }}>삭제</button>
-                                  </span>
-                                )}
                               </p>
+                              <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                                <button
+                                  onClick={() => translatePost(post)}
+                                  disabled={translations[post.id]?.loading}
+                                  style={{ background: "none", border: "none", fontFamily: F, fontSize: 10, color: translations[post.id]?.comments?.[comment.id] ? "#8B7355" : "#B0AAA2", cursor: "pointer", padding: 0 }}
+                                >
+                                  {translations[post.id]?.loading ? (lang === "ko" ? "번역 중..." : "...") : translations[post.id]?.comments?.[comment.id] ? (lang === "ko" ? "원문" : "Original") : "🌐"}
+                                </button>
+                                {session?.userId === comment.authorId && (
+                                  <>
+                                    <button onClick={() => { setEditingCommentId(comment.id); setEditingCommentText(comment.content); }} style={{ background: "none", border: "none", fontFamily: F, fontSize: 10, color: "#B0AAA2", cursor: "pointer" }}>수정</button>
+                                    <button onClick={() => handleDeleteComment(post.id, comment.id)} style={{ background: "none", border: "none", fontFamily: F, fontSize: 10, color: "#B0AAA2", cursor: "pointer" }}>삭제</button>
+                                  </>
+                                )}
+                              </div>
                             )}
                           </div>
                         ))}
