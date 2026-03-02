@@ -23,7 +23,7 @@ const BOT_EMAILS = [
   "oliver.b.bot@rob-roleofbridge.com",
 ];
 
-const POOL = [
+const POOL: { category: string; title: string; content: string }[] = [
   { category: "find_collab", title: "Looking for a collab partner for a group show", content: "Hi everyone! I'm working on a small group exhibition planned for later this year and looking for 1–2 artists to join. My work is mostly photography-based. Would love to connect with painters or mixed media artists. DM me or leave a comment!" },
   { category: "art_chat", title: "How do you price your work?", content: "Pricing has always been tricky for me. I've been going by size + materials, but I feel like it doesn't always reflect the time invested. How do you all approach this? Would love to hear different methods." },
   { category: "find_exhibit", title: "Anyone interested in a joint booth at an art fair?", content: "I'm considering applying to a mid-sized art fair this autumn and thought sharing a booth could reduce costs. My work is sculpture-based. Open to artists from any discipline. Let me know if you're interested!" },
@@ -36,7 +36,7 @@ const POOL = [
   { category: "find_collab", title: "Collab idea: art + sound installation", content: "I work with visual and spatial installation and I've been wanting to collaborate with a musician or sound artist. The idea is a small site-specific piece — nothing too ambitious for a start. Anyone working in sound and open to exploring this?" },
 ];
 
-const COMMENTS = [
+const COMMENTS: string[] = [
   "This really resonates with me. Thanks for sharing!",
   "Would love to connect — I'm working on something similar.",
   "Great idea. I've been thinking about this too.",
@@ -59,32 +59,33 @@ function pickTwo<T>(arr: T[]): [T, T] {
   return [arr[i], arr[j]];
 }
 
-// GET — return bot users status + recent bot posts
+type BotUser = { id: string; email: string; artistProfile: { name: string } | null };
+type RecentPost = { id: string; authorId: string; authorName: string; category: string; title: string; createdAt: Date };
+type SlimPost = { id: string; authorId: string };
+
 export async function GET() {
   if (!(await checkAuth())) return NextResponse.json({ error: "unauthorized" }, { status: 401 });
 
-  type BotUser = { id: string; email: string; artistProfile: { name: string } | null };
-  const botUsers: BotUser[] = await prisma.user.findMany({
+  const botUsers = (await prisma.user.findMany({
     where: { email: { in: BOT_EMAILS } },
     select: { id: true, email: true, artistProfile: { select: { name: true } } },
-  });
+  })) as BotUser[];
 
-  const botIds = botUsers.map((u) => u.id);
+  const botIds = botUsers.map((u: BotUser) => u.id);
 
-  type BotPost = { id: string; authorId: string; authorName: string; category: string; title: string; createdAt: Date };
-  const recentPosts: BotPost[] = botIds.length
+  const recentPosts = (botIds.length
     ? await prisma.communityPost.findMany({
         where: { authorId: { in: botIds } },
         orderBy: { createdAt: "desc" },
         take: 30,
         select: { id: true, authorId: true, authorName: true, category: true, title: true, createdAt: true },
       })
-    : [];
+    : []) as RecentPost[];
 
   return NextResponse.json({
     botsExist: botUsers.length,
-    bots: botUsers.map((u) => ({ email: u.email, name: u.artistProfile?.name ?? null, id: u.id })),
-    recentPosts: recentPosts.map((p) => ({
+    bots: botUsers.map((u: BotUser) => ({ email: u.email, name: u.artistProfile?.name ?? null, id: u.id })),
+    recentPosts: recentPosts.map((p: RecentPost) => ({
       id: p.id,
       authorName: p.authorName,
       category: p.category,
@@ -94,7 +95,6 @@ export async function GET() {
   });
 }
 
-// POST — manually trigger the bot run
 export async function POST() {
   if (!(await checkAuth())) return NextResponse.json({ error: "unauthorized" }, { status: 401 });
 
@@ -112,23 +112,24 @@ export async function POST() {
       authorId: user.id,
       authorName: user.artistProfile.name,
       authorRole: "artist",
-      category: item.category as any,
+      category: item.category as "find_collab" | "art_chat" | "find_exhibit" | "meetup",
       title: item.title,
       content: item.content,
     });
     results.push({ bot: user.artistProfile.name, title: item.title });
   }
 
-  const botIds = (
-    await prisma.user.findMany({ where: { email: { in: BOT_EMAILS } }, select: { id: true } }) as { id: string }[]
-  ).map((u) => u.id);
+  const botIds = (await prisma.user.findMany({
+    where: { email: { in: BOT_EMAILS } },
+    select: { id: true },
+  }) as { id: string }[]).map((u: { id: string }) => u.id);
 
-  const recentPosts = await prisma.communityPost.findMany({
+  const recentPosts = (await prisma.communityPost.findMany({
     where: { authorId: { in: botIds } },
     orderBy: { createdAt: "desc" },
     take: 20,
     select: { id: true, authorId: true },
-  });
+  })) as SlimPost[];
 
   for (const botEmail of [email1, email2]) {
     const commenter = await prisma.user.findUnique({
@@ -136,7 +137,7 @@ export async function POST() {
       include: { artistProfile: true },
     });
     if (!commenter || !commenter.artistProfile) continue;
-    const eligible = recentPosts.filter((p) => p.authorId !== commenter.id);
+    const eligible = recentPosts.filter((p: SlimPost) => p.authorId !== commenter.id);
     if (!eligible.length) continue;
     const target = pick(eligible);
     await addComment({
