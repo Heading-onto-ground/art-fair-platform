@@ -1,14 +1,10 @@
 import { NextResponse } from "next/server";
-import { cookies } from "next/headers";
 import { prisma } from "@/lib/prisma";
 import { createPost, addComment } from "@/app/data/community";
+import { getAdminSession } from "@/lib/adminAuth";
 
-const ADMIN_TOKEN = process.env.ADMIN_TOKEN ?? "rob-admin-2025";
-
-async function checkAuth() {
-  const store = await cookies();
-  return store.get("admin_token")?.value === ADMIN_TOKEN;
-}
+export const runtime = "nodejs";
+export const dynamic = "force-dynamic";
 
 const BOT_EMAILS = [
   "yuna.kim.bot@rob-roleofbridge.com",
@@ -64,7 +60,7 @@ type RecentPost = { id: string; authorId: string; authorName: string; category: 
 type SlimPost = { id: string; authorId: string };
 
 export async function GET() {
-  if (!(await checkAuth())) return NextResponse.json({ error: "unauthorized" }, { status: 401 });
+  if (!getAdminSession()) return NextResponse.json({ error: "unauthorized" }, { status: 401 });
 
   const botUsers = (await prisma.user.findMany({
     where: { email: { in: BOT_EMAILS } },
@@ -96,7 +92,7 @@ export async function GET() {
 }
 
 export async function POST() {
-  if (!(await checkAuth())) return NextResponse.json({ error: "unauthorized" }, { status: 401 });
+  if (!getAdminSession()) return NextResponse.json({ error: "unauthorized" }, { status: 401 });
 
   const [email1, email2] = pickTwo(BOT_EMAILS);
   const results: { bot: string; title: string }[] = [];
