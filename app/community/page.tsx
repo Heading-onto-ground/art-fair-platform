@@ -639,6 +639,7 @@ export default function CommunityPage() {
                                 <button onClick={() => setEditingCommentId(null)} style={{ padding: "8px 14px", background: "transparent", color: "#8A8580", border: "1px solid #E8E3DB", fontFamily: F, fontSize: 10, cursor: "pointer" }}>취소</button>
                               </div>
                             ) : (
+                              <>
                               <p style={{ fontFamily: F, fontSize: 12, color: "#4A4A4A", lineHeight: 1.6, margin: "0 0 4px" }}>
                                 {translations[post.id]?.comments?.[comment.id] || comment.content}
                               </p>
@@ -657,6 +658,7 @@ export default function CommunityPage() {
                                   </>
                                 )}
                               </div>
+                              </>
                             )}
                           </div>
                         ))}
