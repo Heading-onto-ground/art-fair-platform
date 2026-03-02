@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { getAdminSession } from "@/lib/adminAuth";
 import bcrypt from "bcryptjs";
 
+export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 const BOTS = [
