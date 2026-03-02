@@ -20,16 +20,16 @@ const BOT_EMAILS = [
 ];
 
 const POOL: { category: string; title: string; content: string }[] = [
-  { category: "find_collab", title: "Looking for a collab partner for a group show", content: "Hi everyone! I'm working on a small group exhibition planned for later this year and looking for 1–2 artists to join. My work is mostly photography-based. Would love to connect with painters or mixed media artists. DM me or leave a comment!" },
   { category: "art_chat", title: "How do you price your work?", content: "Pricing has always been tricky for me. I've been going by size + materials, but I feel like it doesn't always reflect the time invested. How do you all approach this? Would love to hear different methods." },
-  { category: "find_exhibit", title: "Anyone interested in a joint booth at an art fair?", content: "I'm considering applying to a mid-sized art fair this autumn and thought sharing a booth could reduce costs. My work is sculpture-based. Open to artists from any discipline. Let me know if you're interested!" },
   { category: "art_chat", title: "What's your studio routine like?", content: "I've been trying to build a more consistent studio practice. Currently working mornings only but struggling with focus. Curious how others structure their day — especially if you balance a day job too." },
-  { category: "find_collab", title: "Open call: artists for a zine project", content: "I'm putting together a small art zine around the theme of 'in-between spaces'. Looking for 4–5 contributors. Any medium welcome — illustrations, photos, short texts. No budget unfortunately, but each contributor gets copies. Comment if interested!" },
   { category: "art_chat", title: "Thoughts on artist statements?", content: "I find writing my artist statement genuinely difficult. Mine feels either too vague or too literal. Does anyone have a process that works for them? Or examples that inspired you?" },
-  { category: "meetup", title: "Anyone in Seoul want to do a studio visit exchange?", content: "I'm based in Seoul and would love to visit other artists' studios — and welcome visits to mine. I think there's a lot of value in seeing how others work outside of gallery settings. Anyone interested?" },
-  { category: "find_exhibit", title: "Seeking artists for a residency group application", content: "There's a residency program accepting group applications of 2–3 artists. Deadline is next month. My practice is painting. Looking for someone to apply with — ideally with complementary work. Message me for details." },
   { category: "art_chat", title: "How do you handle rejection from open calls?", content: "I've been applying to open calls seriously for about two years now and the rejection rate is high, as expected. But I'm curious — how do others stay motivated? Do you keep a log, adjust your application strategy, or just keep going?" },
-  { category: "find_collab", title: "Collab idea: art + sound installation", content: "I work with visual and spatial installation and I've been wanting to collaborate with a musician or sound artist. The idea is a small site-specific piece — nothing too ambitious for a start. Anyone working in sound and open to exploring this?" },
+  { category: "art_chat", title: "What inspires your practice lately?", content: "I've been going through a bit of a creative block and curious what's been fueling others. Is it travel, other artists, everyday life? Would love to hear what's been moving your work forward recently." },
+  { category: "art_chat", title: "Do you share work-in-progress online?", content: "I've been debating whether to share more of my process on Instagram — sketches, studio mess, half-finished pieces. Some artists seem very open about it, others only share finished work. What's your approach?" },
+  { category: "art_chat", title: "How do you title your works?", content: "Titling has always been one of the harder parts for me. Sometimes the title comes first, sometimes it's an afterthought. I've been experimenting with letting the material or process suggest the name. How does everyone else approach it?" },
+  { category: "art_chat", title: "Gallery vs. self-representation — what's your experience?", content: "I've been showing mostly independently for the past few years and recently started working with a small gallery. The dynamics are quite different. Curious to hear from others who've done both — what have you learned?" },
+  { category: "art_chat", title: "How long do you spend on a single piece?", content: "I've noticed my time per work varies a lot — some pieces take a day, others take months. I'm wondering if others have a natural rhythm or if it varies by project. Do you set deadlines for yourself?" },
+  { category: "art_chat", title: "What does your archive practice look like?", content: "I've been trying to get more systematic about documenting and archiving older work — photos, notes, storage. It's a lot more than I expected. Anyone have a system they'd recommend or lessons learned the hard way?" },
 ];
 
 const COMMENTS: string[] = [
@@ -89,6 +89,14 @@ export async function GET() {
       createdAt: p.createdAt instanceof Date ? p.createdAt.getTime() : Number(p.createdAt),
     })),
   });
+}
+
+export async function DELETE() {
+  if (!getAdminSession()) return NextResponse.json({ error: "unauthorized" }, { status: 401 });
+  const result = await prisma.communityPost.deleteMany({
+    where: { category: { in: ["find_exhibit", "find_collab", "meetup"] } },
+  });
+  return NextResponse.json({ ok: true, deleted: result.count });
 }
 
 export async function POST() {

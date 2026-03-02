@@ -45,7 +45,6 @@ const CATEGORIES = [
   { key: "find_collab", emoji: "🎭" },
   { key: "art_chat", emoji: "🎨" },
   { key: "meetup", emoji: "📍" },
-  { key: "find_exhibit", emoji: "🏛️" },
 ];
 
 export default function CommunityPage() {

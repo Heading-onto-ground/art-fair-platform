@@ -30,6 +30,7 @@ export default function AdminHomePage() {
   const [botRunning, setBotRunning] = useState(false);
   const [botRunMsg, setBotRunMsg] = useState<string | null>(null);
   const [botExists, setBotExists] = useState(0);
+  const [botDeleting, setBotDeleting] = useState(false);
 
   const BOT_LIST = [
     { name: "Yuna Kim", genre: "Photography", location: "Seoul, Korea" },
@@ -297,6 +298,26 @@ export default function AdminHomePage() {
                   : tr("Bot accounts not seeded yet", "봇 계정이 아직 생성되지 않았습니다", "ボットアカウント未作成", "Comptes bots non créés")}
               </div>
             </div>
+            <button
+              disabled={botDeleting}
+              onClick={async () => {
+                if (!window.confirm("find_exhibit / find_collab / meetup 카테고리 글을 모두 삭제합니다. 계속하시겠습니까?")) return;
+                setBotDeleting(true);
+                setBotRunMsg(null);
+                try {
+                  const res = await fetch("/api/admin/community-bot", { method: "DELETE", credentials: "include" });
+                  const data = await res.json().catch(() => null);
+                  setBotRunMsg(data?.ok ? `삭제 완료 (${data.deleted}건)` : "삭제 실패");
+                  const updated = await fetch("/api/admin/community-bot", { credentials: "include" }).then(r => r.json()).catch(() => null);
+                  if (updated?.recentPosts) setBotPosts(updated.recentPosts);
+                } finally {
+                  setBotDeleting(false);
+                }
+              }}
+              style={{ padding: "10px 24px", border: "1px solid #C44", background: botDeleting ? "#8A8580" : "#C44444", color: "#FDFBF7", fontFamily: F, fontSize: 10, fontWeight: 500, letterSpacing: "0.1em", textTransform: "uppercase", cursor: botDeleting ? "not-allowed" : "pointer", whiteSpace: "nowrap" }}
+            >
+              {botDeleting ? "삭제 중..." : "비봇 카테고리 글 삭제"}
+            </button>
             <button
               disabled={botRunning}
               onClick={async () => {
