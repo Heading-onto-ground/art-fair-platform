@@ -63,12 +63,13 @@ function pickTwo<T>(arr: T[]): [T, T] {
 export async function GET() {
   if (!(await checkAuth())) return NextResponse.json({ error: "unauthorized" }, { status: 401 });
 
-  const botUsers = await prisma.user.findMany({
+  type BotUser = { id: string; email: string; artistProfile: { name: string } | null };
+  const botUsers: BotUser[] = await prisma.user.findMany({
     where: { email: { in: BOT_EMAILS } },
     select: { id: true, email: true, artistProfile: { select: { name: true } } },
   });
 
-  const botIds = botUsers.map((u: { id: string }) => u.id);
+  const botIds = botUsers.map((u) => u.id);
 
   const recentPosts = botIds.length
     ? await prisma.communityPost.findMany({
