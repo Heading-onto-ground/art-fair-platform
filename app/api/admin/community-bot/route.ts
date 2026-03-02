@@ -93,8 +93,14 @@ export async function GET() {
 
 export async function DELETE() {
   if (!getAdminSession()) return NextResponse.json({ error: "unauthorized" }, { status: 401 });
+  const botUsers = (await prisma.user.findMany({
+    where: { email: { in: BOT_EMAILS } },
+    select: { id: true },
+  })) as { id: string }[];
+  const botIds = botUsers.map((u: { id: string }) => u.id);
+  if (!botIds.length) return NextResponse.json({ ok: true, deleted: 0 });
   const result = await prisma.communityPost.deleteMany({
-    where: { category: { in: ["find_exhibit", "find_collab", "meetup"] } },
+    where: { authorId: { in: botIds }, category: { in: ["find_exhibit", "find_collab", "meetup"] } },
   });
   return NextResponse.json({ ok: true, deleted: result.count });
 }
