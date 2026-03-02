@@ -120,7 +120,7 @@ export async function POST() {
   }
 
   const botIds = (
-    await prisma.user.findMany({ where: { email: { in: BOT_EMAILS } }, select: { id: true } })
+    await prisma.user.findMany({ where: { email: { in: BOT_EMAILS } }, select: { id: true } }) as { id: string }[]
   ).map((u) => u.id);
 
   const recentPosts = await prisma.communityPost.findMany({
