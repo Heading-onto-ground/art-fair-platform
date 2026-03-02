@@ -9,6 +9,7 @@ const TYPE_TITLES: Record<string, string> = {
   "community.post.like": "New like on your post",
   "community.comment.new": "New comment on your post",
   "community.post.new": "New community post",
+  "community_new_post": "New community post",
 };
 function notifTitle(n: NotifItem) {
   return n.payload?.title ?? TYPE_TITLES[n.type] ?? n.type;
@@ -31,6 +32,13 @@ export default function NotificationsBell() {
       setItems(d.items ?? []);
     } catch {}
   }
+
+  useEffect(() => {
+    fetch("/api/notifications", { cache: "no-store", credentials: "include" })
+      .then((r) => r.ok ? r.json() : null)
+      .then((d) => { if (d?.unreadCount) setUnread(d.unreadCount); })
+      .catch(() => null);
+  }, []);
 
   useEffect(() => {
     if (!open) return;
