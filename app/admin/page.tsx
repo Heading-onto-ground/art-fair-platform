@@ -12,12 +12,24 @@ type AdminCategory = {
   href: string;
 };
 
+type BotPost = {
+  id: string;
+  authorName: string;
+  category: string;
+  title: string;
+  createdAt: number;
+};
+
 export default function AdminHomePage() {
   const router = useRouter();
   const { lang } = useLanguage();
   const [authenticated, setAuthenticated] = useState<boolean | null>(null);
   const [seedMsg, setSeedMsg] = useState<string | null>(null);
   const [botsSeeded, setBotsSeeded] = useState(false);
+  const [botPosts, setBotPosts] = useState<BotPost[]>([]);
+  const [botRunning, setBotRunning] = useState(false);
+  const [botRunMsg, setBotRunMsg] = useState<string | null>(null);
+  const [botExists, setBotExists] = useState(0);
 
   const BOT_LIST = [
     { name: "Yuna Kim", genre: "Photography", location: "Seoul, Korea" },
@@ -37,6 +49,13 @@ export default function AdminHomePage() {
     fetch("/api/admin/seed-bots", { credentials: "include" })
       .then((r) => r.json())
       .then((d) => { if (Array.isArray(d.bots) && d.bots.length > 0) setBotsSeeded(true); })
+      .catch(() => {});
+    fetch("/api/admin/community-bot", { credentials: "include" })
+      .then((r) => r.json())
+      .then((d) => {
+        if (d.botsExist) setBotExists(d.botsExist);
+        if (Array.isArray(d.recentPosts)) setBotPosts(d.recentPosts);
+      })
       .catch(() => {});
   }, [authenticated]);
 
@@ -264,6 +283,80 @@ export default function AdminHomePage() {
             ))}
           </div>
         )}
+
+        {/* Community Bot Section */}
+        <div style={{ marginTop: 40, paddingTop: 28, borderTop: "1px solid #E8E3DB" }}>
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 16 }}>
+            <div>
+              <span style={{ fontFamily: F, fontSize: 10, fontWeight: 500, letterSpacing: "0.2em", textTransform: "uppercase", color: "#8B7355" }}>
+                {tr("Community Bot", "커뮤니티 봇", "コミュニティボット", "Bot communauté")}
+              </span>
+              <div style={{ fontFamily: F, fontSize: 12, color: "#8A8580", marginTop: 4 }}>
+                {botExists > 0
+                  ? tr(`${botExists} bot accounts active · auto-runs daily 11:00 UTC`, `봇 계정 ${botExists}개 활성 · 매일 UTC 11:00 자동 실행`, `ボット${botExists}件アクティブ · 毎日UTC11:00自動実行`, `${botExists} bots actifs · exécution quotidienne 11h UTC`)
+                  : tr("Bot accounts not seeded yet", "봇 계정이 아직 생성되지 않았습니다", "ボットアカウント未作成", "Comptes bots non créés")}
+              </div>
+            </div>
+            <button
+              disabled={botRunning}
+              onClick={async () => {
+                setBotRunning(true);
+                setBotRunMsg(null);
+                try {
+                  const res = await fetch("/api/admin/community-bot", { method: "POST", credentials: "include" });
+                  const data = await res.json().catch(() => null);
+                  if (data?.ok && Array.isArray(data.results)) {
+                    setBotRunMsg(
+                      data.results.length > 0
+                        ? tr(`Posted: ${data.results.map((r: any) => r.bot).join(", ")}`, `포스팅 완료: ${data.results.map((r: any) => r.bot).join(", ")}`, `投稿完了: ${data.results.map((r: any) => r.bot).join(", ")}`, `Publié: ${data.results.map((r: any) => r.bot).join(", ")}`)
+                        : tr("No bots found — seed bot accounts first", "봇 계정 없음 — 먼저 봇 계정을 생성하세요", "ボットなし — 先にボットを作成してください", "Aucun bot — créez d'abord les comptes")
+                    );
+                    const updated = await fetch("/api/admin/community-bot", { credentials: "include" }).then(r => r.json()).catch(() => null);
+                    if (updated?.recentPosts) setBotPosts(updated.recentPosts);
+                  } else {
+                    setBotRunMsg(tr("Run failed", "실행 실패", "実行失敗", "Échec"));
+                  }
+                } catch {
+                  setBotRunMsg(tr("Run failed", "실행 실패", "実行失敗", "Échec"));
+                } finally {
+                  setBotRunning(false);
+                }
+              }}
+              style={{ padding: "10px 24px", border: "1px solid #E8E3DB", background: botRunning ? "#8A8580" : "#1A1A1A", color: "#FDFBF7", fontFamily: F, fontSize: 10, fontWeight: 500, letterSpacing: "0.1em", textTransform: "uppercase", cursor: botRunning ? "not-allowed" : "pointer", whiteSpace: "nowrap" }}
+            >
+              {botRunning
+                ? tr("Running...", "실행 중...", "実行中...", "En cours...")
+                : tr("Run Bot Now", "봇 지금 실행", "今すぐ実行", "Lancer le bot")}
+            </button>
+          </div>
+          {botRunMsg && (
+            <div style={{ fontFamily: F, fontSize: 12, color: "#5C7A5C", marginBottom: 14 }}>{botRunMsg}</div>
+          )}
+
+          {botPosts.length > 0 ? (
+            <div style={{ border: "1px solid #E8E3DB", background: "#FFFFFF" }}>
+              <div style={{ padding: "10px 16px", borderBottom: "1px solid #E8E3DB", display: "grid", gridTemplateColumns: "140px 100px 1fr 80px", gap: 12 }}>
+                {["Bot", "Category", "Title", "Date"].map((h) => (
+                  <span key={h} style={{ fontFamily: F, fontSize: 10, fontWeight: 500, letterSpacing: "0.12em", textTransform: "uppercase", color: "#B0AAA2" }}>{h}</span>
+                ))}
+              </div>
+              {botPosts.map((p) => (
+                <div key={p.id} style={{ padding: "10px 16px", borderBottom: "1px solid #F0EDE8", display: "grid", gridTemplateColumns: "140px 100px 1fr 80px", gap: 12, alignItems: "center" }}>
+                  <span style={{ fontFamily: F, fontSize: 12, color: "#1A1A1A", fontWeight: 500 }}>{p.authorName}</span>
+                  <span style={{ fontFamily: F, fontSize: 11, color: "#8A8580", background: "#F7F4F0", padding: "2px 8px", borderRadius: 2, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{p.category}</span>
+                  <span style={{ fontFamily: F, fontSize: 12, color: "#4A4540", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{p.title}</span>
+                  <span style={{ fontFamily: F, fontSize: 11, color: "#B0AAA2", whiteSpace: "nowrap" }}>
+                    {new Date(p.createdAt).toLocaleDateString("ko-KR", { month: "2-digit", day: "2-digit" })}
+                  </span>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div style={{ padding: "20px 0", fontFamily: F, fontSize: 12, color: "#B0AAA2" }}>
+              {tr("No bot posts yet. Run the bot to generate posts.", "봇 포스팅 기록 없음. 봇을 실행해 글을 생성하세요.", "ボット投稿なし。ボットを実行して投稿を生成してください。", "Aucune publication bot. Lancez le bot pour générer des posts.")}
+            </div>
+          )}
+        </div>
       </main>
     </>
   );
