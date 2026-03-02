@@ -68,7 +68,7 @@ export async function GET() {
     select: { id: true, email: true, artistProfile: { select: { name: true } } },
   });
 
-  const botIds = botUsers.map((u) => u.id);
+  const botIds = botUsers.map((u: { id: string }) => u.id);
 
   const recentPosts = botIds.length
     ? await prisma.communityPost.findMany({
