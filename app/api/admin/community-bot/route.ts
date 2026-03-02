@@ -71,7 +71,8 @@ export async function GET() {
 
   const botIds = botUsers.map((u) => u.id);
 
-  const recentPosts = botIds.length
+  type BotPost = { id: string; authorId: string; authorName: string; category: string; title: string; createdAt: Date };
+  const recentPosts: BotPost[] = botIds.length
     ? await prisma.communityPost.findMany({
         where: { authorId: { in: botIds } },
         orderBy: { createdAt: "desc" },
