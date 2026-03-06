@@ -19,3 +19,18 @@ export async function GET(req: Request) {
 
   return NextResponse.json({ profile });
 }
+
+export async function PATCH(req: Request) {
+  const admin = getAdminSession();
+  if (!admin) return NextResponse.json({ error: "unauthorized" }, { status: 401 });
+
+  const { userId, action } = await req.json().catch(() => ({}));
+  if (!userId) return NextResponse.json({ error: "userId required" }, { status: 400 });
+
+  if (action === "clear-portfolio") {
+    await prisma.artistProfile.update({ where: { userId }, data: { portfolioUrl: null } });
+    return NextResponse.json({ ok: true });
+  }
+
+  return NextResponse.json({ error: "unknown action" }, { status: 400 });
+}

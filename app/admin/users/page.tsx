@@ -41,6 +41,7 @@ export default function AdminUsersPage() {
   const [query, setQuery] = useState("");
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [deleting, setDeleting] = useState(false);
+  const [clearingPortfolio, setClearingPortfolio] = useState<string | null>(null);
   const tr = (en: string, ko: string, ja: string, fr: string) =>
     lang === "ko" ? ko : lang === "ja" ? ja : lang === "fr" ? fr : en;
 
@@ -138,6 +139,24 @@ export default function AdminUsersPage() {
       }
       return next;
     });
+  }
+
+  async function clearPortfolio(userId: string, name: string) {
+    if (!window.confirm(`${name}의 포트폴리오를 삭제하시겠습니까?`)) return;
+    setClearingPortfolio(userId);
+    try {
+      const res = await fetch("/api/admin/artist-profile", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ userId, action: "clear-portfolio" }),
+      });
+      if (res.ok) {
+        setUsers((prev) => prev.map((u) => u.id === userId ? { ...u, hasPortfolio: false } : u));
+      }
+    } finally {
+      setClearingPortfolio(null);
+    }
   }
 
   async function deleteSelectedUsers() {
@@ -444,11 +463,20 @@ export default function AdminUsersPage() {
                   <div>{[u.city, u.country].filter(Boolean).join(", ") || "-"}</div>
                   <div>{u.profileId || "-"}</div>
                   <div style={{ color: "#6A6A6A" }}>{new Date(u.createdAt).toLocaleDateString()}</div>
-                  <div>
+                  <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
                     {u.role === "artist" && u.profileId && (
                       <a href={`/artist/me?adminView=1&userId=${u.id}`} target="_blank" rel="noreferrer" style={{ fontFamily: F, fontSize: 10, fontWeight: 500, letterSpacing: "0.08em", textTransform: "uppercase", color: "#8B7355", textDecoration: "none", padding: "4px 10px", border: "1px solid #E8E3DB" }}>
                         View
                       </a>
+                    )}
+                    {u.role === "artist" && u.hasPortfolio && (
+                      <button
+                        onClick={() => clearPortfolio(u.id, u.name)}
+                        disabled={clearingPortfolio === u.id}
+                        style={{ fontFamily: F, fontSize: 10, fontWeight: 500, letterSpacing: "0.08em", textTransform: "uppercase", color: "#8B3A3A", background: "transparent", padding: "4px 10px", border: "1px solid #E8DBDB", cursor: "pointer" }}
+                      >
+                        {clearingPortfolio === u.id ? "..." : "포트폴리오 삭제"}
+                      </button>
                     )}
                   </div>
                 </div>

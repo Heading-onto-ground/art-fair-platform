@@ -102,7 +102,14 @@ export async function listArtistProfiles(): Promise<(Omit<ArtistProfile, "portfo
       portfolioUrl: true,
     },
   });
-  return artists.map(({ portfolioUrl, ...a }: typeof artists[number]) => ({ ...a, role: "artist" as const, email: "", hasPortfolio: !!portfolioUrl }));
+  return artists
+    .map(({ portfolioUrl, ...a }: typeof artists[number]) => ({ ...a, role: "artist" as const, email: "", hasPortfolio: !!portfolioUrl }))
+    .sort((a, b) => {
+      if (a.hasPortfolio !== b.hasPortfolio) return a.hasPortfolio ? -1 : 1;
+      const aTime = a.updatedAt instanceof Date ? (a.updatedAt as Date).getTime() : Number(a.updatedAt);
+      const bTime = b.updatedAt instanceof Date ? (b.updatedAt as Date).getTime() : Number(b.updatedAt);
+      return bTime - aTime;
+    });
 }
 
 export async function listGalleryProfiles(): Promise<GalleryProfile[]> {
