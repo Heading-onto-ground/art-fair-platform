@@ -24,11 +24,21 @@ export async function PATCH(req: Request) {
   const admin = getAdminSession();
   if (!admin) return NextResponse.json({ error: "unauthorized" }, { status: 401 });
 
-  const { userId, action } = await req.json().catch(() => ({}));
+  const { userId, action, message } = await req.json().catch(() => ({}));
   if (!userId) return NextResponse.json({ error: "userId required" }, { status: 400 });
 
   if (action === "clear-portfolio") {
     await prisma.artistProfile.update({ where: { userId }, data: { portfolioUrl: null } });
+    await prisma.notification.create({
+      data: {
+        userId,
+        type: "admin_action",
+        payload: {
+          title: "포트폴리오가 삭제되었습니다",
+          message: message || "관리자에 의해 포트폴리오가 삭제되었습니다.",
+        },
+      },
+    });
     return NextResponse.json({ ok: true });
   }
 

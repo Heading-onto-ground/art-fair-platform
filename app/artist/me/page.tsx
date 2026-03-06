@@ -182,7 +182,12 @@ export default function ArtistMePage() {
                 <div style={{ marginBottom: 20, display: "flex", gap: 10, alignItems: "center", flexWrap: "wrap" }}>
                   <button onClick={() => { const base64 = profile.portfolioUrl!.split(",")[1]; const bytes = Uint8Array.from(atob(base64), c => c.charCodeAt(0)); const url = URL.createObjectURL(new Blob([bytes], { type: "application/pdf" })); const a = document.createElement("a"); a.href = url; a.download = `${profile.name || "portfolio"}.pdf`; a.click(); }} style={{ padding: "12px 24px", background: "#1A1A1A", color: "#FDFBF7", fontFamily: F, fontSize: 10, fontWeight: 500, letterSpacing: "0.1em", textTransform: "uppercase", border: "none", cursor: "pointer" }}>{t("profile_view_pdf", lang)}</button>
                   {adminReadOnly && (
-                    <button onClick={async () => { if (!window.confirm("포트폴리오를 삭제하시겠습니까?")) return; const res = await fetch("/api/admin/artist-profile", { method: "PATCH", headers: { "Content-Type": "application/json" }, credentials: "include", body: JSON.stringify({ userId: me?.session?.userId, action: "clear-portfolio" }) }); if (res.ok) { await loadMe(); } }} style={{ padding: "12px 24px", background: "#8B3A3A", color: "#FFFFFF", fontFamily: F, fontSize: 10, fontWeight: 500, letterSpacing: "0.1em", textTransform: "uppercase", border: "none", cursor: "pointer" }}>포트폴리오 삭제</button>
+                    <button onClick={async () => {
+                      const reason = window.prompt("삭제 사유를 입력하세요 (사용자에게 알림으로 전달됩니다):", "포트폴리오 내용이 기준에 맞지 않아 삭제되었습니다.");
+                      if (reason === null) return;
+                      const res = await fetch("/api/admin/artist-profile", { method: "PATCH", headers: { "Content-Type": "application/json" }, credentials: "include", body: JSON.stringify({ userId: me?.session?.userId, action: "clear-portfolio", message: reason || "관리자에 의해 포트폴리오가 삭제되었습니다." }) });
+                      if (res.ok) { await loadMe(); }
+                    }} style={{ padding: "12px 24px", background: "#8B3A3A", color: "#FFFFFF", fontFamily: F, fontSize: 10, fontWeight: 500, letterSpacing: "0.1em", textTransform: "uppercase", border: "none", cursor: "pointer" }}>포트폴리오 삭제</button>
                   )}
                 </div>
               )}

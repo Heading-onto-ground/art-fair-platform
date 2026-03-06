@@ -142,14 +142,15 @@ export default function AdminUsersPage() {
   }
 
   async function clearPortfolio(userId: string, name: string) {
-    if (!window.confirm(`${name}의 포트폴리오를 삭제하시겠습니까?`)) return;
+    const reason = window.prompt(`${name}의 포트폴리오 삭제 사유를 입력하세요 (사용자에게 알림으로 전달됩니다):`, "포트폴리오 내용이 기준에 맞지 않아 삭제되었습니다.");
+    if (reason === null) return;
     setClearingPortfolio(userId);
     try {
       const res = await fetch("/api/admin/artist-profile", {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
-        body: JSON.stringify({ userId, action: "clear-portfolio" }),
+        body: JSON.stringify({ userId, action: "clear-portfolio", message: reason || "관리자에 의해 포트폴리오가 삭제되었습니다." }),
       });
       if (res.ok) {
         setUsers((prev) => prev.map((u) => u.id === userId ? { ...u, hasPortfolio: false } : u));

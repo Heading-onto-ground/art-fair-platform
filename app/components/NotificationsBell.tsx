@@ -10,9 +10,13 @@ const TYPE_TITLES: Record<string, string> = {
   "community.comment.new": "New comment on your post",
   "community.post.new": "New community post",
   "community_new_post": "New community post",
+  "admin_action": "관리자 알림",
 };
 function notifTitle(n: NotifItem) {
   return n.payload?.title ?? TYPE_TITLES[n.type] ?? n.type;
+}
+function notifMessage(n: NotifItem) {
+  return n.payload?.message ?? "";
 }
 
 export default function NotificationsBell() {
@@ -72,8 +76,9 @@ export default function NotificationsBell() {
           {items.length === 0 ? (
             <div style={{ padding: "24px 18px", textAlign: "center", color: "#B0AAA2", fontFamily: F, fontSize: 12 }}>알림 없음</div>
           ) : items.map((n) => (
-            <div key={n.id} style={{ padding: "12px 16px", borderBottom: "1px solid #F0EBE3" }}>
-              <p style={{ fontFamily: F, fontSize: 12, color: "#1A1A1A", marginBottom: 4 }}>{notifTitle(n)}</p>
+            <div key={n.id} style={{ padding: "12px 16px", borderBottom: "1px solid #F0EBE3", background: n.type === "admin_action" ? "#FDF8F5" : "#FFFFFF" }}>
+              <p style={{ fontFamily: F, fontSize: 12, fontWeight: 600, color: n.type === "admin_action" ? "#8B3A3A" : "#1A1A1A", marginBottom: 4 }}>{notifTitle(n)}</p>
+              {notifMessage(n) && <p style={{ fontFamily: F, fontSize: 11, color: "#4A4A4A", marginBottom: 4 }}>{notifMessage(n)}</p>}
               <span style={{ fontFamily: F, fontSize: 10, color: "#B0AAA2" }}>{new Date(n.createdAt).toLocaleString()}</span>
             </div>
           ))}
