@@ -70,6 +70,7 @@ export default function OpenCallsPage() {
   >({});
   const [showOriginalById, setShowOriginalById] = useState<Record<string, boolean>>({});
   const [translatingById, setTranslatingById] = useState<Record<string, boolean>>({});
+  const [appliedOpenCallIds, setAppliedOpenCallIds] = useState<Set<string>>(new Set());
   const { lang } = useLanguage();
   const normalizedPreferredCountry = useMemo(() => normalizeCountry(preferredCountry), [preferredCountry]);
 
@@ -84,7 +85,16 @@ export default function OpenCallsPage() {
       .then((data: MeResponse) => {
         setIsLoggedIn(!!data?.session);
         setPreferredCountry((data?.profile?.country ?? "").trim());
-        if (data?.session?.role === "artist") setArtistProfile(data?.profile ?? null);
+        if (data?.session?.role === "artist") {
+          setArtistProfile(data?.profile ?? null);
+          fetch("/api/applications", { credentials: "include" })
+            .then((r) => r.json())
+            .then((d) => {
+              const ids = new Set<string>((d?.applications ?? []).map((a: any) => a.openCallId as string));
+              setAppliedOpenCallIds(ids);
+            })
+            .catch(() => {});
+        }
       })
       .catch(() => {
         setIsLoggedIn(false);
@@ -357,6 +367,11 @@ export default function OpenCallsPage() {
                         </button>
                       );
                     })()}
+                    {appliedOpenCallIds.has(o.id) && (
+                      <span style={{ display: "inline-block", marginBottom: 8, padding: "4px 10px", background: "rgba(61,107,61,0.08)", border: "1px solid rgba(61,107,61,0.3)", fontFamily: F, fontSize: 10, fontWeight: 600, color: "#3D6B3D", letterSpacing: "0.06em" }}>
+                        ✓ {lang === "ko" ? "지원됨" : lang === "ja" ? "申請済" : "Applied"}
+                      </span>
+                    )}
                     <span style={{ fontFamily: F, fontSize: 9, fontWeight: 500, letterSpacing: "0.1em", textTransform: "uppercase", color: "#B0AAA2" }}>
                       {lang === "ko" ? "작가 지원 마감일" : t("deadline", lang)}
                     </span>
