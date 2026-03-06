@@ -108,9 +108,7 @@ export async function listArtistProfiles(): Promise<ArtistListItem[]> {
     .map(({ portfolioUrl, ...a }: typeof artists[number]) => ({ ...a, role: "artist" as const, email: "", hasPortfolio: !!portfolioUrl }))
     .sort((a: ArtistListItem, b: ArtistListItem) => {
       if (a.hasPortfolio !== b.hasPortfolio) return a.hasPortfolio ? -1 : 1;
-      const aTime = a.updatedAt instanceof Date ? (a.updatedAt as Date).getTime() : Number(a.updatedAt);
-      const bTime = b.updatedAt instanceof Date ? (b.updatedAt as Date).getTime() : Number(b.updatedAt);
-      return bTime - aTime;
+      return Number(b.updatedAt) - Number(a.updatedAt);
     });
 }
 
