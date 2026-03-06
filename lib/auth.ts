@@ -102,7 +102,7 @@ export async function listArtistProfiles(): Promise<(Omit<ArtistProfile, "portfo
       portfolioUrl: true,
     },
   });
-  return artists.map(({ portfolioUrl, ...a }) => ({ ...a, role: "artist" as const, email: "", hasPortfolio: !!portfolioUrl }));
+  return artists.map(({ portfolioUrl, ...a }: typeof artists[number]) => ({ ...a, role: "artist" as const, email: "", hasPortfolio: !!portfolioUrl }));
 }
 
 export async function listGalleryProfiles(): Promise<GalleryProfile[]> {
