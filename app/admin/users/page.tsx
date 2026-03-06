@@ -419,7 +419,7 @@ export default function AdminUsersPage() {
             </div>
 
             <div style={{ border: "1px solid #E5E0DB", background: "#FFFFFF" }}>
-              <div style={{ display: "grid", gridTemplateColumns: "40px 1.3fr 0.8fr 0.8fr 0.8fr 0.9fr", gap: 8, padding: "12px 14px", borderBottom: "1px solid #EDE7DE", fontFamily: F, fontSize: 10, letterSpacing: "0.08em", textTransform: "uppercase", color: "#8A8580" }}>
+              <div style={{ display: "grid", gridTemplateColumns: "40px 1.3fr 0.8fr 0.8fr 0.8fr 0.9fr 1.2fr", gap: 8, padding: "12px 14px", borderBottom: "1px solid #EDE7DE", fontFamily: F, fontSize: 10, letterSpacing: "0.08em", textTransform: "uppercase", color: "#8A8580" }}>
                 <div>
                   <input
                     type="checkbox"
@@ -433,10 +433,11 @@ export default function AdminUsersPage() {
                 <div>{tr("Location", "위치", "所在地", "Lieu")}</div>
                 <div>{tr("Profile ID", "프로필 ID", "プロフィールID", "ID profil")}</div>
                 <div>{tr("Joined", "가입일", "登録日", "Inscrit")}</div>
+                <div>{tr("Actions", "관리", "操作", "Actions")}</div>
               </div>
 
               {filtered.map((u) => (
-                <div key={u.id} style={{ display: "grid", gridTemplateColumns: "40px 1.3fr 0.8fr 0.8fr 0.8fr 0.9fr", gap: 8, padding: "12px 14px", borderBottom: "1px solid #F1ECE4", fontFamily: F, fontSize: 12, color: "#1A1A1A" }}>
+                <div key={u.id} style={{ display: "grid", gridTemplateColumns: "40px 1.3fr 0.8fr 0.8fr 0.8fr 0.9fr 1.2fr", gap: 8, padding: "12px 14px", borderBottom: "1px solid #F1ECE4", fontFamily: F, fontSize: 12, color: "#1A1A1A" }}>
                   <div>
                     <input
                       type="checkbox"
