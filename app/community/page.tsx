@@ -614,6 +614,15 @@ export default function CommunityPage() {
                     <span style={{ fontSize: 14 }}>💬</span>
                     <span>{post.commentCount} {t("community_comments", lang)}</span>
                   </button>
+                  <button
+                    onClick={() => { navigator.clipboard.writeText(`https://www.rob-roleofbridge.com/community/${post.id}`).then(() => alert(lang === "ko" ? "링크가 복사되었습니다." : "Link copied!")); }}
+                    style={{ display: "flex", alignItems: "center", gap: 6, padding: "4px 0", border: "none", background: "transparent", color: "#B0AAA2", fontFamily: F, fontSize: 12, cursor: "pointer", marginLeft: "auto" }}
+                    onMouseEnter={(e) => { e.currentTarget.style.color = "#8B7355"; }}
+                    onMouseLeave={(e) => { e.currentTarget.style.color = "#B0AAA2"; }}
+                    title={lang === "ko" ? "링크 복사" : "Copy link"}
+                  >
+                    <span style={{ fontSize: 13 }}>🔗</span>
+                  </button>
                 </div>
 
                 {/* Comments section */}
