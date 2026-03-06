@@ -6,6 +6,7 @@ import TopBar from "@/app/components/TopBar";
 import { GridCardSkeleton } from "@/app/components/Skeleton";
 import { useFetch } from "@/lib/useFetch";
 import { F, S } from "@/lib/design";
+import { normalizeCountry } from "@/lib/countries";
 
 type Artist = {
   userId: string;
@@ -13,7 +14,7 @@ type Artist = {
   email: string;
   country: string;
   city: string;
-  portfolioUrl?: string;
+  hasPortfolio?: boolean;
   profileImage?: string | null;
   startedYear?: number;
   genre?: string;
@@ -51,7 +52,7 @@ export default function ArtistsPage() {
     fetch("/api/auth/me", { cache: "no-store" })
       .then((r) => r.json())
       .then((data: MeResponse) => {
-        setPreferredCountry((data?.profile?.country ?? "").trim());
+        setPreferredCountry(normalizeCountry(data?.profile?.country ?? ""));
         setIsGalleryViewer(data?.session?.role === "gallery");
       })
       .catch(() => {
@@ -61,17 +62,18 @@ export default function ArtistsPage() {
   }, []);
 
   const countryTabs = useMemo(() => {
-    const countries = artists.map((a) => (a.country ?? "").trim()).filter(Boolean);
+    const countries = artists.map((a) => normalizeCountry(a.country ?? "")).filter(Boolean);
     const uniqueCountries = Array.from(new Set(countries)).sort((a, b) => {
-      const countA = artists.filter((x) => x.country === a).length;
-      const countB = artists.filter((x) => x.country === b).length;
+      const countA = artists.filter((x) => normalizeCountry(x.country ?? "") === a).length;
+      const countB = artists.filter((x) => normalizeCountry(x.country ?? "") === b).length;
       return countB - countA;
     });
-    if (preferredCountry) {
-      const idx = uniqueCountries.indexOf(preferredCountry);
+    const normPreferred = normalizeCountry(preferredCountry);
+    if (normPreferred) {
+      const idx = uniqueCountries.indexOf(normPreferred);
       if (idx > 0) {
         uniqueCountries.splice(idx, 1);
-        uniqueCountries.unshift(preferredCountry);
+        uniqueCountries.unshift(normPreferred);
       }
     }
     return ["ALL", ...uniqueCountries];
@@ -80,7 +82,7 @@ export default function ArtistsPage() {
   const countryCounts = useMemo(() => {
     const counts: Record<string, number> = { ALL: artists.length };
     artists.forEach((a) => {
-      const c = (a.country ?? "").trim();
+      const c = normalizeCountry(a.country ?? "");
       if (c) counts[c] = (counts[c] || 0) + 1;
     });
     return counts;
@@ -89,7 +91,7 @@ export default function ArtistsPage() {
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
     return artists.filter((a) => {
-      if (country !== "ALL" && (a.country ?? "").trim() !== country) return false;
+      if (country !== "ALL" && normalizeCountry(a.country ?? "") !== country) return false;
       if (!q) return true;
       return a.name.toLowerCase().includes(q) || a.email.toLowerCase().includes(q) || a.city.toLowerCase().includes(q);
     });
@@ -312,13 +314,13 @@ export default function ArtistsPage() {
                         fontWeight: 500,
                         letterSpacing: "0.08em",
                         textTransform: "uppercase",
-                        color: a.portfolioUrl ? "#2E6B45" : "#8A8580",
-                        background: a.portfolioUrl ? "#EDF7F1" : "#F5F3F0",
+                        color: a.hasPortfolio ? "#2E6B45" : "#8A8580",
+                        background: a.hasPortfolio ? "#EDF7F1" : "#F5F3F0",
                         padding: "4px 8px",
-                        border: `1px solid ${a.portfolioUrl ? "#D6EAD8" : "#ECEAE6"}`,
+                        border: `1px solid ${a.hasPortfolio ? "#D6EAD8" : "#ECEAE6"}`,
                       }}
                     >
-                      {a.portfolioUrl ? "Portfolio" : "No Portfolio"}
+                      {a.hasPortfolio ? "Portfolio" : "No Portfolio"}
                     </span>
                     <button
                       onClick={(e) => {
@@ -451,12 +453,12 @@ export default function ArtistsPage() {
                         fontWeight: 500,
                         letterSpacing: "0.08em",
                         textTransform: "uppercase",
-                        color: a.portfolioUrl ? "#2E6B45" : "#8A8580",
-                        background: a.portfolioUrl ? "#EDF7F1" : "#F5F3F0",
+                        color: a.hasPortfolio ? "#2E6B45" : "#8A8580",
+                        background: a.hasPortfolio ? "#EDF7F1" : "#F5F3F0",
                         padding: "4px 10px",
-                        border: `1px solid ${a.portfolioUrl ? "#D6EAD8" : "#ECEAE6"}`,
+                        border: `1px solid ${a.hasPortfolio ? "#D6EAD8" : "#ECEAE6"}`,
                       }}>
-                        {a.portfolioUrl ? "Portfolio Uploaded" : "No Portfolio"}
+                        {a.hasPortfolio ? "Portfolio Uploaded" : "No Portfolio"}
                       </span>
                     )}
                   </div>

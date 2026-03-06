@@ -7,6 +7,7 @@ import ProfileImageUpload from "@/app/components/ProfileImageUpload";
 import { useLanguage } from "@/lib/useLanguage";
 import { t } from "@/lib/translate";
 import { F, S } from "@/lib/design";
+import { COUNTRIES, normalizeCountry } from "@/lib/countries";
 
 type MeResponse = { session: { userId: string; role: "artist" | "gallery"; email: string } | null; profile: { id: string; artistId: string; name: string; startedYear: number; genre: string; instagram?: string; country: string; city: string; website?: string; bio?: string; portfolioUrl?: string; profileImage?: string | null; createdAt: number; updatedAt?: number } | null };
 type Application = { id: string; openCallId: string; galleryId: string; status: string; shippingStatus: string };
@@ -53,7 +54,7 @@ export default function ArtistMePage() {
             const p = profData?.profile ?? null;
             if (p) {
               setArtistId(p.artistId ?? ""); setName(p.name ?? ""); setStartedYear(p.startedYear ? String(p.startedYear) : "");
-              setGenre(p.genre ?? ""); setInstagram(p.instagram ?? ""); setCountry(p.country ?? "");
+              setGenre(p.genre ?? ""); setInstagram(p.instagram ?? ""); setCountry(normalizeCountry(p.country ?? ""));
               setCity(p.city ?? ""); setWebsite(p.website ?? ""); setBio(p.bio ?? "");
             }
             setMe({ session: { userId: adminUserId, role: "artist", email: "" }, profile: p });
@@ -74,7 +75,7 @@ export default function ArtistMePage() {
       setStartedYear(p?.startedYear ? String(p.startedYear) : "");
       setGenre(p?.genre ?? "");
       setInstagram(p?.instagram ?? "");
-      setCountry(p?.country ?? "");
+      setCountry(normalizeCountry(p?.country ?? ""));
       setCity(p?.city ?? "");
       setWebsite(p?.website ?? "");
       setBio(p?.bio ?? "");
@@ -163,7 +164,7 @@ export default function ArtistMePage() {
                 <Lbl label="Name *"><input value={name} onChange={(e) => setName(e.target.value)} placeholder="Full name" style={inp} /></Lbl>
                 <Lbl label="Start year *"><input value={startedYear} onChange={(e) => setStartedYear(e.target.value)} placeholder="2018" style={inp} /></Lbl>
                 <Lbl label="Genre *"><input value={genre} onChange={(e) => setGenre(e.target.value)} placeholder="Painting" style={focusImprove ? inpHighlight : inp} /></Lbl>
-                <Lbl label="Country *"><input value={country} onChange={(e) => setCountry(e.target.value)} placeholder="Korea" style={focusImprove ? inpHighlight : inp} /></Lbl>
+                <Lbl label="Country *"><select value={country} onChange={(e) => setCountry(e.target.value)} style={{ ...(focusImprove ? inpHighlight : inp), appearance: "none", backgroundImage: "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%238A8580'/%3E%3C/svg%3E\")", backgroundRepeat: "no-repeat", backgroundPosition: "right 12px center", paddingRight: 32 }}><option value="">-- 선택 --</option>{COUNTRIES.map((c) => <option key={c} value={c}>{c}</option>)}</select></Lbl>
                 <Lbl label="City *"><input value={city} onChange={(e) => setCity(e.target.value)} placeholder="Seoul" style={focusImprove ? inpHighlight : inp} /></Lbl>
                 <Lbl label="Instagram"><input value={instagram} onChange={(e) => setInstagram(e.target.value)} placeholder="@username" style={inp} /></Lbl>
                 <Lbl label="Website"><input value={website} onChange={(e) => setWebsite(e.target.value)} placeholder="https://..." style={inp} /></Lbl>

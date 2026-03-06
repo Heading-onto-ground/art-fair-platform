@@ -93,8 +93,16 @@ export async function getProfileByUserId(userId: string): Promise<Profile | null
   return null;
 }
 
-export async function listArtistProfiles(): Promise<ArtistProfile[]> {
-  return prisma.artistProfile.findMany();
+export async function listArtistProfiles(): Promise<(Omit<ArtistProfile, "portfolioUrl"> & { hasPortfolio: boolean })[]> {
+  const artists = await prisma.artistProfile.findMany({
+    select: {
+      id: true, userId: true, artistId: true, name: true, startedYear: true,
+      genre: true, instagram: true, country: true, city: true, website: true,
+      bio: true, profileImage: true, createdAt: true, updatedAt: true,
+      portfolioUrl: true,
+    },
+  });
+  return artists.map(({ portfolioUrl, ...a }) => ({ ...a, role: "artist" as const, email: "", hasPortfolio: !!portfolioUrl }));
 }
 
 export async function listGalleryProfiles(): Promise<GalleryProfile[]> {
