@@ -205,6 +205,7 @@ export default function TopBar() {
       { path: "/artists", label: t("nav_artists", lang) },
       { path: "/galleries", label: t("nav_galleries", lang) },
       { path: "/gallery", label: t("nav_my_calls", lang) },
+      { path: "/community", label: t("nav_community", lang) },
       { path: "/shipments", label: t("nav_shipments", lang) },
       { path: "/chat", label: t("nav_messages", lang) },
       { path: "/admin/outreach", label: t("nav_growth", lang) },
