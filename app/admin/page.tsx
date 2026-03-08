@@ -185,6 +185,16 @@ export default function AdminHomePage() {
       ),
       href: "/admin/gallery-emails",
     },
+    {
+      title: tr("Community", "커뮤니티 관리", "コミュニティ管理", "Communauté"),
+      description: tr(
+        "Post comments as admin and delete any user comment.",
+        "관리자 이름으로 댓글을 달고 사용자 댓글을 삭제합니다.",
+        "管理者名でコメントし、ユーザーコメントを削除します。",
+        "Commentez en tant qu'admin et supprimez les commentaires."
+      ),
+      href: "/admin/community",
+    },
   ];
 
   return (
