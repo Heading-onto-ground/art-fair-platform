@@ -37,8 +37,28 @@ model ArtistProfile {
   bio          String?
   portfolioUrl String?
   profileImage String?  // Base64 data URI or URL
+  workNote     String?  // 작업 노트 (개념, 문제의식, 작업 방향)
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
+  series       ArtworkSeries[]
+}
+
+// ========== 맥락 저장 ==========
+
+model ArtworkSeries {
+  id          String   @id @default(cuid())
+  artistId    String
+  artist      ArtistProfile @relation(fields: [artistId], references: [id], onDelete: Cascade)
+  title       String
+  description String?
+  startYear   Int?
+  endYear     Int?
+  works       String?  // 작품 목록 (쉼표 구분 텍스트 또는 줄바꿈)
+  isPublic    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([artistId])
 }
 
 model GalleryProfile {

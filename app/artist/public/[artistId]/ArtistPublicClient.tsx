@@ -12,9 +12,18 @@ type Exhibition = {
   acceptedAt: string;
 };
 
+type SeriesItem = {
+  id: string;
+  title: string;
+  description?: string | null;
+  startYear?: number | null;
+  endYear?: number | null;
+  works?: string | null;
+};
+
 export default function ArtistPublicClient() {
   const { artistId } = useParams<{ artistId: string }>();
-  const [data, setData] = useState<{ name: string; exhibitions: Exhibition[] } | null>(null);
+  const [data, setData] = useState<{ name: string; workNote?: string | null; exhibitions: Exhibition[]; series: SeriesItem[] } | null>(null);
   const [notFound, setNotFound] = useState(false);
 
   useEffect(() => {
@@ -52,6 +61,13 @@ export default function ArtistPublicClient() {
       <p style={{ fontFamily: F, fontSize: 11, color: "#B0AAA2", letterSpacing: "0.08em", marginBottom: 32 }}>
         {artistId}
       </p>
+
+      {data.workNote && (
+        <div style={{ marginBottom: 36, padding: "20px 24px", border: "1px solid #E8E3DB", background: "#FDFBF7" }}>
+          <p style={{ fontFamily: F, fontSize: 10, fontWeight: 600, letterSpacing: "0.14em", textTransform: "uppercase", color: "#8B7355", marginBottom: 10 }}>Work Note</p>
+          <p style={{ fontFamily: F, fontSize: 13, color: "#4A4540", lineHeight: 1.8, whiteSpace: "pre-wrap", margin: 0 }}>{data.workNote}</p>
+        </div>
+      )}
 
       {data.exhibitions.length > 0 && (() => {
         const latest = data.exhibitions.reduce((a, b) =>
@@ -116,6 +132,25 @@ export default function ArtistPublicClient() {
               </div>
             </div>
           ))}
+        </div>
+      )}
+
+      {data.series && data.series.length > 0 && (
+        <div style={{ marginTop: 48 }}>
+          <p style={{ fontFamily: F, fontSize: 10, fontWeight: 600, letterSpacing: "0.14em", textTransform: "uppercase", color: "#8B7355", marginBottom: 16 }}>Artwork Series</p>
+          <div style={{ display: "grid", gap: 1, background: "#E8E3DB" }}>
+            {data.series.map((s, i) => (
+              <div key={s.id} style={{ background: "#FFFFFF", padding: "20px 24px" }}>
+                <div style={{ display: "flex", alignItems: "baseline", gap: 10, marginBottom: 6 }}>
+                  <span style={{ fontFamily: F, fontSize: 10, letterSpacing: "0.08em", textTransform: "uppercase", color: "#B0AAA2" }}>{String(i + 1).padStart(2, "0")}</span>
+                  <h3 style={{ fontFamily: S, fontSize: 18, fontWeight: 400, color: "#1A1A1A", margin: 0 }}>{s.title}</h3>
+                  {(s.startYear || s.endYear) && <span style={{ fontFamily: F, fontSize: 10, color: "#B0AAA2" }}>{s.startYear ?? "?"} — {s.endYear ?? "present"}</span>}
+                </div>
+                {s.description && <p style={{ fontFamily: F, fontSize: 12, color: "#6A6660", margin: "0 0 8px" }}>{s.description}</p>}
+                {s.works && <p style={{ fontFamily: F, fontSize: 11, color: "#B0AAA2", margin: 0, whiteSpace: "pre-wrap" }}>{s.works}</p>}
+              </div>
+            ))}
+          </div>
         </div>
       )}
 

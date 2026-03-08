@@ -9,7 +9,7 @@ import { t } from "@/lib/translate";
 import { F, S } from "@/lib/design";
 import { COUNTRIES, normalizeCountry } from "@/lib/countries";
 
-type MeResponse = { session: { userId: string; role: "artist" | "gallery"; email: string } | null; profile: { id: string; artistId: string; name: string; startedYear: number; genre: string; instagram?: string; country: string; city: string; website?: string; bio?: string; portfolioUrl?: string; profileImage?: string | null; createdAt: number; updatedAt?: number } | null };
+type MeResponse = { session: { userId: string; role: "artist" | "gallery"; email: string } | null; profile: { id: string; artistId: string; name: string; startedYear: number; genre: string; instagram?: string; country: string; city: string; website?: string; bio?: string; portfolioUrl?: string; profileImage?: string | null; workNote?: string | null; createdAt: number; updatedAt?: number } | null };
 type Application = { id: string; openCallId: string; galleryId: string; status: string; shippingStatus: string };
 type OpenCall = { id: string; gallery: string; city: string; country: string; theme: string; deadline: string };
 type Invite = { id: string; galleryId: string; openCallId: string; message: string; status: string; createdAt: number };
@@ -39,6 +39,10 @@ export default function ArtistMePage() {
   const [file, setFile] = useState<File | null>(null); const [uploading, setUploading] = useState(false); const [uploadMsg, setUploadMsg] = useState<string | null>(null);
   const [applications, setApplications] = useState<Application[]>([]); const [openCallMap, setOpenCallMap] = useState<Record<string, OpenCall>>({}); const [invites, setInvites] = useState<Invite[]>([]);
   const [exhibitions, setExhibitions] = useState<any[]>([]); const [exPublic, setExPublic] = useState(false); const [exArtistId, setExArtistId] = useState<string | null>(null); const [exCopied, setExCopied] = useState(false); const [exToggling, setExToggling] = useState(false);
+  const [workNote, setWorkNote] = useState(""); const [workNoteSaving, setWorkNoteSaving] = useState(false); const [workNoteMsg, setWorkNoteMsg] = useState<string | null>(null);
+
+  type SeriesItem = { id: string; title: string; description?: string | null; startYear?: number | null; endYear?: number | null; works?: string | null; isPublic: boolean };
+  const [seriesList, setSeriesList] = useState<SeriesItem[]>([]); const [seriesForm, setSeriesForm] = useState<{ title: string; description: string; startYear: string; endYear: string; works: string; isPublic: boolean } | null>(null); const [editingSeriesId, setEditingSeriesId] = useState<string | null>(null); const [seriesMsg, setSeriesMsg] = useState<string | null>(null); const [seriesSaving, setSeriesSaving] = useState(false);
 
   const loadMe = async () => {
     setLoadingMe(true);
@@ -80,17 +84,23 @@ export default function ArtistMePage() {
       setWebsite(p?.website ?? "");
       setBio(p?.bio ?? "");
       setNotifyPost((p as any)?.notify_new_community_post ?? false);
+      setWorkNote((p as any)?.workNote ?? "");
     } finally {
       setLoadingMe(false);
     }
   };
 
   useEffect(() => { loadMe(); }, [isAdminView, adminUserId]);
-  useEffect(() => { if (!me?.session || adminReadOnly) return; loadApplications(); loadInvites(); loadExhibitions(); }, [me?.session?.userId, adminReadOnly]);
+  useEffect(() => { if (!me?.session || adminReadOnly) return; loadApplications(); loadInvites(); loadExhibitions(); loadSeries(); }, [me?.session?.userId, adminReadOnly]);
 
   const loadApplications = async () => { const [appsRes, ocRes] = await Promise.all([fetch("/api/applications", { cache: "default", credentials: "include" }), fetch("/api/open-calls", { cache: "default" })]); const appsJson = await appsRes.json().catch(() => null); const ocJson = await ocRes.json().catch(() => null); const map: Record<string, OpenCall> = {}; for (const oc of ocJson?.openCalls ?? []) map[oc.id] = oc; setOpenCallMap(map); setApplications(appsJson?.applications ?? []); };
   const loadInvites = async () => { const res = await fetch("/api/artist/invites", { cache: "default", credentials: "include" }); const data = await res.json().catch(() => null); if (res.ok) setInvites(data?.invites ?? []); };
   const loadExhibitions = async () => { const res = await fetch("/api/artist/exhibitions", { credentials: "include" }); const data = await res.json().catch(() => null); if (data) { setExhibitions(data.exhibitions ?? []); setExPublic(!!data.exhibitionsPublic); setExArtistId(data.artistId ?? null); } };
+  const loadSeries = async () => { const res = await fetch("/api/artist/series", { credentials: "include" }); const data = await res.json().catch(() => null); if (data?.series) setSeriesList(data.series); };
+  const saveWorkNote = async () => { setWorkNoteSaving(true); setWorkNoteMsg(null); const res = await fetch("/api/profile/save", { method: "POST", headers: { "Content-Type": "application/json" }, credentials: "include", body: JSON.stringify({ workNote }) }); setWorkNoteMsg(res.ok ? "저장됨" : "저장 실패"); setWorkNoteSaving(false); };
+  const emptySeriesForm = () => ({ title: "", description: "", startYear: "", endYear: "", works: "", isPublic: true });
+  const saveSeries = async () => { if (seriesSaving || !seriesForm?.title?.trim()) return; setSeriesSaving(true); setSeriesMsg(null); const method = editingSeriesId ? "PATCH" : "POST"; const body = { ...seriesForm, ...(editingSeriesId ? { id: editingSeriesId } : {}), startYear: seriesForm.startYear ? Number(seriesForm.startYear) : null, endYear: seriesForm.endYear ? Number(seriesForm.endYear) : null }; const res = await fetch("/api/artist/series", { method, headers: { "Content-Type": "application/json" }, credentials: "include", body: JSON.stringify(body) }); const data = await res.json().catch(() => null); if (data?.ok) { setSeriesForm(null); setEditingSeriesId(null); setSeriesMsg(editingSeriesId ? "수정됨" : "시리즈 추가됨"); await loadSeries(); } else { setSeriesMsg("저장 실패"); } setSeriesSaving(false); };
+  const deleteSeries = async (id: string) => { if (!window.confirm("이 시리즈를 삭제하시겠습니까?")) return; const res = await fetch("/api/artist/series", { method: "DELETE", headers: { "Content-Type": "application/json" }, credentials: "include", body: JSON.stringify({ id }) }); if ((await res.json().catch(() => null))?.ok) { setSeriesMsg("삭제됨"); await loadSeries(); } };
   const toggleExPublic = async () => { if (exToggling) return; setExToggling(true); const next = !exPublic; setExPublic(next); await fetch("/api/artist/exhibitions", { method: "PATCH", headers: { "Content-Type": "application/json" }, credentials: "include", body: JSON.stringify({ exhibitionsPublic: next }) }).catch(() => setExPublic(!next)); setExToggling(false); };
   const updateInviteStatus = async (id: string, status: string) => { if (adminReadOnly) return; const res = await fetch("/api/artist/invites", { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ id, status }) }); const data = await res.json().catch(() => null); if (res.ok && data?.invite) setInvites((p) => p.map((i) => (i.id === id ? data.invite : i))); };
 
@@ -262,8 +272,85 @@ export default function ArtistMePage() {
               </div>
             </Section>
 
+            {/* Work Note */}
+            <Section number="06" title={lang === "ko" ? "작업 노트" : "Work Note"}>
+              <p style={{ fontFamily: F, fontSize: 11, color: "#8A8580", marginBottom: 14 }}>
+                {lang === "ko" ? "이 작업은 왜 하는가, 어떤 문제의식에서 출발했는가, 작업 방향은 무엇인가 — 자유롭게 기록하세요. 공개 프로필에 표시됩니다." : "Why do you make this work? What drives it? Write freely — this appears on your public profile."}
+              </p>
+              <textarea
+                value={workNote}
+                onChange={(e) => setWorkNote(e.target.value)}
+                placeholder={lang === "ko" ? "작업 노트를 입력하세요..." : "Write your work note..."}
+                rows={6}
+                style={{ ...inp, width: "100%", resize: "vertical" }}
+              />
+              <div style={{ marginTop: 14, display: "flex", gap: 12, alignItems: "center" }}>
+                <button onClick={saveWorkNote} disabled={workNoteSaving} style={btnStyle(workNoteSaving)}>
+                  {workNoteSaving ? (lang === "ko" ? "저장 중..." : "Saving...") : (lang === "ko" ? "저장" : "Save")}
+                </button>
+                {workNoteMsg && <span style={{ fontFamily: F, fontSize: 12, color: workNoteMsg.includes("실패") ? "#8B4A4A" : "#5A7A5A" }}>{workNoteMsg}</span>}
+              </div>
+            </Section>
+
+            {/* Artwork Series */}
+            <Section number="07" title={lang === "ko" ? "작업 시리즈" : "Artwork Series"}>
+              <p style={{ fontFamily: F, fontSize: 11, color: "#8A8580", marginBottom: 16 }}>
+                {lang === "ko" ? "연작이나 시리즈 단위로 작업을 묶어 맥락을 구조화하세요. 공개로 설정하면 공개 프로필에 표시됩니다." : "Group your works into series to structure context. Public series appear on your public profile."}
+              </p>
+              {seriesList.length > 0 && (
+                <div style={{ display: "grid", gap: 1, background: "#E8E3DB", marginBottom: 20 }}>
+                  {seriesList.map((s) => (
+                    <div key={s.id} style={{ background: "#FFFFFF", padding: "16px 20px" }}>
+                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 12 }}>
+                        <div style={{ flex: 1 }}>
+                          <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+                            <span style={{ fontFamily: S, fontSize: 16, fontWeight: 400, color: "#1A1A1A" }}>{s.title}</span>
+                            {(s.startYear || s.endYear) && <span style={{ fontFamily: F, fontSize: 10, color: "#B0AAA2" }}>{s.startYear ?? "?"} — {s.endYear ?? "현재"}</span>}
+                            <span style={{ fontFamily: F, fontSize: 9, padding: "2px 8px", border: "1px solid #E8E3DB", color: s.isPublic ? "#5A7A5A" : "#8A8580" }}>{s.isPublic ? (lang === "ko" ? "공개" : "Public") : (lang === "ko" ? "비공개" : "Private")}</span>
+                          </div>
+                          {s.description && <p style={{ fontFamily: F, fontSize: 12, color: "#6A6660", margin: "6px 0 0" }}>{s.description}</p>}
+                          {s.works && <p style={{ fontFamily: F, fontSize: 11, color: "#B0AAA2", margin: "6px 0 0", whiteSpace: "pre-wrap" }}>{s.works}</p>}
+                        </div>
+                        <div style={{ display: "flex", gap: 8, flexShrink: 0 }}>
+                          <button onClick={() => { setEditingSeriesId(s.id); setSeriesForm({ title: s.title, description: s.description ?? "", startYear: s.startYear ? String(s.startYear) : "", endYear: s.endYear ? String(s.endYear) : "", works: s.works ?? "", isPublic: s.isPublic }); }} style={{ padding: "6px 12px", border: "1px solid #E8E3DB", background: "transparent", fontFamily: F, fontSize: 10, color: "#8A8580", cursor: "pointer" }}>{lang === "ko" ? "수정" : "Edit"}</button>
+                          <button onClick={() => deleteSeries(s.id)} style={{ padding: "6px 12px", border: "1px solid #C8A0A0", background: "transparent", fontFamily: F, fontSize: 10, color: "#8B4A4A", cursor: "pointer" }}>{lang === "ko" ? "삭제" : "Delete"}</button>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+              {seriesMsg && <p style={{ fontFamily: F, fontSize: 12, color: seriesMsg.includes("실패") ? "#8B4A4A" : "#5A7A5A", marginBottom: 12 }}>{seriesMsg}</p>}
+              {seriesForm ? (
+                <div style={{ border: "1px solid #E8E3DB", padding: 24, background: "#FDFBF7" }}>
+                  <p style={{ fontFamily: F, fontSize: 10, fontWeight: 600, letterSpacing: "0.12em", textTransform: "uppercase", color: "#8B7355", marginBottom: 16 }}>{editingSeriesId ? (lang === "ko" ? "시리즈 수정" : "Edit Series") : (lang === "ko" ? "새 시리즈" : "New Series")}</p>
+                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14, marginBottom: 14 }}>
+                    <Lbl label={lang === "ko" ? "제목 *" : "Title *"}><input value={seriesForm.title} onChange={(e) => setSeriesForm(f => f ? { ...f, title: e.target.value } : f)} placeholder={lang === "ko" ? "시리즈 제목" : "Series title"} style={inp} /></Lbl>
+                    <Lbl label={lang === "ko" ? "시작 연도" : "Start Year"}><input value={seriesForm.startYear} onChange={(e) => setSeriesForm(f => f ? { ...f, startYear: e.target.value } : f)} placeholder="2020" style={inp} /></Lbl>
+                    <Lbl label={lang === "ko" ? "종료 연도" : "End Year"}><input value={seriesForm.endYear} onChange={(e) => setSeriesForm(f => f ? { ...f, endYear: e.target.value } : f)} placeholder={lang === "ko" ? "진행 중이면 비워두세요" : "Leave blank if ongoing"} style={inp} /></Lbl>
+                    <Lbl label={lang === "ko" ? "공개 여부" : "Visibility"}>
+                      <select value={seriesForm.isPublic ? "1" : "0"} onChange={(e) => setSeriesForm(f => f ? { ...f, isPublic: e.target.value === "1" } : f)} style={{ ...inp, appearance: "none" }}>
+                        <option value="1">{lang === "ko" ? "공개" : "Public"}</option>
+                        <option value="0">{lang === "ko" ? "비공개" : "Private"}</option>
+                      </select>
+                    </Lbl>
+                  </div>
+                  <Lbl label={lang === "ko" ? "설명" : "Description"} style={{ marginBottom: 14 }}><textarea value={seriesForm.description} onChange={(e) => setSeriesForm(f => f ? { ...f, description: e.target.value } : f)} rows={3} placeholder={lang === "ko" ? "이 시리즈의 개념이나 맥락을 설명하세요" : "Describe the concept or context of this series"} style={{ ...inp, width: "100%", resize: "vertical" }} /></Lbl>
+                  <Lbl label={lang === "ko" ? "작품 목록" : "Works"}><textarea value={seriesForm.works} onChange={(e) => setSeriesForm(f => f ? { ...f, works: e.target.value } : f)} rows={3} placeholder={lang === "ko" ? "작품 제목을 줄바꿈으로 구분해 입력하세요" : "One work title per line"} style={{ ...inp, width: "100%", resize: "vertical" }} /></Lbl>
+                  <div style={{ marginTop: 16, display: "flex", gap: 12 }}>
+                    <button onClick={saveSeries} disabled={seriesSaving || !seriesForm.title.trim()} style={btnStyle(seriesSaving || !seriesForm.title.trim())}>{seriesSaving ? "..." : (lang === "ko" ? "저장" : "Save")}</button>
+                    <button onClick={() => { setSeriesForm(null); setEditingSeriesId(null); }} style={{ padding: "14px 24px", border: "1px solid #E8E3DB", background: "transparent", color: "#8A8580", fontFamily: F, fontSize: 11, cursor: "pointer" }}>{lang === "ko" ? "취소" : "Cancel"}</button>
+                  </div>
+                </div>
+              ) : (
+                <button onClick={() => { setSeriesForm(emptySeriesForm()); setEditingSeriesId(null); setSeriesMsg(null); }} style={{ padding: "12px 24px", border: "1px dashed #D4C9B8", background: "transparent", color: "#8B7355", fontFamily: F, fontSize: 10, fontWeight: 500, letterSpacing: "0.1em", textTransform: "uppercase", cursor: "pointer" }}>
+                  + {lang === "ko" ? "시리즈 추가" : "Add Series"}
+                </button>
+              )}
+            </Section>
+
             {/* Notifications */}
-            <Section number="06" title="Notifications">
+            <Section number="08" title="Notifications">
               <label style={{ display: "flex", alignItems: "center", gap: 12, cursor: "pointer", fontFamily: F, fontSize: 13, color: "#1A1A1A" }}>
                 <input type="checkbox" checked={notifyPost} onChange={(e) => onToggleNotify(e.target.checked)} />
                 새 커뮤니티 글 알림 받기
@@ -271,7 +358,7 @@ export default function ArtistMePage() {
             </Section>
 
             {/* Invites */}
-            <Section number="07" title={t("profile_invites", lang)}>
+            <Section number="09" title={t("profile_invites", lang)}>
               {invites.length === 0 ? <p style={{ fontFamily: F, fontSize: 13, color: "#B0AAA2" }}>{t("profile_no_invites", lang)}</p> : (
                 <div style={{ display: "grid", gap: 1, background: "#E8E3DB" }}>
                   {invites.map((i) => (

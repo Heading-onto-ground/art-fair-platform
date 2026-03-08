@@ -29,7 +29,8 @@ export async function POST(req: Request) {
             genre: body.genre ? String(body.genre).trim() : undefined,
             portfolioUrl: body.portfolioUrl ? String(body.portfolioUrl).trim() : undefined,
             profileImage: body.profileImage !== undefined ? (body.profileImage || null) : undefined,
-          })
+            workNote: body.workNote !== undefined ? (body.workNote ? String(body.workNote).trim() : null) : undefined,
+          } as any)
         : await upsertGalleryProfile(session.userId, {
             ...base,
             galleryId: body.galleryId ? String(body.galleryId).trim() : undefined,

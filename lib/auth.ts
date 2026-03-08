@@ -135,6 +135,7 @@ export function upsertArtistProfile(
       bio: data.bio,
       portfolioUrl: data.portfolioUrl,
       profileImage: data.profileImage,
+      workNote: (data as any).workNote,
     },
     update: {
       artistId: data.artistId,
@@ -148,6 +149,7 @@ export function upsertArtistProfile(
       bio: data.bio,
       portfolioUrl: data.portfolioUrl,
       ...(data.profileImage !== undefined ? { profileImage: data.profileImage } : {}),
+      ...((data as any).workNote !== undefined ? { workNote: (data as any).workNote } : {}),
     },
   });
 }

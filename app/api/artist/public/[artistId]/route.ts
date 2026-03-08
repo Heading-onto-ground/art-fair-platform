@@ -7,7 +7,7 @@ export async function GET(_req: Request, { params }: { params: { artistId: strin
   const { artistId } = params;
 
   const profileRows = await prisma.$queryRawUnsafe(
-    `SELECT "artistId", name, "exhibitions_public" FROM "ArtistProfile" WHERE "artistId" = $1 LIMIT 1`,
+    `SELECT "artistId", name, "exhibitions_public", "workNote", id FROM "ArtistProfile" WHERE "artistId" = $1 LIMIT 1`,
     artistId
   ).catch(() => []) as any[];
 
@@ -24,5 +24,11 @@ export async function GET(_req: Request, { params }: { params: { artistId: strin
     artistId
   ).catch(() => []) as any[];
 
-  return NextResponse.json({ name: profile.name, artistId: profile.artistId, exhibitions });
+  const series = await prisma.artworkSeries.findMany({
+    where: { artistId: profile.id, isPublic: true },
+    orderBy: { startYear: "desc" },
+    select: { id: true, title: true, description: true, startYear: true, endYear: true, works: true },
+  }).catch(() => []);
+
+  return NextResponse.json({ name: profile.name, artistId: profile.artistId, workNote: profile.workNote ?? null, exhibitions, series });
 }
