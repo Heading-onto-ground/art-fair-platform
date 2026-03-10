@@ -1,11 +1,13 @@
 import { prisma } from "@/lib/prisma";
 
-export type TemplateRole = "artist" | "gallery";
+export type TemplateRole = "artist" | "gallery" | "curator";
 
 let ensured = false;
 
 export function templateKeyFromRole(role: TemplateRole) {
-  return role === "gallery" ? "platform_gallery_default" : "platform_artist_default";
+  if (role === "gallery") return "platform_gallery_default";
+  if (role === "curator") return "platform_curator_default";
+  return "platform_artist_default";
 }
 
 export function getDefaultRoleWelcomeTemplate(role: TemplateRole) {
@@ -14,6 +16,13 @@ export function getDefaultRoleWelcomeTemplate(role: TemplateRole) {
       subject: "[ROB] Welcome, Gallery — Meet Global Artists on ROB",
       message:
         "Hello,\n\nThank you for joining ROB.\nYou can publish open calls, discover artist portfolios, and connect with artists worldwide.\n\nIf you'd like, we can help you create your first open call listing.\n\nBest regards,\nROB Team",
+    };
+  }
+  if (role === "curator") {
+    return {
+      subject: "[ROB] Welcome, Curator — Connect Artists & Institutions on ROB",
+      message:
+        "Hello,\n\nThank you for joining ROB as a curator.\nYou can discover artists across borders, curate exhibitions, and build your network with galleries and institutions worldwide.\n\nIf you need any help getting started, reply to this email anytime.\n\nBest regards,\nROB Team",
     };
   }
   return {
