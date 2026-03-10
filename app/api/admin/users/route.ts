@@ -7,7 +7,7 @@ export const dynamic = "force-dynamic";
 type AdminUserRow = {
   id: string;
   email: string;
-  role: "artist" | "gallery";
+  role: "artist" | "gallery" | "curator";
   createdAt: number;
   name: string;
   country: string;
@@ -19,7 +19,7 @@ type AdminUserRow = {
 type UserWithProfiles = {
   id: string;
   email: string;
-  role: "artist" | "gallery";
+  role: "artist" | "gallery" | "curator";
   createdAt: Date;
   artistProfile: {
     artistId: string;

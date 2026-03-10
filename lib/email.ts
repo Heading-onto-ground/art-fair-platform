@@ -23,14 +23,14 @@ export type ArtistApplicationEmail = {
 
 export type WelcomeEmailInput = {
   to: string;
-  role: "artist" | "gallery";
+  role: "artist" | "gallery" | "curator";
   name?: string;
   lang?: "en" | "ko" | "ja" | "fr";
 };
 
 export type VerificationEmailInput = {
   to: string;
-  role: "artist" | "gallery";
+  role: "artist" | "gallery" | "curator";
   verifyUrl: string;
   lang?: "en" | "ko" | "ja" | "fr";
 };
@@ -47,7 +47,7 @@ function normalizeLang(lang?: string | null): "en" | "ko" | "ja" | "fr" {
   return detectEmailLang(lang);
 }
 
-function buildWelcomeSubject(role: "artist" | "gallery", lang: "en" | "ko" | "ja" | "fr"): string {
+function buildWelcomeSubject(role: "artist" | "gallery" | "curator", lang: "en" | "ko" | "ja" | "fr"): string {
   return "Thank you for joining ROB — A message from the CEO";
 }
 
