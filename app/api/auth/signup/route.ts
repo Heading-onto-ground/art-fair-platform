@@ -6,7 +6,7 @@ import { sendVerificationEmail, detectEmailLang, sendPlatformEmail } from "@/lib
 import { createOrRefreshVerificationToken } from "@/lib/emailVerification";
 import { getRoleWelcomeTemplate } from "@/lib/adminMailTemplates";
 
-type Role = "artist" | "gallery";
+type Role = "artist" | "gallery" | "curator";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -34,9 +34,12 @@ export async function POST(req: Request) {
     const portfolioUrl = String(body?.portfolioUrl ?? "").trim();
     const address = String(body?.address ?? "").trim();
     const foundedYear = Number(body?.foundedYear ?? 0);
+    const curatorId = String(body?.curatorId ?? "").trim();
+    const curatorType = String(body?.curatorType ?? "").trim();
+    const organization = String(body?.organization ?? "").trim();
     const lang = detectEmailLang(req.headers.get("accept-language"));
 
-    if (role !== "artist" && role !== "gallery") {
+    if (role !== "artist" && role !== "gallery" && role !== "curator") {
       return NextResponse.json({ ok: false, error: "invalid role" }, { status: 400 });
     }
     if (!email) {
@@ -60,6 +63,14 @@ export async function POST(req: Request) {
       if (!galleryId || !name || !address || !foundedYear || !instagram) {
         return NextResponse.json(
           { ok: false, error: "missing gallery fields" },
+          { status: 400 }
+        );
+      }
+    }
+    if (role === "curator") {
+      if (!curatorId || !name || !curatorType) {
+        return NextResponse.json(
+          { ok: false, error: "missing curator fields" },
           { status: 400 }
         );
       }
@@ -92,7 +103,7 @@ export async function POST(req: Request) {
             portfolioUrl: portfolioUrl || undefined,
           },
         });
-      } else {
+      } else if (role === "gallery") {
         await tx.galleryProfile.create({
           data: {
             userId: created.id,
@@ -100,6 +111,17 @@ export async function POST(req: Request) {
             name,
             address,
             foundedYear,
+            instagram: instagram || undefined,
+          },
+        });
+      } else {
+        await (tx as any).curatorProfile.create({
+          data: {
+            userId: created.id,
+            curatorId,
+            name,
+            curatorType,
+            organization: organization || undefined,
             instagram: instagram || undefined,
           },
         });
@@ -131,7 +153,7 @@ export async function POST(req: Request) {
         </div>
       `;
       const welcome = await sendPlatformEmail({
-        emailType: role === "artist" ? "welcome_artist" : "welcome_gallery",
+        emailType: role === "artist" ? "welcome_artist" : role === "gallery" ? "welcome_gallery" : "welcome_curator",
         to: email,
         subject: welcomeTemplate.subject,
         text: welcomeText,

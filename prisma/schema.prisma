@@ -10,6 +10,12 @@ datasource db {
 enum Role {
   artist
   gallery
+  curator
+}
+
+enum CuratorType {
+  independent
+  institutional
 }
 
 model User {
@@ -20,6 +26,7 @@ model User {
   createdAt    DateTime        @default(now())
   artistProfile ArtistProfile?
   galleryProfile GalleryProfile?
+  curatorProfile CuratorProfile?
 }
 
 model ArtistProfile {
@@ -78,6 +85,24 @@ model GalleryProfile {
   profileImage String?  // Base64 data URI or URL
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
+}
+
+model CuratorProfile {
+  id           String      @id @default(cuid())
+  userId       String      @unique
+  user         User        @relation(fields: [userId], references: [id])
+  curatorId    String      @unique
+  name         String
+  curatorType  CuratorType
+  organization String?
+  instagram    String?
+  country      String?
+  city         String?
+  website      String?
+  bio          String?
+  profileImage String?
+  createdAt    DateTime    @default(now())
+  updatedAt    DateTime    @updatedAt
 }
 
 model ChatRoom {

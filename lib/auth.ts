@@ -7,7 +7,8 @@ import { prisma } from "@/lib/prisma";
 import { signSession, verifySession } from "@/lib/session";
 
 /** ===== Types ===== */
-export type Role = "artist" | "gallery";
+export type Role = "artist" | "gallery" | "curator";
+export type CuratorType = "independent" | "institutional";
 
 export type Session = {
   userId: string;
@@ -54,7 +55,26 @@ export type GalleryProfile = {
   updatedAt: number;
 };
 
-export type Profile = ArtistProfile | GalleryProfile;
+export type CuratorProfile = {
+  id: string;
+  userId: string;
+  role: "curator";
+  email: string;
+  curatorId: string;
+  name: string;
+  curatorType: CuratorType;
+  organization?: string;
+  instagram?: string;
+  country?: string;
+  city?: string;
+  website?: string;
+  bio?: string;
+  profileImage?: string | null;
+  createdAt: number;
+  updatedAt: number;
+};
+
+export type Profile = ArtistProfile | GalleryProfile | CuratorProfile;
 
 /** ===== Cookie helpers ===== */
 const COOKIE_NAME = "afp_session";
@@ -90,6 +110,8 @@ export async function getProfileByUserId(userId: string): Promise<Profile | null
   if (artists && artists[0]) return { ...artists[0], role: "artist" } as ArtistProfile;
   const gallery = await prisma.galleryProfile.findUnique({ where: { userId } });
   if (gallery) return { ...gallery, role: "gallery" } as GalleryProfile;
+  const curator = await prisma.curatorProfile.findUnique({ where: { userId } });
+  if (curator) return { ...curator, role: "curator" } as CuratorProfile;
   return null;
 }
 
@@ -211,6 +233,40 @@ export async function createUser(input: { email: string; role: Role; password: s
 
 export function verifyPassword(user: { passwordHash: string }, password: string) {
   return bcrypt.compareSync(password, user.passwordHash);
+}
+
+export function upsertCuratorProfile(
+  userId: string,
+  data: Partial<Omit<CuratorProfile, "id" | "userId" | "role" | "createdAt" | "updatedAt">>
+): Promise<CuratorProfile> {
+  return prisma.curatorProfile.upsert({
+    where: { userId },
+    create: {
+      userId,
+      curatorId: data.curatorId ?? `CUR-${Date.now()}`,
+      name: data.name ?? "Unnamed Curator",
+      curatorType: (data.curatorType as any) ?? "independent",
+      organization: data.organization,
+      instagram: data.instagram,
+      country: data.country ?? "",
+      city: data.city ?? "",
+      website: data.website,
+      bio: data.bio,
+      profileImage: data.profileImage,
+    },
+    update: {
+      curatorId: data.curatorId,
+      name: data.name,
+      curatorType: data.curatorType as any,
+      organization: data.organization,
+      instagram: data.instagram,
+      country: data.country,
+      city: data.city,
+      website: data.website,
+      bio: data.bio,
+      ...(data.profileImage !== undefined ? { profileImage: data.profileImage } : {}),
+    },
+  }) as unknown as Promise<CuratorProfile>;
 }
 
 /** ===== Backward-compatible alias =====

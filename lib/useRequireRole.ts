@@ -23,7 +23,7 @@ export function useRequireRole(required: Role) {
 
       // role 불일치면 해당 대시보드로 튕김
       if (role !== required) {
-        router.replace(role === "artist" ? "/artist" : "/gallery");
+        router.replace(role === "artist" ? "/artist" : role === "gallery" ? "/gallery" : "/curator");
         return;
       }
 

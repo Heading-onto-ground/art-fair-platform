@@ -1,4 +1,4 @@
-export type Role = "artist" | "gallery";
+export type Role = "artist" | "gallery" | "curator";
 
 export type MeResponse = {
   session: { userId: string; role: Role; email?: string } | null;

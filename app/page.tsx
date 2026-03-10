@@ -51,6 +51,11 @@ export default function Home() {
             onMouseLeave={(e) => { e.currentTarget.style.background = "transparent"; e.currentTarget.style.color = "#1A1A1A"; }}>
             {t("home_i_am_gallery", lang)}
           </Link>
+          <Link href="/login?role=curator" style={{ padding: "16px 40px", border: "1px solid #8B7355", background: "transparent", color: "#8B7355", fontFamily: F, fontSize: 11, fontWeight: 500, letterSpacing: "0.12em", textTransform: "uppercase", textDecoration: "none", transition: "all 0.3s ease", flex: "0 1 auto" }}
+            onMouseEnter={(e) => { e.currentTarget.style.background = "#8B7355"; e.currentTarget.style.color = "#FDFBF7"; }}
+            onMouseLeave={(e) => { e.currentTarget.style.background = "transparent"; e.currentTarget.style.color = "#8B7355"; }}>
+            {t("home_i_am_curator", lang)}
+          </Link>
         </div>
 
         <div className="hide-on-mobile" style={{ position: "absolute", bottom: 40, left: "50%", transform: "translateX(-50%)", display: "flex", flexDirection: "column", alignItems: "center", gap: 8 }}>
@@ -86,9 +91,10 @@ export default function Home() {
 
       {/* Role Cards */}
       <section style={{ padding: "60px 24px", background: "#F5F1EB" }}>
-        <div className="role-grid" style={{ maxWidth: 900, margin: "0 auto", display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: 1, background: "#E8E3DB", alignItems: "stretch" }}>
+        <div className="role-grid" style={{ maxWidth: 1200, margin: "0 auto", display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 1, background: "#E8E3DB", alignItems: "stretch" }}>
           <RoleCard href="/login?role=artist" label={t("home_for_artists", lang)} title={t("home_artist_title", lang)} features={[t("home_artist_feat1", lang), t("home_artist_feat2", lang), t("home_artist_feat3", lang), t("home_artist_feat5", lang), t("home_artist_feat6", lang), t("home_artist_feat7", lang)]} lang={lang} />
           <RoleCard href="/login?role=gallery" label={t("home_for_galleries", lang)} title={t("home_gallery_title", lang)} features={[t("home_gallery_feat1", lang), t("home_gallery_feat2", lang), t("home_gallery_feat3", lang), t("home_gallery_feat4", lang), t("home_gallery_feat5", lang)]} lang={lang} />
+          <RoleCard href="/login?role=curator" label={t("home_for_curators", lang)} title={t("home_curator_title", lang)} features={[t("home_curator_feat1", lang), t("home_curator_feat2", lang), t("home_curator_feat3", lang), t("home_curator_feat4", lang), t("home_curator_feat5", lang)]} lang={lang} />
         </div>
       </section>
 
@@ -163,6 +169,7 @@ export default function Home() {
           .stats-grid { grid-template-columns: repeat(2, 1fr) !important; gap: 32px 16px !important; }
           .feature-grid { grid-template-columns: 1fr !important; }
           .role-grid { grid-template-columns: 1fr !important; }
+          .hero-buttons { flex-direction: column !important; align-items: stretch !important; }
           .hide-on-mobile { display: none !important; }
         }
         @media (max-width: 480px) {

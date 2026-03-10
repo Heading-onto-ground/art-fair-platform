@@ -8,7 +8,7 @@ import { useLanguage } from "@/lib/useLanguage";
 import { t } from "@/lib/translate";
 import { F, S } from "@/lib/design";
 
-type Role = "artist" | "gallery";
+type Role = "artist" | "gallery" | "curator";
 type MeResponse = { session: { userId: string; role: Role; email?: string } | null; profile: any | null };
 
 export default function LoginPage() {
@@ -28,6 +28,9 @@ export default function LoginPage() {
   const [portfolioUrl, setPortfolioUrl] = useState("");
   const [address, setAddress] = useState("");
   const [foundedYear, setFoundedYear] = useState("");
+  const [curatorId, setCuratorId] = useState("");
+  const [curatorType, setCuratorType] = useState<"independent" | "institutional">("independent");
+  const [organization, setOrganization] = useState("");
   const [loading, setLoading] = useState(false);
   const [err, setErr] = useState<string | null>(null);
   const [info, setInfo] = useState<string | null>(null);
@@ -39,7 +42,7 @@ export default function LoginPage() {
 
   useEffect(() => {
     const roleParam = searchParams.get("role");
-    if (roleParam === "artist" || roleParam === "gallery") setRole(roleParam);
+    if (roleParam === "artist" || roleParam === "gallery" || roleParam === "curator") setRole(roleParam);
     const verified = searchParams.get("verified");
     if (verified === "success") {
       setInfo(tr("Email verified. You can now sign in.", "이메일 인증이 완료되었습니다. 이제 로그인할 수 있습니다.", "メール認証が完了しました。ログインできます。", "Email verifie. Vous pouvez maintenant vous connecter."));
@@ -59,6 +62,7 @@ export default function LoginPage() {
     const realRole = me?.session?.role;
     if (realRole === "artist") router.push("/artist");
     else if (realRole === "gallery") router.push("/gallery");
+    else if (realRole === "curator") router.push("/curator");
     else router.push("/login");
   };
 
@@ -114,9 +118,10 @@ export default function LoginPage() {
     if (!p || p.length < 6) return setErr(t("login_password_min", lang));
     if (role === "artist" && (!artistId || !name || !startedYear || !genre)) return setErr(t("login_fill_required", lang));
     if (role === "gallery" && (!galleryId || !name || !address || !foundedYear || !instagram)) return setErr(t("login_fill_required", lang));
+    if (role === "curator" && (!curatorId || !name || !curatorType)) return setErr(t("login_fill_required", lang));
     setLoading(true);
     try {
-      const res = await fetch("/api/auth/signup", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ role, email: e, password: p, artistId: role === "artist" ? artistId : undefined, galleryId: role === "gallery" ? galleryId : undefined, name, startedYear: role === "artist" ? Number(startedYear) : undefined, genre: role === "artist" ? genre : undefined, instagram, portfolioUrl: role === "artist" ? portfolioUrl : undefined, address: role === "gallery" ? address : undefined, foundedYear: role === "gallery" ? Number(foundedYear) : undefined }) });
+      const res = await fetch("/api/auth/signup", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ role, email: e, password: p, artistId: role === "artist" ? artistId : undefined, galleryId: role === "gallery" ? galleryId : undefined, curatorId: role === "curator" ? curatorId : undefined, curatorType: role === "curator" ? curatorType : undefined, organization: role === "curator" ? organization : undefined, name, startedYear: role === "artist" ? Number(startedYear) : undefined, genre: role === "artist" ? genre : undefined, instagram, portfolioUrl: role === "artist" ? portfolioUrl : undefined, address: role === "gallery" ? address : undefined, foundedYear: role === "gallery" ? Number(foundedYear) : undefined }) });
       const data = await res.json().catch(() => null);
       if (!res.ok || !data?.ok) { setErr(data?.error ?? `Signup failed (${res.status})`); return; }
       if (data?.requiresEmailVerification) {
@@ -227,10 +232,10 @@ export default function LoginPage() {
 
         <div className="login-card" style={{ background: "#FFFFFF", border: "1px solid #E8E3DB", padding: "clamp(20px, 4vw, 40px)" }}>
           {/* Role toggle */}
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 0, marginBottom: 32 }}>
-            {(["artist", "gallery"] as const).map((r) => (
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 0, marginBottom: 32 }}>
+            {(["artist", "gallery", "curator"] as const).map((r) => (
               <button key={r} onClick={() => { setRole(r); setErr(null); }} style={{ padding: "14px", border: "1px solid #E8E3DB", background: role === r ? "#1A1A1A" : "transparent", color: role === r ? "#FDFBF7" : "#8A8580", fontFamily: F, fontSize: 10, fontWeight: 500, letterSpacing: "0.12em", textTransform: "uppercase", cursor: "pointer", transition: "all 0.3s" }}>
-                {t(r, lang)}
+                {r === "curator" ? tr("Curator", "큐레이터", "キュレーター", "Curateur") : t(r, lang)}
               </button>
             ))}
           </div>
@@ -281,7 +286,7 @@ export default function LoginPage() {
                     </div>
                     <Lbl label="Instagram"><input value={instagram} onChange={(e) => setInstagram(e.target.value)} placeholder="@username" style={inp} /></Lbl>
                   </>
-                ) : (
+                ) : role === "gallery" ? (
                   <>
                     <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
                       <Lbl label={`${t("login_gallery_id", lang)} *`}><input value={galleryId} onChange={(e) => setGalleryId(e.target.value)} placeholder="gal-0001" style={inp} /></Lbl>
@@ -292,6 +297,28 @@ export default function LoginPage() {
                       <Lbl label={`${t("login_founded_year", lang)} *`}><input value={foundedYear} onChange={(e) => setFoundedYear(e.target.value)} placeholder="2010" style={inp} /></Lbl>
                       <Lbl label="Instagram *"><input value={instagram} onChange={(e) => setInstagram(e.target.value)} placeholder="@gallery" style={inp} /></Lbl>
                     </div>
+                  </>
+                ) : (
+                  <>
+                    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
+                      <Lbl label={`${tr("Curator ID", "큐레이터 ID", "キュレーターID", "ID Curateur")} *`}><input value={curatorId} onChange={(e) => setCuratorId(e.target.value)} placeholder="cur-0001" style={inp} /></Lbl>
+                      <Lbl label={`${t("name", lang)} *`}><input value={name} onChange={(e) => setName(e.target.value)} placeholder={lang === "ko" ? "이름" : lang === "ja" ? "氏名" : "Full name"} style={inp} /></Lbl>
+                    </div>
+                    <Lbl label={`${tr("Curator Type", "큐레이터 유형", "キュレータータイプ", "Type de curateur")} *`}>
+                      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 0 }}>
+                        {(["independent", "institutional"] as const).map((ct) => (
+                          <button key={ct} type="button" onClick={() => setCuratorType(ct)} style={{ padding: "14px 8px", border: "1px solid #E8E3DB", background: curatorType === ct ? "#1A1A1A" : "transparent", color: curatorType === ct ? "#FDFBF7" : "#8A8580", fontFamily: F, fontSize: 10, fontWeight: 500, letterSpacing: "0.1em", textTransform: "uppercase", cursor: "pointer", transition: "all 0.3s" }}>
+                            {ct === "independent"
+                              ? tr("Independent", "독립 큐레이터", "インディペンデント", "Indépendant")
+                              : tr("Institutional", "기관 큐레이터", "機関キュレーター", "Institutionnel")}
+                          </button>
+                        ))}
+                      </div>
+                    </Lbl>
+                    {curatorType === "institutional" && (
+                      <Lbl label={tr("Organization", "소속 기관", "所属機関", "Organisation")}><input value={organization} onChange={(e) => setOrganization(e.target.value)} placeholder={lang === "ko" ? "미술관, 기관명" : "Museum, Institution name"} style={inp} /></Lbl>
+                    )}
+                    <Lbl label="Instagram"><input value={instagram} onChange={(e) => setInstagram(e.target.value)} placeholder="@username" style={inp} /></Lbl>
                   </>
                 )}
               </>
