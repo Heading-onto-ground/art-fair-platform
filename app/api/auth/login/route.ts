@@ -4,7 +4,7 @@ import { createOrRefreshVerificationToken, getEmailVerificationState } from "@/l
 import { sendVerificationEmail, detectEmailLang } from "@/lib/email";
 import { clearRateLimit, consumeRateLimit, getClientIp } from "@/lib/rateLimit";
 
-type Role = "artist" | "gallery";
+type Role = "artist" | "gallery" | "curator";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -47,7 +47,7 @@ export async function POST(req: Request) {
     const ip = getClientIp(req);
     const rateKey = `auth-login:${ip}:${emailLower}:${role}`;
 
-    if (role !== "artist" && role !== "gallery") {
+    if (role !== "artist" && role !== "gallery" && role !== "curator") {
       return NextResponse.json({ ok: false, error: "invalid role" }, { status: 400 });
     }
     if (!email) {
