@@ -11,6 +11,7 @@ import { F } from "@/lib/design";
 type ArtistProfile = {
   id: string;
   userId: string;
+  artistId?: string;
   role: "artist";
   email: string;
   name: string;
@@ -555,6 +556,17 @@ export default function PublicArtistPage() {
                 )}
               </div>
             </div>
+
+            {me?.session?.role === "artist" && profile?.artistId && (
+              <div style={{ marginTop: 16 }}>
+                <a
+                  href={`/artist/public/${profile.artistId}`}
+                  style={{ display: "inline-flex", alignItems: "center", gap: 6, padding: "10px 18px", border: "1px solid #D4C9B8", background: "#FDFBF8", fontFamily: F, fontSize: 11, fontWeight: 500, letterSpacing: "0.1em", textTransform: "uppercase", color: "#8B7355", textDecoration: "none" }}
+                >
+                  전시 이력 · 타임라인 보기 →
+                </a>
+              </div>
+            )}
 
             {me?.session?.role === "gallery" ? (
               <div

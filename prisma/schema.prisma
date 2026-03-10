@@ -41,6 +41,7 @@ model ArtistProfile {
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
   series       ArtworkSeries[]
+  artEvents    ArtEvent[]
 }
 
 // ========== 맥락 저장 ==========
@@ -343,4 +344,84 @@ model AdminSetting {
   key       String   @id
   value     String
   updatedAt DateTime @updatedAt
+}
+
+// ========== 활동 타임라인 ==========
+
+enum ArtEventType {
+  exhibition
+  collaboration
+  publication
+  series_start
+}
+
+model ArtEvent {
+  id          String       @id @default(cuid())
+  artistId    String       // ArtistProfile.id
+  artist      ArtistProfile @relation(fields: [artistId], references: [id], onDelete: Cascade)
+  eventType   ArtEventType
+  title       String
+  year        Int
+  description String?
+  isPublic    Boolean      @default(true)
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+
+  @@index([artistId])
+}
+
+// ========== 전시 시스템 ==========
+
+model Space {
+  id          String       @id @default(cuid())
+  name        String
+  type        String?      // gallery, museum, art_fair, alternative, online, other
+  city        String?
+  country     String?
+  website     String?
+  createdAt   DateTime     @default(now())
+  exhibitions Exhibition[]
+}
+
+model Curator {
+  id           String       @id @default(cuid())
+  name         String
+  bio          String?
+  organization String?
+  createdAt    DateTime     @default(now())
+  exhibitions  Exhibition[]
+}
+
+model Exhibition {
+  id          String             @id @default(cuid())
+  title       String
+  startDate   DateTime?
+  endDate     DateTime?
+  city        String?
+  country     String?
+  description String?
+  spaceId     String?
+  space       Space?             @relation(fields: [spaceId], references: [id])
+  curatorId   String?
+  curator     Curator?           @relation(fields: [curatorId], references: [id])
+  createdBy   String             // ArtistProfile.id
+  isPublic    Boolean            @default(false)
+  createdAt   DateTime           @default(now())
+  updatedAt   DateTime           @updatedAt
+  artists     ExhibitionArtist[]
+
+  @@index([createdBy])
+}
+
+model ExhibitionArtist {
+  id           String     @id @default(cuid())
+  exhibitionId String
+  exhibition   Exhibition @relation(fields: [exhibitionId], references: [id], onDelete: Cascade)
+  artistId     String     // ArtistProfile.id
+  status       String     @default("confirmed") // invited | confirmed | declined
+  invitedBy    String?
+  createdAt    DateTime   @default(now())
+
+  @@unique([exhibitionId, artistId])
+  @@index([artistId])
 }

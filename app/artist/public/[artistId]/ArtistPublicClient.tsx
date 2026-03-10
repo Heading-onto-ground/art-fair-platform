@@ -21,9 +21,31 @@ type SeriesItem = {
   works?: string | null;
 };
 
+type ArtEventItem = {
+  id: string;
+  eventType: "exhibition" | "collaboration" | "publication" | "series_start";
+  title: string;
+  year: number;
+  description?: string | null;
+};
+
+const EVENT_LABEL: Record<string, string> = {
+  exhibition: "Exhibition",
+  collaboration: "Collaboration",
+  publication: "Publication",
+  series_start: "Series",
+};
+
+const EVENT_COLOR: Record<string, string> = {
+  exhibition: "#8B7355",
+  collaboration: "#5A7A5A",
+  publication: "#5A5A8B",
+  series_start: "#8B5A5A",
+};
+
 export default function ArtistPublicClient() {
   const { artistId } = useParams<{ artistId: string }>();
-  const [data, setData] = useState<{ name: string; workNote?: string | null; exhibitions: Exhibition[]; series: SeriesItem[] } | null>(null);
+  const [data, setData] = useState<{ name: string; workNote?: string | null; exhibitions: Exhibition[]; series: SeriesItem[]; artEvents: ArtEventItem[] } | null>(null);
   const [notFound, setNotFound] = useState(false);
 
   useEffect(() => {
@@ -132,6 +154,28 @@ export default function ArtistPublicClient() {
               </div>
             </div>
           ))}
+        </div>
+      )}
+
+      {data.artEvents && data.artEvents.length > 0 && (
+        <div style={{ marginTop: 48 }}>
+          <p style={{ fontFamily: F, fontSize: 10, fontWeight: 600, letterSpacing: "0.14em", textTransform: "uppercase", color: "#8B7355", marginBottom: 20 }}>Activity Timeline</p>
+          <div style={{ position: "relative", paddingLeft: 24 }}>
+            <div style={{ position: "absolute", left: 7, top: 0, bottom: 0, width: 1, background: "#E8E3DB" }} />
+            {data.artEvents.map((ev) => (
+              <div key={ev.id} style={{ position: "relative", marginBottom: 24, paddingLeft: 20 }}>
+                <div style={{ position: "absolute", left: -1, top: 5, width: 9, height: 9, borderRadius: "50%", background: EVENT_COLOR[ev.eventType] ?? "#8A8580", border: "2px solid #FDFBF7" }} />
+                <div style={{ display: "flex", alignItems: "baseline", gap: 10, flexWrap: "wrap" }}>
+                  <span style={{ fontFamily: F, fontSize: 9, fontWeight: 600, letterSpacing: "0.12em", textTransform: "uppercase", color: EVENT_COLOR[ev.eventType] ?? "#8A8580", background: "rgba(139,115,85,0.07)", padding: "2px 8px" }}>
+                    {EVENT_LABEL[ev.eventType] ?? ev.eventType}
+                  </span>
+                  <span style={{ fontFamily: F, fontSize: 10, color: "#B0AAA2" }}>{ev.year}</span>
+                </div>
+                <p style={{ fontFamily: S, fontSize: 18, fontWeight: 400, color: "#1A1A1A", margin: "4px 0 2px" }}>{ev.title}</p>
+                {ev.description && <p style={{ fontFamily: F, fontSize: 12, color: "#6A6660", margin: 0, lineHeight: 1.6 }}>{ev.description}</p>}
+              </div>
+            ))}
+          </div>
         </div>
       )}
 

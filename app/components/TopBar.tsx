@@ -189,6 +189,7 @@ export default function TopBar() {
     () => [
       { path: "/artist/me", label: t("nav_profile", lang) },
       { path: "/open-calls", label: t("nav_open_calls", lang) },
+      { path: "/artists", label: t("nav_artists", lang) },
       { path: "/galleries", label: t("nav_galleries", lang) },
       { path: "/community", label: t("nav_community", lang) },
       { path: "/shipments", label: t("nav_shipments", lang) },

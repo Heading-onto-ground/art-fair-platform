@@ -30,5 +30,11 @@ export async function GET(_req: Request, { params }: { params: { artistId: strin
     select: { id: true, title: true, description: true, startYear: true, endYear: true, works: true },
   }).catch(() => []);
 
-  return NextResponse.json({ name: profile.name, artistId: profile.artistId, workNote: profile.workNote ?? null, exhibitions, series });
+  const artEvents = await prisma.artEvent.findMany({
+    where: { artistId: profile.id, isPublic: true },
+    orderBy: [{ year: "desc" }, { createdAt: "desc" }],
+    select: { id: true, eventType: true, title: true, year: true, description: true },
+  }).catch(() => []);
+
+  return NextResponse.json({ name: profile.name, artistId: profile.artistId, workNote: profile.workNote ?? null, exhibitions, series, artEvents });
 }

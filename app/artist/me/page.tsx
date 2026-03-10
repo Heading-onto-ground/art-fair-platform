@@ -41,8 +41,29 @@ export default function ArtistMePage() {
   const [exhibitions, setExhibitions] = useState<any[]>([]); const [exPublic, setExPublic] = useState(false); const [exArtistId, setExArtistId] = useState<string | null>(null); const [exCopied, setExCopied] = useState(false); const [exToggling, setExToggling] = useState(false);
   const [workNote, setWorkNote] = useState(""); const [workNoteSaving, setWorkNoteSaving] = useState(false); const [workNoteMsg, setWorkNoteMsg] = useState<string | null>(null);
 
+  type SelfExhibition = { id: string; title: string; startDate?: string | null; endDate?: string | null; city?: string | null; country?: string | null; description?: string | null; isPublic: boolean; space?: { name: string; type?: string | null; website?: string | null } | null; curator?: { name: string; organization?: string | null } | null; artists: { id: string; artistId: string; status: string; artist: { name: string; artistId: string; country?: string | null } }[] };
+  type SelfExForm = { title: string; startDate: string; endDate: string; city: string; country: string; description: string; isPublic: boolean; spaceName: string; spaceType: string; spaceWebsite: string; curatorName: string; curatorOrganization: string };
+  const emptySelfExForm = (): SelfExForm => ({ title: "", startDate: "", endDate: "", city: "", country: "", description: "", isPublic: false, spaceName: "", spaceType: "", spaceWebsite: "", curatorName: "", curatorOrganization: "" });
+  const [selfExhibitions, setSelfExhibitions] = useState<SelfExhibition[]>([]);
+  const [selfExForm, setSelfExForm] = useState<SelfExForm | null>(null);
+  const [editingSelfExId, setEditingSelfExId] = useState<string | null>(null);
+  const [selfExMsg, setSelfExMsg] = useState<string | null>(null);
+  const [selfExSaving, setSelfExSaving] = useState(false);
+  const [inviteArtistId, setInviteArtistId] = useState("");
+  const [invitingExId, setInvitingExId] = useState<string | null>(null);
+  const [inviteMsg, setInviteMsg] = useState<string | null>(null);
+
   type SeriesItem = { id: string; title: string; description?: string | null; startYear?: number | null; endYear?: number | null; works?: string | null; isPublic: boolean };
   const [seriesList, setSeriesList] = useState<SeriesItem[]>([]); const [seriesForm, setSeriesForm] = useState<{ title: string; description: string; startYear: string; endYear: string; works: string; isPublic: boolean } | null>(null); const [editingSeriesId, setEditingSeriesId] = useState<string | null>(null); const [seriesMsg, setSeriesMsg] = useState<string | null>(null); const [seriesSaving, setSeriesSaving] = useState(false);
+
+  type ArtEventItem = { id: string; eventType: string; title: string; year: number; description?: string | null; isPublic: boolean };
+  type ArtEventForm = { eventType: string; title: string; year: string; description: string; isPublic: boolean };
+  const emptyArtEventForm = (): ArtEventForm => ({ eventType: "exhibition", title: "", year: String(new Date().getFullYear()), description: "", isPublic: true });
+  const [artEvents, setArtEvents] = useState<ArtEventItem[]>([]);
+  const [artEventForm, setArtEventForm] = useState<ArtEventForm | null>(null);
+  const [editingArtEventId, setEditingArtEventId] = useState<string | null>(null);
+  const [artEventMsg, setArtEventMsg] = useState<string | null>(null);
+  const [artEventSaving, setArtEventSaving] = useState(false);
 
   const loadMe = async () => {
     setLoadingMe(true);
@@ -91,12 +112,19 @@ export default function ArtistMePage() {
   };
 
   useEffect(() => { loadMe(); }, [isAdminView, adminUserId]);
-  useEffect(() => { if (!me?.session || adminReadOnly) return; loadApplications(); loadInvites(); loadExhibitions(); loadSeries(); }, [me?.session?.userId, adminReadOnly]);
+  useEffect(() => { if (!me?.session || adminReadOnly) return; loadApplications(); loadInvites(); loadExhibitions(); loadSeries(); loadSelfExhibitions(); loadArtEvents(); }, [me?.session?.userId, adminReadOnly]);
 
   const loadApplications = async () => { const [appsRes, ocRes] = await Promise.all([fetch("/api/applications", { cache: "default", credentials: "include" }), fetch("/api/open-calls", { cache: "default" })]); const appsJson = await appsRes.json().catch(() => null); const ocJson = await ocRes.json().catch(() => null); const map: Record<string, OpenCall> = {}; for (const oc of ocJson?.openCalls ?? []) map[oc.id] = oc; setOpenCallMap(map); setApplications(appsJson?.applications ?? []); };
   const loadInvites = async () => { const res = await fetch("/api/artist/invites", { cache: "default", credentials: "include" }); const data = await res.json().catch(() => null); if (res.ok) setInvites(data?.invites ?? []); };
   const loadExhibitions = async () => { const res = await fetch("/api/artist/exhibitions", { credentials: "include" }); const data = await res.json().catch(() => null); if (data) { setExhibitions(data.exhibitions ?? []); setExPublic(!!data.exhibitionsPublic); setExArtistId(data.artistId ?? null); } };
+  const loadSelfExhibitions = async () => { const res = await fetch("/api/artist/self-exhibitions", { credentials: "include" }); const data = await res.json().catch(() => null); if (data?.exhibitions) setSelfExhibitions(data.exhibitions); };
+  const saveSelfEx = async () => { if (selfExSaving || !selfExForm?.title?.trim()) return; setSelfExSaving(true); setSelfExMsg(null); const method = editingSelfExId ? "PATCH" : "POST"; const body = { ...(editingSelfExId ? { id: editingSelfExId } : {}), ...selfExForm }; const res = await fetch("/api/artist/self-exhibitions", { method, headers: { "Content-Type": "application/json" }, credentials: "include", body: JSON.stringify(body) }); const data = await res.json().catch(() => null); if (data?.ok) { setSelfExForm(null); setEditingSelfExId(null); setSelfExMsg(editingSelfExId ? "수정됨" : "전시 등록됨"); await loadSelfExhibitions(); } else { setSelfExMsg(data?.error ?? "저장 실패"); } setSelfExSaving(false); };
+  const deleteSelfEx = async (id: string) => { if (!window.confirm("이 전시를 삭제하시겠습니까?")) return; const res = await fetch("/api/artist/self-exhibitions", { method: "DELETE", headers: { "Content-Type": "application/json" }, credentials: "include", body: JSON.stringify({ id }) }); if ((await res.json().catch(() => null))?.ok) { setSelfExMsg("삭제됨"); await loadSelfExhibitions(); } };
+  const inviteArtist = async (exhibitionId: string) => { if (!inviteArtistId.trim()) return; setInviteMsg(null); const res = await fetch(`/api/artist/self-exhibitions/${exhibitionId}`, { method: "POST", headers: { "Content-Type": "application/json" }, credentials: "include", body: JSON.stringify({ inviteArtistId: inviteArtistId.trim() }) }); const data = await res.json().catch(() => null); if (data?.ok) { setInviteArtistId(""); setInvitingExId(null); setInviteMsg("초대 완료"); await loadSelfExhibitions(); } else { setInviteMsg(data?.error === "artist_not_found" ? "작가를 찾을 수 없습니다" : data?.error === "already_invited" ? "이미 초대됨" : "초대 실패"); } };
   const loadSeries = async () => { const res = await fetch("/api/artist/series", { credentials: "include" }); const data = await res.json().catch(() => null); if (data?.series) setSeriesList(data.series); };
+  const loadArtEvents = async () => { const res = await fetch("/api/artist/art-events", { credentials: "include" }); const data = await res.json().catch(() => null); if (data?.artEvents) setArtEvents(data.artEvents); };
+  const saveArtEvent = async () => { if (artEventSaving || !artEventForm?.title?.trim() || !artEventForm.year) return; setArtEventSaving(true); setArtEventMsg(null); const method = editingArtEventId ? "PATCH" : "POST"; const body = { ...(editingArtEventId ? { id: editingArtEventId } : {}), ...artEventForm, year: Number(artEventForm.year) }; const res = await fetch("/api/artist/art-events", { method, headers: { "Content-Type": "application/json" }, credentials: "include", body: JSON.stringify(body) }); const data = await res.json().catch(() => null); if (data?.ok) { setArtEventForm(null); setEditingArtEventId(null); setArtEventMsg(editingArtEventId ? "수정됨" : "추가됨"); await loadArtEvents(); } else { setArtEventMsg(data?.error ?? "저장 실패"); } setArtEventSaving(false); };
+  const deleteArtEvent = async (id: string) => { if (!window.confirm("이 활동을 삭제하시겠습니까?")) return; const res = await fetch("/api/artist/art-events", { method: "DELETE", headers: { "Content-Type": "application/json" }, credentials: "include", body: JSON.stringify({ id }) }); if ((await res.json().catch(() => null))?.ok) { setArtEventMsg("삭제됨"); await loadArtEvents(); } };
   const saveWorkNote = async () => { setWorkNoteSaving(true); setWorkNoteMsg(null); const res = await fetch("/api/profile/save", { method: "POST", headers: { "Content-Type": "application/json" }, credentials: "include", body: JSON.stringify({ workNote }) }); setWorkNoteMsg(res.ok ? "저장됨" : "저장 실패"); setWorkNoteSaving(false); };
   const emptySeriesForm = () => ({ title: "", description: "", startYear: "", endYear: "", works: "", isPublic: true });
   const saveSeries = async () => { if (seriesSaving || !seriesForm?.title?.trim()) return; setSeriesSaving(true); setSeriesMsg(null); const method = editingSeriesId ? "PATCH" : "POST"; const body = { ...seriesForm, ...(editingSeriesId ? { id: editingSeriesId } : {}), startYear: seriesForm.startYear ? Number(seriesForm.startYear) : null, endYear: seriesForm.endYear ? Number(seriesForm.endYear) : null }; const res = await fetch("/api/artist/series", { method, headers: { "Content-Type": "application/json" }, credentials: "include", body: JSON.stringify(body) }); const data = await res.json().catch(() => null); if (data?.ok) { setSeriesForm(null); setEditingSeriesId(null); setSeriesMsg(editingSeriesId ? "수정됨" : "시리즈 추가됨"); await loadSeries(); } else { setSeriesMsg("저장 실패"); } setSeriesSaving(false); };
@@ -349,8 +377,164 @@ export default function ArtistMePage() {
               )}
             </Section>
 
+            {/* Self-registered Exhibitions */}
+            <Section number="08" title={lang === "ko" ? "전시 등록" : "Register Exhibition"}>
+              <p style={{ fontFamily: F, fontSize: 11, color: "#8A8580", marginBottom: 16 }}>
+                {lang === "ko" ? "직접 참여한 전시를 등록하고 다른 작가를 초대해 연결하세요." : "Register exhibitions you participated in and invite other artists."}
+              </p>
+              {selfExhibitions.length > 0 && (
+                <div style={{ display: "grid", gap: 1, background: "#E8E3DB", marginBottom: 20 }}>
+                  {selfExhibitions.map((ex) => (
+                    <div key={ex.id} style={{ background: "#FFFFFF", padding: "16px 20px" }}>
+                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 12 }}>
+                        <div style={{ flex: 1 }}>
+                          <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap", marginBottom: 4 }}>
+                            <span style={{ fontFamily: S, fontSize: 16, fontWeight: 400, color: "#1A1A1A" }}>{ex.title}</span>
+                            <span style={{ fontFamily: F, fontSize: 9, padding: "2px 8px", border: "1px solid #E8E3DB", color: ex.isPublic ? "#5A7A5A" : "#8A8580" }}>{ex.isPublic ? (lang === "ko" ? "공개" : "Public") : (lang === "ko" ? "비공개" : "Private")}</span>
+                            {ex.isPublic && <a href={`/exhibitions/${ex.id}`} target="_blank" rel="noreferrer" style={{ fontFamily: F, fontSize: 9, color: "#8B7355", letterSpacing: "0.08em", textDecoration: "none" }}>↗ {lang === "ko" ? "공개 페이지" : "View"}</a>}
+                          </div>
+                          {(ex.city || ex.country) && <span style={{ fontFamily: F, fontSize: 10, color: "#8B7355", letterSpacing: "0.06em" }}>{[ex.city, ex.country].filter(Boolean).join(", ")}</span>}
+                          {(ex.startDate || ex.endDate) && <p style={{ fontFamily: F, fontSize: 11, color: "#B0AAA2", margin: "4px 0 0" }}>{ex.startDate ? new Date(ex.startDate).toLocaleDateString() : "?"} — {ex.endDate ? new Date(ex.endDate).toLocaleDateString() : (lang === "ko" ? "진행 중" : "ongoing")}</p>}
+                          {ex.space && <p style={{ fontFamily: F, fontSize: 11, color: "#6A6660", margin: "4px 0 0" }}>{lang === "ko" ? "공간: " : "Space: "}{ex.space.name}</p>}
+                          {ex.curator && <p style={{ fontFamily: F, fontSize: 11, color: "#6A6660", margin: "2px 0 0" }}>{lang === "ko" ? "큐레이터: " : "Curator: "}{ex.curator.name}{ex.curator.organization ? ` (${ex.curator.organization})` : ""}</p>}
+                          {ex.artists.length > 0 && (
+                            <div style={{ marginTop: 8, display: "flex", gap: 6, flexWrap: "wrap" }}>
+                              {ex.artists.map((a) => (
+                                <span key={a.id} style={{ fontFamily: F, fontSize: 9, padding: "2px 8px", background: a.status === "confirmed" ? "rgba(90,122,90,0.1)" : a.status === "invited" ? "rgba(139,115,85,0.1)" : "rgba(200,160,160,0.1)", border: `1px solid ${a.status === "confirmed" ? "#5A7A5A" : a.status === "invited" ? "#8B7355" : "#C8A0A0"}`, color: a.status === "confirmed" ? "#3A6A3A" : a.status === "invited" ? "#6B5535" : "#8B4A4A" }}>
+                                  {a.artist.name} · {a.status}
+                                </span>
+                              ))}
+                            </div>
+                          )}
+                          {/* 작가 초대 UI */}
+                          {invitingExId === ex.id ? (
+                            <div style={{ marginTop: 12, display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
+                              <input value={inviteArtistId} onChange={(e) => setInviteArtistId(e.target.value)} placeholder={lang === "ko" ? "작가 ID (예: art-0001)" : "Artist ID (e.g. art-0001)"} style={{ ...inp, width: 200 }} onKeyDown={(e) => { if (e.key === "Enter") inviteArtist(ex.id); }} />
+                              <button onClick={() => inviteArtist(ex.id)} style={{ padding: "10px 20px", border: "none", background: "#1A1A1A", color: "#FDFBF7", fontFamily: F, fontSize: 10, fontWeight: 500, letterSpacing: "0.08em", textTransform: "uppercase", cursor: "pointer" }}>{lang === "ko" ? "초대" : "Invite"}</button>
+                              <button onClick={() => { setInvitingExId(null); setInviteArtistId(""); setInviteMsg(null); }} style={{ padding: "10px 16px", border: "1px solid #E8E3DB", background: "transparent", color: "#8A8580", fontFamily: F, fontSize: 10, cursor: "pointer" }}>{lang === "ko" ? "취소" : "Cancel"}</button>
+                              {inviteMsg && <span style={{ fontFamily: F, fontSize: 11, color: inviteMsg.includes("완료") ? "#5A7A5A" : "#8B4A4A" }}>{inviteMsg}</span>}
+                            </div>
+                          ) : (
+                            <button onClick={() => { setInvitingExId(ex.id); setInviteArtistId(""); setInviteMsg(null); }} style={{ marginTop: 10, padding: "6px 14px", border: "1px dashed #D4C9B8", background: "transparent", color: "#8B7355", fontFamily: F, fontSize: 10, fontWeight: 500, letterSpacing: "0.08em", textTransform: "uppercase", cursor: "pointer" }}>
+                              + {lang === "ko" ? "작가 초대" : "Invite Artist"}
+                            </button>
+                          )}
+                        </div>
+                        <div style={{ display: "flex", gap: 8, flexShrink: 0 }}>
+                          <button onClick={() => { setEditingSelfExId(ex.id); setSelfExForm({ title: ex.title, startDate: ex.startDate ? ex.startDate.slice(0, 10) : "", endDate: ex.endDate ? ex.endDate.slice(0, 10) : "", city: ex.city ?? "", country: ex.country ?? "", description: ex.description ?? "", isPublic: ex.isPublic, spaceName: ex.space?.name ?? "", spaceType: "", spaceWebsite: ex.space?.website ?? "", curatorName: ex.curator?.name ?? "", curatorOrganization: ex.curator?.organization ?? "" }); setSelfExMsg(null); }} style={{ padding: "6px 12px", border: "1px solid #E8E3DB", background: "transparent", fontFamily: F, fontSize: 10, color: "#8A8580", cursor: "pointer" }}>{lang === "ko" ? "수정" : "Edit"}</button>
+                          <button onClick={() => deleteSelfEx(ex.id)} style={{ padding: "6px 12px", border: "1px solid #C8A0A0", background: "transparent", fontFamily: F, fontSize: 10, color: "#8B4A4A", cursor: "pointer" }}>{lang === "ko" ? "삭제" : "Delete"}</button>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+              {selfExMsg && <p style={{ fontFamily: F, fontSize: 12, color: selfExMsg.includes("실패") || selfExMsg.includes("not") ? "#8B4A4A" : "#5A7A5A", marginBottom: 12 }}>{selfExMsg}</p>}
+              {selfExForm ? (
+                <div style={{ border: "1px solid #E8E3DB", padding: 24, background: "#FDFBF7" }}>
+                  <p style={{ fontFamily: F, fontSize: 10, fontWeight: 600, letterSpacing: "0.12em", textTransform: "uppercase", color: "#8B7355", marginBottom: 16 }}>{editingSelfExId ? (lang === "ko" ? "전시 수정" : "Edit Exhibition") : (lang === "ko" ? "새 전시 등록" : "New Exhibition")}</p>
+                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14, marginBottom: 14 }}>
+                    <Lbl label={lang === "ko" ? "전시명 *" : "Title *"} style={{ gridColumn: "1 / -1" }}><input value={selfExForm.title} onChange={(e) => setSelfExForm(f => f ? { ...f, title: e.target.value } : f)} placeholder={lang === "ko" ? "전시 제목" : "Exhibition title"} style={inp} /></Lbl>
+                    <Lbl label={lang === "ko" ? "시작일" : "Start Date"}><input type="date" value={selfExForm.startDate} onChange={(e) => setSelfExForm(f => f ? { ...f, startDate: e.target.value } : f)} style={inp} /></Lbl>
+                    <Lbl label={lang === "ko" ? "종료일" : "End Date"}><input type="date" value={selfExForm.endDate} onChange={(e) => setSelfExForm(f => f ? { ...f, endDate: e.target.value } : f)} style={inp} /></Lbl>
+                    <Lbl label={lang === "ko" ? "도시" : "City"}><input value={selfExForm.city} onChange={(e) => setSelfExForm(f => f ? { ...f, city: e.target.value } : f)} placeholder="Seoul" style={inp} /></Lbl>
+                    <Lbl label={lang === "ko" ? "국가" : "Country"}><input value={selfExForm.country} onChange={(e) => setSelfExForm(f => f ? { ...f, country: e.target.value } : f)} placeholder="South Korea" style={inp} /></Lbl>
+                  </div>
+                  <Lbl label={lang === "ko" ? "설명" : "Description"} style={{ marginBottom: 14 }}><textarea value={selfExForm.description} onChange={(e) => setSelfExForm(f => f ? { ...f, description: e.target.value } : f)} rows={3} placeholder={lang === "ko" ? "전시 소개 (선택)" : "Exhibition description (optional)"} style={{ ...inp, width: "100%", resize: "vertical" }} /></Lbl>
+                  <p style={{ fontFamily: F, fontSize: 10, fontWeight: 600, letterSpacing: "0.1em", textTransform: "uppercase", color: "#8A8580", margin: "16px 0 12px" }}>{lang === "ko" ? "전시 공간" : "Space"}</p>
+                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14, marginBottom: 14 }}>
+                    <Lbl label={lang === "ko" ? "공간 이름" : "Space Name"}><input value={selfExForm.spaceName} onChange={(e) => setSelfExForm(f => f ? { ...f, spaceName: e.target.value } : f)} placeholder={lang === "ko" ? "갤러리명 또는 공간명" : "Gallery or venue name"} style={inp} /></Lbl>
+                    <Lbl label={lang === "ko" ? "공간 유형" : "Space Type"}>
+                      <select value={selfExForm.spaceType} onChange={(e) => setSelfExForm(f => f ? { ...f, spaceType: e.target.value } : f)} style={{ ...inp, appearance: "none" }}>
+                        <option value="">-- {lang === "ko" ? "선택" : "Select"} --</option>
+                        <option value="gallery">Gallery</option>
+                        <option value="museum">Museum</option>
+                        <option value="art_fair">Art Fair</option>
+                        <option value="alternative">Alternative Space</option>
+                        <option value="online">Online</option>
+                        <option value="other">Other</option>
+                      </select>
+                    </Lbl>
+                    <Lbl label={lang === "ko" ? "공간 웹사이트" : "Space Website"} style={{ gridColumn: "1 / -1" }}><input value={selfExForm.spaceWebsite} onChange={(e) => setSelfExForm(f => f ? { ...f, spaceWebsite: e.target.value } : f)} placeholder="https://..." style={inp} /></Lbl>
+                  </div>
+                  <p style={{ fontFamily: F, fontSize: 10, fontWeight: 600, letterSpacing: "0.1em", textTransform: "uppercase", color: "#8A8580", margin: "16px 0 12px" }}>{lang === "ko" ? "큐레이터" : "Curator"}</p>
+                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14, marginBottom: 14 }}>
+                    <Lbl label={lang === "ko" ? "큐레이터 이름" : "Curator Name"}><input value={selfExForm.curatorName} onChange={(e) => setSelfExForm(f => f ? { ...f, curatorName: e.target.value } : f)} placeholder={lang === "ko" ? "이름 (선택)" : "Name (optional)"} style={inp} /></Lbl>
+                    <Lbl label={lang === "ko" ? "소속" : "Organization"}><input value={selfExForm.curatorOrganization} onChange={(e) => setSelfExForm(f => f ? { ...f, curatorOrganization: e.target.value } : f)} placeholder={lang === "ko" ? "소속 기관 (선택)" : "Organization (optional)"} style={inp} /></Lbl>
+                  </div>
+                  <label style={{ display: "flex", alignItems: "center", gap: 10, cursor: "pointer", fontFamily: F, fontSize: 12, color: "#1A1A1A", marginBottom: 16 }}>
+                    <input type="checkbox" checked={selfExForm.isPublic} onChange={(e) => setSelfExForm(f => f ? { ...f, isPublic: e.target.checked } : f)} />
+                    {lang === "ko" ? "공개 프로필에 표시" : "Show on public profile"}
+                  </label>
+                  <div style={{ display: "flex", gap: 12 }}>
+                    <button onClick={saveSelfEx} disabled={selfExSaving || !selfExForm.title.trim()} style={btnStyle(selfExSaving || !selfExForm.title.trim())}>{selfExSaving ? "..." : (lang === "ko" ? "저장" : "Save")}</button>
+                    <button onClick={() => { setSelfExForm(null); setEditingSelfExId(null); }} style={{ padding: "14px 24px", border: "1px solid #E8E3DB", background: "transparent", color: "#8A8580", fontFamily: F, fontSize: 11, cursor: "pointer" }}>{lang === "ko" ? "취소" : "Cancel"}</button>
+                  </div>
+                </div>
+              ) : (
+                <button onClick={() => { setSelfExForm(emptySelfExForm()); setEditingSelfExId(null); setSelfExMsg(null); }} style={{ padding: "12px 24px", border: "1px dashed #D4C9B8", background: "transparent", color: "#8B7355", fontFamily: F, fontSize: 10, fontWeight: 500, letterSpacing: "0.1em", textTransform: "uppercase", cursor: "pointer" }}>
+                  + {lang === "ko" ? "전시 등록" : "Add Exhibition"}
+                </button>
+              )}
+            </Section>
+
+            {/* Activity Timeline */}
+            <Section number="09" title={lang === "ko" ? "활동 타임라인" : "Activity Timeline"}>
+              {artEventMsg && <p style={{ fontFamily: F, fontSize: 11, color: "#8B7355", marginBottom: 12 }}>{artEventMsg}</p>}
+              {artEvents.length > 0 && (
+                <div style={{ display: "grid", gap: 1, background: "#E8E3DB", marginBottom: 20 }}>
+                  {artEvents.map((ev) => (
+                    <div key={ev.id} style={{ background: "#FFFFFF", padding: "16px 24px", display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 16 }}>
+                      <div style={{ flex: 1 }}>
+                        <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4 }}>
+                          <span style={{ fontFamily: F, fontSize: 9, fontWeight: 600, letterSpacing: "0.1em", textTransform: "uppercase", color: "#8B7355", padding: "2px 8px", background: "rgba(139,115,85,0.07)" }}>{ev.eventType}</span>
+                          <span style={{ fontFamily: F, fontSize: 10, color: "#B0AAA2" }}>{ev.year}</span>
+                          {!ev.isPublic && <span style={{ fontFamily: F, fontSize: 9, color: "#B0AAA2" }}>비공개</span>}
+                        </div>
+                        <p style={{ fontFamily: S, fontSize: 17, fontWeight: 400, color: "#1A1A1A", margin: "0 0 2px" }}>{ev.title}</p>
+                        {ev.description && <p style={{ fontFamily: F, fontSize: 11, color: "#8A8580", margin: 0 }}>{ev.description}</p>}
+                      </div>
+                      <div style={{ display: "flex", gap: 8, flexShrink: 0 }}>
+                        <button onClick={() => { setArtEventForm({ eventType: ev.eventType, title: ev.title, year: String(ev.year), description: ev.description ?? "", isPublic: ev.isPublic }); setEditingArtEventId(ev.id); setArtEventMsg(null); }} style={{ padding: "6px 14px", border: "1px solid #E8E3DB", background: "transparent", color: "#6A6660", fontFamily: F, fontSize: 10, cursor: "pointer" }}>Edit</button>
+                        <button onClick={() => deleteArtEvent(ev.id)} style={{ padding: "6px 14px", border: "1px solid #E8C8C8", background: "transparent", color: "#8B4A4A", fontFamily: F, fontSize: 10, cursor: "pointer" }}>✕</button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+              {artEventForm ? (
+                <div style={{ border: "1px solid #E8E3DB", padding: 24, background: "#FDFBF7" }}>
+                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14, marginBottom: 14 }}>
+                    <Lbl label={lang === "ko" ? "유형" : "Type"}>
+                      <select value={artEventForm.eventType} onChange={(e) => setArtEventForm(f => f ? { ...f, eventType: e.target.value } : f)} style={{ ...inp }}>
+                        <option value="exhibition">Exhibition</option>
+                        <option value="collaboration">Collaboration</option>
+                        <option value="publication">Publication</option>
+                        <option value="series_start">Series Start</option>
+                      </select>
+                    </Lbl>
+                    <Lbl label={lang === "ko" ? "연도" : "Year"}><input type="number" value={artEventForm.year} onChange={(e) => setArtEventForm(f => f ? { ...f, year: e.target.value } : f)} placeholder="2024" style={inp} /></Lbl>
+                  </div>
+                  <Lbl label={lang === "ko" ? "제목" : "Title"} style={{ marginBottom: 14 }}><input value={artEventForm.title} onChange={(e) => setArtEventForm(f => f ? { ...f, title: e.target.value } : f)} placeholder={lang === "ko" ? "활동 제목" : "Activity title"} style={inp} /></Lbl>
+                  <Lbl label={lang === "ko" ? "설명 (선택)" : "Description (optional)"} style={{ marginBottom: 14 }}><textarea value={artEventForm.description} onChange={(e) => setArtEventForm(f => f ? { ...f, description: e.target.value } : f)} rows={2} style={{ ...inp, resize: "vertical" }} /></Lbl>
+                  <label style={{ display: "flex", alignItems: "center", gap: 10, cursor: "pointer", fontFamily: F, fontSize: 12, color: "#1A1A1A", marginBottom: 16 }}>
+                    <input type="checkbox" checked={artEventForm.isPublic} onChange={(e) => setArtEventForm(f => f ? { ...f, isPublic: e.target.checked } : f)} />
+                    {lang === "ko" ? "공개 프로필에 표시" : "Show on public profile"}
+                  </label>
+                  <div style={{ display: "flex", gap: 12 }}>
+                    <button onClick={saveArtEvent} disabled={artEventSaving || !artEventForm.title.trim()} style={btnStyle(artEventSaving || !artEventForm.title.trim())}>{artEventSaving ? "..." : (lang === "ko" ? "저장" : "Save")}</button>
+                    <button onClick={() => { setArtEventForm(null); setEditingArtEventId(null); }} style={{ padding: "14px 24px", border: "1px solid #E8E3DB", background: "transparent", color: "#8A8580", fontFamily: F, fontSize: 11, cursor: "pointer" }}>{lang === "ko" ? "취소" : "Cancel"}</button>
+                  </div>
+                </div>
+              ) : (
+                <button onClick={() => { setArtEventForm(emptyArtEventForm()); setEditingArtEventId(null); setArtEventMsg(null); }} style={{ padding: "12px 24px", border: "1px dashed #D4C9B8", background: "transparent", color: "#8B7355", fontFamily: F, fontSize: 10, fontWeight: 500, letterSpacing: "0.1em", textTransform: "uppercase", cursor: "pointer" }}>
+                  + {lang === "ko" ? "활동 추가" : "Add Activity"}
+                </button>
+              )}
+            </Section>
+
             {/* Notifications */}
-            <Section number="08" title="Notifications">
+            <Section number="10" title="Notifications">
               <label style={{ display: "flex", alignItems: "center", gap: 12, cursor: "pointer", fontFamily: F, fontSize: 13, color: "#1A1A1A" }}>
                 <input type="checkbox" checked={notifyPost} onChange={(e) => onToggleNotify(e.target.checked)} />
                 새 커뮤니티 글 알림 받기
@@ -358,7 +542,7 @@ export default function ArtistMePage() {
             </Section>
 
             {/* Invites */}
-            <Section number="09" title={t("profile_invites", lang)}>
+            <Section number="11" title={t("profile_invites", lang)}>
               {invites.length === 0 ? <p style={{ fontFamily: F, fontSize: 13, color: "#B0AAA2" }}>{t("profile_no_invites", lang)}</p> : (
                 <div style={{ display: "grid", gap: 1, background: "#E8E3DB" }}>
                   {invites.map((i) => (
