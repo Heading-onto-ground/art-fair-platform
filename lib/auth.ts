@@ -93,7 +93,7 @@ export async function getProfileByUserId(userId: string): Promise<Profile | null
   return null;
 }
 
-type ArtistListItem = Omit<ArtistProfile, "portfolioUrl"> & { hasPortfolio: boolean };
+type ArtistListItem = Omit<ArtistProfile, "portfolioUrl"> & { hasPortfolio: boolean; seriesCount: number };
 
 export async function listArtistProfiles(): Promise<ArtistListItem[]> {
   const artists = await prisma.artistProfile.findMany({
@@ -102,10 +102,11 @@ export async function listArtistProfiles(): Promise<ArtistListItem[]> {
       genre: true, instagram: true, country: true, city: true, website: true,
       bio: true, profileImage: true, createdAt: true, updatedAt: true,
       portfolioUrl: true,
+      _count: { select: { series: { where: { isPublic: true } } } },
     },
   });
   return artists
-    .map(({ portfolioUrl, ...a }: typeof artists[number]) => ({ ...a, role: "artist" as const, email: "", hasPortfolio: !!portfolioUrl }))
+    .map(({ portfolioUrl, _count, ...a }: typeof artists[number]) => ({ ...a, role: "artist" as const, email: "", hasPortfolio: !!portfolioUrl, seriesCount: _count.series }))
     .sort((a: ArtistListItem, b: ArtistListItem) => {
       if (a.hasPortfolio !== b.hasPortfolio) return a.hasPortfolio ? -1 : 1;
       return Number(b.updatedAt) - Number(a.updatedAt);

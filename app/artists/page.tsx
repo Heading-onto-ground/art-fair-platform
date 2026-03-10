@@ -15,6 +15,7 @@ type Artist = {
   country: string;
   city: string;
   hasPortfolio?: boolean;
+  seriesCount?: number;
   profileImage?: string | null;
   startedYear?: number;
   genre?: string;
@@ -36,7 +37,7 @@ export default function ArtistsPage() {
   const [hasAutoSelectedCountry, setHasAutoSelectedCountry] = useState(false);
   const [query, setQuery] = useState("");
   const [favorites, setFavorites] = useState<Record<string, boolean>>({});
-  const [isGalleryViewer, setIsGalleryViewer] = useState(false);
+  const [isGalleryViewer, setIsGalleryViewer] = useState(false); // kept for future use
 
   function load() {
     mutate();
@@ -237,67 +238,28 @@ export default function ArtistsPage() {
           <div style={{ padding: 24, border: "1px solid #D4B0B0", background: "#FDF8F8", color: "#8B3A3A", fontFamily: F, fontSize: 12 }}>
             {error?.message ?? "Failed to load"}
           </div>
-        ) : isGalleryViewer ? (
+        ) : (
           <div className="artist-list">
             {filtered.map((a, idx) => (
               <div
                 key={a.userId}
                 onClick={() => router.push(`/artists/${encodeURIComponent(a.userId)}`)}
-                style={{
-                  background: "#FFFFFF",
-                  padding: "14px 16px",
-                  cursor: "pointer",
-                  transition: "background 0.2s ease",
-                }}
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.background = "#FAF8F4";
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.background = "#FFFFFF";
-                }}
+                style={{ background: "#FFFFFF", padding: "12px 16px", cursor: "pointer", transition: "background 0.15s" }}
+                onMouseEnter={(e) => { e.currentTarget.style.background = "#FAF8F4"; }}
+                onMouseLeave={(e) => { e.currentTarget.style.background = "#FFFFFF"; }}
               >
                 <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12 }}>
                   <div style={{ display: "flex", alignItems: "center", gap: 12, minWidth: 0 }}>
-                    <div
-                      style={{
-                        width: 56,
-                        height: 56,
-                        border: "1px solid #EDE6DA",
-                        background: "#F5F1EB",
-                        overflow: "hidden",
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "center",
-                        flexShrink: 0,
-                      }}
-                    >
-                      {a.profileImage ? (
-                        <img src={a.profileImage} alt={a.name} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
-                      ) : (
-                        <span style={{ fontFamily: S, fontSize: 20, color: "#D0C7BA" }}>
-                          {a.name?.charAt(0)?.toUpperCase() || "A"}
-                        </span>
-                      )}
+                    <div style={{ width: 44, height: 44, border: "1px solid #EDE6DA", background: "#F5F1EB", overflow: "hidden", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                      {a.profileImage
+                        ? <img src={a.profileImage} alt={a.name} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                        : <span style={{ fontFamily: S, fontSize: 18, color: "#D0C7BA" }}>{a.name?.charAt(0)?.toUpperCase() || "A"}</span>
+                      }
                     </div>
                     <div style={{ minWidth: 0 }}>
-                      <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 3 }}>
-                        <span style={{ fontFamily: S, fontSize: 14, color: "#D4CEC4" }}>
-                          {String(idx + 1).padStart(2, "0")}
-                        </span>
-                        <h3
-                          style={{
-                            fontFamily: S,
-                            fontSize: 18,
-                            fontWeight: 400,
-                            color: "#1A1A1A",
-                            margin: 0,
-                            whiteSpace: "nowrap",
-                            overflow: "hidden",
-                            textOverflow: "ellipsis",
-                          }}
-                        >
-                          {a.name}
-                        </h3>
+                      <div style={{ display: "flex", alignItems: "baseline", gap: 8, marginBottom: 3 }}>
+                        <span style={{ fontFamily: S, fontSize: 12, color: "#D4CEC4", flexShrink: 0 }}>{String(idx + 1).padStart(2, "0")}</span>
+                        <h3 style={{ fontFamily: S, fontSize: 17, fontWeight: 400, color: "#1A1A1A", margin: 0, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{a.name}</h3>
                       </div>
                       <p style={{ fontFamily: F, fontSize: 10, color: "#8A8580", margin: 0 }}>
                         {[a.city, a.country].filter(Boolean).join(", ") || "—"}
@@ -306,202 +268,21 @@ export default function ArtistsPage() {
                       </p>
                     </div>
                   </div>
-                  <div style={{ display: "flex", alignItems: "center", gap: 8, flexShrink: 0 }}>
-                    <span
-                      style={{
-                        fontFamily: F,
-                        fontSize: 9,
-                        fontWeight: 500,
-                        letterSpacing: "0.08em",
-                        textTransform: "uppercase",
-                        color: a.hasPortfolio ? "#2E6B45" : "#8A8580",
-                        background: a.hasPortfolio ? "#EDF7F1" : "#F5F3F0",
-                        padding: "4px 8px",
-                        border: `1px solid ${a.hasPortfolio ? "#D6EAD8" : "#ECEAE6"}`,
-                      }}
-                    >
-                      {a.hasPortfolio ? "Portfolio" : "No Portfolio"}
+                  <div style={{ display: "flex", alignItems: "center", gap: 6, flexShrink: 0 }}>
+                    <span style={{ fontFamily: F, fontSize: 9, fontWeight: 500, letterSpacing: "0.07em", color: a.hasPortfolio ? "#2E6B45" : "#B0AAA2", background: a.hasPortfolio ? "#EDF7F1" : "#F5F3F0", padding: "3px 8px", border: `1px solid ${a.hasPortfolio ? "#D6EAD8" : "#ECEAE6"}` }}>
+                      PDF
+                    </span>
+                    <span style={{ fontFamily: F, fontSize: 9, fontWeight: 500, letterSpacing: "0.07em", color: (a.seriesCount ?? 0) > 0 ? "#5A5A8B" : "#B0AAA2", background: (a.seriesCount ?? 0) > 0 ? "#EDEDF7" : "#F5F3F0", padding: "3px 8px", border: `1px solid ${(a.seriesCount ?? 0) > 0 ? "#D4D4EE" : "#ECEAE6"}` }}>
+                      {(a.seriesCount ?? 0) > 0 ? `Series ${a.seriesCount}` : "Series —"}
                     </span>
                     <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setFavorites((p) => ({ ...p, [a.userId]: !p[a.userId] }));
-                      }}
-                      style={{
-                        width: 30,
-                        height: 30,
-                        borderRadius: "50%",
-                        border: "1px solid #E8E3DB",
-                        background: favorites[a.userId] ? "#1A1A1A" : "#FFFFFF",
-                        color: favorites[a.userId] ? "#FFFFFF" : "#8A8A8A",
-                        fontFamily: F,
-                        fontSize: 13,
-                        cursor: "pointer",
-                      }}
+                      onClick={(e) => { e.stopPropagation(); setFavorites((p) => ({ ...p, [a.userId]: !p[a.userId] })); }}
+                      style={{ width: 28, height: 28, borderRadius: "50%", border: "1px solid #E8E3DB", background: favorites[a.userId] ? "#1A1A1A" : "#FFFFFF", color: favorites[a.userId] ? "#FFFFFF" : "#8A8A8A", fontSize: 12, cursor: "pointer", flexShrink: 0 }}
                     >
                       {favorites[a.userId] ? "★" : "☆"}
                     </button>
                   </div>
                 </div>
-              </div>
-            ))}
-          </div>
-        ) : (
-          <div className="artist-card-grid">
-            {filtered.map((a) => (
-              <div
-                key={a.userId}
-                onClick={() => router.push(`/artists/${encodeURIComponent(a.userId)}`)}
-                style={{
-                  background: "#FFFFFF",
-                  border: "1px solid #EEEAE5",
-                  cursor: "pointer",
-                  transition: "all 0.3s ease",
-                  overflow: "hidden",
-                  position: "relative",
-                }}
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.borderColor = "#C8C0B4";
-                  e.currentTarget.style.transform = "translateY(-2px)";
-                  e.currentTarget.style.boxShadow = "0 8px 24px rgba(0,0,0,0.06)";
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.borderColor = "#EEEAE5";
-                  e.currentTarget.style.transform = "translateY(0)";
-                  e.currentTarget.style.boxShadow = "none";
-                }}
-              >
-                {/* Image */}
-                <div style={{
-                  width: "100%",
-                  aspectRatio: "1 / 1",
-                  background: "#F5F1EB",
-                  overflow: "hidden",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                }}>
-                  {a.profileImage ? (
-                    <img
-                      src={a.profileImage}
-                      alt={a.name}
-                      style={{ width: "100%", height: "100%", objectFit: "cover" }}
-                    />
-                  ) : (
-                    <div style={{ textAlign: "center" }}>
-                      <div style={{ fontSize: 40, color: "#DDD6CC", marginBottom: 8 }}>
-                        {a.name?.charAt(0)?.toUpperCase() || "A"}
-                      </div>
-                      <div style={{ fontFamily: F, fontSize: 8, letterSpacing: "0.15em", textTransform: "uppercase", color: "#C8C0B4" }}>
-                        No photo
-                      </div>
-                    </div>
-                  )}
-                </div>
-
-                {/* Info */}
-                <div style={{ padding: "18px 20px 20px" }}>
-                  <h3 style={{
-                    fontFamily: S,
-                    fontSize: 18,
-                    fontWeight: 400,
-                    color: "#1A1A1A",
-                    marginBottom: 8,
-                    lineHeight: 1.3,
-                    overflow: "hidden",
-                    textOverflow: "ellipsis",
-                    whiteSpace: "nowrap",
-                  }}>
-                    {a.name}
-                  </h3>
-
-                  {/* Tags row */}
-                  <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginBottom: 10 }}>
-                    {a.genre && (
-                      <span style={{
-                        fontFamily: F,
-                        fontSize: 9,
-                        fontWeight: 500,
-                        letterSpacing: "0.08em",
-                        textTransform: "uppercase",
-                        color: "#8B7355",
-                        background: "#F5F0E8",
-                        padding: "4px 10px",
-                        border: "1px solid #EDE6DA",
-                      }}>
-                        {a.genre}
-                      </span>
-                    )}
-                    {getYearsActive(a.startedYear) && (
-                      <span style={{
-                        fontFamily: F,
-                        fontSize: 9,
-                        fontWeight: 500,
-                        letterSpacing: "0.08em",
-                        color: "#6A6A6A",
-                        background: "#F5F3F0",
-                        padding: "4px 10px",
-                        border: "1px solid #ECEAE6",
-                      }}>
-                        {getYearsActive(a.startedYear)}
-                      </span>
-                    )}
-                    {isGalleryViewer && (
-                      <span style={{
-                        fontFamily: F,
-                        fontSize: 9,
-                        fontWeight: 500,
-                        letterSpacing: "0.08em",
-                        textTransform: "uppercase",
-                        color: a.hasPortfolio ? "#2E6B45" : "#8A8580",
-                        background: a.hasPortfolio ? "#EDF7F1" : "#F5F3F0",
-                        padding: "4px 10px",
-                        border: `1px solid ${a.hasPortfolio ? "#D6EAD8" : "#ECEAE6"}`,
-                      }}>
-                        {a.hasPortfolio ? "Portfolio Uploaded" : "No Portfolio"}
-                      </span>
-                    )}
-                  </div>
-
-                  {/* Location */}
-                  <p style={{
-                    fontFamily: F,
-                    fontSize: 11,
-                    color: "#8A8580",
-                    letterSpacing: "0.02em",
-                  }}>
-                    {[a.city, a.country].filter(Boolean).join(", ") || "—"}
-                  </p>
-                </div>
-
-                {/* Favorite button */}
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    setFavorites((p) => ({ ...p, [a.userId]: !p[a.userId] }));
-                  }}
-                  style={{
-                    position: "absolute",
-                    top: 12,
-                    right: 12,
-                    width: 32,
-                    height: 32,
-                    borderRadius: "50%",
-                    border: "none",
-                    background: favorites[a.userId] ? "#1A1A1A" : "rgba(255,255,255,0.85)",
-                    color: favorites[a.userId] ? "#FFFFFF" : "#8A8A8A",
-                    fontFamily: F,
-                    fontSize: 14,
-                    cursor: "pointer",
-                    transition: "all 0.3s ease",
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    backdropFilter: "blur(4px)",
-                  }}
-                >
-                  {favorites[a.userId] ? "★" : "☆"}
-                </button>
               </div>
             ))}
           </div>
