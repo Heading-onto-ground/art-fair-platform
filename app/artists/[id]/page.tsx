@@ -572,9 +572,11 @@ export default function PublicArtistPage() {
               </div>
             )}
 
-            {series.length > 0 && (
-              <div style={{ marginTop: 16, border: "1px solid #eee", borderRadius: 14, padding: 12 }}>
-                <div style={{ fontSize: 12, fontWeight: 900, opacity: 0.75, marginBottom: 10, fontFamily: F }}>Artwork Series</div>
+            <div style={{ marginTop: 16, border: "1px solid #eee", borderRadius: 14, padding: 12 }}>
+              <div style={{ fontSize: 12, fontWeight: 900, opacity: 0.75, marginBottom: 10, fontFamily: F }}>Artwork Series</div>
+              {series.length === 0 ? (
+                <div style={{ fontFamily: F, fontSize: 12, opacity: 0.5 }}>No series yet.</div>
+              ) : (
                 <div style={{ display: "grid", gap: 1, background: "#E8E3DB" }}>
                   {series.map((s) => (
                     <div key={s.id} style={{ background: "#FFFFFF", padding: "12px 16px" }}>
@@ -589,8 +591,8 @@ export default function PublicArtistPage() {
                     </div>
                   ))}
                 </div>
-              </div>
-            )}
+              )}
+            </div>
 
             {me?.session?.role === "gallery" ? (
               <div
