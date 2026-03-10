@@ -82,9 +82,11 @@ export default function PublicArtistPage() {
   const id = params?.id;
   const { lang } = useLanguage();
 
+  type SeriesItem = { id: string; title: string; description?: string | null; startYear?: number | null; endYear?: number | null; works?: string | null };
   const [loading, setLoading] = useState(true);
   const [profile, setProfile] = useState<ArtistProfile | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [series, setSeries] = useState<SeriesItem[]>([]);
   const [me, setMe] = useState<MeResponse | null>(null);
   const [openCalls, setOpenCalls] = useState<OpenCall[]>([]);
   const [selectedOpenCallId, setSelectedOpenCallId] = useState<string>("");
@@ -206,9 +208,11 @@ export default function PublicArtistPage() {
     setError(null);
 
     try {
-      const res = await fetch(`/api/public/artist/${encodeURIComponent(id)}`, {
-        cache: "default",
-      });
+      const [res, seriesRes] = await Promise.all([
+        fetch(`/api/public/artist/${encodeURIComponent(id)}`, { cache: "default" }),
+        fetch(`/api/public/artist/${encodeURIComponent(id)}/series`, { cache: "default" }),
+      ]);
+      seriesRes.json().then(d => setSeries(d?.series ?? [])).catch(() => {});
 
       const json = (await res.json().catch(() => null)) as PublicArtistResponse | null;
 
@@ -565,6 +569,26 @@ export default function PublicArtistPage() {
                 >
                   전시 이력 · 타임라인 보기 →
                 </a>
+              </div>
+            )}
+
+            {series.length > 0 && (
+              <div style={{ marginTop: 16, border: "1px solid #eee", borderRadius: 14, padding: 12 }}>
+                <div style={{ fontSize: 12, fontWeight: 900, opacity: 0.75, marginBottom: 10, fontFamily: F }}>Artwork Series</div>
+                <div style={{ display: "grid", gap: 1, background: "#E8E3DB" }}>
+                  {series.map((s) => (
+                    <div key={s.id} style={{ background: "#FFFFFF", padding: "12px 16px" }}>
+                      <div style={{ display: "flex", alignItems: "baseline", gap: 10, marginBottom: 3 }}>
+                        <span style={{ fontFamily: "var(--font-cormorant), serif", fontSize: 16, fontWeight: 400, color: "#1A1A1A" }}>{s.title}</span>
+                        {(s.startYear || s.endYear) && (
+                          <span style={{ fontFamily: F, fontSize: 10, color: "#B0AAA2" }}>{s.startYear ?? "?"} — {s.endYear ?? "present"}</span>
+                        )}
+                      </div>
+                      {s.description && <p style={{ fontFamily: F, fontSize: 12, color: "#6A6660", margin: 0, lineHeight: 1.6 }}>{s.description}</p>}
+                      {s.works && <p style={{ fontFamily: F, fontSize: 11, color: "#B0AAA2", margin: "4px 0 0", whiteSpace: "pre-wrap" }}>{s.works}</p>}
+                    </div>
+                  ))}
+                </div>
               </div>
             )}
 
