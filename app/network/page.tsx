@@ -1,254 +1,167 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import dynamic from "next/dynamic";
 import TopBar from "@/app/components/TopBar";
 import { F, S } from "@/lib/design";
 
-type Node = { id: string; label: string; type: "artist" | "gallery"; sub: string; image: string | null; artistId: string | null; x?: number; y?: number; vx?: number; vy?: number };
-type Edge = { source: string; target: string; type: string };
+// Country → [lat, lng] lookup (no external geocoding needed)
+const COUNTRY_COORDS: Record<string, [number, number]> = {
+  "한국": [36.5, 127.5], "South Korea": [36.5, 127.5], "Korea": [36.5, 127.5],
+  "일본": [36.2, 138.2], "Japan": [36.2, 138.2],
+  "미국": [38.0, -97.0], "USA": [38.0, -97.0], "United States": [38.0, -97.0],
+  "영국": [54.0, -2.0], "UK": [54.0, -2.0], "United Kingdom": [54.0, -2.0],
+  "프랑스": [46.2, 2.2], "France": [46.2, 2.2],
+  "독일": [51.2, 10.5], "Germany": [51.2, 10.5],
+  "이탈리아": [41.9, 12.5], "Italy": [41.9, 12.5],
+  "스위스": [46.8, 8.2], "Switzerland": [46.8, 8.2],
+  "중국": [35.9, 104.2], "China": [35.9, 104.2],
+  "호주": [-25.3, 133.8], "Australia": [-25.3, 133.8],
+  "캐나다": [56.1, -106.3], "Canada": [56.1, -106.3],
+  "네덜란드": [52.1, 5.3], "Netherlands": [52.1, 5.3],
+  "스페인": [40.5, -3.7], "Spain": [40.5, -3.7],
+  "벨기에": [50.8, 4.5], "Belgium": [50.8, 4.5],
+  "오스트리아": [47.5, 14.5], "Austria": [47.5, 14.5],
+  "폴란드": [51.9, 19.1], "Poland": [51.9, 19.1],
+  "브라질": [-14.2, -51.9], "Brazil": [-14.2, -51.9],
+  "멕시코": [23.6, -102.6], "Mexico": [23.6, -102.6],
+  "아르헨티나": [-38.4, -63.6], "Argentina": [-38.4, -63.6],
+  "싱가포르": [1.3, 103.8], "Singapore": [1.3, 103.8],
+  "홍콩": [22.3, 114.2], "Hong Kong": [22.3, 114.2],
+  "대만": [23.7, 121.0], "Taiwan": [23.7, 121.0],
+  "인도": [20.6, 78.9], "India": [20.6, 78.9],
+  "러시아": [61.5, 105.3], "Russia": [61.5, 105.3],
+  "터키": [38.9, 35.2], "Turkey": [38.9, 35.2],
+  "UAE": [23.4, 53.8], "아랍에미리트": [23.4, 53.8],
+  "남아프리카공화국": [-28.5, 24.7], "South Africa": [-28.5, 24.7],
+  "뉴질랜드": [-40.9, 174.9], "New Zealand": [-40.9, 174.9],
+  "스웨덴": [60.1, 18.6], "Sweden": [60.1, 18.6],
+  "노르웨이": [60.5, 8.5], "Norway": [60.5, 8.5],
+  "덴마크": [56.3, 9.5], "Denmark": [56.3, 9.5],
+  "핀란드": [61.9, 25.7], "Finland": [61.9, 25.7],
+  "포르투갈": [39.4, -8.2], "Portugal": [39.4, -8.2],
+  "그리스": [39.1, 21.8], "Greece": [39.1, 21.8],
+  "체코": [49.8, 15.5], "Czech Republic": [49.8, 15.5],
+  "헝가리": [47.2, 19.5], "Hungary": [47.2, 19.5],
+  "루마니아": [45.9, 24.9], "Romania": [45.9, 24.9],
+  "우크라이나": [48.4, 31.2], "Ukraine": [48.4, 31.2],
+  "이스라엘": [31.0, 34.9], "Israel": [31.0, 34.9],
+  "이란": [32.4, 53.7], "Iran": [32.4, 53.7],
+  "태국": [15.9, 100.9], "Thailand": [15.9, 100.9],
+  "베트남": [14.1, 108.3], "Vietnam": [14.1, 108.3],
+  "인도네시아": [-0.8, 113.9], "Indonesia": [-0.8, 113.9],
+  "말레이시아": [4.2, 108.0], "Malaysia": [4.2, 108.0],
+  "필리핀": [12.9, 121.8], "Philippines": [12.9, 121.8],
+};
+
+type NodeData = { id: string; label: string; type: "artist" | "gallery"; country: string; genre: string; image: string | null; artistId: string | null };
+
+// Leaflet map rendered only on client side
+const WorldMap = dynamic(() => import("@/app/components/NetworkWorldMap"), { ssr: false, loading: () => (
+  <div style={{ height: "calc(100vh - 120px)", display: "flex", alignItems: "center", justifyContent: "center", background: "#F5F1EB" }}>
+    <p style={{ fontFamily: F, fontSize: 12, color: "#B0AAA2" }}>지도 로딩 중...</p>
+  </div>
+) });
 
 export default function NetworkPage() {
   const router = useRouter();
-  const canvasRef = useRef<HTMLCanvasElement>(null);
-  const [nodes, setNodes] = useState<Node[]>([]);
-  const [edges, setEdges] = useState<Edge[]>([]);
+  const [nodes, setNodes] = useState<NodeData[]>([]);
   const [loading, setLoading] = useState(true);
-  const [hovered, setHovered] = useState<Node | null>(null);
-  const [transform, setTransform] = useState({ x: 0, y: 0, scale: 1 });
-  const dragging = useRef<{ node: Node | null; panStart: { x: number; y: number; tx: number; ty: number } | null }>({ node: null, panStart: null });
+  const [view, setView] = useState<"map" | "graph">("map");
 
   useEffect(() => {
-    fetch("/api/network?limit=80")
+    fetch("/api/network?limit=150")
       .then(r => r.json())
-      .then(d => {
-        const n: Node[] = (d.nodes ?? []).map((node: Node) => ({
-          ...node,
-          x: Math.random() * 900 + 50,
-          y: Math.random() * 600 + 50,
-          vx: 0, vy: 0,
-        }));
-        setNodes(n);
-        setEdges(d.edges ?? []);
-      })
+      .then(d => setNodes(d.nodes ?? []))
       .catch(() => {})
       .finally(() => setLoading(false));
   }, []);
 
-  // Force simulation
-  useEffect(() => {
-    if (nodes.length === 0) return;
-    let frame: number;
-    const nodeMap = new Map(nodes.map(n => [n.id, n]));
+  // Group nodes by country for stats
+  const countryCount = nodes.reduce((acc: Record<string, number>, n) => {
+    const c = n.country || "Unknown";
+    acc[c] = (acc[c] || 0) + 1;
+    return acc;
+  }, {});
+  const topCountries = Object.entries(countryCount).sort((a, b) => b[1] - a[1]).slice(0, 5);
 
-    const simulate = () => {
-      const alpha = 0.05;
-      const repulsion = 4000;
-      const attraction = 0.02;
-      const centerX = 500, centerY = 350;
-
-      for (const n of nodes) {
-        // Gravity toward center
-        n.vx = (n.vx ?? 0) * 0.85 + (centerX - (n.x ?? 0)) * 0.003;
-        n.vy = (n.vy ?? 0) * 0.85 + (centerY - (n.y ?? 0)) * 0.003;
-
-        // Repulsion
-        for (const m of nodes) {
-          if (m.id === n.id) continue;
-          const dx = (n.x ?? 0) - (m.x ?? 0);
-          const dy = (n.y ?? 0) - (m.y ?? 0);
-          const dist = Math.sqrt(dx * dx + dy * dy) || 1;
-          const force = repulsion / (dist * dist);
-          n.vx += (dx / dist) * force * alpha;
-          n.vy += (dy / dist) * force * alpha;
-        }
-      }
-
-      // Attraction along edges
-      for (const e of edges) {
-        const s = nodeMap.get(e.source);
-        const t = nodeMap.get(e.target);
-        if (!s || !t) continue;
-        const dx = (t.x ?? 0) - (s.x ?? 0);
-        const dy = (t.y ?? 0) - (s.y ?? 0);
-        s.vx = (s.vx ?? 0) + dx * attraction;
-        s.vy = (s.vy ?? 0) + dy * attraction;
-        t.vx = (t.vx ?? 0) - dx * attraction;
-        t.vy = (t.vy ?? 0) - dy * attraction;
-      }
-
-      for (const n of nodes) {
-        n.x = (n.x ?? 0) + Math.max(-10, Math.min(10, n.vx ?? 0));
-        n.y = (n.y ?? 0) + Math.max(-10, Math.min(10, n.vy ?? 0));
-      }
-
-      setNodes([...nodes]);
-      frame = requestAnimationFrame(simulate);
-    };
-
-    frame = requestAnimationFrame(simulate);
-    const stop = setTimeout(() => cancelAnimationFrame(frame), 6000);
-    return () => { cancelAnimationFrame(frame); clearTimeout(stop); };
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [nodes.length, edges.length]);
-
-  // Draw
-  useEffect(() => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-    const ctx = canvas.getContext("2d");
-    if (!ctx) return;
-
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-    ctx.save();
-    ctx.translate(transform.x, transform.y);
-    ctx.scale(transform.scale, transform.scale);
-
-    const nodeMap = new Map(nodes.map(n => [n.id, n]));
-
-    // Draw edges
-    ctx.globalAlpha = 0.18;
-    ctx.strokeStyle = "#8B7355";
-    ctx.lineWidth = 1;
-    for (const e of edges) {
-      const s = nodeMap.get(e.source);
-      const t = nodeMap.get(e.target);
-      if (!s || !t) continue;
-      ctx.beginPath();
-      ctx.moveTo(s.x ?? 0, s.y ?? 0);
-      ctx.lineTo(t.x ?? 0, t.y ?? 0);
-      ctx.stroke();
-    }
-    ctx.globalAlpha = 1;
-
-    // Draw nodes
-    for (const n of nodes) {
-      const x = n.x ?? 0, y = n.y ?? 0;
-      const r = n.type === "gallery" ? 10 : 7;
-      const isHov = hovered?.id === n.id;
-
-      ctx.beginPath();
-      ctx.arc(x, y, r + (isHov ? 3 : 0), 0, Math.PI * 2);
-      ctx.fillStyle = n.type === "gallery" ? "#8B7355" : "#4A7A8B";
-      ctx.fill();
-
-      if (isHov || n.type === "gallery") {
-        ctx.fillStyle = "#1A1A1A";
-        ctx.font = `${n.type === "gallery" ? 10 : 9}px sans-serif`;
-        ctx.fillText(n.label, x + r + 4, y + 4);
-      }
-    }
-
-    ctx.restore();
-  }, [nodes, edges, hovered, transform]);
-
-  const getNodeAt = (cx: number, cy: number) => {
-    const ix = (cx - transform.x) / transform.scale;
-    const iy = (cy - transform.y) / transform.scale;
-    for (const n of nodes) {
-      const dx = (n.x ?? 0) - ix, dy = (n.y ?? 0) - iy;
-      if (Math.sqrt(dx * dx + dy * dy) < 14) return n;
-    }
-    return null;
-  };
+  // Build markers: group by country, scatter slightly per node
+  const markers = nodes
+    .map(n => {
+      const coords = COUNTRY_COORDS[n.country];
+      if (!coords) return null;
+      const jitter = () => (Math.random() - 0.5) * 2.5;
+      return { ...n, lat: coords[0] + jitter(), lng: coords[1] + jitter() };
+    })
+    .filter(Boolean) as (NodeData & { lat: number; lng: number })[];
 
   return (
     <>
       <TopBar />
-      <main style={{ maxWidth: 1100, margin: "0 auto", padding: "48px 40px" }}>
-        <span style={{ fontFamily: F, fontSize: 10, letterSpacing: "0.2em", textTransform: "uppercase", color: "#8A8A8A" }}>Visualization</span>
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end", marginBottom: 24 }}>
-          <h1 style={{ fontFamily: S, fontSize: 42, fontWeight: 300, color: "#1A1A1A", marginTop: 8 }}>Network Map</h1>
-          <div style={{ display: "flex", gap: 16, alignItems: "center" }}>
-            <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-              <div style={{ width: 10, height: 10, borderRadius: "50%", background: "#4A7A8B" }} />
-              <span style={{ fontFamily: F, fontSize: 10, color: "#8A8A8A" }}>Artist</span>
+      <div style={{ background: "#FDFBF7", minHeight: "calc(100vh - 60px)" }}>
+        {/* Header */}
+        <div style={{ padding: "28px 40px 16px", display: "flex", justifyContent: "space-between", alignItems: "center", borderBottom: "1px solid #E8E3DB" }}>
+          <div>
+            <span style={{ fontFamily: F, fontSize: 10, letterSpacing: "0.2em", textTransform: "uppercase", color: "#8B7355" }}>Network</span>
+            <h1 style={{ fontFamily: S, fontSize: 28, fontWeight: 300, color: "#1A1A1A", margin: "4px 0 0" }}>World Map</h1>
+          </div>
+          <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
+            {/* Stats */}
+            <div style={{ display: "flex", gap: 20, marginRight: 8 }}>
+              <div style={{ textAlign: "center" }}>
+                <div style={{ fontFamily: S, fontSize: 20, fontWeight: 300, color: "#1A1A1A" }}>{nodes.filter(n => n.type === "artist").length}</div>
+                <div style={{ fontFamily: F, fontSize: 9, letterSpacing: "0.12em", textTransform: "uppercase", color: "#B0AAA2" }}>아티스트</div>
+              </div>
+              <div style={{ textAlign: "center" }}>
+                <div style={{ fontFamily: S, fontSize: 20, fontWeight: 300, color: "#8B7355" }}>{nodes.filter(n => n.type === "gallery").length}</div>
+                <div style={{ fontFamily: F, fontSize: 9, letterSpacing: "0.12em", textTransform: "uppercase", color: "#B0AAA2" }}>갤러리</div>
+              </div>
+              <div style={{ textAlign: "center" }}>
+                <div style={{ fontFamily: S, fontSize: 20, fontWeight: 300, color: "#5A7A5A" }}>{Object.keys(countryCount).filter(c => c !== "Unknown").length}</div>
+                <div style={{ fontFamily: F, fontSize: 9, letterSpacing: "0.12em", textTransform: "uppercase", color: "#B0AAA2" }}>국가</div>
+              </div>
             </div>
-            <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-              <div style={{ width: 12, height: 12, borderRadius: "50%", background: "#8B7355" }} />
-              <span style={{ fontFamily: F, fontSize: 10, color: "#8A8A8A" }}>Gallery</span>
+            {/* View toggle */}
+            <div style={{ display: "flex", border: "1px solid #E8E3DB" }}>
+              {(["map", "graph"] as const).map(v => (
+                <button key={v} onClick={() => { if (v === "graph") router.push("/network?view=graph"); else setView("map"); }}
+                  style={{ padding: "8px 16px", border: "none", background: view === v ? "#1A1A1A" : "transparent", color: view === v ? "#FDFBF7" : "#8A8580", fontFamily: F, fontSize: 10, letterSpacing: "0.08em", textTransform: "uppercase", cursor: "pointer" }}>
+                  {v === "map" ? "지도" : "그래프"}
+                </button>
+              ))}
             </div>
           </div>
         </div>
 
         {loading ? (
-          <p style={{ fontFamily: F, color: "#B0AAA2" }}>Loading network...</p>
+          <div style={{ height: "calc(100vh - 160px)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+            <p style={{ fontFamily: F, fontSize: 12, color: "#B0AAA2" }}>데이터 로딩 중...</p>
+          </div>
         ) : (
-          <div style={{ border: "1px solid #E8E3DB", background: "#FDFBF7", position: "relative", overflow: "hidden" }}>
-            <canvas
-              ref={canvasRef}
-              width={1000}
-              height={700}
-              style={{ display: "block", width: "100%", cursor: hovered ? "pointer" : "grab" }}
-              onMouseMove={e => {
-                const rect = e.currentTarget.getBoundingClientRect();
-                const scaleX = 1000 / rect.width;
-                const cx = (e.clientX - rect.left) * scaleX;
-                const cy = (e.clientY - rect.top) * scaleX;
-                if (dragging.current.panStart && !dragging.current.node) {
-                  const { x: sx, y: sy, tx, ty } = dragging.current.panStart;
-                  setTransform(t => ({ ...t, x: tx + (cx - sx), y: ty + (cy - sy) }));
-                } else if (dragging.current.node) {
-                  const n = dragging.current.node;
-                  n.x = (cx - transform.x) / transform.scale;
-                  n.y = (cy - transform.y) / transform.scale;
-                  setNodes([...nodes]);
-                } else {
-                  setHovered(getNodeAt(cx, cy));
-                }
-              }}
-              onMouseDown={e => {
-                const rect = e.currentTarget.getBoundingClientRect();
-                const scaleX = 1000 / rect.width;
-                const cx = (e.clientX - rect.left) * scaleX;
-                const cy = (e.clientY - rect.top) * scaleX;
-                const node = getNodeAt(cx, cy);
-                dragging.current = { node: node ?? null, panStart: !node ? { x: cx, y: cy, tx: transform.x, ty: transform.y } : null };
-              }}
-              onMouseUp={() => { dragging.current = { node: null, panStart: null }; }}
-              onClick={e => {
-                const rect = e.currentTarget.getBoundingClientRect();
-                const scaleX = 1000 / rect.width;
-                const cx = (e.clientX - rect.left) * scaleX;
-                const cy = (e.clientY - rect.top) * scaleX;
-                const node = getNodeAt(cx, cy);
-                if (node?.type === "artist" && node.artistId) {
-                  router.push(`/artists/${encodeURIComponent(node.artistId)}`);
-                }
-              }}
-              onWheel={e => {
-                e.preventDefault();
-                setTransform(t => {
-                  const scale = Math.max(0.3, Math.min(3, t.scale * (e.deltaY > 0 ? 0.9 : 1.1)));
-                  return { ...t, scale };
-                });
-              }}
-            />
-            {hovered && (
-              <div style={{ position: "absolute", bottom: 16, left: 16, padding: "10px 16px", background: "rgba(255,255,255,0.95)", border: "1px solid #E8E3DB", fontFamily: F }}>
-                <div style={{ fontSize: 11, fontWeight: 600, color: hovered.type === "gallery" ? "#8B7355" : "#4A7A8B", textTransform: "uppercase", letterSpacing: "0.1em", marginBottom: 4 }}>
-                  {hovered.type}
-                </div>
-                <div style={{ fontSize: 14, color: "#1A1A1A" }}>{hovered.label}</div>
-                {hovered.sub && <div style={{ fontSize: 11, color: "#8A8A8A", marginTop: 2 }}>{hovered.sub}</div>}
-              </div>
-            )}
-            <div style={{ position: "absolute", top: 12, right: 12, display: "flex", flexDirection: "column", gap: 4 }}>
-              {["+", "−"].map(s => (
-                <button key={s} onClick={() => setTransform(t => ({ ...t, scale: Math.max(0.3, Math.min(3, t.scale * (s === "+" ? 1.2 : 0.8))) }))} style={{ width: 28, height: 28, border: "1px solid #E8E3DB", background: "#FFFFFF", fontFamily: F, fontSize: 14, cursor: "pointer" }}>
-                  {s}
-                </button>
-              ))}
-              <button onClick={() => setTransform({ x: 0, y: 0, scale: 1 })} style={{ width: 28, height: 28, border: "1px solid #E8E3DB", background: "#FFFFFF", fontFamily: F, fontSize: 9, cursor: "pointer" }}>
-                ⊙
-              </button>
+          <div style={{ display: "flex", height: "calc(100vh - 140px)" }}>
+            {/* Map */}
+            <div style={{ flex: 1 }}>
+              <WorldMap markers={markers} />
             </div>
-            <p style={{ position: "absolute", top: 12, left: 12, fontFamily: F, fontSize: 10, color: "#B0AAA2", margin: 0 }}>
-              {nodes.length} nodes · {edges.length} connections · scroll to zoom · drag to pan
-            </p>
+            {/* Sidebar */}
+            <div style={{ width: 200, borderLeft: "1px solid #E8E3DB", padding: "24px 20px", overflowY: "auto", background: "#FDFBF7" }}>
+              <p style={{ fontFamily: F, fontSize: 9, fontWeight: 600, letterSpacing: "0.16em", textTransform: "uppercase", color: "#8B7355", margin: "0 0 16px" }}>Top Countries</p>
+              {topCountries.map(([country, count]) => (
+                <div key={country} style={{ marginBottom: 12 }}>
+                  <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 4 }}>
+                    <span style={{ fontFamily: F, fontSize: 11, color: "#4A4A4A" }}>{country}</span>
+                    <span style={{ fontFamily: F, fontSize: 11, color: "#B0AAA2" }}>{count}</span>
+                  </div>
+                  <div style={{ height: 2, background: "#F0EBE3" }}>
+                    <div style={{ height: "100%", background: "#8B7355", width: `${(count / topCountries[0][1]) * 100}%` }} />
+                  </div>
+                </div>
+              ))}
+            </div>
           </div>
         )}
-      </main>
+      </div>
     </>
   );
 }

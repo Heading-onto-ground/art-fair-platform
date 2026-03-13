@@ -42,8 +42,8 @@ export async function GET(req: NextRequest) {
   const artistIdMap = new Map(artists.map((a: ArtistRow) => [a.id, a]));
 
   const nodes = [
-    ...artists.map((a: ArtistRow) => ({ id: `artist_${a.id}`, label: a.name, type: "artist" as const, sub: a.genre ?? a.country ?? "", image: a.profileImage ?? null, artistId: a.artistId })),
-    ...[...galleryMap.values()].map((g) => ({ id: `gallery_${g.id}`, label: g.name, type: "gallery" as const, sub: g.country ?? "", image: null, artistId: null })),
+    ...artists.map((a: ArtistRow) => ({ id: `artist_${a.id}`, label: a.name, type: "artist" as const, sub: a.genre ?? a.country ?? "", country: a.country ?? "", genre: a.genre ?? "", image: a.profileImage ?? null, artistId: a.artistId })),
+    ...[...galleryMap.values()].map((g) => ({ id: `gallery_${g.id}`, label: g.name, type: "gallery" as const, sub: g.country ?? "", country: g.country ?? "", genre: "", image: null, artistId: null })),
   ];
 
   const edgeSet = new Set<string>();
