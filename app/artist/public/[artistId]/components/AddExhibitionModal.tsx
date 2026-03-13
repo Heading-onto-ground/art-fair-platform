@@ -1,49 +1,88 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useCallback } from "react";
 
 type Props = {
   onClose: () => void;
   onSuccess: () => void;
 };
 
+type SpaceOption = { id: string; name: string; city?: string | null; country?: string | null };
+type ArtistOption = { id: string; artistId: string; name: string; city?: string | null; country?: string | null };
+
 export default function AddExhibitionModal({ onClose, onSuccess }: Props) {
   const [title, setTitle] = useState("");
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
   const [venue, setVenue] = useState("");
-  const [venueSuggestions, setVenueSuggestions] = useState<string[]>([]);
+  const [venueSuggestions, setVenueSuggestions] = useState<SpaceOption[]>([]);
+  const [venueOpen, setVenueOpen] = useState(false);
   const [curator, setCurator] = useState("");
-  const [collaborators, setCollaborators] = useState<string[]>([]);
+  const [collaboratorIds, setCollaboratorIds] = useState<string[]>([]);
+  const [collaboratorNames, setCollaboratorNames] = useState<Record<string, string>>({});
   const [collabInput, setCollabInput] = useState("");
+  const [artistSuggestions, setArtistSuggestions] = useState<ArtistOption[]>([]);
+  const [artistOpen, setArtistOpen] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // Placeholder: venue autocomplete (would call /api/spaces)
-  const handleVenueChange = (v: string) => {
-    setVenue(v);
-    if (v.length >= 2) {
-      setVenueSuggestions([
-        "Independent Space Seoul",
-        "Gallery Hyundai",
-        "Kukje Gallery",
-        "National Museum of Modern and Contemporary Art",
-      ].filter((s) => s.toLowerCase().includes(v.toLowerCase())));
+  const fetchSpaces = useCallback(async (q: string) => {
+    if (q.length < 2) return [];
+    const res = await fetch(`/api/spaces?q=${encodeURIComponent(q)}`);
+    const data = await res.json().catch(() => ({}));
+    return (data.spaces ?? []).map((s: { id?: string; name: string; city?: string | null; country?: string | null }) => ({
+      id: s.id || "",
+      name: s.name,
+      city: s.city,
+      country: s.country,
+    }));
+  }, []);
+
+  const fetchArtists = useCallback(async (q: string) => {
+    if (q.length < 2) return [];
+    const res = await fetch(`/api/artists/search?q=${encodeURIComponent(q)}`);
+    const data = await res.json().catch(() => ({}));
+    return data.artists ?? [];
+  }, []);
+
+  useEffect(() => {
+    if (venue.length >= 2) {
+      fetchSpaces(venue).then((s) => {
+        setVenueSuggestions(s);
+        setVenueOpen(true);
+      });
     } else {
       setVenueSuggestions([]);
+      setVenueOpen(false);
     }
-  };
+  }, [venue, fetchSpaces]);
 
-  const addCollaborator = () => {
-    const t = collabInput.trim();
-    if (t && !collaborators.includes(t)) {
-      setCollaborators([...collaborators, t]);
+  useEffect(() => {
+    if (collabInput.length >= 2) {
+      fetchArtists(collabInput).then((a) => {
+        setArtistSuggestions(a.filter((x: ArtistOption) => !collaboratorIds.includes(x.id)));
+        setArtistOpen(true);
+      });
+    } else {
+      setArtistSuggestions([]);
+      setArtistOpen(false);
+    }
+  }, [collabInput, collaboratorIds, fetchArtists]);
+
+  const addCollaborator = (artist: ArtistOption) => {
+    if (!collaboratorIds.includes(artist.id)) {
+      setCollaboratorIds([...collaboratorIds, artist.id]);
+      setCollaboratorNames({ ...collaboratorNames, [artist.id]: artist.name });
       setCollabInput("");
+      setArtistOpen(false);
     }
   };
 
-  const removeCollaborator = (c: string) => {
-    setCollaborators(collaborators.filter((x) => x !== c));
+  const removeCollaborator = (id: string) => {
+    setCollaboratorIds(collaboratorIds.filter((x) => x !== id));
+    const next = { ...collaboratorNames };
+    delete next[id];
+    setCollaboratorNames(next);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -76,7 +115,7 @@ export default function AddExhibitionModal({ onClose, onSuccess }: Props) {
           country: "",
           spaceName: venue.trim(),
           curatorName: curator.trim() || undefined,
-          description: collaborators.length > 0 ? `With: ${collaborators.join(", ")}` : undefined,
+          collaboratorArtistIds: collaboratorIds,
           isPublic: true,
         }),
       });
@@ -120,7 +159,7 @@ export default function AddExhibitionModal({ onClose, onSuccess }: Props) {
               type="text"
               value={title}
               onChange={(e) => setTitle(e.target.value)}
-              placeholder="e.g. Spatial Echo"
+              placeholder="e.g. Spatial Echo 2025"
               className="w-full px-4 py-3 border border-[#E5E7EB] rounded-lg focus:border-[#0066FF] focus:ring-2 focus:ring-[#0066FF]/20 outline-none"
             />
           </div>
@@ -157,60 +196,81 @@ export default function AddExhibitionModal({ onClose, onSuccess }: Props) {
             <input
               type="text"
               value={venue}
-              onChange={(e) => handleVenueChange(e.target.value)}
-              placeholder="Search or type venue name"
+              onChange={(e) => setVenue(e.target.value)}
+              onBlur={() => setTimeout(() => setVenueOpen(false), 150)}
+              placeholder="Search or type venue name (e.g. Seoul)"
               className="w-full px-4 py-3 border border-[#E5E7EB] rounded-lg focus:border-[#0066FF] focus:ring-2 focus:ring-[#0066FF]/20 outline-none"
             />
-            {venueSuggestions.length > 0 && (
+            {venueOpen && venueSuggestions.length > 0 && (
               <ul className="absolute z-10 mt-1 w-full bg-white border border-[#E5E7EB] rounded-lg shadow-lg max-h-40 overflow-y-auto">
                 {venueSuggestions.map((s) => (
                   <li
-                    key={s}
+                    key={s.id || s.name}
+                    onMouseDown={(e) => e.preventDefault()}
                     onClick={() => {
-                      setVenue(s);
+                      setVenue(s.name);
                       setVenueSuggestions([]);
+                      setVenueOpen(false);
                     }}
                     className="px-4 py-2 text-sm text-[#1A1A1A] hover:bg-[#F8F9FA] cursor-pointer"
                   >
-                    {s}
+                    {s.name}
+                    {(s.city || s.country) && (
+                      <span className="text-[#6B7280] ml-2">
+                        {[s.city, s.country].filter(Boolean).join(", ")}
+                      </span>
+                    )}
                   </li>
                 ))}
               </ul>
             )}
           </div>
 
-          <div>
+          <div className="relative">
             <label className="block text-sm font-medium text-[#1A1A1A] mb-1">
               Collaborating Artists
             </label>
-            <div className="flex gap-2 mb-2">
-              <input
-                type="text"
-                value={collabInput}
-                onChange={(e) => setCollabInput(e.target.value)}
-                onKeyDown={(e) => e.key === "Enter" && (e.preventDefault(), addCollaborator())}
-                placeholder="Add artist name"
-                className="flex-1 px-4 py-3 border border-[#E5E7EB] rounded-lg focus:border-[#0066FF] focus:ring-2 focus:ring-[#0066FF]/20 outline-none"
-              />
-              <button
-                type="button"
-                onClick={addCollaborator}
-                className="px-4 py-3 border border-[#E5E7EB] rounded-lg text-sm font-medium text-[#1A1A1A] hover:bg-[#F8F9FA]"
-              >
-                Add
-              </button>
-            </div>
-            {collaborators.length > 0 && (
-              <div className="flex flex-wrap gap-2">
-                {collaborators.map((c) => (
+            <p className="text-xs text-[#6B7280] mb-2">
+              ROB 내 작가 검색 · 함께 전시한 작가를 태그하면 Network에 연결돼요
+            </p>
+            <input
+              type="text"
+              value={collabInput}
+              onChange={(e) => setCollabInput(e.target.value)}
+              onBlur={() => setTimeout(() => setArtistOpen(false), 150)}
+              placeholder="Search artist name"
+              className="w-full px-4 py-3 border border-[#E5E7EB] rounded-lg focus:border-[#0066FF] focus:ring-2 focus:ring-[#0066FF]/20 outline-none mb-2"
+            />
+            {artistOpen && artistSuggestions.length > 0 && (
+              <ul className="absolute z-10 mt-1 w-full bg-white border border-[#E5E7EB] rounded-lg shadow-lg max-h-32 overflow-y-auto">
+                {artistSuggestions.map((a) => (
+                  <li
+                    key={a.id}
+                    onMouseDown={(e) => e.preventDefault()}
+                    onClick={() => addCollaborator(a)}
+                    className="px-4 py-2 text-sm text-[#1A1A1A] hover:bg-[#F8F9FA] cursor-pointer"
+                  >
+                    {a.name}
+                    {(a.city || a.country) && (
+                      <span className="text-[#6B7280] ml-2">
+                        {[a.city, a.country].filter(Boolean).join(", ")}
+                      </span>
+                    )}
+                  </li>
+                ))}
+              </ul>
+            )}
+            {collaboratorIds.length > 0 && (
+              <div className="flex flex-wrap gap-2 mt-2">
+                {collaboratorIds.map((id) => (
                   <span
-                    key={c}
+                    key={id}
                     className="inline-flex items-center gap-1 px-3 py-1 bg-[#0066FF]/10 text-[#0066FF] rounded-full text-sm"
                   >
-                    {c}
+                    {collaboratorNames[id] ?? id}
                     <button
                       type="button"
-                      onClick={() => removeCollaborator(c)}
+                      onClick={() => removeCollaborator(id)}
                       className="text-[#0066FF] hover:text-[#0052CC]"
                     >
                       ×
@@ -219,7 +279,11 @@ export default function AddExhibitionModal({ onClose, onSuccess }: Props) {
                 ))}
               </div>
             )}
-            <p className="mt-1 text-xs text-[#6B7280]">+ Add from ROB network (coming soon)</p>
+            {collaboratorIds.length === 0 && (
+              <p className="mt-1 text-xs text-[#9CA3AF]">
+                참여 작가를 추가하면 Collaborated with 섹션이 채워져요
+              </p>
+            )}
           </div>
 
           <div>

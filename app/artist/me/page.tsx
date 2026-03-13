@@ -325,7 +325,7 @@ export default function ArtistMePage() {
                   {lang === "ko" ? "전시 이력 공개" : "Make exhibition history public"}
                 </label>
                 {exPublic && exArtistId && (
-                  <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
                     <span style={{ fontFamily: F, fontSize: 11, color: "#8B7355" }}>
                       {typeof window !== "undefined" ? `${window.location.origin}/artist/public/${exArtistId}` : `/artist/public/${exArtistId}`}
                     </span>
@@ -334,6 +334,9 @@ export default function ArtistMePage() {
                     </button>
                     <a href={`/artist/public/${exArtistId}/cv`} target="_blank" rel="noreferrer" style={{ padding: "5px 12px", border: "1px solid #D4C9B8", background: "#FDFBF7", fontFamily: F, fontSize: 10, fontWeight: 600, color: "#8B7355", letterSpacing: "0.08em", textTransform: "uppercase", cursor: "pointer", textDecoration: "none" }}>
                       CV
+                    </a>
+                    <a href={`/artist/public/${exArtistId}?showOnboarding=1`} style={{ padding: "5px 12px", border: "1px solid #D4C9B8", background: "#FDFBF7", fontFamily: F, fontSize: 10, fontWeight: 600, color: "#8B7355", letterSpacing: "0.08em", textTransform: "uppercase", cursor: "pointer", textDecoration: "none" }}>
+                      {lang === "ko" ? "온보딩 다시 보기" : "Replay onboarding"}
                     </a>
                   </div>
                 )}

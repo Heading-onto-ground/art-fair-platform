@@ -36,6 +36,26 @@ export async function GET(_req: Request, { params }: { params: { artistId: strin
     select: { id: true, eventType: true, title: true, year: true, description: true },
   }).catch(() => []);
 
+  const selfExhibitions = await prisma.exhibition.findMany({
+    where: {
+      isPublic: true,
+      OR: [
+        { createdBy: profile.id },
+        { artists: { some: { artistId: profile.id } } },
+      ],
+    },
+    include: {
+      space: true,
+      curator: true,
+      artists: {
+        include: {
+          artist: { select: { id: true, name: true, artistId: true } },
+        },
+      },
+    },
+    orderBy: { startDate: "desc" },
+  }).catch(() => []);
+
   return NextResponse.json({
     name: profile.name,
     artistId: profile.artistId,
@@ -50,6 +70,7 @@ export async function GET(_req: Request, { params }: { params: { artistId: strin
     website: profile.website ?? null,
     profileImage: profile.profileImage ?? null,
     exhibitions,
+    selfExhibitions,
     series,
     artEvents,
   });

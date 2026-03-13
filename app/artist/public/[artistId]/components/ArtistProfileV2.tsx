@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useParams } from "next/navigation";
+import { useParams, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import TopBar from "@/app/components/TopBar";
 import AddExhibitionModal from "./AddExhibitionModal";
@@ -31,6 +31,19 @@ type ArtEventItem = {
   description?: string | null;
 };
 
+type SelfExhibition = {
+  id: string;
+  title: string;
+  startDate: string | null;
+  endDate: string | null;
+  city: string | null;
+  country: string | null;
+  createdAt?: string;
+  space: { name: string; city: string | null; country: string | null } | null;
+  curator: { name: string } | null;
+  artists: Array<{ artist: { name: string; artistId: string } }>;
+};
+
 type Data = {
   name: string;
   userId?: string | null;
@@ -42,16 +55,23 @@ type Data = {
   startedYear?: number | null;
   profileImage?: string | null;
   exhibitions: Exhibition[];
+  selfExhibitions?: SelfExhibition[];
   series: SeriesItem[];
   artEvents: ArtEventItem[];
 };
 
 export default function ArtistProfileV2() {
   const { artistId } = useParams<{ artistId: string }>();
+  const searchParams = useSearchParams();
   const [data, setData] = useState<Data | null>(null);
   const [me, setMe] = useState<{ session?: { userId: string; role: string } } | null>(null);
   const [notFound, setNotFound] = useState(false);
   const [showAddModal, setShowAddModal] = useState(false);
+  const [toast, setToast] = useState<string | null>(null);
+  const [toastWithShare, setToastWithShare] = useState(false);
+  const [onboardingStep, setOnboardingStep] = useState<number | null>(null);
+
+  const ONBOARDING_KEY = "rob-artist-profile-onboarding-done";
 
   useEffect(() => {
     fetch(`/api/artist/public/${artistId}`)
@@ -68,6 +88,27 @@ export default function ArtistProfileV2() {
   }, [artistId]);
 
   const isOwner = me?.session?.role === "artist" && me?.session?.userId === data?.userId;
+
+  useEffect(() => {
+    if (toast) {
+      const t = setTimeout(() => setToast(null), 4000);
+      return () => clearTimeout(t);
+    }
+  }, [toast]);
+
+  useEffect(() => {
+    if (!isOwner || !data) return;
+    const forceShow = searchParams.get("showOnboarding") === "1";
+    if (forceShow) {
+      if (typeof window !== "undefined") localStorage.removeItem(ONBOARDING_KEY);
+      setOnboardingStep(1);
+      return;
+    }
+    const done = typeof window !== "undefined" && localStorage.getItem(ONBOARDING_KEY);
+    if (done) return;
+    const t = setTimeout(() => setOnboardingStep(1), 3000);
+    return () => clearTimeout(t);
+  }, [isOwner, data, searchParams]);
   const yearsActive = data?.startedYear
     ? new Date().getFullYear() - data.startedYear
     : null;
@@ -95,7 +136,8 @@ export default function ArtistProfileV2() {
     );
   }
 
-  // Merge exhibitions + artEvents into timeline
+  const selfEx = (data.selfExhibitions ?? []) as SelfExhibition[];
+
   const timelineItems = [
     ...data.exhibitions.map((e) => ({
       type: "exhibition" as const,
@@ -107,6 +149,21 @@ export default function ArtistProfileV2() {
       curator: null as string | null,
       collaborators: [] as string[],
     })),
+    ...selfEx.map((e) => {
+      const collabs = (e.artists ?? [])
+        .map((a) => a.artist?.name)
+        .filter(Boolean) as string[];
+      return {
+        type: "exhibition" as const,
+        date: e.startDate || (e as { createdAt?: string }).createdAt || new Date().toISOString(),
+        title: e.title,
+        subtitle: null as string | null,
+        location: [e.space?.name, e.space?.city, e.space?.country].filter(Boolean).join(", ") || e.city || "",
+        thumb: null as string | null,
+        curator: e.curator?.name ?? null,
+        collaborators: collabs,
+      };
+    }),
     ...data.artEvents.map((e) => ({
       type: "event" as const,
       date: `${e.year}-01-01`,
@@ -123,12 +180,35 @@ export default function ArtistProfileV2() {
     .flatMap((t) => t.collaborators)
     .filter((c, i, arr) => arr.indexOf(c) === i);
 
+  const collaboratorWithIds = selfEx.flatMap((e) =>
+    (e.artists ?? [])
+      .map((a) => ({ name: a.artist?.name, artistId: a.artist?.artistId }))
+      .filter((x): x is { name: string; artistId: string } => !!x.name && !!x.artistId)
+  );
+  const uniqueCollabs = Array.from(
+    new Map(collaboratorWithIds.map((c) => [c.artistId, c])).values()
+  );
+
   return (
     <>
       <TopBar />
       <main className="min-h-screen bg-[#F8F9FA] text-[#1A1A1A]">
         {/* ─── 1. Hero / Header ─── */}
         <section className="relative overflow-hidden">
+          <div className="absolute top-4 right-4 sm:top-6 sm:right-6 z-10">
+            <button
+              onClick={() => {
+                const url = window.location.href;
+                navigator.clipboard.writeText(url).then(() => {
+                  setToast("Link copied!");
+                });
+              }}
+              className="p-2 rounded-lg bg-white/80 hover:bg-white border border-[#E5E7EB] text-[#6B7280] hover:text-[#1A1A1A] transition-colors"
+              title="Share profile"
+            >
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z" /></svg>
+            </button>
+          </div>
           <div
             className="h-40 sm:h-56 md:h-72 lg:h-80 w-full bg-cover bg-center"
             style={{
@@ -227,14 +307,34 @@ export default function ArtistProfileV2() {
 
               <div className="relative pl-6 sm:pl-8 border-l-2 border-[#E5E7EB]">
                 {timelineItems.length === 0 ? (
-                  <div className="py-12 text-center text-[#6B7280]">
-                    <p className="text-sm">No exhibitions yet.</p>
+                  <div className="py-12 sm:py-16 px-6 text-center bg-white/80 rounded-2xl border border-dashed border-[#E5E7EB]">
+                    <div className="flex justify-center mb-6">
+                      <svg width="120" height="100" viewBox="0 0 120 100" fill="none" xmlns="http://www.w3.org/2000/svg" className="text-[#D1D5DB]">
+                        <rect x="20" y="10" width="80" height="12" rx="2" stroke="currentColor" strokeWidth="1.5" strokeDasharray="4 2" fill="none" />
+                        <circle cx="30" cy="16" r="3" fill="currentColor" opacity="0.4" />
+                        <rect x="20" y="32" width="80" height="12" rx="2" stroke="currentColor" strokeWidth="1.5" strokeDasharray="4 2" fill="none" />
+                        <circle cx="30" cy="38" r="3" fill="currentColor" opacity="0.4" />
+                        <rect x="20" y="54" width="80" height="12" rx="2" stroke="currentColor" strokeWidth="1.5" strokeDasharray="4 2" fill="none" />
+                        <circle cx="30" cy="60" r="3" fill="currentColor" opacity="0.4" />
+                        <path d="M55 75 L65 85 L85 65" stroke="#0066FF" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" opacity="0.8" />
+                        <circle cx="70" cy="75" r="12" fill="#0066FF" fillOpacity="0.15" stroke="#0066FF" strokeWidth="1.5" />
+                        <text x="70" y="79" textAnchor="middle" fill="#0066FF" fontSize="14" fontWeight="600">+</text>
+                      </svg>
+                    </div>
+                    <h3 className="text-lg font-semibold text-[#1A1A1A] mb-2">
+                      아직 기록된 활동이 없어요
+                    </h3>
+                    <p className="text-sm text-[#6B7280] max-w-md mx-auto leading-relaxed mb-6">
+                      첫 전시를 추가하면 타임라인이 자동으로 쌓여요.
+                      <br />
+                      CV도 한 번에 정리되고, 큐레이터가 더 쉽게 발견할 수 있어요.
+                    </p>
                     {isOwner && (
                       <button
                         onClick={() => setShowAddModal(true)}
-                        className="mt-4 px-6 py-3 bg-[#0066FF] hover:bg-[#0052CC] text-white text-sm font-medium rounded-lg"
+                        className="px-8 py-3.5 bg-[#0066FF] hover:bg-[#0052CC] text-white text-sm font-semibold rounded-lg transition-colors shadow-sm"
                       >
-                        + Add your first exhibition
+                        첫 전시 추가하기
                       </button>
                     )}
                   </div>
@@ -380,49 +480,81 @@ export default function ArtistProfileV2() {
         <section className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-10 sm:py-12">
           <h2 className="text-xl font-semibold text-[#1A1A1A] mb-6">Collaborated with</h2>
           <div className="flex flex-col sm:flex-row sm:items-center gap-6">
-            {/* Circular node graph preview */}
-            <div className="flex items-center justify-center sm:justify-start flex-shrink-0">
-              <div className="relative w-[140px] h-[140px] sm:w-[160px] sm:h-[160px]">
-                <div className="absolute inset-0 flex items-center justify-center">
-                  <div className="w-11 h-11 sm:w-12 sm:h-12 rounded-full bg-[#0066FF] border-2 border-white shadow flex items-center justify-center text-white font-semibold text-sm">
-                    {data.name?.charAt(0) || "A"}
+            {/* Circular node graph: 3개 이상일 때만 표시 (적을 때 빈 원만 여러 개 뜨는 것 방지) */}
+            {(() => {
+              const collabList = uniqueCollabs.length > 0 ? uniqueCollabs : collaborators.map((n) => ({ name: n, artistId: "" }));
+              if (collabList.length < 3) return null;
+              return (
+                <div className="flex items-center justify-center sm:justify-start flex-shrink-0">
+                  <div className="relative w-[140px] h-[140px] sm:w-[160px] sm:h-[160px]">
+                    <div className="absolute inset-0 flex items-center justify-center">
+                      <div className="w-11 h-11 sm:w-12 sm:h-12 rounded-full bg-[#0066FF] border-2 border-white shadow flex items-center justify-center text-white font-semibold text-sm">
+                        {data.name?.charAt(0) || "A"}
+                      </div>
+                    </div>
+                    {collabList.slice(0, 6).map((c, i) => {
+                      const n = Math.max(collabList.length, 1);
+                      const angle = (i / n) * 360 - 90;
+                      const r = 48;
+                      const cx = 70;
+                      const x = cx + r * Math.cos((angle * Math.PI) / 180);
+                      const y = cx + r * Math.sin((angle * Math.PI) / 180);
+                      return (
+                        <div
+                          key={c.artistId || c.name}
+                          className="absolute w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-[#E5E7EB] border-2 border-white flex items-center justify-center text-[#6B7280] font-medium text-xs -translate-x-1/2 -translate-y-1/2"
+                          style={{ left: x, top: y }}
+                        >
+                          {c.name?.charAt(0) || "?"}
+                        </div>
+                      );
+                    })}
                   </div>
                 </div>
-                {collaborators.slice(0, 6).map((c, i) => {
-                  const n = Math.max(collaborators.length, 1);
-                  const angle = (i / n) * 360 - 90;
-                  const r = 48;
-                  const cx = 70;
-                  const x = cx + r * Math.cos((angle * Math.PI) / 180);
-                  const y = cx + r * Math.sin((angle * Math.PI) / 180);
-                  return (
-                    <div
-                      key={c}
-                      className="absolute w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-[#E5E7EB] border-2 border-white flex items-center justify-center text-[#6B7280] font-medium text-xs -translate-x-1/2 -translate-y-1/2"
-                      style={{ left: x, top: y }}
-                    >
-                      {c.charAt(0)}
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
+              );
+            })()}
             <div className="flex flex-wrap gap-3 sm:flex-1">
-              {collaborators.length === 0 ? (
-                <p className="text-sm text-[#6B7280]">
-                  Collaborations will appear here when you add exhibitions with other artists.
-                </p>
+              {uniqueCollabs.length === 0 && collaborators.length === 0 ? (
+                <div className="flex flex-col gap-3">
+                  <p className="text-sm text-[#6B7280]">
+                    아직 협업 기록이 없어요
+                  </p>
+                  <p className="text-xs text-[#9CA3AF]">
+                    전시를 추가하면 함께한 작가들이 자동으로 연결돼요.
+                  </p>
+                  {isOwner && (
+                    <button
+                      onClick={() => setShowAddModal(true)}
+                      className="self-start px-4 py-2 text-sm font-medium text-[#0066FF] hover:bg-[#0066FF]/10 rounded-lg transition-colors"
+                    >
+                      지금 전시 추가하기
+                    </button>
+                  )}
+                </div>
               ) : (
-                collaborators.map((c) => (
-                  <div
-                    key={c}
-                    className="flex items-center gap-2 p-3 bg-white border border-[#E5E7EB] rounded-xl min-w-[100px]"
-                  >
-                    <div className="w-10 h-10 rounded-full bg-[#E5E7EB] flex items-center justify-center text-[#6B7280] font-medium text-sm flex-shrink-0">
-                      {c.charAt(0)}
+                (uniqueCollabs.length > 0 ? uniqueCollabs : collaborators.map((n) => ({ name: n, artistId: "" }))).map((c) => (
+                  c.artistId ? (
+                    <Link
+                      key={c.artistId}
+                      href={`/artist/public/${c.artistId}`}
+                      className="flex items-center gap-2 p-3 bg-white border border-[#E5E7EB] rounded-xl min-w-[100px] hover:border-[#0066FF]/30 hover:shadow-sm transition-colors"
+                    >
+                      <div className="w-10 h-10 rounded-full bg-[#E5E7EB] flex items-center justify-center text-[#6B7280] font-medium text-sm flex-shrink-0">
+                        {c.name?.charAt(0) || "?"}
+                      </div>
+                      <span className="text-sm text-[#1A1A1A] truncate max-w-[80px]">{c.name}</span>
+                    </Link>
+                  ) : (
+                    <div
+                      key={c.name}
+                      className="flex items-center gap-2 p-3 bg-white border border-[#E5E7EB] rounded-xl min-w-[100px]"
+                    >
+                      <div className="w-10 h-10 rounded-full bg-[#E5E7EB] flex items-center justify-center text-[#6B7280] font-medium text-sm flex-shrink-0">
+                        {c.name?.charAt(0) || "?"}
+                      </div>
+                      <span className="text-sm text-[#1A1A1A] truncate max-w-[80px]">{c.name}</span>
                     </div>
-                    <span className="text-sm text-[#1A1A1A] truncate max-w-[80px]">{c}</span>
-                  </div>
+                  )
                 ))
               )}
             </div>
@@ -449,11 +581,77 @@ export default function ArtistProfileV2() {
         </section>
       </main>
 
+      {toast && (
+        <div className="fixed bottom-24 sm:bottom-8 left-1/2 -translate-x-1/2 z-[60] px-4 py-3 bg-[#1A1A1A] text-white text-sm font-medium rounded-lg shadow-lg flex items-center gap-3">
+          <span>{toast}</span>
+          {toastWithShare && (
+            <button
+              onClick={() => {
+                navigator.clipboard.writeText(window.location.href);
+                setToast("Link copied!");
+                setToastWithShare(false);
+              }}
+              className="px-2 py-1 text-xs font-medium bg-white/20 hover:bg-white/30 rounded"
+            >
+              공유하기
+            </button>
+          )}
+        </div>
+      )}
+
+      {onboardingStep !== null && isOwner && (
+        <div className="fixed inset-0 z-[55] flex items-center justify-center p-4 bg-black/40">
+          <div className="bg-white rounded-2xl p-6 max-w-sm w-full shadow-xl">
+            <h3 className="font-semibold text-[#1A1A1A] mb-2">
+              {onboardingStep === 1 && "여기서 당신의 이야기를 시작하세요"}
+              {onboardingStep === 2 && "전시를 추가할수록 타임라인이 쌓여요"}
+              {onboardingStep === 3 && "작품도 함께 올려보세요"}
+            </h3>
+            <p className="text-sm text-[#6B7280] mb-4">
+              {onboardingStep === 1 && "Add Exhibition 버튼을 눌러 첫 전시를 등록해 보세요."}
+              {onboardingStep === 2 && "전시를 등록하면 타임라인에 자동으로 쌓입니다."}
+              {onboardingStep === 3 && "작품 시리즈를 추가하면 프로필이 더 풍부해져요."}
+            </p>
+            <div className="flex gap-3">
+              {onboardingStep < 3 ? (
+                <button
+                  onClick={() => setOnboardingStep(step => (step ?? 1) + 1)}
+                  className="flex-1 py-2.5 bg-[#0066FF] text-white text-sm font-medium rounded-lg"
+                >
+                  다음
+                </button>
+              ) : (
+                <button
+                  onClick={() => {
+                    setOnboardingStep(null);
+                    if (typeof window !== "undefined") localStorage.setItem(ONBOARDING_KEY, "1");
+                  }}
+                  className="flex-1 py-2.5 bg-[#0066FF] text-white text-sm font-medium rounded-lg"
+                >
+                  확인
+                </button>
+              )}
+              <button
+                onClick={() => {
+                  setOnboardingStep(null);
+                  if (typeof window !== "undefined") localStorage.setItem(ONBOARDING_KEY, "1");
+                }}
+                className="py-2.5 px-4 text-sm text-[#6B7280] hover:text-[#1A1A1A]"
+              >
+                건너뛰기
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {showAddModal && (
         <AddExhibitionModal
           onClose={() => setShowAddModal(false)}
           onSuccess={() => {
             setShowAddModal(false);
+            setToast("전시가 타임라인에 추가됐습니다!");
+            setToastWithShare(true);
             fetch(`/api/artist/public/${artistId}`)
               .then((r) => (r.ok ? r.json() : null))
               .then((d) => d && setData(d));

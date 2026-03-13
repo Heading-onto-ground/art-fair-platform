@@ -64,7 +64,12 @@ export async function POST(req: Request) {
 
   const { title, startDate, endDate, city, country, description, isPublic,
     spaceName, spaceType, spaceWebsite,
-    curatorName, curatorBio, curatorOrganization } = body;
+    curatorName, curatorBio, curatorOrganization,
+    collaboratorArtistIds } = body;
+
+  const collabIds = Array.isArray(collaboratorArtistIds)
+    ? collaboratorArtistIds.map((id: unknown) => String(id || "").trim()).filter(Boolean)
+    : [];
 
   // Space upsert (이름이 있을 때만)
   let spaceId: string | undefined;
@@ -94,6 +99,23 @@ export async function POST(req: Request) {
     curatorId = curator.id;
   }
 
+  const artistCreates: Array<{ artistId: string; status: string }> = [
+    { artistId: profileId, status: "confirmed" },
+  ];
+
+  const seen = new Set<string>([profileId]);
+  for (const id of collabIds) {
+    if (seen.has(id)) continue;
+    const exists = await prisma.artistProfile.findFirst({
+      where: { OR: [{ id }, { artistId: id }] },
+      select: { id: true },
+    });
+    if (exists && !seen.has(exists.id)) {
+      seen.add(exists.id);
+      artistCreates.push({ artistId: exists.id, status: "confirmed" });
+    }
+  }
+
   const exhibition = await prisma.exhibition.create({
     data: {
       title: title.trim(),
@@ -106,12 +128,7 @@ export async function POST(req: Request) {
       createdBy: profileId,
       spaceId: spaceId || null,
       curatorId: curatorId || null,
-      artists: {
-        create: {
-          artistId: profileId,
-          status: "confirmed",
-        },
-      },
+      artists: { create: artistCreates },
     },
     include: { space: true, curator: true, artists: true },
   });
