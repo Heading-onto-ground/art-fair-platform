@@ -27,11 +27,12 @@ export async function GET(req: NextRequest) {
 
   // OpenCalls for gallery names
   const openCallIds = [...new Set(applications.map((a: { artistId: string; galleryId: string; openCallId: string }) => a.openCallId))];
-  const openCalls = openCallIds.length > 0 ? await prisma.openCall.findMany({
+  type OcRow = { id: string; gallery: string; galleryId: string; country: string };
+  const openCalls: OcRow[] = openCallIds.length > 0 ? await prisma.openCall.findMany({
     where: { id: { in: openCallIds } },
     select: { id: true, gallery: true, galleryId: true, country: true },
-  }) : [];
-  const ocMap = new Map(openCalls.map(oc => [oc.id, oc]));
+  }) as OcRow[] : [];
+  const ocMap = new Map(openCalls.map((oc) => [oc.id, oc]));
 
   // Build unique gallery nodes from accepted applications
   const galleryMap = new Map<string, { id: string; name: string; country?: string }>();
