@@ -26,7 +26,7 @@ export async function GET(req: NextRequest) {
   });
 
   // OpenCalls for gallery names
-  const openCallIds = [...new Set(applications.map(a => a.openCallId))];
+  const openCallIds = [...new Set(applications.map((a: { artistId: string; galleryId: string; openCallId: string }) => a.openCallId))];
   const openCalls = openCallIds.length > 0 ? await prisma.openCall.findMany({
     where: { id: { in: openCallIds } },
     select: { id: true, gallery: true, galleryId: true, country: true },
