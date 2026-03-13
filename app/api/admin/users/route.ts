@@ -36,12 +36,24 @@ type UserWithProfiles = {
   } | null;
 };
 
-export async function GET() {
+/** Exclude auto-generated artist bot accounts (e.g. *.bot@rob-roleofbridge.com, artistId bot-*) */
+function isArtistBot(email: string, role: string, profileId: string): boolean {
+  if (role !== "artist") return false;
+  const e = String(email || "").toLowerCase();
+  if (e.includes(".bot@rob-roleofbridge.com")) return true;
+  if (String(profileId || "").startsWith("bot-")) return true;
+  return false;
+}
+
+export async function GET(req: Request) {
   try {
     const admin = getAdminSession();
     if (!admin) {
       return NextResponse.json({ error: "unauthorized" }, { status: 401 });
     }
+
+    const { searchParams } = new URL(req.url);
+    const excludeBots = searchParams.get("excludeBots") === "true";
 
     const rows: UserWithProfiles[] = await prisma.user.findMany({
       orderBy: { createdAt: "desc" },
@@ -70,7 +82,7 @@ export async function GET() {
       },
     });
 
-    const users: AdminUserRow[] = rows.map((u: UserWithProfiles) => {
+    let users: AdminUserRow[] = rows.map((u: UserWithProfiles) => {
       const isArtist = u.role === "artist";
       const p = isArtist ? u.artistProfile : u.galleryProfile;
       return {
@@ -87,6 +99,10 @@ export async function GET() {
         hasPortfolio: isArtist ? !!u.artistProfile?.portfolioUrl : false,
       };
     });
+
+    if (excludeBots) {
+      users = users.filter((u) => !isArtistBot(u.email, u.role, u.profileId));
+    }
 
     const stats = {
       total: users.length,

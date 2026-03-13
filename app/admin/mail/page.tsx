@@ -234,7 +234,7 @@ export default function AdminMailPage() {
   async function loadUsers() {
     setLoadingUsers(true);
     try {
-      const res = await fetch("/api/admin/users", {
+      const res = await fetch("/api/admin/users?excludeBots=true", {
         cache: "no-store",
         credentials: "include",
       });

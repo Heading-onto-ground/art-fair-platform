@@ -48,7 +48,11 @@ async function resolvePlatformRecipients(input: {
     where: { role: { in: roles } as any },
     select: { email: true },
   });
-  return dedupeEmails(rows.map((r: { email: string }) => String(r.email || ""))).filter(isValidEmail).filter((e) => !e.includes("@invalid.local"));
+  const emails = dedupeEmails(rows.map((r: { email: string }) => String(r.email || "")))
+    .filter(isValidEmail)
+    .filter((e) => !e.includes("@invalid.local"));
+  // Exclude auto-generated artist bot accounts (*.bot@rob-roleofbridge.com)
+  return emails.filter((e) => !e.toLowerCase().includes(".bot@rob-roleofbridge.com"));
 }
 
 export async function POST(req: NextRequest) {
