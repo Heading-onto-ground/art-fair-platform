@@ -561,13 +561,32 @@ export default function PublicArtistPage() {
               </div>
             </div>
 
-            {me?.session?.role === "artist" && profile?.artistId && (
+            {/* Timeline link: 모든 방문자에게 노출 (큐레이터/갤러리가 작가 발견 시 활용) */}
+            {profile?.artistId && (
               <div style={{ marginTop: 16 }}>
                 <a
                   href={`/artist/public/${profile.artistId}`}
                   style={{ display: "inline-flex", alignItems: "center", gap: 6, padding: "10px 18px", border: "1px solid #D4C9B8", background: "#FDFBF8", fontFamily: F, fontSize: 11, fontWeight: 500, letterSpacing: "0.1em", textTransform: "uppercase", color: "#8B7355", textDecoration: "none" }}
                 >
                   전시 이력 · 타임라인 보기 →
+                </a>
+              </div>
+            )}
+
+            {/* Add Exhibition CTA: 본인 프로필일 때만 (작가 retention 핵심) */}
+            {me?.session?.role === "artist" && me?.session?.userId === profile?.userId && (
+              <div style={{ marginTop: 20, padding: "20px 24px", border: "2px solid #2563EB", background: "linear-gradient(135deg, #EFF6FF 0%, #DBEAFE 100%)", borderRadius: 14 }}>
+                <p style={{ fontFamily: F, fontSize: 11, fontWeight: 600, letterSpacing: "0.12em", textTransform: "uppercase", color: "#2563EB", marginBottom: 10 }}>
+                  Add Your Recent Exhibition
+                </p>
+                <p style={{ fontFamily: F, fontSize: 12, color: "#1E40AF", marginBottom: 14, lineHeight: 1.5 }}>
+                  전시를 등록하면 타임라인에 자동으로 쌓입니다. 큐레이터와 갤러리가 여러분을 발견할 수 있습니다.
+                </p>
+                <a
+                  href="/exhibitions/new"
+                  style={{ display: "inline-flex", alignItems: "center", gap: 8, padding: "12px 24px", background: "#2563EB", color: "#FFFFFF", fontFamily: F, fontSize: 11, fontWeight: 600, letterSpacing: "0.1em", textTransform: "uppercase", textDecoration: "none", borderRadius: 8 }}
+                >
+                  + Add Exhibition
                 </a>
               </div>
             )}

@@ -22,6 +22,16 @@
   --accent: #8B7355;
   --accent-hover: #6B5A45;
   --accent-soft: rgba(139, 115, 85, 0.08);
+
+  /* ROB V2 — Blue theme (artist profile) */
+  --rob-blue: #0066FF;
+  --rob-blue-hover: #0052CC;
+  --rob-blue-soft: rgba(0, 102, 255, 0.08);
+  --rob-bg: #F8F9FA;
+  --rob-bg-card: #FFFFFF;
+  --rob-text: #1A1A1A;
+  --rob-text-muted: #6B7280;
+  --rob-border: #E5E7EB;
   
   --success: #5A7A5A;
   --error: #8B4A4A;

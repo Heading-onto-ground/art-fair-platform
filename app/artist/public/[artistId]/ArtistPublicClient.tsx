@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
+import TopBar from "@/app/components/TopBar";
 import { F, S } from "@/lib/design";
 
 type Exhibition = {
@@ -55,7 +56,8 @@ const EVENT_COLOR: Record<string, string> = {
 
 export default function ArtistPublicClient() {
   const { artistId } = useParams<{ artistId: string }>();
-  const [data, setData] = useState<{ name: string; workNote?: string | null; exhibitions: Exhibition[]; series: SeriesItem[]; artEvents: ArtEventItem[] } | null>(null);
+  const [data, setData] = useState<{ name: string; userId?: string | null; workNote?: string | null; exhibitions: Exhibition[]; series: SeriesItem[]; artEvents: ArtEventItem[] } | null>(null);
+  const [me, setMe] = useState<{ session?: { userId: string; role: string } } | null>(null);
   const [notFound, setNotFound] = useState(false);
   const [following, setFollowing] = useState(false);
   const [followCount, setFollowCount] = useState(0);
@@ -75,6 +77,10 @@ export default function ArtistPublicClient() {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ artistId }),
     }).catch(() => {});
+    fetch("/api/auth/me?lite=1", { credentials: "include" })
+      .then(r => r.json())
+      .then(d => setMe(d))
+      .catch(() => setMe(null));
   }, [artistId]);
 
   async function toggleFollow() {
@@ -95,18 +101,28 @@ export default function ArtistPublicClient() {
 
   if (notFound) {
     return (
-      <main style={{ maxWidth: 600, margin: "80px auto", padding: "0 32px", textAlign: "center" }}>
-        <p style={{ fontFamily: F, fontSize: 13, color: "#B0AAA2" }}>Exhibition history is not public.</p>
-      </main>
+      <>
+        <TopBar />
+        <main style={{ maxWidth: 600, margin: "80px auto", padding: "0 32px", textAlign: "center" }}>
+          <p style={{ fontFamily: F, fontSize: 13, color: "#B0AAA2" }}>Exhibition history is not public.</p>
+        </main>
+      </>
     );
   }
 
   if (!data) {
-    return <main style={{ maxWidth: 600, margin: "80px auto", padding: "0 32px" }}><p style={{ fontFamily: F, fontSize: 13, color: "#B0AAA2" }}>Loading...</p></main>;
+    return (
+      <>
+        <TopBar />
+        <main style={{ maxWidth: 600, margin: "80px auto", padding: "0 32px" }}><p style={{ fontFamily: F, fontSize: 13, color: "#B0AAA2" }}>Loading...</p></main>
+      </>
+    );
   }
 
   return (
-    <main style={{ maxWidth: 760, margin: "0 auto", padding: "64px 40px" }}>
+    <>
+      <TopBar />
+      <main style={{ maxWidth: 760, margin: "0 auto", padding: "64px 40px" }}>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 4 }}>
         <span style={{ fontFamily: F, fontSize: 10, letterSpacing: "0.2em", textTransform: "uppercase", color: "#8A8A8A" }}>
           Exhibition History
@@ -131,6 +147,24 @@ export default function ArtistPublicClient() {
         <div style={{ marginBottom: 36, padding: "20px 24px", border: "1px solid #E8E3DB", background: "#FDFBF7" }}>
           <p style={{ fontFamily: F, fontSize: 10, fontWeight: 600, letterSpacing: "0.14em", textTransform: "uppercase", color: "#8B7355", marginBottom: 10 }}>Work Note</p>
           <p style={{ fontFamily: F, fontSize: 13, color: "#4A4540", lineHeight: 1.8, whiteSpace: "pre-wrap", margin: 0 }}>{data.workNote}</p>
+        </div>
+      )}
+
+      {/* Add Exhibition CTA: 본인 타임라인일 때 (작가 retention) */}
+      {me?.session?.role === "artist" && me?.session?.userId === data?.userId && (
+        <div style={{ marginBottom: 32, padding: "20px 24px", border: "2px solid #2563EB", background: "linear-gradient(135deg, #EFF6FF 0%, #DBEAFE 100%)", borderRadius: 14 }}>
+          <p style={{ fontFamily: F, fontSize: 11, fontWeight: 600, letterSpacing: "0.12em", textTransform: "uppercase", color: "#2563EB", marginBottom: 8 }}>
+            Add Your Recent Exhibition
+          </p>
+          <p style={{ fontFamily: F, fontSize: 12, color: "#1E40AF", marginBottom: 14, lineHeight: 1.5 }}>
+            전시를 등록하면 여기 타임라인에 자동으로 쌓입니다.
+          </p>
+          <a
+            href="/exhibitions/new"
+            style={{ display: "inline-flex", alignItems: "center", gap: 8, padding: "12px 24px", background: "#2563EB", color: "#FFFFFF", fontFamily: F, fontSize: 11, fontWeight: 600, letterSpacing: "0.1em", textTransform: "uppercase", textDecoration: "none", borderRadius: 8 }}
+          >
+            + Add Exhibition
+          </a>
         </div>
       )}
 
@@ -245,5 +279,6 @@ export default function ArtistPublicClient() {
         ROLE OF BRIDGE — Artist Platform
       </p>
     </main>
+    </>
   );
 }
