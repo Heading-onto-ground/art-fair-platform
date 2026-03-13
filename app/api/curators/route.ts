@@ -9,7 +9,7 @@ export async function GET() {
       include: { _count: { select: { exhibitions: true } } },
     });
     const sorted = curators.sort((a: { _count: { exhibitions: number } }, b: { _count: { exhibitions: number } }) => b._count.exhibitions - a._count.exhibitions);
-    return NextResponse.json({ curators: sorted.map(c => ({ id: c.id, name: c.name, organization: c.organization, exhibitionCount: c._count.exhibitions })) });
+    return NextResponse.json({ curators: sorted.map((c: { id: string; name: string; organization: string | null; _count: { exhibitions: number } }) => ({ id: c.id, name: c.name, organization: c.organization, exhibitionCount: c._count.exhibitions })) });
   } catch {
     return NextResponse.json({ curators: [] });
   }
