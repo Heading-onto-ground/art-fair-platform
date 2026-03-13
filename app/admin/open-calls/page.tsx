@@ -43,6 +43,14 @@ export default function AdminOpenCallsPage() {
   const [pinnedOpenCallId, setPinnedOpenCallId] = useState<string | null>(null);
   const [query, setQuery] = useState("");
 
+  const [showForm, setShowForm] = useState(false);
+  const [formData, setFormData] = useState({
+    gallery: "", city: "", country: "", theme: "", deadline: "",
+    exhibitionDate: "", externalEmail: "", externalUrl: "", galleryWebsite: "", galleryDescription: "",
+  });
+  const [formSaving, setFormSaving] = useState(false);
+  const [formError, setFormError] = useState<string | null>(null);
+
   useEffect(() => {
     (async () => {
       try {
@@ -132,6 +140,43 @@ export default function AdminOpenCallsPage() {
     });
   }, [openCallOptions, query]);
 
+  async function createExternal() {
+    setFormSaving(true);
+    setFormError(null);
+    try {
+      const res = await fetch("/api/admin/open-calls", {
+        method: "POST",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(formData),
+      });
+      if (res.status === 401) { router.replace("/admin/login"); return; }
+      if (!res.ok) {
+        const d = await res.json().catch(() => null);
+        setFormError(d?.error || "Failed");
+        return;
+      }
+      setFormData({ gallery: "", city: "", country: "", theme: "", deadline: "", exhibitionDate: "", externalEmail: "", externalUrl: "", galleryWebsite: "", galleryDescription: "" });
+      setShowForm(false);
+      await load();
+    } catch (e: unknown) {
+      setFormError(e instanceof Error ? e.message : "Failed");
+    } finally {
+      setFormSaving(false);
+    }
+  }
+
+  async function deleteOpenCall(id: string) {
+    if (!confirm(tr("Delete this open call?", "이 오픈콜을 삭제하시겠습니까?", "削除しますか？", "Supprimer?"))) return;
+    await fetch("/api/admin/open-calls", {
+      method: "DELETE",
+      credentials: "include",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ id }),
+    });
+    await load();
+  }
+
   async function savePin(nextOpenCallId: string | null) {
     setSaving(true);
     setError(null);
@@ -186,6 +231,61 @@ export default function AdminOpenCallsPage() {
               "Épinglez un open call pour le fixer en haut des recommandations."
             )}
           </p>
+        </div>
+
+        {/* Create External Open Call Form */}
+        <div style={{ border: "1px solid #E8E3DB", background: "#FFFFFF", padding: 22, marginBottom: 24 }}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: showForm ? 18 : 0 }}>
+            <div style={{ fontFamily: F, fontSize: 10, fontWeight: 600, letterSpacing: "0.12em", textTransform: "uppercase", color: "#8B7355" }}>
+              {tr("Add External Open Call", "외부 오픈콜 등록", "外部追加", "Ajouter")}
+            </div>
+            <button onClick={() => { setShowForm(!showForm); setFormError(null); }} style={{ padding: "6px 14px", border: "1px solid #E8E3DB", background: "#FFFFFF", fontFamily: F, fontSize: 10, letterSpacing: "0.1em", textTransform: "uppercase", cursor: "pointer", color: "#1A1A1A" }}>
+              {showForm ? tr("Cancel", "취소", "キャンセル", "Annuler") : tr("+ New", "+ 새 등록", "+ 新規", "+ Nouveau")}
+            </button>
+          </div>
+          {showForm && (
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+              {[
+                { key: "gallery", label: tr("Organization *", "기관명 *", "機関名 *", "Organisation *") },
+                { key: "city", label: tr("City *", "도시 *", "都市 *", "Ville *") },
+                { key: "country", label: tr("Country *", "국가 *", "国 *", "Pays *") },
+                { key: "theme", label: tr("Theme / Type *", "테마 / 유형 *", "テーマ *", "Thème *") },
+                { key: "deadline", label: tr("Deadline * (YYYY-MM-DD)", "마감일 * (YYYY-MM-DD)", "締切日 *", "Date limite *") },
+                { key: "exhibitionDate", label: tr("Exhibition Date", "전시 날짜", "展覧会日", "Date expo") },
+                { key: "externalEmail", label: tr("Contact Email", "연락 이메일", "連絡メール", "Email contact") },
+                { key: "externalUrl", label: tr("Apply URL", "신청 URL", "申請URL", "URL candidature") },
+                { key: "galleryWebsite", label: tr("Website", "웹사이트", "ウェブサイト", "Site web") },
+              ].map(({ key, label }) => (
+                <div key={key}>
+                  <div style={{ fontFamily: F, fontSize: 10, color: "#8A8580", marginBottom: 4 }}>{label}</div>
+                  <input
+                    value={(formData as any)[key]}
+                    onChange={(e) => setFormData((p) => ({ ...p, [key]: e.target.value }))}
+                    style={{ width: "100%", padding: "8px 10px", border: "1px solid #E8E3DB", fontFamily: F, fontSize: 12, color: "#1A1A1A", outline: "none", boxSizing: "border-box" }}
+                  />
+                </div>
+              ))}
+              <div style={{ gridColumn: "1 / -1" }}>
+                <div style={{ fontFamily: F, fontSize: 10, color: "#8A8580", marginBottom: 4 }}>{tr("Description", "설명", "説明", "Description")}</div>
+                <textarea
+                  value={formData.galleryDescription}
+                  onChange={(e) => setFormData((p) => ({ ...p, galleryDescription: e.target.value }))}
+                  rows={3}
+                  style={{ width: "100%", padding: "8px 10px", border: "1px solid #E8E3DB", fontFamily: F, fontSize: 12, color: "#1A1A1A", outline: "none", boxSizing: "border-box", resize: "vertical" }}
+                />
+              </div>
+              {formError && <div style={{ gridColumn: "1 / -1", fontFamily: F, fontSize: 12, color: "#8B4A4A" }}>{formError}</div>}
+              <div style={{ gridColumn: "1 / -1" }}>
+                <button
+                  onClick={createExternal}
+                  disabled={formSaving}
+                  style={{ padding: "10px 24px", background: "#1A1A1A", color: "#FFFFFF", border: "none", fontFamily: F, fontSize: 10, letterSpacing: "0.1em", textTransform: "uppercase", cursor: formSaving ? "wait" : "pointer", opacity: formSaving ? 0.7 : 1 }}
+                >
+                  {formSaving ? "..." : tr("Save", "저장", "保存", "Enregistrer")}
+                </button>
+              </div>
+            </div>
+          )}
         </div>
 
         <div style={{ display: "flex", gap: 12, flexWrap: "wrap", alignItems: "center", marginBottom: 20 }}>
@@ -325,9 +425,19 @@ export default function AdminOpenCallsPage() {
                       ID: {g.id}
                     </div>
                   </div>
-                  <span style={{ fontFamily: F, fontSize: 9, letterSpacing: "0.1em", textTransform: "uppercase", padding: "4px 10px", border: `1px solid ${active ? "#8B7355" : "#E8E3DB"}`, color: active ? "#8B7355" : "#8A8580" }}>
-                    {active ? "PINNED" : tr("Pin", "핀", "ピン", "Épingler")}
-                  </span>
+                  <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+                    <span style={{ fontFamily: F, fontSize: 9, letterSpacing: "0.1em", textTransform: "uppercase", padding: "4px 10px", border: `1px solid ${active ? "#8B7355" : "#E8E3DB"}`, color: active ? "#8B7355" : "#8A8580" }}>
+                      {active ? "PINNED" : tr("Pin", "핀", "ピン", "Épingler")}
+                    </span>
+                    {g.isExternal && (
+                      <span
+                        onClick={(e) => { e.stopPropagation(); deleteOpenCall(g.id); }}
+                        style={{ fontFamily: F, fontSize: 9, letterSpacing: "0.1em", textTransform: "uppercase", padding: "4px 10px", border: "1px solid rgba(139,74,74,0.3)", color: "#8B4A4A", cursor: "pointer" }}
+                      >
+                        {tr("Del", "삭제", "削除", "Sup")}
+                      </span>
+                    )}
+                  </div>
                 </button>
               );
             })

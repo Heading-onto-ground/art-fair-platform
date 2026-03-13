@@ -23,7 +23,7 @@ type SeriesItem = {
 
 type ArtEventItem = {
   id: string;
-  eventType: "exhibition" | "collaboration" | "publication" | "series_start";
+  eventType: "exhibition" | "collaboration" | "publication" | "series_start" | "residency" | "award" | "grant" | "opencall_result" | "press";
   title: string;
   year: number;
   description?: string | null;
@@ -34,6 +34,11 @@ const EVENT_LABEL: Record<string, string> = {
   collaboration: "Collaboration",
   publication: "Publication",
   series_start: "Series",
+  residency: "Residency",
+  award: "Award",
+  grant: "Grant",
+  opencall_result: "Open Call",
+  press: "Press",
 };
 
 const EVENT_COLOR: Record<string, string> = {
@@ -41,24 +46,52 @@ const EVENT_COLOR: Record<string, string> = {
   collaboration: "#5A7A5A",
   publication: "#5A5A8B",
   series_start: "#8B5A5A",
+  residency: "#4A7A8B",
+  award: "#8B7A2A",
+  grant: "#2A7A5A",
+  opencall_result: "#7A4A8B",
+  press: "#6A6A6A",
 };
 
 export default function ArtistPublicClient() {
   const { artistId } = useParams<{ artistId: string }>();
   const [data, setData] = useState<{ name: string; workNote?: string | null; exhibitions: Exhibition[]; series: SeriesItem[]; artEvents: ArtEventItem[] } | null>(null);
   const [notFound, setNotFound] = useState(false);
+  const [following, setFollowing] = useState(false);
+  const [followCount, setFollowCount] = useState(0);
+  const [followLoading, setFollowLoading] = useState(false);
 
   useEffect(() => {
     fetch(`/api/artist/public/${artistId}`)
       .then(r => r.ok ? r.json() : null)
       .then(d => { if (!d || d.error) setNotFound(true); else setData(d); })
       .catch(() => setNotFound(true));
+    fetch(`/api/follow?artistId=${encodeURIComponent(artistId)}`)
+      .then(r => r.json())
+      .then(d => { setFollowing(d.following); setFollowCount(d.count); })
+      .catch(() => {});
     fetch("/api/metrics/public-view", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ artistId }),
     }).catch(() => {});
   }, [artistId]);
+
+  async function toggleFollow() {
+    if (followLoading) return;
+    setFollowLoading(true);
+    const method = following ? "DELETE" : "POST";
+    const res = await fetch("/api/follow", {
+      method,
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ artistId }),
+    }).catch(() => null);
+    if (res?.ok) {
+      const d = await res.json().catch(() => null);
+      if (d) { setFollowing(d.following); setFollowCount(d.count); }
+    }
+    setFollowLoading(false);
+  }
 
   if (notFound) {
     return (
@@ -74,9 +107,19 @@ export default function ArtistPublicClient() {
 
   return (
     <main style={{ maxWidth: 760, margin: "0 auto", padding: "64px 40px" }}>
-      <span style={{ fontFamily: F, fontSize: 10, letterSpacing: "0.2em", textTransform: "uppercase", color: "#8A8A8A" }}>
-        Exhibition History
-      </span>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 4 }}>
+        <span style={{ fontFamily: F, fontSize: 10, letterSpacing: "0.2em", textTransform: "uppercase", color: "#8A8A8A" }}>
+          Exhibition History
+        </span>
+        <button
+          onClick={toggleFollow}
+          disabled={followLoading}
+          style={{ padding: "8px 18px", border: following ? "1px solid #1A1A1A" : "1px solid #E8E3DB", background: following ? "#1A1A1A" : "#FFFFFF", color: following ? "#FFFFFF" : "#4A4A4A", fontFamily: F, fontSize: 10, letterSpacing: "0.1em", textTransform: "uppercase", cursor: followLoading ? "wait" : "pointer", opacity: followLoading ? 0.7 : 1, display: "flex", alignItems: "center", gap: 8 }}
+        >
+          {following ? "Following" : "Follow"}
+          {followCount > 0 && <span style={{ fontSize: 9, opacity: 0.7, padding: "1px 6px", background: following ? "rgba(255,255,255,0.2)" : "#F5F0EB" }}>{followCount}</span>}
+        </button>
+      </div>
       <h1 style={{ fontFamily: S, fontSize: 40, fontWeight: 300, color: "#1A1A1A", marginTop: 8, marginBottom: 8 }}>
         {data.name}
       </h1>

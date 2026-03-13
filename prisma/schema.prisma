@@ -363,6 +363,47 @@ model PasswordResetOtp {
   @@index([resetSessionId])
 }
 
+// ========== Follow 시스템 ==========
+
+model Follow {
+  id          String   @id @default(cuid())
+  followerId  String   // User.id
+  followingId String   // ArtistProfile.id
+  createdAt   DateTime @default(now())
+
+  @@unique([followerId, followingId])
+  @@index([followerId])
+  @@index([followingId])
+}
+
+// ========== 큐레이터 리스트 ==========
+
+model CuratorList {
+  id          String            @id @default(cuid())
+  curatorId   String            // CuratorProfile.id
+  title       String
+  description String?
+  isPublic    Boolean           @default(true)
+  createdAt   DateTime          @default(now())
+  updatedAt   DateTime          @updatedAt
+  items       CuratorListItem[]
+
+  @@index([curatorId])
+}
+
+model CuratorListItem {
+  id            String      @id @default(cuid())
+  listId        String
+  list          CuratorList @relation(fields: [listId], references: [id], onDelete: Cascade)
+  artistId      String      // ArtistProfile.id
+  note          String?
+  order         Int         @default(0)
+  createdAt     DateTime    @default(now())
+
+  @@unique([listId, artistId])
+  @@index([listId])
+}
+
 // ========== 관리자 설정 ==========
 
 model AdminSetting {
@@ -378,6 +419,11 @@ enum ArtEventType {
   collaboration
   publication
   series_start
+  residency
+  award
+  grant
+  opencall_result
+  press
 }
 
 model ArtEvent {

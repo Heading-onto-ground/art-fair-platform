@@ -16,6 +16,7 @@ type Artist = {
   city: string;
   hasPortfolio?: boolean;
   seriesCount?: number;
+  seriesTitles?: string[];
   profileImage?: string | null;
   startedYear?: number;
   genre?: string;
@@ -36,6 +37,8 @@ export default function ArtistsPage() {
   const [preferredCountry, setPreferredCountry] = useState("");
   const [hasAutoSelectedCountry, setHasAutoSelectedCountry] = useState(false);
   const [query, setQuery] = useState("");
+  const [genreFilter, setGenreFilter] = useState("ALL");
+  const [stageFilter, setStageFilter] = useState("ALL");
   const [favorites, setFavorites] = useState<Record<string, boolean>>({});
   const [isGalleryViewer, setIsGalleryViewer] = useState(false); // kept for future use
 
@@ -89,14 +92,29 @@ export default function ArtistsPage() {
     return counts;
   }, [artists]);
 
+  const genreTabs = useMemo(() => {
+    const genres = artists.map((a) => (a.genre || "").trim()).filter(Boolean);
+    return ["ALL", ...Array.from(new Set(genres)).sort()];
+  }, [artists]);
+
+  function getCareerStage(startedYear?: number): string {
+    if (!startedYear || startedYear <= 0) return "unknown";
+    const yrs = new Date().getFullYear() - startedYear;
+    if (yrs <= 3) return "emerging";
+    if (yrs <= 10) return "mid-career";
+    return "established";
+  }
+
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
     return artists.filter((a) => {
       if (country !== "ALL" && normalizeCountry(a.country ?? "") !== country) return false;
+      if (genreFilter !== "ALL" && (a.genre || "").trim() !== genreFilter) return false;
+      if (stageFilter !== "ALL" && getCareerStage(a.startedYear) !== stageFilter) return false;
       if (!q) return true;
-      return a.name.toLowerCase().includes(q) || a.email.toLowerCase().includes(q) || a.city.toLowerCase().includes(q);
+      return a.name.toLowerCase().includes(q) || a.email.toLowerCase().includes(q) || a.city.toLowerCase().includes(q) || (a.genre || "").toLowerCase().includes(q) || (a.seriesTitles ?? []).some(t => t.toLowerCase().includes(q));
     });
-  }, [artists, country, query]);
+  }, [artists, country, genreFilter, stageFilter, query]);
 
   useEffect(() => {
     for (const artist of filtered.slice(0, 24)) {
@@ -207,12 +225,38 @@ export default function ArtistsPage() {
           ))}
         </div>
 
+        {/* Filters: Genre + Career Stage */}
+        <div style={{ display: "flex", gap: 12, flexWrap: "wrap", alignItems: "center", marginBottom: 16 }}>
+          <select
+            value={genreFilter}
+            onChange={(e) => setGenreFilter(e.target.value)}
+            style={{ padding: "10px 14px", border: "1px solid #E5E0DB", background: genreFilter !== "ALL" ? "#1A1A1A" : "#FFFFFF", color: genreFilter !== "ALL" ? "#FFFFFF" : "#4A4A4A", fontFamily: F, fontSize: 10, letterSpacing: "0.1em", cursor: "pointer", outline: "none" }}
+          >
+            <option value="ALL">ALL GENRES</option>
+            {genreTabs.filter((g) => g !== "ALL").map((g) => <option key={g} value={g}>{g.toUpperCase()}</option>)}
+          </select>
+          {(["ALL", "emerging", "mid-career", "established"] as const).map((s) => (
+            <button
+              key={s}
+              onClick={() => setStageFilter(s)}
+              style={{ padding: "10px 16px", border: s === stageFilter ? "1px solid #1A1A1A" : "1px solid #E5E0DB", background: s === stageFilter ? "#1A1A1A" : "transparent", color: s === stageFilter ? "#FFFFFF" : "#4A4A4A", fontFamily: F, fontSize: 10, letterSpacing: "0.1em", textTransform: "uppercase", cursor: "pointer" }}
+            >
+              {s === "ALL" ? "All Stages" : s}
+            </button>
+          ))}
+          {(genreFilter !== "ALL" || stageFilter !== "ALL") && (
+            <button onClick={() => { setGenreFilter("ALL"); setStageFilter("ALL"); }} style={{ padding: "10px 14px", border: "1px solid #E5E0DB", background: "transparent", color: "#8A8A8A", fontFamily: F, fontSize: 10, letterSpacing: "0.1em", cursor: "pointer" }}>
+              Clear
+            </button>
+          )}
+        </div>
+
         {/* Search */}
         <div style={{ marginBottom: 32 }}>
           <input
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            placeholder="Search by name, email, or city..."
+            placeholder="Search by name, city, genre, or series…"
             style={{
               width: "100%",
               maxWidth: 400,
@@ -266,6 +310,11 @@ export default function ArtistsPage() {
                         {a.genre ? ` · ${a.genre}` : ""}
                         {getYearsActive(a.startedYear) ? ` · ${getYearsActive(a.startedYear)}` : ""}
                       </p>
+                      {(a.seriesTitles ?? []).length > 0 && (
+                        <p style={{ fontFamily: F, fontSize: 9, color: "#B0AAA2", margin: "3px 0 0", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                          {(a.seriesTitles ?? []).slice(0, 3).join(" · ")}
+                        </p>
+                      )}
                     </div>
                   </div>
                   <div style={{ display: "flex", alignItems: "center", gap: 6, flexShrink: 0 }}>

@@ -24,8 +24,8 @@ type Exhibition = {
   city?: string | null;
   country?: string | null;
   description?: string | null;
-  space?: { name: string; type?: string | null; city?: string | null; country?: string | null; website?: string | null } | null;
-  curator?: { name: string; bio?: string | null; organization?: string | null } | null;
+  space?: { id: string; name: string; type?: string | null; city?: string | null; country?: string | null; website?: string | null } | null;
+  curator?: { id: string; name: string; bio?: string | null; organization?: string | null } | null;
   artists: { id: string; status: string; artist: ArtistRef }[];
 };
 
@@ -104,7 +104,7 @@ export default function ExhibitionPublicPage() {
           {ex.space && (
             <div style={{ padding: "20px 24px", border: "1px solid #E8E3DB", background: "#FFFFFF" }}>
               <p style={{ fontFamily: F, fontSize: 9, fontWeight: 600, letterSpacing: "0.14em", textTransform: "uppercase", color: "#8B7355", margin: "0 0 10px" }}>Space</p>
-              <p style={{ fontFamily: S, fontSize: 20, fontWeight: 400, color: "#1A1A1A", margin: "0 0 4px" }}>{ex.space.name}</p>
+              <Link href={`/spaces/${ex.space.id}`} style={{ textDecoration: "none" }}><p style={{ fontFamily: S, fontSize: 20, fontWeight: 400, color: "#1A1A1A", margin: "0 0 4px" }}>{ex.space.name}</p></Link>
               {ex.space.type && <p style={{ fontFamily: F, fontSize: 11, color: "#8A8580", margin: "0 0 4px", textTransform: "capitalize" }}>{ex.space.type.replace(/_/g, " ")}</p>}
               {(ex.space.city || ex.space.country) && (
                 <p style={{ fontFamily: F, fontSize: 11, color: "#B0AAA2", margin: "0 0 8px" }}>{[ex.space.city, ex.space.country].filter(Boolean).join(", ")}</p>
@@ -118,7 +118,7 @@ export default function ExhibitionPublicPage() {
           {ex.curator && (
             <div style={{ padding: "20px 24px", border: "1px solid #E8E3DB", background: "#FFFFFF" }}>
               <p style={{ fontFamily: F, fontSize: 9, fontWeight: 600, letterSpacing: "0.14em", textTransform: "uppercase", color: "#8B7355", margin: "0 0 10px" }}>Curator</p>
-              <p style={{ fontFamily: S, fontSize: 20, fontWeight: 400, color: "#1A1A1A", margin: "0 0 4px" }}>{ex.curator.name}</p>
+              <Link href={`/curators/${ex.curator.id}`} style={{ textDecoration: "none" }}><p style={{ fontFamily: S, fontSize: 20, fontWeight: 400, color: "#1A1A1A", margin: "0 0 4px" }}>{ex.curator.name}</p></Link>
               {ex.curator.organization && <p style={{ fontFamily: F, fontSize: 11, color: "#8A8580", margin: "0 0 4px" }}>{ex.curator.organization}</p>}
               {ex.curator.bio && <p style={{ fontFamily: F, fontSize: 12, color: "#6A6660", margin: "0", lineHeight: 1.6 }}>{ex.curator.bio}</p>}
             </div>

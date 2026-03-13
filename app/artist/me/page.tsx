@@ -163,6 +163,43 @@ export default function ArtistMePage() {
           <span style={{ fontFamily: F, fontSize: 10, fontWeight: 500, letterSpacing: "0.1em", textTransform: "uppercase", color: "#8A8580", padding: "8px 16px", border: "1px solid #E8E3DB" }}>Artist</span>
         </div>
 
+        {/* Dashboard Summary */}
+        {!loadingMe && !adminReadOnly && (
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))", gap: 1, background: "#E8E3DB", marginBottom: 40 }}>
+            {[
+              {
+                label: lang === "ko" ? "지원 현황" : "Applications",
+                value: applications.length,
+                sub: applications.filter(a => a.status === "accepted").length + (lang === "ko" ? "개 수락" : " accepted"),
+              },
+              {
+                label: lang === "ko" ? "활동 기록" : "Activities",
+                value: artEvents.length,
+                sub: artEvents.length > 0 ? String(Math.min(...artEvents.map(e => e.year))) + " –" : "–",
+              },
+              {
+                label: lang === "ko" ? "임박한 마감" : "Upcoming",
+                value: Object.values(openCallMap).filter(oc => {
+                  const d = Date.parse(oc.deadline);
+                  return d > Date.now() && d < Date.now() + 30 * 24 * 60 * 60 * 1000;
+                }).length,
+                sub: lang === "ko" ? "30일 이내" : "within 30 days",
+              },
+              {
+                label: lang === "ko" ? "전시 기록" : "Exhibitions",
+                value: exhibitions.length,
+                sub: lang === "ko" ? "전체" : "total",
+              },
+            ].map(({ label, value, sub }) => (
+              <div key={label} style={{ background: "#FFFFFF", padding: "20px 22px" }}>
+                <div style={{ fontFamily: F, fontSize: 9, letterSpacing: "0.14em", textTransform: "uppercase", color: "#8A8580", marginBottom: 8 }}>{label}</div>
+                <div style={{ fontFamily: S, fontSize: 32, color: "#1A1A1A", lineHeight: 1 }}>{value}</div>
+                <div style={{ fontFamily: F, fontSize: 10, color: "#B0AAA2", marginTop: 6 }}>{sub}</div>
+              </div>
+            ))}
+          </div>
+        )}
+
         {loadingMe ? <p style={{ fontFamily: F, color: "#B0AAA2", textAlign: "center", padding: 48 }}>Loading...</p> : (
           <>
             {/* Profile Summary */}
@@ -295,6 +332,9 @@ export default function ArtistMePage() {
                     <button onClick={() => { navigator.clipboard.writeText(`${window.location.origin}/artist/public/${exArtistId}`); setExCopied(true); setTimeout(() => setExCopied(false), 2000); }} style={{ padding: "5px 12px", border: "1px solid #C8B4A0", background: "#FFFFFF", fontFamily: F, fontSize: 10, fontWeight: 600, color: exCopied ? "#3D6B3D" : "#8B7355", letterSpacing: "0.08em", textTransform: "uppercase", cursor: "pointer" }}>
                       {exCopied ? (lang === "ko" ? "복사됨 ✓" : "Copied ✓") : (lang === "ko" ? "복사" : "Copy")}
                     </button>
+                    <a href={`/artist/public/${exArtistId}/cv`} target="_blank" rel="noreferrer" style={{ padding: "5px 12px", border: "1px solid #D4C9B8", background: "#FDFBF7", fontFamily: F, fontSize: 10, fontWeight: 600, color: "#8B7355", letterSpacing: "0.08em", textTransform: "uppercase", cursor: "pointer", textDecoration: "none" }}>
+                      CV
+                    </a>
                   </div>
                 )}
               </div>
@@ -511,6 +551,11 @@ export default function ArtistMePage() {
                         <option value="collaboration">Collaboration</option>
                         <option value="publication">Publication</option>
                         <option value="series_start">Series Start</option>
+                        <option value="residency">Residency</option>
+                        <option value="award">Award</option>
+                        <option value="grant">Grant</option>
+                        <option value="opencall_result">Open Call Result</option>
+                        <option value="press">Press / Media</option>
                       </select>
                     </Lbl>
                     <Lbl label={lang === "ko" ? "연도" : "Year"}><input type="number" value={artEventForm.year} onChange={(e) => setArtEventForm(f => f ? { ...f, year: e.target.value } : f)} placeholder="2024" style={inp} /></Lbl>

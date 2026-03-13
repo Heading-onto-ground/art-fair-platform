@@ -40,7 +40,7 @@ export default function Home() {
           {t("home_subtitle", lang)}
         </p>
 
-        <div style={{ display: "flex", gap: 16, justifyContent: "center", flexWrap: "wrap", padding: "0 16px" }}>
+        <div style={{ display: "flex", gap: 16, justifyContent: "center", flexWrap: "wrap", padding: "0 16px", marginBottom: 24 }}>
           <Link href="/login?role=artist" style={{ padding: "16px 40px", background: "#1A1A1A", color: "#FDFBF7", fontFamily: F, fontSize: 11, fontWeight: 500, letterSpacing: "0.12em", textTransform: "uppercase", textDecoration: "none", transition: "all 0.3s ease", flex: "0 1 auto" }}
             onMouseEnter={(e) => { e.currentTarget.style.background = "#8B7355"; }}
             onMouseLeave={(e) => { e.currentTarget.style.background = "#1A1A1A"; }}>
@@ -55,6 +55,12 @@ export default function Home() {
             onMouseEnter={(e) => { e.currentTarget.style.background = "#8B7355"; e.currentTarget.style.color = "#FDFBF7"; }}
             onMouseLeave={(e) => { e.currentTarget.style.background = "transparent"; e.currentTarget.style.color = "#8B7355"; }}>
             {t("home_i_am_curator", lang)}
+          </Link>
+        </div>
+        <div style={{ fontFamily: F, fontSize: 11, color: "#B0AAA2", letterSpacing: "0.1em" }}>
+          {lang === "ko" ? "이미 가입하셨나요?" : lang === "ja" ? "すでに登録済みですか？" : "Already a member?"}{" "}
+          <Link href="/exhibitions/new" style={{ color: "#8B7355", textDecoration: "underline", textUnderlineOffset: 3 }}>
+            {lang === "ko" ? "전시 기록 시작" : lang === "ja" ? "展示を記録する" : "Record your first exhibition →"}
           </Link>
         </div>
 

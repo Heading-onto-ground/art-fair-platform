@@ -124,11 +124,11 @@ export async function listArtistProfiles(): Promise<ArtistListItem[]> {
       genre: true, instagram: true, country: true, city: true, website: true,
       bio: true, profileImage: true, createdAt: true, updatedAt: true,
       portfolioUrl: true,
-      _count: { select: { series: { where: { isPublic: true } } } },
+      series: { where: { isPublic: true }, select: { id: true, title: true }, orderBy: { createdAt: "desc" }, take: 5 },
     },
   });
   return artists
-    .map(({ portfolioUrl, _count, ...a }: typeof artists[number]) => ({ ...a, role: "artist" as const, email: "", hasPortfolio: !!portfolioUrl, seriesCount: _count.series }))
+    .map(({ portfolioUrl, series, ...a }: typeof artists[number]) => ({ ...a, role: "artist" as const, email: "", hasPortfolio: !!portfolioUrl, seriesCount: series.length, seriesTitles: series.map((s: any) => s.title) }))
     .sort((a: ArtistListItem, b: ArtistListItem) => {
       if (a.hasPortfolio !== b.hasPortfolio) return a.hasPortfolio ? -1 : 1;
       return Number(b.updatedAt) - Number(a.updatedAt);
