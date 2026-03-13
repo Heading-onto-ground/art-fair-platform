@@ -1,6 +1,11 @@
 import { NextResponse } from "next/server";
+import type { Prisma } from "@prisma/client";
 import { getServerSession } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+
+type NotificationSelect = Prisma.NotificationGetPayload<{
+  select: { id: true; type: true; title: true; message: true; link: true; data: true; createdAt: true };
+}>;
 
 export const dynamic = "force-dynamic";
 
@@ -9,7 +14,7 @@ export async function GET() {
   if (!session) return NextResponse.json({ error: "unauthorized" }, { status: 401 });
   try {
     const where = { userId: session.userId, read: false };
-    const [unreadCount, items] = await Promise.all([
+    const [unreadCount, notifications] = await Promise.all([
       prisma.notification.count({ where }),
       prisma.notification.findMany({
         where,
@@ -18,7 +23,8 @@ export async function GET() {
         select: { id: true, type: true, title: true, message: true, link: true, data: true, createdAt: true },
       }),
     ]);
-    return NextResponse.json({ unreadCount, items: items.map(i => ({ ...i, payload: i.data })) });
+    const items = notifications.map((n: NotificationSelect) => ({ ...n, payload: n.data }));
+    return NextResponse.json({ unreadCount, items });
   } catch {
     return NextResponse.json({ unreadCount: 0, items: [] });
   }
