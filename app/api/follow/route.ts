@@ -20,7 +20,7 @@ export async function GET(req: NextRequest) {
       where: { followerId: session.userId },
       select: { followingId: true },
     });
-    const artistProfileIds = follows.map(f => f.followingId);
+    const artistProfileIds = follows.map((f: { followingId: string }) => f.followingId);
     if (artistProfileIds.length === 0) return NextResponse.json({ feed: [] });
 
     const events = await prisma.artEvent.findMany({
