@@ -187,7 +187,11 @@ export default function TopBar() {
 
   const artistLinks = useMemo(
     () => [
+      { path: "/artist/portfolio", label: lang === "ko" ? "내 작업" : lang === "ja" ? "マイ作品" : "MY WORKS" },
       { path: "/artist/me", label: t("nav_profile", lang) },
+      { path: "/discover", label: lang === "ko" ? "발견" : lang === "ja" ? "発見" : "DISCOVER" },
+      { path: "/feed", label: lang === "ko" ? "피드" : "FEED" },
+      { path: "/network", label: lang === "ko" ? "네트워크" : "NETWORK" },
       { path: "/open-calls", label: t("nav_open_calls", lang) },
       { path: "/artists", label: t("nav_artists", lang) },
       { path: "/galleries", label: t("nav_galleries", lang) },
@@ -252,6 +256,18 @@ export default function TopBar() {
               {navLinks.map((link) => (
                 <NavBtn key={link.path} onClick={() => router.push(link.path)}>{link.label}</NavBtn>
               ))}
+
+              {/* Add Exhibition CTA — artist only */}
+              {session.role === "artist" && (
+                <button
+                  onClick={() => router.push("/exhibitions/new")}
+                  style={{ padding: "7px 14px", border: "1px solid #1A1A1A", background: "#1A1A1A", color: "#FDFBF7", fontFamily: F, fontSize: 9, fontWeight: 600, letterSpacing: "0.1em", textTransform: "uppercase", cursor: "pointer", marginLeft: 8, marginRight: 4, whiteSpace: "nowrap" }}
+                  onMouseEnter={(e) => { e.currentTarget.style.background = "#3A3A3A"; }}
+                  onMouseLeave={(e) => { e.currentTarget.style.background = "#1A1A1A"; }}
+                >
+                  + {lang === "ko" ? "전시 기록" : lang === "ja" ? "展示を記録" : "ADD EXHIBITION"}
+                </button>
+              )}
 
               {/* Notification bell */}
               {session && <NotificationsBell />}
@@ -412,6 +428,15 @@ export default function TopBar() {
               {session.role === "artist" ? t("artist", lang) : t("gallery", lang)}
               {mounted && country && <span style={{ marginLeft: 8, color: "#B0AAA2" }}>{country}</span>}
             </div>
+
+            {session.role === "artist" && (
+              <button
+                onClick={() => navigate("/exhibitions/new")}
+                style={{ display: "block", width: "100%", padding: "14px 24px", border: "none", background: "#1A1A1A", color: "#FDFBF7", fontFamily: F, fontSize: 12, fontWeight: 600, letterSpacing: "0.1em", textTransform: "uppercase", textAlign: "left", cursor: "pointer", marginBottom: 4 }}
+              >
+                + {lang === "ko" ? "전시 기록" : lang === "ja" ? "展示を記録" : "ADD EXHIBITION"}
+              </button>
+            )}
 
             {navLinks.map((link) => (
               <button

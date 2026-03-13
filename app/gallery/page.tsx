@@ -66,7 +66,7 @@ type InviteTemplates = {
 
 async function fetchMe(): Promise<MeResponse | null> {
   try {
-    const res = await fetch("/api/auth/me?lite=1", { cache: "default", credentials: "include" });
+    const res = await fetch("/api/auth/me?lite=1", { cache: "no-store", credentials: "include" });
     return (await res.json().catch(() => null)) as MeResponse | null;
   } catch {
     return null;

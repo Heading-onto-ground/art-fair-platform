@@ -60,7 +60,7 @@ export default function LoginPage() {
     const meRes = await fetch("/api/auth/me", { cache: "no-store" });
     const me = (await meRes.json().catch(() => null)) as MeResponse | null;
     const realRole = me?.session?.role;
-    if (realRole === "artist") router.push("/artist");
+    if (realRole === "artist") router.push("/artist/portfolio");
     else if (realRole === "gallery") router.push("/gallery");
     else if (realRole === "curator") router.push("/curator");
     else router.push("/login");
