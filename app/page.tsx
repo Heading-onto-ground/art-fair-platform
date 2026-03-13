@@ -40,6 +40,11 @@ export default function Home() {
           {t("home_subtitle", lang)}
         </p>
 
+        <Link href="/exhibitions/new" style={{ display: "block", padding: "18px 48px", background: "#8B7355", color: "#FDFBF7", fontFamily: F, fontSize: 11, fontWeight: 600, letterSpacing: "0.14em", textTransform: "uppercase", textDecoration: "none", transition: "all 0.3s ease", marginBottom: 20 }}
+          onMouseEnter={(e) => { e.currentTarget.style.background = "#6B5345"; }}
+          onMouseLeave={(e) => { e.currentTarget.style.background = "#8B7355"; }}>
+          {lang === "ko" ? "전시 기록 추가 → 타임라인 시작하기" : lang === "ja" ? "展示を記録 → タイムラインを始める" : "Add Your Exhibition → Get Your Timeline Started"}
+        </Link>
         <div style={{ display: "flex", gap: 16, justifyContent: "center", flexWrap: "wrap", padding: "0 16px", marginBottom: 24 }}>
           <Link href="/login?role=artist" style={{ padding: "16px 40px", background: "#1A1A1A", color: "#FDFBF7", fontFamily: F, fontSize: 11, fontWeight: 500, letterSpacing: "0.12em", textTransform: "uppercase", textDecoration: "none", transition: "all 0.3s ease", flex: "0 1 auto" }}
             onMouseEnter={(e) => { e.currentTarget.style.background = "#8B7355"; }}

@@ -210,6 +210,14 @@ export default function ArtistPortfolioPage() {
             {/* Action buttons */}
             <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
               <button
+                onClick={() => router.push("/exhibitions/new")}
+                style={{ padding: "10px 24px", border: "none", background: "#1A1A1A", color: "#FDFBF7", fontFamily: F, fontSize: 10, fontWeight: 600, letterSpacing: "0.12em", textTransform: "uppercase", cursor: "pointer" }}
+                onMouseEnter={(e) => { e.currentTarget.style.background = "#8B7355"; }}
+                onMouseLeave={(e) => { e.currentTarget.style.background = "#1A1A1A"; }}
+              >
+                + {tr("전시 기록 추가", "Add Exhibition")}
+              </button>
+              <button
                 onClick={() => router.push("/artist/me")}
                 style={{ padding: "9px 20px", border: "1px solid #E8E3DB", background: "transparent", color: "#4A4A4A", fontFamily: F, fontSize: 10, fontWeight: 500, letterSpacing: "0.1em", textTransform: "uppercase", cursor: "pointer" }}
                 onMouseEnter={(e) => { e.currentTarget.style.borderColor = "#1A1A1A"; }}

@@ -195,6 +195,8 @@ export default function TopBar() {
       { path: "/open-calls", label: t("nav_open_calls", lang) },
       { path: "/artists", label: t("nav_artists", lang) },
       { path: "/galleries", label: t("nav_galleries", lang) },
+      { path: "/curators", label: lang === "ko" ? "큐레이터" : lang === "ja" ? "キュレーター" : "CURATORS" },
+      { path: "/spaces", label: lang === "ko" ? "공간" : lang === "ja" ? "スペース" : "SPACES" },
       { path: "/community", label: t("nav_community", lang) },
       { path: "/shipments", label: t("nav_shipments", lang) },
       { path: "/chat", label: t("nav_messages", lang) },
