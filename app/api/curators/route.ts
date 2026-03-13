@@ -8,7 +8,7 @@ export async function GET() {
     const curators = await prisma.curator.findMany({
       include: { _count: { select: { exhibitions: true } } },
     });
-    const sorted = curators.sort((a, b) => b._count.exhibitions - a._count.exhibitions);
+    const sorted = curators.sort((a: { _count: { exhibitions: number } }, b: { _count: { exhibitions: number } }) => b._count.exhibitions - a._count.exhibitions);
     return NextResponse.json({ curators: sorted.map(c => ({ id: c.id, name: c.name, organization: c.organization, exhibitionCount: c._count.exhibitions })) });
   } catch {
     return NextResponse.json({ curators: [] });
