@@ -87,6 +87,17 @@ export default function ArtistPortfolioPage() {
 
   const tr = (ko: string, en: string) => lang === "ko" ? ko : en;
 
+  const EditBtn = ({ section }: { section: string }) => (
+    <button
+      onClick={() => router.push(`/artist/me#${section}`)}
+      style={{ padding: "6px 12px", border: "1px solid #E8E3DB", background: "transparent", color: "#8A8580", fontFamily: F, fontSize: 9, letterSpacing: "0.08em", textTransform: "uppercase", cursor: "pointer" }}
+      onMouseEnter={(e) => { e.currentTarget.style.borderColor = "#1A1A1A"; e.currentTarget.style.color = "#1A1A1A"; }}
+      onMouseLeave={(e) => { e.currentTarget.style.borderColor = "#E8E3DB"; e.currentTarget.style.color = "#8A8580"; }}
+    >
+      {tr("수정", "Edit")}
+    </button>
+  );
+
   useEffect(() => {
     (async () => {
       const meRes = await fetch("/api/auth/me", { cache: "no-store" });
@@ -210,6 +221,14 @@ export default function ArtistPortfolioPage() {
             {/* Action buttons */}
             <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
               <button
+                onClick={() => router.push("/artist/me")}
+                style={{ padding: "10px 24px", border: "none", background: "#8B7355", color: "#FDFBF7", fontFamily: F, fontSize: 10, fontWeight: 600, letterSpacing: "0.12em", textTransform: "uppercase", cursor: "pointer" }}
+                onMouseEnter={(e) => { e.currentTarget.style.background = "#6B5340"; }}
+                onMouseLeave={(e) => { e.currentTarget.style.background = "#8B7355"; }}
+              >
+                {tr("마이페이지", "My Page")}
+              </button>
+              <button
                 onClick={() => router.push("/exhibitions/new")}
                 style={{ padding: "10px 24px", border: "none", background: "#1A1A1A", color: "#FDFBF7", fontFamily: F, fontSize: 10, fontWeight: 600, letterSpacing: "0.12em", textTransform: "uppercase", cursor: "pointer" }}
                 onMouseEnter={(e) => { e.currentTarget.style.background = "#8B7355"; }}
@@ -218,7 +237,7 @@ export default function ArtistPortfolioPage() {
                 + {tr("전시 기록 추가", "Add Exhibition")}
               </button>
               <button
-                onClick={() => router.push("/artist/me")}
+                onClick={() => router.push("/artist/me#profile_edit")}
                 style={{ padding: "9px 20px", border: "1px solid #E8E3DB", background: "transparent", color: "#4A4A4A", fontFamily: F, fontSize: 10, fontWeight: 500, letterSpacing: "0.1em", textTransform: "uppercase", cursor: "pointer" }}
                 onMouseEnter={(e) => { e.currentTarget.style.borderColor = "#1A1A1A"; }}
                 onMouseLeave={(e) => { e.currentTarget.style.borderColor = "#E8E3DB"; }}
@@ -248,30 +267,54 @@ export default function ArtistPortfolioPage() {
         </div>
 
         {/* ── Bio / Work Note ── */}
-        {(profile?.bio || profile?.workNote) && (
-          <div style={{ marginBottom: 48, display: "grid", gap: 16 }}>
-            {profile.bio && (
-              <div style={{ padding: "20px 24px", border: "1px solid #E8E3DB", background: "#FDFBF7" }}>
-                <p style={{ fontFamily: F, fontSize: 9, fontWeight: 600, letterSpacing: "0.16em", textTransform: "uppercase", color: "#B0AAA2", margin: "0 0 10px" }}>
-                  {tr("아티스트 소개", "About")}
-                </p>
+        <div style={{ marginBottom: 48, display: "grid", gap: 16 }}>
+          {profile?.bio ? (
+              <div style={{ padding: "20px 24px", border: "1px solid #E8E3DB", background: "#FDFBF7", position: "relative" }}>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 10 }}>
+                  <p style={{ fontFamily: F, fontSize: 9, fontWeight: 600, letterSpacing: "0.16em", textTransform: "uppercase", color: "#B0AAA2", margin: 0 }}>
+                    {tr("아티스트 소개", "About")}
+                  </p>
+                  <EditBtn section="profile_edit" />
+                </div>
                 <p style={{ fontFamily: F, fontSize: 13, color: "#4A4540", lineHeight: 1.8, margin: 0, whiteSpace: "pre-wrap" }}>{profile.bio}</p>
               </div>
-            )}
-            {profile.workNote && (
-              <div style={{ padding: "20px 24px", border: "1px solid #E8E3DB", background: "#FDFBF7" }}>
-                <p style={{ fontFamily: F, fontSize: 9, fontWeight: 600, letterSpacing: "0.16em", textTransform: "uppercase", color: "#8B7355", margin: "0 0 10px" }}>
-                  Work Note
-                </p>
+          ) : (
+              <div style={{ padding: "20px 24px", border: "1px dashed #E8E3DB", background: "#FAF8F4" }}>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
+                  <p style={{ fontFamily: F, fontSize: 9, fontWeight: 600, letterSpacing: "0.16em", textTransform: "uppercase", color: "#B0AAA2", margin: 0 }}>
+                    {tr("아티스트 소개", "About")}
+                  </p>
+                  <EditBtn section="profile_edit" />
+                </div>
+                <p style={{ fontFamily: F, fontSize: 12, color: "#B0AAA2", margin: 0 }}>{tr("프로필에서 소개를 작성해주세요.", "Add your bio in Profile.")}</p>
+              </div>
+          )}
+          {profile?.workNote ? (
+              <div style={{ padding: "20px 24px", border: "1px solid #E8E3DB", background: "#FDFBF7", position: "relative" }}>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 10 }}>
+                  <p style={{ fontFamily: F, fontSize: 9, fontWeight: 600, letterSpacing: "0.16em", textTransform: "uppercase", color: "#8B7355", margin: 0 }}>
+                    Work Note
+                  </p>
+                  <EditBtn section="work_note" />
+                </div>
                 <p style={{ fontFamily: F, fontSize: 13, color: "#4A4540", lineHeight: 1.8, margin: 0, whiteSpace: "pre-wrap" }}>{profile.workNote}</p>
               </div>
-            )}
-          </div>
-        )}
+          ) : (
+              <div style={{ padding: "20px 24px", border: "1px dashed #E8E3DB", background: "#FAF8F4" }}>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
+                  <p style={{ fontFamily: F, fontSize: 9, fontWeight: 600, letterSpacing: "0.16em", textTransform: "uppercase", color: "#8B7355", margin: 0 }}>
+                    Work Note
+                  </p>
+                  <EditBtn section="work_note" />
+                </div>
+                <p style={{ fontFamily: F, fontSize: 12, color: "#B0AAA2", margin: 0 }}>{tr("프로필에서 작업 노트를 작성해주세요.", "Add your work note in Profile.")}</p>
+              </div>
+          )}
+        </div>
 
         {/* ── Series (카테고리별) ── */}
         <div style={{ marginBottom: 56 }}>
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: 20 }}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: 20, flexWrap: "wrap", gap: 10 }}>
             <div>
               <span style={{ fontFamily: F, fontSize: 10, fontWeight: 600, letterSpacing: "0.2em", textTransform: "uppercase", color: "#8B7355" }}>
                 {tr("시리즈 작업", "Artwork Series")}
@@ -280,14 +323,17 @@ export default function ArtistPortfolioPage() {
                 {series.length} {tr("개", "series")}
               </span>
             </div>
-            <button
-              onClick={() => router.push("/artist/me")}
-              style={{ padding: "7px 14px", border: "1px solid #E8E3DB", background: "transparent", color: "#8A8580", fontFamily: F, fontSize: 9, letterSpacing: "0.1em", textTransform: "uppercase", cursor: "pointer" }}
-              onMouseEnter={(e) => { e.currentTarget.style.color = "#1A1A1A"; e.currentTarget.style.borderColor = "#1A1A1A"; }}
-              onMouseLeave={(e) => { e.currentTarget.style.color = "#8A8580"; e.currentTarget.style.borderColor = "#E8E3DB"; }}
-            >
-              + {tr("시리즈 추가", "Add Series")}
-            </button>
+            <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+              <EditBtn section="series" />
+              <button
+                onClick={() => router.push("/artist/me#series")}
+                style={{ padding: "7px 14px", border: "1px solid #E8E3DB", background: "transparent", color: "#8A8580", fontFamily: F, fontSize: 9, letterSpacing: "0.1em", textTransform: "uppercase", cursor: "pointer" }}
+                onMouseEnter={(e) => { e.currentTarget.style.color = "#1A1A1A"; e.currentTarget.style.borderColor = "#1A1A1A"; }}
+                onMouseLeave={(e) => { e.currentTarget.style.color = "#8A8580"; e.currentTarget.style.borderColor = "#E8E3DB"; }}
+              >
+                + {tr("시리즈 추가", "Add Series")}
+              </button>
+            </div>
           </div>
 
           {/* Category tabs */}
@@ -319,7 +365,7 @@ export default function ArtistPortfolioPage() {
                 {tr("아직 등록된 시리즈가 없습니다", "No series yet")}
               </p>
               <button
-                onClick={() => router.push("/artist/me")}
+                onClick={() => router.push("/artist/me#series")}
                 style={{ padding: "10px 24px", border: "1px solid #1A1A1A", background: "transparent", color: "#1A1A1A", fontFamily: F, fontSize: 10, letterSpacing: "0.1em", textTransform: "uppercase", cursor: "pointer" }}
               >
                 + {tr("첫 번째 시리즈 추가", "Add First Series")}
@@ -337,11 +383,14 @@ export default function ArtistPortfolioPage() {
         {/* ── Gallery Exhibitions ── */}
         {exhibitions.length > 0 && (
           <div style={{ marginBottom: 56 }}>
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: 20 }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: 20, flexWrap: "wrap", gap: 10 }}>
               <span style={{ fontFamily: F, fontSize: 10, fontWeight: 600, letterSpacing: "0.2em", textTransform: "uppercase", color: "#8B7355" }}>
                 {tr("전시 이력", "Exhibition History")}
               </span>
-              <span style={{ fontFamily: F, fontSize: 10, color: "#B0AAA2" }}>{exhibitions.length}</span>
+              <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                <span style={{ fontFamily: F, fontSize: 10, color: "#B0AAA2" }}>{exhibitions.length}</span>
+                <EditBtn section="exhibitions" />
+              </div>
             </div>
             <div style={{ display: "grid", gap: 1, background: "#E8E3DB" }}>
               {exhibitions.map((ex, i) => (
@@ -369,11 +418,14 @@ export default function ArtistPortfolioPage() {
         {/* ── Activity Timeline ── */}
         {artEvents.length > 0 && (
           <div style={{ marginBottom: 48 }}>
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: 20 }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: 20, flexWrap: "wrap", gap: 10 }}>
               <span style={{ fontFamily: F, fontSize: 10, fontWeight: 600, letterSpacing: "0.2em", textTransform: "uppercase", color: "#8B7355" }}>
                 {tr("활동 타임라인", "Activity Timeline")}
               </span>
-              <span style={{ fontFamily: F, fontSize: 10, color: "#B0AAA2" }}>{artEvents.length}</span>
+              <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                <span style={{ fontFamily: F, fontSize: 10, color: "#B0AAA2" }}>{artEvents.length}</span>
+                <EditBtn section="art_events" />
+              </div>
             </div>
             <div style={{ position: "relative", paddingLeft: 24 }}>
               <div style={{ position: "absolute", left: 7, top: 0, bottom: 0, width: 1, background: "#E8E3DB" }} />

@@ -52,6 +52,7 @@ export default function ArtistMePage() {
   const [inviteArtistId, setInviteArtistId] = useState("");
   const [invitingExId, setInvitingExId] = useState<string | null>(null);
   const [inviteMsg, setInviteMsg] = useState<string | null>(null);
+  const [helpOpen, setHelpOpen] = useState<Record<string, boolean>>({ onboarding: false, timeline: false, network: false });
 
   type SeriesItem = { id: string; title: string; description?: string | null; startYear?: number | null; endYear?: number | null; works?: string | null; isPublic: boolean };
   const [seriesList, setSeriesList] = useState<SeriesItem[]>([]); const [seriesForm, setSeriesForm] = useState<{ title: string; description: string; startYear: string; endYear: string; works: string; isPublic: boolean } | null>(null); const [editingSeriesId, setEditingSeriesId] = useState<string | null>(null); const [seriesMsg, setSeriesMsg] = useState<string | null>(null); const [seriesSaving, setSeriesSaving] = useState(false);
@@ -112,6 +113,21 @@ export default function ArtistMePage() {
   };
 
   useEffect(() => { loadMe(); }, [isAdminView, adminUserId]);
+  useEffect(() => {
+    if (loadingMe) return;
+    const hash = typeof window !== "undefined" ? window.location.hash?.slice(1) : "";
+    if (hash) {
+      setTimeout(() => document.getElementById(hash)?.scrollIntoView({ behavior: "smooth", block: "start" }), 100);
+    }
+  }, [loadingMe]);
+  useEffect(() => {
+    if (loadingMe) return;
+    setHelpOpen((p) => ({
+      ...p,
+      onboarding: !!exPublic && !!exArtistId,
+      timeline: !exPublic || !exArtistId,
+    }));
+  }, [loadingMe, exPublic, exArtistId]);
   useEffect(() => { if (!me?.session || adminReadOnly) return; loadApplications(); loadInvites(); loadExhibitions(); loadSeries(); loadSelfExhibitions(); loadArtEvents(); }, [me?.session?.userId, adminReadOnly]);
 
   const loadApplications = async () => { const [appsRes, ocRes] = await Promise.all([fetch("/api/applications", { cache: "default", credentials: "include" }), fetch("/api/open-calls", { cache: "default" })]); const appsJson = await appsRes.json().catch(() => null); const ocJson = await ocRes.json().catch(() => null); const map: Record<string, OpenCall> = {}; for (const oc of ocJson?.openCalls ?? []) map[oc.id] = oc; setOpenCallMap(map); setApplications(appsJson?.applications ?? []); };
@@ -197,13 +213,33 @@ export default function ArtistMePage() {
                 <div style={{ fontFamily: F, fontSize: 10, color: "#B0AAA2", marginTop: 6 }}>{sub}</div>
               </div>
             ))}
+            <div
+              onClick={() => router.push("/shipments")}
+              style={{ background: "#FFFFFF", padding: "20px 22px", cursor: "pointer", transition: "background 0.2s" }}
+              onMouseEnter={(e) => { e.currentTarget.style.background = "#FAF8F4"; }}
+              onMouseLeave={(e) => { e.currentTarget.style.background = "#FFFFFF"; }}
+            >
+              <div style={{ fontFamily: F, fontSize: 9, letterSpacing: "0.14em", textTransform: "uppercase", color: "#8A8580", marginBottom: 8 }}>{t("nav_shipments", lang)}</div>
+              <div style={{ fontFamily: S, fontSize: 18, color: "#8B7355", lineHeight: 1 }}>→</div>
+              <div style={{ fontFamily: F, fontSize: 10, color: "#B0AAA2", marginTop: 6 }}>{lang === "ko" ? "배송 예약·추적" : "Track shipments"}</div>
+            </div>
+            <div
+              onClick={() => router.push("/chat")}
+              style={{ background: "#FFFFFF", padding: "20px 22px", cursor: "pointer", transition: "background 0.2s" }}
+              onMouseEnter={(e) => { e.currentTarget.style.background = "#FAF8F4"; }}
+              onMouseLeave={(e) => { e.currentTarget.style.background = "#FFFFFF"; }}
+            >
+              <div style={{ fontFamily: F, fontSize: 9, letterSpacing: "0.14em", textTransform: "uppercase", color: "#8A8580", marginBottom: 8 }}>{t("nav_messages", lang)}</div>
+              <div style={{ fontFamily: S, fontSize: 18, color: "#8B7355", lineHeight: 1 }}>→</div>
+              <div style={{ fontFamily: F, fontSize: 10, color: "#B0AAA2", marginTop: 6 }}>{lang === "ko" ? "갤러리와 대화" : "Chat with galleries"}</div>
+            </div>
           </div>
         )}
 
         {loadingMe ? <p style={{ fontFamily: F, color: "#B0AAA2", textAlign: "center", padding: 48 }}>Loading...</p> : (
           <>
             {/* Profile Summary */}
-            <Section number="01" title={t("profile_section", lang)}>
+            <Section number="01" title={t("profile_section", lang)} id="profile_basic">
               <div style={{ display: "flex", justifyContent: "center", marginBottom: 24 }}>
                 <ProfileImageUpload
                   currentImage={profile?.profileImage}
@@ -224,7 +260,7 @@ export default function ArtistMePage() {
             </Section>
 
             {/* Edit */}
-            <Section number="02" title={t("profile_edit", lang)}>
+            <Section number="02" title={t("profile_edit", lang)} id="profile_edit">
               {focusImprove && (
                 <div id="improve-banner" style={{ marginBottom: 18, padding: "12px 16px", background: "rgba(139,115,85,0.08)", border: "1px solid rgba(139,115,85,0.35)" }}>
                   <p style={{ margin: 0, fontFamily: F, fontSize: 12, color: "#8B7355" }}>
@@ -252,7 +288,7 @@ export default function ArtistMePage() {
             </Section>
 
             {/* Portfolio */}
-            <Section number="03" title={t("profile_portfolio", lang)}>
+            <Section number="03" title={t("profile_portfolio", lang)} id="portfolio_upload">
               {profile?.portfolioUrl && (
                 <div style={{ marginBottom: 20, display: "flex", gap: 10, alignItems: "center", flexWrap: "wrap" }}>
                   <button onClick={() => { const base64 = profile.portfolioUrl!.split(",")[1]; const bytes = Uint8Array.from(atob(base64), c => c.charCodeAt(0)); const url = URL.createObjectURL(new Blob([bytes], { type: "application/pdf" })); const a = document.createElement("a"); a.href = url; a.download = `${profile.name || "portfolio"}.pdf`; a.click(); }} style={{ padding: "12px 24px", background: "#1A1A1A", color: "#FDFBF7", fontFamily: F, fontSize: 10, fontWeight: 500, letterSpacing: "0.1em", textTransform: "uppercase", border: "none", cursor: "pointer" }}>{t("profile_view_pdf", lang)}</button>
@@ -280,7 +316,7 @@ export default function ArtistMePage() {
             </Section>
 
             {/* Applications */}
-            <Section number="04" title={t("profile_applications", lang)}>
+            <Section number="04" title={t("profile_applications", lang)} id="applications">
               {applications.length === 0 ? <p style={{ fontFamily: F, fontSize: 13, color: "#B0AAA2" }}>{t("profile_no_apps", lang)}</p> : (
                 <div style={{ display: "grid", gap: 1, background: "#E8E3DB" }}>
                   {applications.map((a) => { const oc = openCallMap[a.openCallId]; return (
@@ -295,7 +331,7 @@ export default function ArtistMePage() {
             </Section>
 
             {/* Exhibition History */}
-            <Section number="05" title={lang === "ko" ? "전시 이력" : lang === "ja" ? "展示履歴" : "Exhibition History"}>
+            <Section number="05" title={lang === "ko" ? "전시 이력" : lang === "ja" ? "展示履歴" : "Exhibition History"} id="exhibitions">
               {exhibitions.length === 0 ? (
                 <p style={{ fontFamily: F, fontSize: 13, color: "#B0AAA2" }}>
                   {lang === "ko" ? "합격된 오픈콜이 여기에 자동으로 기록됩니다." : "Accepted open calls are recorded here automatically."}
@@ -343,8 +379,60 @@ export default function ArtistMePage() {
               </div>
             </Section>
 
+            {/* Help & Onboarding */}
+            <Section number="05-1" title={lang === "ko" ? "도움말 & 온보딩" : "Help & Onboarding"}>
+              <div style={{ display: "flex", flexDirection: "column", gap: 0, borderTop: "1px solid #E8E3DB" }}>
+                {exPublic && exArtistId && (
+                  <div style={{ borderBottom: "1px solid #E8E3DB" }}>
+                    <button onClick={() => setHelpOpen((p) => ({ ...p, onboarding: !p.onboarding }))} style={{ width: "100%", display: "flex", justifyContent: "space-between", alignItems: "center", padding: "14px 0", background: "none", border: "none", cursor: "pointer", fontFamily: F, fontSize: 12, color: "#1A1A1A", textAlign: "left" }}>
+                      {lang === "ko" ? "온보딩 다시 보기" : "Replay onboarding"}
+                      <span style={{ fontSize: 10, color: "#8A8580" }}>{helpOpen.onboarding ? "▲" : "▼"}</span>
+                    </button>
+                    {helpOpen.onboarding && (
+                      <div style={{ paddingBottom: 14 }}>
+                        <a href={`/artist/public/${exArtistId}?showOnboarding=1`} style={{ fontFamily: F, fontSize: 13, color: "#8B7355", textDecoration: "underline" }}>
+                          {lang === "ko" ? "프로필 온보딩 다시 보기 →" : "Replay profile onboarding →"}
+                        </a>
+                      </div>
+                    )}
+                  </div>
+                )}
+                <div style={{ borderBottom: "1px solid #E8E3DB" }}>
+                  <button onClick={() => setHelpOpen((p) => ({ ...p, timeline: !p.timeline }))} style={{ width: "100%", display: "flex", justifyContent: "space-between", alignItems: "center", padding: "14px 0", background: "none", border: "none", cursor: "pointer", fontFamily: F, fontSize: 12, color: "#1A1A1A", textAlign: "left" }}>
+                    {lang === "ko" ? "타임라인 어떻게 쌓이나요?" : "How does the timeline work?"}
+                    <span style={{ fontSize: 10, color: "#8A8580" }}>{helpOpen.timeline ? "▲" : "▼"}</span>
+                  </button>
+                  {helpOpen.timeline && (
+                    <p style={{ fontFamily: F, fontSize: 12, color: "#6A6660", lineHeight: 1.6, margin: "0 0 14px 0" }}>
+                      {lang === "ko"
+                        ? "전시 등록(Section 08)에서 추가한 전시와 활동 타임라인(Section 09)에서 추가한 활동이 자동으로 합쳐져 공개 프로필의 Activity Timeline에 표시됩니다. 날짜순으로 정렬됩니다."
+                        : "Exhibitions you add in Register Exhibition (Section 08) and activities from Activity Timeline (Section 09) are merged and shown on your public profile. Sorted by date."}
+                    </p>
+                  )}
+                </div>
+                <div style={{ borderBottom: "1px solid #E8E3DB" }}>
+                  <button onClick={() => setHelpOpen((p) => ({ ...p, network: !p.network }))} style={{ width: "100%", display: "flex", justifyContent: "space-between", alignItems: "center", padding: "14px 0", background: "none", border: "none", cursor: "pointer", fontFamily: F, fontSize: 12, color: "#1A1A1A", textAlign: "left" }}>
+                    {lang === "ko" ? "Network 공유하는 법" : "How to share your Network"}
+                    <span style={{ fontSize: 10, color: "#8A8580" }}>{helpOpen.network ? "▲" : "▼"}</span>
+                  </button>
+                  {helpOpen.network && (
+                    <p style={{ fontFamily: F, fontSize: 12, color: "#6A6660", lineHeight: 1.6, margin: "0 0 14px 0" }}>
+                      {lang === "ko"
+                        ? "전시 등록 시 함께한 작가를 협업자로 추가하면, 해당 작가가 ROB에 가입되어 있을 경우 자동으로 Network에 연결됩니다. 프로필 페이지의 Share 버튼으로 링크를 복사해 SNS나 이메일에 공유하세요."
+                        : "When you add collaborators to an exhibition, they appear in your Network if they have a ROB account. Use the Share button on your profile to copy the link for SNS or email."}
+                    </p>
+                  )}
+                </div>
+              </div>
+              <div style={{ marginTop: 20 }}>
+                <a href="/contact" style={{ display: "inline-block", padding: "12px 24px", border: "1px solid #E8E3DB", background: "#FFFFFF", color: "#8B7355", fontFamily: F, fontSize: 10, fontWeight: 600, letterSpacing: "0.1em", textTransform: "uppercase", textDecoration: "none", cursor: "pointer" }}>
+                  {lang === "ko" ? "문의하기" : "Contact us"}
+                </a>
+              </div>
+            </Section>
+
             {/* Work Note */}
-            <Section number="06" title={lang === "ko" ? "작업 노트" : "Work Note"}>
+            <Section number="06" title={lang === "ko" ? "작업 노트" : "Work Note"} id="work_note">
               <p style={{ fontFamily: F, fontSize: 11, color: "#8A8580", marginBottom: 14 }}>
                 {lang === "ko" ? "이 작업은 왜 하는가, 어떤 문제의식에서 출발했는가, 작업 방향은 무엇인가 — 자유롭게 기록하세요. 공개 프로필에 표시됩니다." : "Why do you make this work? What drives it? Write freely — this appears on your public profile."}
               </p>
@@ -364,7 +452,7 @@ export default function ArtistMePage() {
             </Section>
 
             {/* Artwork Series */}
-            <Section number="07" title={lang === "ko" ? "작업 시리즈" : "Artwork Series"}>
+            <Section number="07" title={lang === "ko" ? "작업 시리즈" : "Artwork Series"} id="series">
               <p style={{ fontFamily: F, fontSize: 11, color: "#8A8580", marginBottom: 16 }}>
                 {lang === "ko" ? "연작이나 시리즈 단위로 작업을 묶어 맥락을 구조화하세요. 공개로 설정하면 공개 프로필에 표시됩니다." : "Group your works into series to structure context. Public series appear on your public profile."}
               </p>
@@ -421,7 +509,7 @@ export default function ArtistMePage() {
             </Section>
 
             {/* Self-registered Exhibitions */}
-            <Section number="08" title={lang === "ko" ? "전시 등록" : "Register Exhibition"}>
+            <Section number="08" title={lang === "ko" ? "전시 등록" : "Register Exhibition"} id="self_exhibitions">
               <p style={{ fontFamily: F, fontSize: 11, color: "#8A8580", marginBottom: 16 }}>
                 {lang === "ko" ? "직접 참여한 전시를 등록하고 다른 작가를 초대해 연결하세요." : "Register exhibitions you participated in and invite other artists."}
               </p>
@@ -522,7 +610,7 @@ export default function ArtistMePage() {
             </Section>
 
             {/* Activity Timeline */}
-            <Section number="09" title={lang === "ko" ? "활동 타임라인" : "Activity Timeline"}>
+            <Section number="09" title={lang === "ko" ? "활동 타임라인" : "Activity Timeline"} id="art_events">
               {artEventMsg && <p style={{ fontFamily: F, fontSize: 11, color: "#8B7355", marginBottom: 12 }}>{artEventMsg}</p>}
               {artEvents.length > 0 && (
                 <div style={{ display: "grid", gap: 1, background: "#E8E3DB", marginBottom: 20 }}>
@@ -614,9 +702,9 @@ export default function ArtistMePage() {
   );
 }
 
-function Section({ number, title, children }: { number: string; title: string; children: React.ReactNode }) {
+function Section({ number, title, children, id }: { number: string; title: string; children: React.ReactNode; id?: string }) {
   return (
-    <div style={{ marginBottom: 48 }}>
+    <div id={id} style={{ marginBottom: 48 }}>
       <div style={{ display: "flex", alignItems: "baseline", gap: 14, marginBottom: 20 }}>
         <span style={{ fontFamily: S, fontSize: 28, fontWeight: 300, color: "#D4CEC4" }}>{number}</span>
         <h2 style={{ fontFamily: S, fontSize: 22, fontWeight: 400, color: "#1A1A1A" }}>{title}</h2>

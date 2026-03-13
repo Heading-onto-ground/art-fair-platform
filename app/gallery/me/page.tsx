@@ -313,6 +313,31 @@ export default function GalleryMePage() {
           </div>
         ) : (
           <>
+            {/* Quick links: 배송, 메시지 */}
+            {!adminReadOnly && (
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: 12, marginBottom: 40 }}>
+                <div
+                  onClick={() => router.push("/shipments")}
+                  style={{ padding: "20px 24px", border: "1px solid #E8E3DB", background: "#FFFFFF", cursor: "pointer", transition: "all 0.2s" }}
+                  onMouseEnter={(e) => { e.currentTarget.style.background = "#FAF8F4"; e.currentTarget.style.borderColor = "#8B7355"; }}
+                  onMouseLeave={(e) => { e.currentTarget.style.background = "#FFFFFF"; e.currentTarget.style.borderColor = "#E8E3DB"; }}
+                >
+                  <div style={{ fontFamily: F, fontSize: 9, letterSpacing: "0.14em", textTransform: "uppercase", color: "#8A8580", marginBottom: 8 }}>배송</div>
+                  <div style={{ fontFamily: S, fontSize: 16, color: "#1A1A1A" }}>→ Shipments</div>
+                  <div style={{ fontFamily: F, fontSize: 10, color: "#B0AAA2", marginTop: 4 }}>배송 예약·추적</div>
+                </div>
+                <div
+                  onClick={() => router.push("/chat")}
+                  style={{ padding: "20px 24px", border: "1px solid #E8E3DB", background: "#FFFFFF", cursor: "pointer", transition: "all 0.2s" }}
+                  onMouseEnter={(e) => { e.currentTarget.style.background = "#FAF8F4"; e.currentTarget.style.borderColor = "#8B7355"; }}
+                  onMouseLeave={(e) => { e.currentTarget.style.background = "#FFFFFF"; e.currentTarget.style.borderColor = "#E8E3DB"; }}
+                >
+                  <div style={{ fontFamily: F, fontSize: 9, letterSpacing: "0.14em", textTransform: "uppercase", color: "#8A8580", marginBottom: 8 }}>메시지</div>
+                  <div style={{ fontFamily: S, fontSize: 16, color: "#1A1A1A" }}>→ Messages</div>
+                  <div style={{ fontFamily: F, fontSize: 10, color: "#B0AAA2", marginTop: 4 }}>작가와 대화</div>
+                </div>
+              </div>
+            )}
             {/* Profile Summary */}
             <Section number="01" title="Profile Summary">
               <div style={{ display: "flex", justifyContent: "center", marginBottom: 24 }}>

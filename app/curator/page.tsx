@@ -153,7 +153,7 @@ export default function CuratorPage() {
 
         {/* Explore */}
         <Section number="02" title={tr("Explore", "탐색")}>
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 1, background: "#E8E3DB" }}>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: 1, background: "#E8E3DB" }}>
             <NavCard
               href="/artists"
               title={tr("Artists", "작가 탐색")}
@@ -168,6 +168,16 @@ export default function CuratorPage() {
               href="/community"
               title={tr("Community", "커뮤니티")}
               desc={tr("Connect with artists and galleries", "작가·갤러리와 소통")}
+            />
+            <NavCard
+              href="/shipments"
+              title={tr("Shipments", "배송")}
+              desc={tr("Track shipments", "배송 예약·추적")}
+            />
+            <NavCard
+              href="/chat"
+              title={tr("Messages", "메시지")}
+              desc={tr("Chat with artists and galleries", "작가·갤러리와 대화")}
             />
           </div>
         </Section>

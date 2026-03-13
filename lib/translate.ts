@@ -13,6 +13,7 @@ const dictionary: Dictionary = {
   enter: { en: "Enter", ko: "입장", ja: "入場", fr: "Entrée" },
   artist: { en: "Artist", ko: "작가", ja: "アーティスト", fr: "Artiste" },
   gallery: { en: "Gallery", ko: "갤러리", ja: "ギャラリー", fr: "Galerie" },
+  curator: { en: "Curator", ko: "큐레이터", ja: "キュレーター", fr: "Curateur" },
   refresh: { en: "Refresh", ko: "새로고침", ja: "更新", fr: "Actualiser" },
   loading: { en: "Loading...", ko: "로딩 중...", ja: "読み込み中...", fr: "Chargement..." },
   save: { en: "Save", ko: "저장", ja: "保存", fr: "Enregistrer" },
@@ -40,6 +41,7 @@ const dictionary: Dictionary = {
   // TopBar / Navigation
   // ──────────────────────────────────────────
   nav_profile: { en: "Profile", ko: "프로필", ja: "プロフィール", fr: "Profil" },
+  nav_my_page: { en: "My Page", ko: "마이페이지", ja: "マイページ", fr: "Mon espace" },
   nav_open_calls: { en: "Open Calls", ko: "오픈콜", ja: "オープンコール", fr: "Appels" },
   nav_galleries: { en: "Galleries", ko: "갤러리", ja: "ギャラリー", fr: "Galeries" },
   nav_artists: { en: "Artists", ko: "작가", ja: "アーティスト", fr: "Artistes" },

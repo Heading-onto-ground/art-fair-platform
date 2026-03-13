@@ -8,7 +8,7 @@ import { useAutoLocale } from "@/lib/useAutoLocale";
 import { t, getAvailableLanguages } from "@/lib/translate";
 import { F, S } from "@/lib/design";
 
-type Role = "artist" | "gallery";
+type Role = "artist" | "gallery" | "curator";
 type MeResponse = {
   session: { userId: string; role: Role; email?: string } | null;
   profile: any | null;
@@ -187,19 +187,32 @@ export default function TopBar() {
 
   const artistLinks = useMemo(
     () => [
+      { path: "/artist/me", label: t("nav_my_page", lang) },
       { path: "/artist/portfolio", label: lang === "ko" ? "내 작업" : lang === "ja" ? "マイ作品" : "MY WORKS" },
-      { path: "/artist/me", label: t("nav_profile", lang) },
+      { path: "/open-calls", label: t("nav_open_calls", lang) },
+      { path: "/artist/me#applications", label: t("nav_my_calls", lang) },
       { path: "/discover", label: lang === "ko" ? "발견" : lang === "ja" ? "発見" : "DISCOVER" },
       { path: "/feed", label: lang === "ko" ? "피드" : "FEED" },
       { path: "/network", label: lang === "ko" ? "네트워크" : "NETWORK" },
-      { path: "/open-calls", label: t("nav_open_calls", lang) },
       { path: "/artists", label: t("nav_artists", lang) },
       { path: "/galleries", label: t("nav_galleries", lang) },
       { path: "/curators", label: lang === "ko" ? "큐레이터" : lang === "ja" ? "キュレーター" : "CURATORS" },
       { path: "/spaces", label: lang === "ko" ? "공간" : lang === "ja" ? "スペース" : "SPACES" },
       { path: "/community", label: t("nav_community", lang) },
-      { path: "/shipments", label: t("nav_shipments", lang) },
-      { path: "/chat", label: t("nav_messages", lang) },
+      { path: "/about", label: "ABOUT" },
+      { path: "/contact", label: lang === "ko" ? "문의" : lang === "ja" ? "お問い合わせ" : "CONTACT" },
+    ],
+    [lang]
+  );
+
+  const curatorLinks = useMemo(
+    () => [
+      { path: "/curator", label: t("nav_my_page", lang) },
+      { path: "/artists", label: t("nav_artists", lang) },
+      { path: "/galleries", label: t("nav_galleries", lang) },
+      { path: "/open-calls", label: t("nav_open_calls", lang) },
+      { path: "/curators", label: lang === "ko" ? "큐레이터" : "CURATORS" },
+      { path: "/community", label: t("nav_community", lang) },
       { path: "/about", label: "ABOUT" },
       { path: "/contact", label: lang === "ko" ? "문의" : lang === "ja" ? "お問い合わせ" : "CONTACT" },
     ],
@@ -208,13 +221,12 @@ export default function TopBar() {
 
   const galleryLinks = useMemo(
     () => [
-      { path: "/gallery/me", label: t("nav_profile", lang) },
+      { path: "/gallery/me", label: t("nav_my_page", lang) },
       { path: "/artists", label: t("nav_artists", lang) },
       { path: "/galleries", label: t("nav_galleries", lang) },
+      { path: "/open-calls", label: t("nav_open_calls", lang) },
       { path: "/gallery", label: t("nav_my_calls", lang) },
       { path: "/community", label: t("nav_community", lang) },
-      { path: "/shipments", label: t("nav_shipments", lang) },
-      { path: "/chat", label: t("nav_messages", lang) },
       { path: "/admin/outreach", label: t("nav_growth", lang) },
       { path: "/about", label: "ABOUT" },
       { path: "/contact", label: lang === "ko" ? "문의" : lang === "ja" ? "お問い合わせ" : "CONTACT" },
@@ -223,8 +235,8 @@ export default function TopBar() {
   );
 
   const navLinks = useMemo(
-    () => (session?.role === "artist" ? artistLinks : session?.role === "gallery" ? galleryLinks : []),
-    [session?.role, artistLinks, galleryLinks]
+    () => (session?.role === "artist" ? artistLinks : session?.role === "gallery" ? galleryLinks : session?.role === "curator" ? curatorLinks : []),
+    [session?.role, artistLinks, galleryLinks, curatorLinks]
   );
 
   useEffect(() => {
@@ -287,7 +299,7 @@ export default function TopBar() {
                   ))}
                 </select>
                 <span style={{ fontFamily: F, fontSize: 10, fontWeight: 500, letterSpacing: "0.08em", textTransform: "uppercase", color: "#8A8580" }}>
-                  {session.role === "artist" ? t("artist", lang) : t("gallery", lang)}
+                  {session.role === "artist" ? t("artist", lang) : session.role === "curator" ? t("curator", lang) : t("gallery", lang)}
                 </span>
                 <button onClick={logout} style={{ padding: "8px 18px", border: "1px solid #E8E3DB", background: "transparent", color: "#4A4A4A", fontFamily: F, fontSize: 10, fontWeight: 500, letterSpacing: "0.08em", textTransform: "uppercase", cursor: "pointer" }}
                   onMouseEnter={(e) => { e.currentTarget.style.borderColor = "#1A1A1A"; e.currentTarget.style.color = "#1A1A1A"; }}
@@ -427,7 +439,7 @@ export default function TopBar() {
           <div style={{ padding: "8px 0" }}>
             {/* Role badge */}
             <div style={{ padding: "16px 24px 8px", fontFamily: F, fontSize: 9, fontWeight: 500, letterSpacing: "0.15em", textTransform: "uppercase", color: "#8B7355" }}>
-              {session.role === "artist" ? t("artist", lang) : t("gallery", lang)}
+              {session.role === "artist" ? t("artist", lang) : session.role === "curator" ? t("curator", lang) : t("gallery", lang)}
               {mounted && country && <span style={{ marginLeft: 8, color: "#B0AAA2" }}>{country}</span>}
             </div>
 
