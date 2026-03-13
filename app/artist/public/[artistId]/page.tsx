@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { prisma } from "@/lib/prisma";
-import ArtistPublicClient from "./ArtistPublicClient";
+import ArtistProfileV2 from "./components/ArtistProfileV2";
 
 const BASE_URL = "https://rob-roleofbridge.com";
 
@@ -47,5 +47,5 @@ export async function generateMetadata(
 }
 
 export default function ArtistPublicPage() {
-  return <ArtistPublicClient />;
+  return <ArtistProfileV2 />;
 }

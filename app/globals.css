@@ -241,3 +241,13 @@ select {
     font-size: 10px !important;
   }
 }
+
+/* ── 375px mobile (artist profile) ── */
+@media (max-width: 375px) {
+  main {
+    padding: 16px 12px !important;
+  }
+
+  h1 { font-size: 22px !important; }
+  h2 { font-size: 18px !important; }
+}
