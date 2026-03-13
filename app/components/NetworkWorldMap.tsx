@@ -1,6 +1,5 @@
 "use client";
 
-import { useEffect } from "react";
 import { MapContainer, TileLayer, CircleMarker, Popup, ZoomControl } from "react-leaflet";
 import "leaflet/dist/leaflet.css";
 import { F, S } from "@/lib/design";
@@ -18,16 +17,6 @@ type Marker = {
 };
 
 export default function NetworkWorldMap({ markers }: { markers: Marker[] }) {
-  useEffect(() => {
-    // Fix leaflet default icon issue in Next.js
-    const L = require("leaflet");
-    delete (L.Icon.Default.prototype as any)._getIconUrl;
-    L.Icon.Default.mergeOptions({
-      iconRetinaUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon-2x.png",
-      iconUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png",
-      shadowUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png",
-    });
-  }, []);
 
   return (
     <>
