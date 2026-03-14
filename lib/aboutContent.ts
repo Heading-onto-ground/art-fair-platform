@@ -15,11 +15,11 @@ const ABOUT_KEY = "about_page_v1";
 
 const DEFAULT_ABOUT_CONTENT: AboutContent = {
   title: "About ROB",
-  subtitle: "Role of Bridge - Connecting artists and galleries worldwide.",
+  subtitle: "Record your exhibitions. Build your art graph. Be discovered.",
   story:
-    "ROB started with one question: how can artists and galleries connect across borders with less friction? We are building a global bridge for open calls, applications, and exhibitions.",
+    "ROB started with a simple idea: artists deserve to be found through what they do—not just what they show. Every exhibition you record becomes a node in your art graph: it connects you to spaces, curators, and fellow artists. Over time, your timeline grows, your network becomes visible, and curators and galleries discover you through your activity data—not just your images. We built ROB as the bridge between recording and being discovered.",
   mission:
-    "Our mission is to make global exhibition opportunities open, transparent, and easy to access for every artist and gallery.",
+    "Our mission is to make exhibition-based discovery possible. For artists: record your exhibitions, build your art graph, and let your activity speak for itself. For curators and galleries: discover talent through exhibition data—explore by space, curator, and network. We believe the best way to find artists is through what they have already done.",
   founderName: "Founder",
   founderInstagram: "@noas_no_art_special",
   founderImageUrl: "",
