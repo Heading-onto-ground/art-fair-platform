@@ -52,7 +52,7 @@ export default function ArtistMePage() {
   const [inviteArtistId, setInviteArtistId] = useState("");
   const [invitingExId, setInvitingExId] = useState<string | null>(null);
   const [inviteMsg, setInviteMsg] = useState<string | null>(null);
-  const [helpOpen, setHelpOpen] = useState<Record<string, boolean>>({ onboarding: false, timeline: false, network: false });
+  const [helpOpen, setHelpOpen] = useState<Record<string, boolean>>({ onboarding: true, timeline: false, network: false });
 
   type SeriesItem = { id: string; title: string; description?: string | null; startYear?: number | null; endYear?: number | null; works?: string | null; isPublic: boolean };
   const [seriesList, setSeriesList] = useState<SeriesItem[]>([]); const [seriesForm, setSeriesForm] = useState<{ title: string; description: string; startYear: string; endYear: string; works: string; isPublic: boolean } | null>(null); const [editingSeriesId, setEditingSeriesId] = useState<string | null>(null); const [seriesMsg, setSeriesMsg] = useState<string | null>(null); const [seriesSaving, setSeriesSaving] = useState(false);

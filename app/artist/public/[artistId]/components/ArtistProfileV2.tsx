@@ -70,8 +70,10 @@ export default function ArtistProfileV2() {
   const [toast, setToast] = useState<string | null>(null);
   const [toastWithShare, setToastWithShare] = useState(false);
   const [onboardingStep, setOnboardingStep] = useState<number | null>(null);
+  const [recentlyViewed, setRecentlyViewed] = useState<{ artistId: string; name: string }[]>([]);
 
   const ONBOARDING_KEY = "rob-artist-profile-onboarding-done";
+  const RECENTLY_VIEWED_KEY = "rob-recently-viewed-profiles";
 
   useEffect(() => {
     fetch(`/api/artist/public/${artistId}`)
@@ -109,6 +111,20 @@ export default function ArtistProfileV2() {
     const t = setTimeout(() => setOnboardingStep(1), 3000);
     return () => clearTimeout(t);
   }, [isOwner, data, searchParams]);
+
+  useEffect(() => {
+    if (!data || !artistId) return;
+    try {
+      const raw = typeof window !== "undefined" && localStorage.getItem(RECENTLY_VIEWED_KEY);
+      const list: { artistId: string; name: string }[] = raw ? JSON.parse(raw) : [];
+      const filtered = list.filter((x) => x.artistId !== artistId);
+      const updated = [{ artistId, name: data.name }, ...filtered].slice(0, 5);
+      if (typeof window !== "undefined") localStorage.setItem(RECENTLY_VIEWED_KEY, JSON.stringify(updated));
+      setRecentlyViewed(updated.filter((x) => x.artistId !== artistId).slice(0, 3));
+    } catch {
+      setRecentlyViewed([]);
+    }
+  }, [data, artistId]);
   const yearsActive = data?.startedYear
     ? new Date().getFullYear() - data.startedYear
     : null;
@@ -317,8 +333,8 @@ export default function ArtistProfileV2() {
                         <rect x="20" y="54" width="80" height="12" rx="2" stroke="currentColor" strokeWidth="1.5" strokeDasharray="4 2" fill="none" />
                         <circle cx="30" cy="60" r="3" fill="currentColor" opacity="0.4" />
                         <path d="M55 75 L65 85 L85 65" stroke="#0066FF" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" opacity="0.8" />
-                        <circle cx="70" cy="75" r="12" fill="#0066FF" fillOpacity="0.15" stroke="#0066FF" strokeWidth="1.5" />
-                        <text x="70" y="79" textAnchor="middle" fill="#0066FF" fontSize="14" fontWeight="600">+</text>
+                        <circle cx="70" cy="75" r="12" fill="#0066FF" fillOpacity="0.15" stroke="#0066FF" strokeWidth="1.5" className="rob-empty-pulse" />
+                        <text x="70" y="79" textAnchor="middle" fill="#0066FF" fontSize="14" fontWeight="600" className="rob-empty-pulse">+</text>
                       </svg>
                     </div>
                     <h3 className="text-lg font-semibold text-[#1A1A1A] mb-2">
@@ -330,12 +346,15 @@ export default function ArtistProfileV2() {
                       CV도 한 번에 정리되고, 큐레이터가 더 쉽게 발견할 수 있어요.
                     </p>
                     {isOwner && (
-                      <button
-                        onClick={() => setShowAddModal(true)}
-                        className="px-8 py-3.5 bg-[#0066FF] hover:bg-[#0052CC] text-white text-sm font-semibold rounded-lg transition-colors shadow-sm"
-                      >
-                        첫 전시 추가하기
-                      </button>
+                      <div>
+                        <button
+                          onClick={() => setShowAddModal(true)}
+                          className="px-8 py-3.5 bg-[#0066FF] hover:bg-[#0052CC] text-white text-sm font-semibold rounded-lg transition-colors shadow-sm"
+                        >
+                          첫 전시 추가하기
+                        </button>
+                        <p className="mt-2 text-xs text-[#9CA3AF]">3분 만에 완료돼요</p>
+                      </div>
                     )}
                   </div>
                 ) : (
@@ -499,13 +518,25 @@ export default function ArtistProfileV2() {
                       const cx = 70;
                       const x = cx + r * Math.cos((angle * Math.PI) / 180);
                       const y = cx + r * Math.sin((angle * Math.PI) / 180);
-                      return (
-                        <div
-                          key={c.artistId || c.name}
-                          className="absolute w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-[#E5E7EB] border-2 border-white flex items-center justify-center text-[#6B7280] font-medium text-xs -translate-x-1/2 -translate-y-1/2"
+                      const NodeContent = (
+                        <span className="block w-full h-full rounded-full bg-[#9CA3AF] border-2 border-white flex items-center justify-center text-white font-medium text-xs">
+                          {c.name?.charAt(0) || "?"}
+                        </span>
+                      );
+                      return c.artistId ? (
+                        <Link
+                          key={c.artistId}
+                          href={`/artist/public/${c.artistId}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="absolute w-8 h-8 sm:w-9 sm:h-9 -translate-x-1/2 -translate-y-1/2 rounded-full hover:ring-2 hover:ring-[#0066FF]/50 transition-shadow cursor-pointer"
                           style={{ left: x, top: y }}
                         >
-                          {c.name?.charAt(0) || "?"}
+                          {NodeContent}
+                        </Link>
+                      ) : (
+                        <div key={c.name} className="absolute w-8 h-8 sm:w-9 sm:h-9 -translate-x-1/2 -translate-y-1/2" style={{ left: x, top: y }}>
+                          {NodeContent}
                         </div>
                       );
                     })}
@@ -532,34 +563,77 @@ export default function ArtistProfileV2() {
                   )}
                 </div>
               ) : (
-                (uniqueCollabs.length > 0 ? uniqueCollabs : collaborators.map((n) => ({ name: n, artistId: "" }))).map((c) => (
-                  c.artistId ? (
-                    <Link
-                      key={c.artistId}
-                      href={`/artist/public/${c.artistId}`}
-                      className="flex items-center gap-2 p-3 bg-white border border-[#E5E7EB] rounded-xl min-w-[100px] hover:border-[#0066FF]/30 hover:shadow-sm transition-colors"
+                <div className="flex flex-col gap-3 sm:flex-1">
+                  <div className="flex flex-wrap gap-3">
+                    {(uniqueCollabs.length > 0 ? uniqueCollabs : collaborators.map((n) => ({ name: n, artistId: "" }))).map((c) => (
+                      c.artistId ? (
+                        <Link
+                          key={c.artistId}
+                          href={`/artist/public/${c.artistId}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="flex items-center gap-2 p-3 bg-white border border-[#E5E7EB] rounded-xl min-w-[100px] hover:border-[#0066FF]/30 hover:shadow-sm transition-colors"
+                        >
+                          <div className="w-10 h-10 rounded-full bg-[#E5E7EB] flex items-center justify-center text-[#6B7280] font-medium text-sm flex-shrink-0">
+                            {c.name?.charAt(0) || "?"}
+                          </div>
+                          <span className="text-sm text-[#1A1A1A] truncate max-w-[80px]">{c.name}</span>
+                        </Link>
+                      ) : (
+                        <div
+                          key={c.name}
+                          className="flex items-center gap-2 p-3 bg-white border border-[#E5E7EB] rounded-xl min-w-[100px]"
+                        >
+                          <div className="w-10 h-10 rounded-full bg-[#E5E7EB] flex items-center justify-center text-[#6B7280] font-medium text-sm flex-shrink-0">
+                            {c.name?.charAt(0) || "?"}
+                          </div>
+                          <span className="text-sm text-[#1A1A1A] truncate max-w-[80px]">{c.name}</span>
+                        </div>
+                      )
+                    ))}
+                  </div>
+                  {isOwner && (() => {
+                    const cardCount = uniqueCollabs.length > 0 ? uniqueCollabs.length : collaborators.length;
+                    return cardCount > 0 && cardCount < 3;
+                  })() && (
+                    <button
+                      onClick={() => setShowAddModal(true)}
+                      className="self-start flex items-center gap-1.5 text-xs font-medium text-[#0066FF] hover:text-[#0052CC] hover:underline"
                     >
-                      <div className="w-10 h-10 rounded-full bg-[#E5E7EB] flex items-center justify-center text-[#6B7280] font-medium text-sm flex-shrink-0">
-                        {c.name?.charAt(0) || "?"}
-                      </div>
-                      <span className="text-sm text-[#1A1A1A] truncate max-w-[80px]">{c.name}</span>
-                    </Link>
-                  ) : (
-                    <div
-                      key={c.name}
-                      className="flex items-center gap-2 p-3 bg-white border border-[#E5E7EB] rounded-xl min-w-[100px]"
-                    >
-                      <div className="w-10 h-10 rounded-full bg-[#E5E7EB] flex items-center justify-center text-[#6B7280] font-medium text-sm flex-shrink-0">
-                        {c.name?.charAt(0) || "?"}
-                      </div>
-                      <span className="text-sm text-[#1A1A1A] truncate max-w-[80px]">{c.name}</span>
-                    </div>
-                  )
-                ))
+                      협업자 더 추가하고 네트워크 키워보세요
+                      <span className="inline-flex" aria-hidden>→</span>
+                    </button>
+                  )}
+                </div>
               )}
             </div>
           </div>
         </section>
+
+        {/* ─── 5-1. 방금 본 프로필 ─── */}
+        {recentlyViewed.length > 0 && (
+          <section className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-10">
+            <h3 className="text-sm font-semibold text-[#6B7280] uppercase tracking-wider mb-4">
+              방금 본 프로필
+            </h3>
+            <div className="flex flex-wrap gap-3">
+              {recentlyViewed.map(({ artistId: aid, name }) => (
+                <Link
+                  key={aid}
+                  href={`/artist/public/${aid}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center gap-2 px-4 py-3 bg-white border border-[#E5E7EB] rounded-xl hover:border-[#0066FF]/30 hover:shadow-sm transition-colors min-w-[120px]"
+                >
+                  <div className="w-9 h-9 rounded-full bg-[#E5E7EB] flex items-center justify-center text-[#6B7280] font-medium text-sm flex-shrink-0">
+                    {name?.charAt(0) || "?"}
+                  </div>
+                  <span className="text-sm text-[#1A1A1A] truncate">{name}</span>
+                </Link>
+              ))}
+            </div>
+          </section>
+        )}
 
         {/* ─── 6. Footer ─── */}
         <section className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-10 sm:py-12 pb-20 sm:pb-24">
