@@ -37,6 +37,8 @@ export default function NetworkWorldMap({ markers }: { markers: Marker[] }) {
         minZoom: 2,
         maxZoom: 12,
         zoomControl: true,
+        maxBounds: L.latLngBounds(L.latLng(-85, -180), L.latLng(85, 180)),
+        maxBoundsViscosity: 1,
       });
       mapInstanceRef.current = map;
 
