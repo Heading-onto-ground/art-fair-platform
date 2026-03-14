@@ -30,6 +30,9 @@ export default function AboutPage() {
     subject: "",
     message: "",
   });
+  const [translated, setTranslated] = useState<{ subtitle?: string; story?: string; mission?: string } | null>(null);
+  const [showTranslation, setShowTranslation] = useState(true);
+  const [translating, setTranslating] = useState(false);
   const tr = (en: string, ko: string, ja: string, fr: string) =>
     lang === "ko" ? ko : lang === "ja" ? ja : lang === "fr" ? fr : en;
 
@@ -47,6 +50,37 @@ export default function AboutPage() {
       }
     })();
   }, []);
+
+  useEffect(() => {
+    if (!content || lang === "en") return;
+    setTranslating(true);
+    setTranslated(null);
+    (async () => {
+      try {
+        const res = await fetch("/api/translate", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            texts: [content.subtitle, content.story, content.mission],
+            targetLang: lang,
+          }),
+        });
+        const data = await res.json().catch(() => null);
+        if (res.ok && Array.isArray(data?.translated) && data.translated.length >= 3) {
+          setTranslated({
+            subtitle: data.translated[0],
+            story: data.translated[1],
+            mission: data.translated[2],
+          });
+          setShowTranslation(true);
+        }
+      } catch (e) {
+        console.error("About translate error:", e);
+      } finally {
+        setTranslating(false);
+      }
+    })();
+  }, [content?.subtitle, content?.story, content?.mission, lang]);
 
   async function submitContact() {
     if (
@@ -123,17 +157,42 @@ export default function AboutPage() {
         ) : content ? (
           <>
             <section style={{ marginBottom: 32 }}>
-              <div
-                style={{
-                  fontFamily: F,
-                  fontSize: 10,
-                  letterSpacing: "0.2em",
-                  textTransform: "uppercase",
-                  color: "#8B7355",
-                  marginBottom: 12,
-                }}
-              >
-                Platform
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 12 }}>
+                <div
+                  style={{
+                    fontFamily: F,
+                    fontSize: 10,
+                    letterSpacing: "0.2em",
+                    textTransform: "uppercase",
+                    color: "#8B7355",
+                    marginBottom: 12,
+                  }}
+                >
+                  Platform
+                </div>
+                {lang !== "en" && (translated || translating) && (
+                  <button
+                    onClick={() => setShowTranslation((s) => !s)}
+                    disabled={translating}
+                    style={{
+                      padding: "6px 14px",
+                      border: "1px solid #E8E3DB",
+                      background: showTranslation ? "rgba(139,115,85,0.08)" : "transparent",
+                      color: showTranslation ? "#8B7355" : "#8A8580",
+                      fontFamily: F,
+                      fontSize: 10,
+                      letterSpacing: "0.08em",
+                      cursor: translating ? "wait" : "pointer",
+                      opacity: translating ? 0.7 : 1,
+                    }}
+                  >
+                    {translating
+                      ? tr("Translating...", "번역 중...", "翻訳中...", "Traduction...")
+                      : showTranslation
+                        ? tr("Show original", "원문 보기", "原文を見る", "Voir l'original")
+                        : tr("Translate", "번역 보기", "翻訳", "Traduire")}
+                  </button>
+                )}
               </div>
               <h1 style={{ fontFamily: S, fontSize: "clamp(36px, 8vw, 54px)", fontWeight: 300, margin: 0 }}>
                 {content.title}
@@ -148,7 +207,7 @@ export default function AboutPage() {
                   maxWidth: 760,
                 }}
               >
-                {content.subtitle}
+                {showTranslation && translated?.subtitle ? translated.subtitle : content.subtitle}
               </p>
             </section>
 
@@ -160,9 +219,11 @@ export default function AboutPage() {
                 marginBottom: 20,
               }}
             >
-              <h2 style={{ fontFamily: S, fontSize: 28, fontWeight: 300, margin: "0 0 12px" }}>Our Story</h2>
+              <h2 style={{ fontFamily: S, fontSize: 28, fontWeight: 300, margin: "0 0 12px" }}>
+                {tr("Our Story", "스토리", "ストーリー", "Notre histoire")}
+              </h2>
               <p style={{ margin: 0, fontFamily: F, fontSize: 14, color: "#4A4A4A", lineHeight: 1.9 }}>
-                {content.story}
+                {showTranslation && translated?.story ? translated.story : content.story}
               </p>
             </section>
 
@@ -174,9 +235,11 @@ export default function AboutPage() {
                 marginBottom: 20,
               }}
             >
-              <h2 style={{ fontFamily: S, fontSize: 28, fontWeight: 300, margin: "0 0 12px" }}>Mission</h2>
+              <h2 style={{ fontFamily: S, fontSize: 28, fontWeight: 300, margin: "0 0 12px" }}>
+                {tr("Mission", "미션", "ミッション", "Mission")}
+              </h2>
               <p style={{ margin: 0, fontFamily: F, fontSize: 14, color: "#4A4A4A", lineHeight: 1.9 }}>
-                {content.mission}
+                {showTranslation && translated?.mission ? translated.mission : content.mission}
               </p>
             </section>
 
