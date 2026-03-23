@@ -25,10 +25,11 @@ export async function GET(req: Request) {
 
       const session = getServerSession();
 
+      type MomentWithReactions = (typeof moments)[number];
       const momentsWithReactions = await Promise.all(
-        moments.map(async (m) => {
+        moments.map(async (m: MomentWithReactions) => {
           const counts = m.reactions.reduce(
-            (acc, r) => {
+            (acc: Record<string, number>, r: { reactionType: string }) => {
               acc[r.reactionType] = (acc[r.reactionType] || 0) + 1;
               return acc;
             },
@@ -36,7 +37,7 @@ export async function GET(req: Request) {
           );
           let myReaction: string | null = null;
           if (session) {
-            const mine = m.reactions.find((r) => r.userId === session.userId);
+            const mine = m.reactions.find((r: { userId: string; reactionType: string }) => r.userId === session.userId);
             if (mine) myReaction = mine.reactionType;
           }
           return {
@@ -72,9 +73,10 @@ export async function GET(req: Request) {
       take: 500,
     });
 
+    type Moment = (typeof moments)[number];
     return NextResponse.json({
       ok: true,
-      moments: moments.map((m) => ({
+      moments: moments.map((m: Moment) => ({
         id: m.id,
         artistId: m.artistId,
         artistName: m.artistName,

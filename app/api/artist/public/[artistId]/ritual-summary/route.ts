@@ -49,8 +49,9 @@ export async function GET(
     select: { id: true, createdAt: true, state: true, medium: true, imageUrl: true },
   });
 
+  type Moment = (typeof moments)[number];
   const dateKeys = new Set(
-    moments.map((m) => {
+    moments.map((m: Moment) => {
       const d = new Date(m.createdAt);
       return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
     })
@@ -77,7 +78,7 @@ export async function GET(
     currentStreak: calculateStreakFromMoments(moments),
     totalRitualPosts: moments.length,
     activeDays: dateKeys.size,
-    recentPracticeLogs: moments.slice(0, 5).map((m) => ({
+    recentPracticeLogs: moments.slice(0, 5).map((m: Moment) => ({
       id: m.id,
       date: m.createdAt.toISOString(),
       state: m.state,
