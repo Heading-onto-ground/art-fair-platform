@@ -88,6 +88,7 @@ const dictionary: Dictionary = {
   home_artist_feat5: { en: "Auto-manage artist activity history", ko: "작가 활동 이력 자동 관리", ja: "活動履歴の自動管理", fr: "Gestion automatique de l'historique" },
   home_artist_feat6: { en: "Community & networking", ko: "커뮤니티 활동", ja: "コミュニティ活動", fr: "Communauté & réseautage" },
   home_artist_feat7: { en: "Shipment tracking", ko: "배송 추적", ja: "配送追跡", fr: "Suivi d'expédition" },
+  home_artist_feat8: { en: "Artist Ritual — Daily Ritual Call, process over product", ko: "Artist Ritual — 매일 리추얼 콜, 과정이 결과보다 중요", ja: "Artist Ritual — 毎日のリチュアルコール、プロセス重視", fr: "Artist Ritual — Appel quotidien, processus avant résultat" },
   home_gallery_feat1: { en: "Publish open calls", ko: "오픈콜 게시", ja: "オープンコールを公開", fr: "Publiez des appels" },
   home_gallery_feat2: { en: "Browse artist portfolios", ko: "작가 포트폴리오 탐색", ja: "アーティストのポートフォリオを閲覧", fr: "Parcourez les portfolios" },
   home_gallery_feat3: { en: "Application management", ko: "지원서 관리", ja: "応募管理", fr: "Gestion des candidatures" },

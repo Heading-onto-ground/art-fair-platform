@@ -40,7 +40,7 @@ export default function Home() {
           {t("home_subtitle", lang)}
         </p>
 
-        <Link href="/exhibitions/new" style={{ display: "block", padding: "18px 48px", background: "#8B7355", color: "#FDFBF7", fontFamily: F, fontSize: 11, fontWeight: 600, letterSpacing: "0.14em", textTransform: "uppercase", textDecoration: "none", transition: "all 0.3s ease", marginBottom: 20 }}
+        <Link href="/login?role=artist&redirect=/exhibitions/new" style={{ display: "block", padding: "18px 48px", background: "#8B7355", color: "#FDFBF7", fontFamily: F, fontSize: 11, fontWeight: 600, letterSpacing: "0.14em", textTransform: "uppercase", textDecoration: "none", transition: "all 0.3s ease", marginBottom: 20 }}
           onMouseEnter={(e) => { e.currentTarget.style.background = "#6B5345"; }}
           onMouseLeave={(e) => { e.currentTarget.style.background = "#8B7355"; }}>
           {lang === "ko" ? "전시 기록 추가 → 타임라인 시작하기" : lang === "ja" ? "展示を記録 → タイムラインを始める" : "Add Your Exhibition → Get Your Timeline Started"}
@@ -64,7 +64,7 @@ export default function Home() {
         </div>
         <div style={{ fontFamily: F, fontSize: 11, color: "#B0AAA2", letterSpacing: "0.1em" }}>
           {lang === "ko" ? "이미 가입하셨나요?" : lang === "ja" ? "すでに登録済みですか？" : "Already a member?"}{" "}
-          <Link href="/exhibitions/new" style={{ color: "#8B7355", textDecoration: "underline", textUnderlineOffset: 3 }}>
+          <Link href="/login?role=artist&redirect=/exhibitions/new" style={{ color: "#8B7355", textDecoration: "underline", textUnderlineOffset: 3 }}>
             {lang === "ko" ? "전시 기록 시작" : lang === "ja" ? "展示を記録する" : "Record your first exhibition →"}
           </Link>
         </div>
@@ -103,7 +103,7 @@ export default function Home() {
       {/* Role Cards */}
       <section style={{ padding: "60px 24px", background: "#F5F1EB" }}>
         <div className="role-grid" style={{ maxWidth: 1200, margin: "0 auto", display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 1, background: "#E8E3DB", alignItems: "stretch" }}>
-          <RoleCard href="/login?role=artist" label={t("home_for_artists", lang)} title={t("home_artist_title", lang)} features={[t("home_artist_feat1", lang), t("home_artist_feat2", lang), t("home_artist_feat3", lang), t("home_artist_feat5", lang), t("home_artist_feat6", lang), t("home_artist_feat7", lang)]} lang={lang} />
+          <RoleCard href="/login?role=artist" label={t("home_for_artists", lang)} title={t("home_artist_title", lang)} features={[t("home_artist_feat8", lang), t("home_artist_feat1", lang), t("home_artist_feat2", lang), t("home_artist_feat3", lang), t("home_artist_feat5", lang), t("home_artist_feat6", lang), t("home_artist_feat7", lang)]} lang={lang} />
           <RoleCard href="/login?role=gallery" label={t("home_for_galleries", lang)} title={t("home_gallery_title", lang)} features={[t("home_gallery_feat1", lang), t("home_gallery_feat2", lang), t("home_gallery_feat3", lang), t("home_gallery_feat4", lang), t("home_gallery_feat5", lang)]} lang={lang} />
           <RoleCard href="/login?role=curator" label={t("home_for_curators", lang)} title={t("home_curator_title", lang)} features={[t("home_curator_feat1", lang), t("home_curator_feat2", lang), t("home_curator_feat3", lang), t("home_curator_feat4", lang), t("home_curator_feat5", lang)]} lang={lang} />
         </div>

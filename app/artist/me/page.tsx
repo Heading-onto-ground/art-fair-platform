@@ -317,6 +317,11 @@ export default function ArtistMePage() {
 
             {/* Applications */}
             <Section number="04" title={t("profile_applications", lang)} id="applications">
+              {applications.length > 0 && (
+                <p style={{ marginBottom: 16, fontFamily: F, fontSize: 11, color: "#8B7355" }}>
+                  {lang === "ko" ? "갤러리가 지원서를 볼 때 당신의 Artist Ritual(작업 기록·연속 기록)도 프로필에 함께 표시됩니다." : "When galleries view your application, your Artist Ritual (practice logs & streak) is visible on your profile."}
+                </p>
+              )}
               {applications.length === 0 ? <p style={{ fontFamily: F, fontSize: 13, color: "#B0AAA2" }}>{t("profile_no_apps", lang)}</p> : (
                 <div style={{ display: "grid", gap: 1, background: "#E8E3DB" }}>
                   {applications.map((a) => { const oc = openCallMap[a.openCallId]; return (

@@ -43,6 +43,22 @@ export default function LoginPage() {
   useEffect(() => {
     const roleParam = searchParams.get("role");
     if (roleParam === "artist" || roleParam === "gallery" || roleParam === "curator") setRole(roleParam);
+    const redirectTo = searchParams.get("redirect");
+    if (redirectTo && redirectTo.startsWith("/") && !redirectTo.startsWith("//")) {
+      fetch("/api/auth/me?lite=1", { cache: "no-store" })
+        .then(r => r.json())
+        .then((d: MeResponse) => {
+          const r = d?.session?.role;
+          if (r === "artist" && (redirectTo.startsWith("/exhibitions") || redirectTo.startsWith("/artist"))) {
+            router.replace(redirectTo);
+          } else if (r === "gallery" && redirectTo.startsWith("/gallery")) {
+            router.replace(redirectTo);
+          } else if (r === "curator" && redirectTo.startsWith("/curator")) {
+            router.replace(redirectTo);
+          }
+        })
+        .catch(() => {});
+    }
     const verified = searchParams.get("verified");
     if (verified === "success") {
       setInfo(tr("Email verified. You can now sign in.", "이메일 인증이 완료되었습니다. 이제 로그인할 수 있습니다.", "メール認証が完了しました。ログインできます。", "Email verifie. Vous pouvez maintenant vous connecter."));
@@ -57,9 +73,25 @@ export default function LoginPage() {
   }, [searchParams, lang]);
 
   const gotoByServerSession = async () => {
+    const redirectTo = searchParams.get("redirect");
     const meRes = await fetch("/api/auth/me", { cache: "no-store" });
     const me = (await meRes.json().catch(() => null)) as MeResponse | null;
     const realRole = me?.session?.role;
+    // Use redirect param if it's a valid path and role matches
+    if (redirectTo && redirectTo.startsWith("/") && !redirectTo.startsWith("//")) {
+      if (realRole === "artist" && (redirectTo.startsWith("/exhibitions") || redirectTo.startsWith("/artist"))) {
+        router.push(redirectTo);
+        return;
+      }
+      if (realRole === "gallery" && redirectTo.startsWith("/gallery")) {
+        router.push(redirectTo);
+        return;
+      }
+      if (realRole === "curator" && redirectTo.startsWith("/curator")) {
+        router.push(redirectTo);
+        return;
+      }
+    }
     if (realRole === "artist") router.push("/artist/portfolio");
     else if (realRole === "gallery") router.push("/gallery");
     else if (realRole === "curator") router.push("/curator");

@@ -257,6 +257,16 @@ select {
   }
 }
 
+/* Hero 배경: 모바일 최적화 (블러 강도 조절) */
+.hero-bg {
+  filter: blur(14px);
+}
+@media (max-width: 640px) {
+  .hero-bg {
+    filter: blur(20px); /* 모바일: 더 강한 블러로 시각적 부담 감소 */
+  }
+}
+
 /* ── 375px mobile (artist profile) ── */
 @media (max-width: 375px) {
   main {
@@ -265,4 +275,28 @@ select {
 
   h1 { font-size: 22px !important; }
   h2 { font-size: 18px !important; }
+}
+
+/* Timeline 카드: 모바일 패딩·폰트 조정 */
+@media (max-width: 640px) {
+  .timeline-card {
+    padding: 1rem 1.25rem !important; /* p-5 수준 */
+  }
+  .timeline-card .timeline-title {
+    font-size: 15px !important;
+    line-height: 1.4 !important;
+  }
+  .timeline-card .timeline-meta {
+    font-size: 13px !important;
+  }
+}
+
+/* Add Exhibition 모달: 모바일 터치 영역·키보드 대응 */
+@media (max-width: 640px) {
+  .add-modal-input {
+    scroll-margin-bottom: 120px; /* 키보드 올라올 때 입력 필드가 가려지지 않도록 */
+  }
+  .add-modal-touch {
+    touch-action: manipulation; /* 더블탭 줌 방지, 터치 반응 개선 */
+  }
 }

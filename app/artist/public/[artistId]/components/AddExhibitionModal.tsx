@@ -137,20 +137,21 @@ export default function AddExhibitionModal({ onClose, onSuccess }: Props) {
       onClick={onClose}
     >
       <div
-        className="w-full max-w-lg max-h-[90vh] overflow-y-auto bg-white rounded-2xl shadow-xl"
+        className="add-exhibition-modal w-full max-w-lg max-h-[85vh] sm:max-h-[90vh] overflow-y-auto bg-white rounded-2xl shadow-xl"
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="flex items-center justify-between p-6 border-b border-[#E5E7EB]">
+        <div className="flex items-center justify-between p-4 sm:p-6 border-b border-[#E5E7EB]">
           <h2 className="text-lg font-semibold text-[#1A1A1A]">Add Past Exhibition</h2>
           <button
             onClick={onClose}
-            className="p-2 text-[#6B7280] hover:text-[#1A1A1A] hover:bg-[#F8F9FA] rounded-lg transition-colors"
+            className="add-modal-touch p-3 -m-1 min-w-[44px] min-h-[44px] flex items-center justify-center text-[#6B7280] hover:text-[#1A1A1A] hover:bg-[#F8F9FA] rounded-lg transition-colors"
+            aria-label="Close"
           >
             ×
           </button>
         </div>
 
-        <form onSubmit={handleSubmit} className="p-6 space-y-5">
+        <form onSubmit={handleSubmit} className="p-4 sm:p-6 space-y-5 pb-8 sm:pb-6">
           <div>
             <label className="block text-sm font-medium text-[#1A1A1A] mb-1">
               Exhibition Title <span className="text-[#0066FF]">*</span>
@@ -160,7 +161,7 @@ export default function AddExhibitionModal({ onClose, onSuccess }: Props) {
               value={title}
               onChange={(e) => setTitle(e.target.value)}
               placeholder="e.g. Spatial Echo 2025"
-              className="w-full px-4 py-3 border border-[#E5E7EB] rounded-lg focus:border-[#0066FF] focus:ring-2 focus:ring-[#0066FF]/20 outline-none"
+              className="add-modal-input w-full px-4 py-3.5 min-h-[48px] sm:min-h-0 sm:py-3 border border-[#E5E7EB] rounded-lg focus:border-[#0066FF] focus:ring-2 focus:ring-[#0066FF]/20 outline-none text-base"
             />
           </div>
 
@@ -173,7 +174,7 @@ export default function AddExhibitionModal({ onClose, onSuccess }: Props) {
                 type="date"
                 value={startDate}
                 onChange={(e) => setStartDate(e.target.value)}
-                className="w-full px-4 py-3 border border-[#E5E7EB] rounded-lg focus:border-[#0066FF] focus:ring-2 focus:ring-[#0066FF]/20 outline-none"
+                className="add-modal-input w-full px-4 py-3.5 min-h-[48px] sm:min-h-0 sm:py-3 border border-[#E5E7EB] rounded-lg focus:border-[#0066FF] focus:ring-2 focus:ring-[#0066FF]/20 outline-none text-base"
               />
             </div>
             <div>
@@ -184,7 +185,7 @@ export default function AddExhibitionModal({ onClose, onSuccess }: Props) {
                 type="date"
                 value={endDate}
                 onChange={(e) => setEndDate(e.target.value)}
-                className="w-full px-4 py-3 border border-[#E5E7EB] rounded-lg focus:border-[#0066FF] focus:ring-2 focus:ring-[#0066FF]/20 outline-none"
+                className="add-modal-input w-full px-4 py-3.5 min-h-[48px] sm:min-h-0 sm:py-3 border border-[#E5E7EB] rounded-lg focus:border-[#0066FF] focus:ring-2 focus:ring-[#0066FF]/20 outline-none text-base"
               />
             </div>
           </div>
@@ -199,10 +200,10 @@ export default function AddExhibitionModal({ onClose, onSuccess }: Props) {
               onChange={(e) => setVenue(e.target.value)}
               onBlur={() => setTimeout(() => setVenueOpen(false), 150)}
               placeholder="Search or type venue name (e.g. Seoul)"
-              className="w-full px-4 py-3 border border-[#E5E7EB] rounded-lg focus:border-[#0066FF] focus:ring-2 focus:ring-[#0066FF]/20 outline-none"
+              className="add-modal-input w-full px-4 py-3.5 min-h-[48px] sm:min-h-0 sm:py-3 border border-[#E5E7EB] rounded-lg focus:border-[#0066FF] focus:ring-2 focus:ring-[#0066FF]/20 outline-none text-base"
             />
             {venueOpen && venueSuggestions.length > 0 && (
-              <ul className="absolute z-10 mt-1 w-full bg-white border border-[#E5E7EB] rounded-lg shadow-lg max-h-40 overflow-y-auto">
+              <ul className="absolute z-10 mt-1 w-full bg-white border border-[#E5E7EB] rounded-lg shadow-lg max-h-48 overflow-y-auto">
                 {venueSuggestions.map((s) => (
                   <li
                     key={s.id || s.name}
@@ -212,7 +213,7 @@ export default function AddExhibitionModal({ onClose, onSuccess }: Props) {
                       setVenueSuggestions([]);
                       setVenueOpen(false);
                     }}
-                    className="px-4 py-2 text-sm text-[#1A1A1A] hover:bg-[#F8F9FA] cursor-pointer"
+                    className="add-modal-touch px-4 py-3.5 min-h-[48px] flex items-center text-sm text-[#1A1A1A] hover:bg-[#F8F9FA] active:bg-[#F3F4F6] cursor-pointer"
                   >
                     {s.name}
                     {(s.city || s.country) && (
@@ -239,16 +240,16 @@ export default function AddExhibitionModal({ onClose, onSuccess }: Props) {
               onChange={(e) => setCollabInput(e.target.value)}
               onBlur={() => setTimeout(() => setArtistOpen(false), 150)}
               placeholder="Search artist name"
-              className="w-full px-4 py-3 border border-[#E5E7EB] rounded-lg focus:border-[#0066FF] focus:ring-2 focus:ring-[#0066FF]/20 outline-none mb-2"
+              className="add-modal-input w-full px-4 py-3.5 min-h-[48px] sm:min-h-0 sm:py-3 border border-[#E5E7EB] rounded-lg focus:border-[#0066FF] focus:ring-2 focus:ring-[#0066FF]/20 outline-none text-base mb-2"
             />
             {artistOpen && artistSuggestions.length > 0 && (
-              <ul className="absolute z-10 mt-1 w-full bg-white border border-[#E5E7EB] rounded-lg shadow-lg max-h-32 overflow-y-auto">
+              <ul className="absolute z-10 mt-1 w-full bg-white border border-[#E5E7EB] rounded-lg shadow-lg max-h-48 overflow-y-auto">
                 {artistSuggestions.map((a) => (
                   <li
                     key={a.id}
                     onMouseDown={(e) => e.preventDefault()}
                     onClick={() => addCollaborator(a)}
-                    className="px-4 py-2 text-sm text-[#1A1A1A] hover:bg-[#F8F9FA] cursor-pointer"
+                    className="add-modal-touch px-4 py-3.5 min-h-[48px] flex items-center text-sm text-[#1A1A1A] hover:bg-[#F8F9FA] active:bg-[#F3F4F6] cursor-pointer"
                   >
                     {a.name}
                     {(a.city || a.country) && (
@@ -265,13 +266,13 @@ export default function AddExhibitionModal({ onClose, onSuccess }: Props) {
                 {collaboratorIds.map((id) => (
                   <span
                     key={id}
-                    className="inline-flex items-center gap-1 px-3 py-1 bg-[#0066FF]/10 text-[#0066FF] rounded-full text-sm"
+                    className="inline-flex items-center gap-1.5 px-3 py-2 min-h-[40px] bg-[#0066FF]/10 text-[#0066FF] rounded-full text-sm"
                   >
                     {collaboratorNames[id] ?? id}
                     <button
                       type="button"
                       onClick={() => removeCollaborator(id)}
-                      className="text-[#0066FF] hover:text-[#0052CC]"
+                      className="add-modal-touch p-1 -m-1 min-w-[32px] min-h-[32px] flex items-center justify-center text-[#0066FF] hover:text-[#0052CC] active:bg-[#0066FF]/20 rounded-full"
                     >
                       ×
                     </button>
@@ -295,7 +296,7 @@ export default function AddExhibitionModal({ onClose, onSuccess }: Props) {
               value={curator}
               onChange={(e) => setCurator(e.target.value)}
               placeholder="Curator name"
-              className="w-full px-4 py-3 border border-[#E5E7EB] rounded-lg focus:border-[#0066FF] focus:ring-2 focus:ring-[#0066FF]/20 outline-none"
+              className="add-modal-input w-full px-4 py-3.5 min-h-[48px] sm:min-h-0 sm:py-3 border border-[#E5E7EB] rounded-lg focus:border-[#0066FF] focus:ring-2 focus:ring-[#0066FF]/20 outline-none text-base"
             />
           </div>
 
@@ -307,14 +308,14 @@ export default function AddExhibitionModal({ onClose, onSuccess }: Props) {
             <button
               type="button"
               onClick={onClose}
-              className="flex-1 px-4 py-3 border border-[#E5E7EB] rounded-lg font-medium text-[#1A1A1A] hover:bg-[#F8F9FA]"
+              className="add-modal-touch flex-1 px-4 py-3.5 min-h-[48px] border border-[#E5E7EB] rounded-lg font-medium text-[#1A1A1A] hover:bg-[#F8F9FA] active:bg-[#F3F4F6]"
             >
               Cancel
             </button>
             <button
               type="submit"
               disabled={saving}
-              className="flex-1 px-4 py-3 bg-[#0066FF] hover:bg-[#0052CC] text-white font-medium rounded-lg disabled:opacity-50"
+              className="add-modal-touch flex-1 px-4 py-3.5 min-h-[48px] bg-[#0066FF] hover:bg-[#0052CC] text-white font-medium rounded-lg disabled:opacity-50 active:bg-[#004499]"
             >
               {saving ? "Saving..." : "Save Exhibition"}
             </button>

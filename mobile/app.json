@@ -1,0 +1,55 @@
+{
+  "expo": {
+    "name": "Artist Ritual",
+    "slug": "rob-artist-ritual",
+    "version": "0.1.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "scheme": "rob-ritual",
+    "userInterfaceStyle": "automatic",
+    "splash": {
+      "image": "./assets/splash-icon.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#1A1A1A"
+    },
+    "assetBundlePatterns": [
+      "**/*"
+    ],
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.rob.artistritual",
+      "infoPlist": {
+        "NSCameraUsageDescription": "Record your artist moment",
+        "NSPhotoLibraryUsageDescription": "Upload workspace photos",
+        "UIBackgroundModes": [
+          "remote-notification"
+        ]
+      }
+    },
+    "android": {
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/android-icon-foreground.png",
+        "backgroundColor": "#1A1A1A"
+      },
+      "package": "com.rob.artistritual",
+      "permissions": [
+        "android.permission.CAMERA",
+        "android.permission.READ_EXTERNAL_STORAGE",
+        "android.permission.RECEIVE_BOOT_COMPLETED"
+      ]
+    },
+    "plugins": [
+      "expo-router",
+      "expo-camera",
+      [
+        "expo-notifications",
+        {
+          "color": "#8B7355",
+          "sounds": []
+        }
+      ],
+      "expo-asset",
+      "expo-localization"
+    ]
+  }
+}

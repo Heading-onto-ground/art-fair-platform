@@ -441,6 +441,38 @@ model ArtEvent {
   @@index([artistId])
 }
 
+// ========== Artist Ritual (Artist Moment) ==========
+
+model ArtistMoment {
+  id         String   @id @default(cuid())
+  userId     String   // User.id
+  artistId   String   // ArtistProfile.id
+  artistName String
+  imageUrl   String   // URL or data URI
+  note       String?
+  state      String   // working | thinking | stuck | experimenting
+  medium     String   // painting | drawing | sculpture | writing | photography | mixed media
+  createdAt  DateTime @default(now())
+  reactions MomentReaction[]
+
+  @@index([userId])
+  @@index([artistId])
+  @@index([createdAt])
+}
+
+model MomentReaction {
+  id         String       @id @default(cuid())
+  momentId   String
+  moment     ArtistMoment @relation(fields: [momentId], references: [id], onDelete: Cascade)
+  userId     String       // User.id of reactor
+  reactionType String     // fire | mind_blown | eyes | brain
+  createdAt  DateTime     @default(now())
+
+  @@unique([momentId, userId])
+  @@index([momentId])
+  @@index([userId])
+}
+
 // ========== 전시 시스템 ==========
 
 model Space {

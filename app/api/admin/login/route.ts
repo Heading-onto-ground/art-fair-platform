@@ -32,7 +32,7 @@ export async function POST(req: Request) {
       );
     }
 
-    if (!verifyAdminCredentials(email, password)) {
+    if (!(await verifyAdminCredentials(email, password))) {
       return NextResponse.json({ ok: false, error: "Invalid admin credentials" }, { status: 401 });
     }
     clearRateLimit(rateKey);

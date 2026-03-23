@@ -1,8 +1,10 @@
 // lib/adminAuth.ts
-// Separate admin authentication — uses env vars, not DB
+// Separate admin authentication — uses DB (AdminSetting) first, then env vars
 
 import { cookies } from "next/headers";
+import bcrypt from "bcryptjs";
 import { signSession, verifySession } from "@/lib/session";
+import { getAdminPasswordHash } from "@/lib/adminSettings";
 
 const ADMIN_COOKIE = "afp_admin_session";
 
@@ -17,19 +19,33 @@ export type AdminSession = {
   isAdmin: true;
 };
 
-/** Verify admin credentials */
-export function verifyAdminCredentials(email: string, password: string): boolean {
-  if (process.env.NODE_ENV === "production" && !String(process.env.ADMIN_PASSWORD || "").trim()) {
-    console.error("ADMIN_PASSWORD is required in production");
-    return false;
-  }
+function isAllowedAdminEmail(email: string): boolean {
   const normalized = email.toLowerCase().trim();
   const matchesPrimary = normalized === ADMIN_EMAIL.toLowerCase().trim();
-  const matchesLegacy = !process.env.ADMIN_EMAIL && (normalized === LEGACY_ADMIN_EMAIL || normalized === "contact@rob-roleofbridge.com");
-  return (
-    (matchesPrimary || matchesLegacy) &&
-    password === ADMIN_PASSWORD
-  );
+  const matchesLegacy =
+    !process.env.ADMIN_EMAIL &&
+    (normalized === LEGACY_ADMIN_EMAIL || normalized === "contact@rob-roleofbridge.com");
+  return matchesPrimary || matchesLegacy;
+}
+
+/** Verify admin credentials (async — checks DB first, then env) */
+export async function verifyAdminCredentials(
+  email: string,
+  password: string
+): Promise<boolean> {
+  if (!isAllowedAdminEmail(email)) return false;
+
+  const storedHash = await getAdminPasswordHash();
+  if (storedHash) {
+    return bcrypt.compareSync(password, storedHash);
+  }
+
+  // Fallback to env
+  if (process.env.NODE_ENV === "production" && !String(process.env.ADMIN_PASSWORD || "").trim()) {
+    console.error("ADMIN_PASSWORD is required in production when no DB password is set");
+    return false;
+  }
+  return password === ADMIN_PASSWORD;
 }
 
 /** Get admin session from cookie */

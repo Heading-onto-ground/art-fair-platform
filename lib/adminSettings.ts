@@ -23,6 +23,39 @@ async function ensureAdminSettingTable() {
 
 const PINNED_OPEN_CALL_GALLERY_ID_KEY = "pinned_open_call_gallery_id";
 const PINNED_OPEN_CALL_ID_KEY = "pinned_open_call_id";
+export const ADMIN_PASSWORD_HASH_KEY = "admin_password_hash";
+
+export async function getAdminPasswordHash(): Promise<string | null> {
+  await ensureAdminSettingTable();
+  try {
+    const row = await prisma.adminSetting.findUnique({
+      where: { key: ADMIN_PASSWORD_HASH_KEY },
+    });
+    const v = String(row?.value || "").trim();
+    return v ? v : null;
+  } catch (e) {
+    console.error("getAdminPasswordHash failed (non-fatal):", e);
+    return null;
+  }
+}
+
+export async function setAdminPasswordHash(hash: string): Promise<void> {
+  await ensureAdminSettingTable();
+  await prisma.adminSetting.upsert({
+    where: { key: ADMIN_PASSWORD_HASH_KEY },
+    create: { key: ADMIN_PASSWORD_HASH_KEY, value: hash },
+    update: { value: hash },
+  });
+}
+
+export async function clearAdminPasswordHash(): Promise<void> {
+  await ensureAdminSettingTable();
+  try {
+    await prisma.adminSetting.delete({ where: { key: ADMIN_PASSWORD_HASH_KEY } });
+  } catch {
+    // ignore if missing
+  }
+}
 
 export async function getPinnedOpenCallGalleryId(): Promise<string | null> {
   await ensureAdminSettingTable();

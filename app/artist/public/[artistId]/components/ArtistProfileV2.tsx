@@ -44,6 +44,14 @@ type SelfExhibition = {
   artists: Array<{ artist: { name: string; artistId: string } }>;
 };
 
+type RitualSummary = {
+  currentStreak: number;
+  totalRitualPosts: number;
+  activeDays: number;
+  recentPracticeLogs: { id: string; date: string; state: string; medium: string; imageUrl?: string | null }[];
+  practiceGraphData?: { date: string; count: number }[];
+};
+
 type Data = {
   name: string;
   userId?: string | null;
@@ -71,6 +79,7 @@ export default function ArtistProfileV2() {
   const [toastWithShare, setToastWithShare] = useState(false);
   const [onboardingStep, setOnboardingStep] = useState<number | null>(null);
   const [recentlyViewed, setRecentlyViewed] = useState<{ artistId: string; name: string }[]>([]);
+  const [ritualSummary, setRitualSummary] = useState<RitualSummary | null>(null);
 
   const ONBOARDING_KEY = "rob-artist-profile-onboarding-done";
   const RECENTLY_VIEWED_KEY = "rob-recently-viewed-profiles";
@@ -87,6 +96,10 @@ export default function ArtistProfileV2() {
       .then((r) => r.json())
       .then((d) => setMe(d))
       .catch(() => setMe(null));
+    fetch(`/api/artist/public/${artistId}/ritual-summary`)
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d) => (d && !d.error ? setRitualSummary(d) : setRitualSummary(null)))
+      .catch(() => setRitualSummary(null));
   }, [artistId]);
 
   const isOwner = me?.session?.role === "artist" && me?.session?.userId === data?.userId;
@@ -211,7 +224,15 @@ export default function ArtistProfileV2() {
       <main className="min-h-screen bg-[#F8F9FA] text-[#1A1A1A]">
         {/* ─── 1. Hero / Header ─── */}
         <section className="relative overflow-hidden">
-          <div className="absolute top-4 right-4 sm:top-6 sm:right-6 z-10">
+          <div className="absolute top-4 right-4 sm:top-6 sm:right-6 z-10 flex items-center gap-2">
+            {/* 앱으로 돌아가기 — 모바일에서만 표시 (웹에서 앱으로 열었을 때) */}
+            <a
+              href="rob-ritual://"
+              className="md:hidden flex items-center gap-1.5 px-3 py-2 rounded-lg bg-[#0066FF]/90 hover:bg-[#0052CC] text-white text-xs font-medium transition-colors"
+            >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" /></svg>
+              앱으로 돌아가기
+            </a>
             <button
               onClick={() => {
                 const url = window.location.href;
@@ -226,12 +247,11 @@ export default function ArtistProfileV2() {
             </button>
           </div>
           <div
-            className="h-40 sm:h-56 md:h-72 lg:h-80 w-full bg-cover bg-center"
+            className="hero-bg h-32 sm:h-56 md:h-72 lg:h-80 w-full bg-cover bg-center"
             style={{
               backgroundImage: data.profileImage
                 ? `url(${data.profileImage})`
                 : "linear-gradient(135deg, #E5E7EB 0%, #D1D5DB 100%)",
-              filter: "blur(14px)",
               transform: "scale(1.08)",
             }}
           />
@@ -305,6 +325,157 @@ export default function ArtistProfileV2() {
           </div>
         </section>
 
+        {/* ─── 1.5. Artist Ritual ─── */}
+        {ritualSummary && (ritualSummary.currentStreak > 0 || ritualSummary.totalRitualPosts > 0) && (
+          <section className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-10">
+            <h2 className="text-xl font-semibold text-[#1A1A1A] mb-1">Artist Ritual</h2>
+            <p className="text-sm text-[#6B7280] mb-4">Proof of Practice — visible on your profile for galleries and open calls</p>
+            <div className="p-5 sm:p-6 bg-white border border-[#E5E7EB] rounded-xl shadow-sm">
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 sm:gap-6">
+                <div>
+                  <p className="text-2xl sm:text-3xl font-light text-[#1A1A1A]">
+                    {ritualSummary.currentStreak > 0 ? ritualSummary.currentStreak : "—"}
+                  </p>
+                  <p className="text-xs font-medium text-[#6B7280] uppercase tracking-wider mt-1">
+                    Active Artist streak
+                  </p>
+                </div>
+                <div>
+                  <p className="text-2xl sm:text-3xl font-light text-[#1A1A1A]">
+                    {ritualSummary.totalRitualPosts}
+                  </p>
+                  <p className="text-xs font-medium text-[#6B7280] uppercase tracking-wider mt-1">
+                    Ritual posts
+                  </p>
+                </div>
+                <div>
+                  <p className="text-2xl sm:text-3xl font-light text-[#1A1A1A]">
+                    {ritualSummary.activeDays}
+                  </p>
+                  <p className="text-xs font-medium text-[#6B7280] uppercase tracking-wider mt-1">
+                    Active days
+                  </p>
+                </div>
+              </div>
+              {/* Practice Graph (GitHub-style) */}
+              {ritualSummary.practiceGraphData && ritualSummary.practiceGraphData.length > 0 && (
+                <div className="mt-6 pt-4 border-t border-[#E5E7EB]">
+                  <p className="text-xs font-medium text-[#6B7280] uppercase tracking-wider mb-3">
+                    Last 90 days
+                  </p>
+                  <div
+                    className="grid gap-[3px] w-fit"
+                    style={{ gridTemplateColumns: "repeat(15, 10px)", gridAutoRows: "10px" }}
+                    title="Ritual graph — darker = more sessions that day"
+                  >
+                    {ritualSummary.practiceGraphData.map((day) => {
+                      const level = day.count === 0 ? 0 : day.count >= 3 ? 3 : day.count;
+                      const colors = [
+                        "bg-[#EBEDF0]",
+                        "bg-[#9BE9A8]",
+                        "bg-[#40C463]",
+                        "bg-[#216E39]",
+                      ];
+                      return (
+                        <div
+                          key={day.date}
+                          className={`rounded-[2px] ${colors[level]}`}
+                          title={`${day.date}: ${day.count} session${day.count !== 1 ? "s" : ""}`}
+                        />
+                      );
+                    })}
+                  </div>
+                  <div className="flex items-center gap-3 mt-2 text-[10px] text-[#9CA3AF]">
+                    <span>Less</span>
+                    <div className="flex gap-[2px]">
+                      {["bg-[#EBEDF0]", "bg-[#9BE9A8]", "bg-[#40C463]", "bg-[#216E39]"].map(
+                        (c, i) => (
+                          <div key={i} className={`w-2 h-2 rounded-[1px] ${c}`} />
+                        )
+                      )}
+                    </div>
+                    <span>More</span>
+                  </div>
+                </div>
+              )}
+              {ritualSummary.recentPracticeLogs.length > 0 && (
+                <div className="mt-6 pt-4 border-t border-[#E5E7EB]">
+                  <p className="text-xs font-medium text-[#6B7280] uppercase tracking-wider mb-3">
+                    Recent Ritual
+                  </p>
+                  {(() => {
+                    const stateCounts = ritualSummary.recentPracticeLogs.reduce(
+                      (acc, log) => {
+                        acc[log.state] = (acc[log.state] || 0) + 1;
+                        return acc;
+                      },
+                      {} as Record<string, number>
+                    );
+                    const topStates = Object.entries(stateCounts)
+                      .sort((a, b) => b[1] - a[1])
+                      .slice(0, 5);
+                    return topStates.length > 0 ? (
+                      <div className="flex flex-wrap gap-1.5 mb-3">
+                        {topStates.map(([state, count]) => (
+                          <span
+                            key={state}
+                            className="px-2 py-0.5 text-[10px] rounded bg-[#E8E3DB] text-[#5A7A5A] capitalize"
+                          >
+                            {state} {count > 1 ? `×${count}` : ""}
+                          </span>
+                        ))}
+                      </div>
+                    ) : null;
+                  })()}
+                  <div className="grid grid-cols-3 gap-3">
+                    {ritualSummary.recentPracticeLogs.slice(0, 3).map((log) => (
+                      <div
+                        key={log.id}
+                        className="rounded-lg overflow-hidden border border-[#E5E7EB] bg-[#F9FAFB] aspect-square"
+                      >
+                        {log.imageUrl ? (
+                          <img
+                            src={log.imageUrl}
+                            alt=""
+                            className="w-full h-full object-cover"
+                          />
+                        ) : (
+                          <div className="w-full h-full flex items-center justify-center text-[#9CA3AF] text-xs">
+                            {log.state}
+                          </div>
+                        )}
+                        <div className="p-1.5 bg-white/90 text-[10px] text-[#6B7280] truncate">
+                          {new Date(log.date).toLocaleDateString("en-US", {
+                            month: "short",
+                            day: "numeric",
+                          })}{" "}
+                          · {log.state}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                  {ritualSummary.recentPracticeLogs.length > 3 && (
+                    <div className="flex flex-wrap gap-2 mt-2">
+                      {ritualSummary.recentPracticeLogs.slice(3).map((log) => (
+                        <span
+                          key={log.id}
+                          className="px-2.5 py-1 text-xs rounded bg-[#F3F4F6] text-[#6B7280]"
+                        >
+                          {new Date(log.date).toLocaleDateString("en-US", {
+                            month: "short",
+                            day: "numeric",
+                          })}{" "}
+                          · {log.state} · {log.medium}
+                        </span>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+          </section>
+        )}
+
         {/* ─── 2. Timeline Section ─── */}
         <section className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-10 sm:py-12">
           <div className="flex flex-col lg:flex-row lg:items-start gap-6 lg:gap-8">
@@ -371,7 +542,7 @@ export default function ArtistProfileV2() {
                           className="absolute left-0 top-2 w-3 h-3 -translate-x-[7px] rounded-full bg-[#0066FF] border-2 border-white shadow"
                           style={{ left: -6 }}
                         />
-                        <div className="ml-4 sm:ml-6 p-4 sm:p-5 bg-white border border-[#E5E7EB] rounded-xl shadow-sm hover:shadow-md transition-shadow">
+                        <div className="timeline-card ml-4 sm:ml-6 p-5 sm:p-5 bg-white border border-[#E5E7EB] rounded-xl shadow-sm hover:shadow-md transition-shadow">
                           <div className="flex gap-4">
                             {item.thumb && (
                               <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-lg overflow-hidden flex-shrink-0 bg-[#E5E7EB]">
@@ -383,20 +554,20 @@ export default function ArtistProfileV2() {
                               </div>
                             )}
                             <div className="min-w-0 flex-1">
-                              <p className="text-xs font-medium text-[#6B7280] uppercase tracking-wider">
+                              <p className="timeline-meta text-xs font-medium text-[#6B7280] uppercase tracking-wider">
                                 {dateStr}
                               </p>
-                              <h3 className="mt-1 text-base font-semibold text-[#1A1A1A]">
+                              <h3 className="timeline-title mt-1 text-[15px] sm:text-base font-semibold text-[#1A1A1A]">
                                 {item.type === "exhibition" ? item.title : displayTitle}
                               </h3>
                               {item.type === "exhibition" && item.subtitle && (
-                                <p className="mt-0.5 text-sm text-[#6B7280]">{item.subtitle}</p>
+                                <p className="mt-0.5 timeline-meta text-sm text-[#6B7280]">{item.subtitle}</p>
                               )}
                               {item.location && item.type !== "exhibition" && (
-                                <p className="mt-1 text-sm text-[#6B7280]">@ {item.location}</p>
+                                <p className="mt-1 timeline-meta text-sm text-[#6B7280]">@ {item.location}</p>
                               )}
                               {item.type === "exhibition" && item.location && (
-                                <p className="mt-1 text-sm text-[#6B7280]">@ {item.location}</p>
+                                <p className="mt-1 timeline-meta text-sm text-[#6B7280]">@ {item.location}</p>
                               )}
                               {(item.curator || item.collaborators.length > 0) && (
                                 <div className="mt-2 flex flex-wrap gap-2">
