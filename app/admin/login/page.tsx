@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { F, S } from "@/lib/design";
 import { useLanguage } from "@/lib/useLanguage";
+import { PasswordInput } from "@/app/components/ui/PasswordInput";
 
 export default function AdminLoginPage() {
   const router = useRouter();
@@ -173,14 +174,12 @@ export default function AdminLoginPage() {
             >
               {tr("Password", "비밀번호", "パスワード", "Mot de passe")}
             </label>
-            <input
-              type="password"
+            <PasswordInput
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               required
               placeholder={tr("Enter admin password", "관리자 비밀번호를 입력하세요", "管理者パスワードを入力", "Entrez le mot de passe admin")}
-              style={{
-                width: "100%",
+              inputStyle={{
                 padding: "14px 16px",
                 border: "1px solid #E8E3DB",
                 background: "#FDFBF7",
@@ -188,7 +187,6 @@ export default function AdminLoginPage() {
                 fontFamily: F,
                 fontSize: 13,
                 outline: "none",
-                boxSizing: "border-box",
               }}
             />
           </div>
@@ -214,29 +212,28 @@ export default function AdminLoginPage() {
               ? tr("Authenticating...", "인증 중...", "認証中...", "Authentification...")
               : tr("Sign In", "로그인", "ログイン", "Se connecter")}
           </button>
-        </form>
 
-        {/* Recovery info */}
-        <div
-          style={{
-            marginTop: 24,
-            padding: "16px 20px",
-            background: "#FAF8F4",
-            border: "1px solid #E8E3DB",
-          }}
-        >
-          <h3 style={{ fontFamily: S, fontSize: 14, fontWeight: 500, color: "#1A1A1A", margin: "0 0 8px" }}>
-            {tr("Forgot your password?", "비밀번호를 잊으셨나요?", "パスワードをお忘れですか？", "Mot de passe oublié ?")}
-          </h3>
-          <p style={{ fontFamily: F, fontSize: 12, color: "#6B7280", margin: 0, lineHeight: 1.6 }}>
-            {tr(
-              "Set ADMIN_RESET_TOKEN in your environment, then POST to /api/admin/reset-password with { token, newPassword }. Remove the token after use.",
-              "환경변수에 ADMIN_RESET_TOKEN을 설정한 뒤, /api/admin/reset-password에 { token, newPassword }를 POST하세요. 사용 후 토큰을 제거하세요.",
-              "環境変数にADMIN_RESET_TOKENを設定し、/api/admin/reset-passwordに{ token, newPassword }をPOSTしてください。使用後はトークンを削除してください。",
-              "Définissez ADMIN_RESET_TOKEN dans votre environnement, puis POSTez { token, newPassword } vers /api/admin/reset-password. Supprimez le token après utilisation.",
-            )}
-          </p>
-        </div>
+          {/* 비번 재설정 - 폼 안쪽에 배치해 항상 보이게 */}
+          <div
+            style={{
+              marginTop: 24,
+              paddingTop: 24,
+              borderTop: "1px solid #E8E3DB",
+            }}
+          >
+            <h3 style={{ fontFamily: S, fontSize: 13, fontWeight: 600, color: "#8B7355", margin: "0 0 8px" }}>
+              {tr("Forgot your password?", "비번 재설정", "パスワードをお忘れですか？", "Mot de passe oublié ?")}
+            </h3>
+            <p style={{ fontFamily: F, fontSize: 11, color: "#6B7280", margin: 0, lineHeight: 1.6 }}>
+              {tr(
+                "Set ADMIN_RESET_TOKEN in env, then POST { token, newPassword } to /api/admin/reset-password.",
+                "환경변수에 ADMIN_RESET_TOKEN 설정 후, /api/admin/reset-password에 { token, newPassword } POST.",
+                "環境変数にADMIN_RESET_TOKENを設定し、/api/admin/reset-passwordにPOST。",
+                "ADMIN_RESET_TOKEN dans env, puis POST vers /api/admin/reset-password.",
+              )}
+            </p>
+          </div>
+        </form>
 
         {/* Back link */}
         <div style={{ textAlign: "center", marginTop: 24 }}>

@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
+import { PasswordInput } from "@/app/components/ui/PasswordInput";
 
 type Role = "artist" | "gallery";
 
@@ -123,14 +124,13 @@ export default function ResetPasswordPage() {
           <label style={{ display: "block", marginBottom: 6 }}>
             새 비밀번호
           </label>
-          <input
-            type="password"
+          <PasswordInput
             value={newPassword}
             onChange={(e) => setNewPassword(e.target.value)}
             autoComplete="new-password"
             required
             minLength={6}
-            style={{ width: "100%", padding: 10, boxSizing: "border-box" }}
+            inputStyle={{ width: "100%", padding: 10, boxSizing: "border-box" }}
           />
         </div>
 

@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import AdminTopBar from "@/app/components/AdminTopBar";
+import { PasswordInput } from "@/app/components/ui/PasswordInput";
 import { F, S } from "@/lib/design";
 import { useLanguage } from "@/lib/useLanguage";
 
@@ -15,6 +16,7 @@ export default function AdminCredentialsPage() {
     adminEmail: string;
     message: string;
   } | null>(null);
+  const [verifyPassword, setVerifyPassword] = useState("");
   const [currentPassword, setCurrentPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
@@ -188,26 +190,24 @@ export default function AdminCredentialsPage() {
               >
                 {tr("Verify password", "비밀번호 확인")}
               </label>
-              <input
-                type="password"
-                id="verify-pw"
+              <PasswordInput
+                value={verifyPassword}
+                onChange={(e) => setVerifyPassword(e.target.value)}
                 placeholder={tr("Enter password to verify", "비밀번호 입력")}
-                style={{
-                  width: 220,
+                style={{ width: 220 }}
+                inputStyle={{
                   padding: "12px 14px",
                   border: "1px solid #E8E3DB",
                   background: "#FDFBF7",
                   fontFamily: F,
                   fontSize: 13,
-                  marginRight: 8,
                 }}
               />
             </div>
             <button
               type="button"
               onClick={async () => {
-                const input = document.getElementById("verify-pw") as HTMLInputElement;
-                const pw = input?.value?.trim() || "";
+                const pw = verifyPassword.trim();
                 if (!pw) {
                   setError(tr("Enter password", "비밀번호를 입력하세요"));
                   return;
@@ -225,6 +225,7 @@ export default function AdminCredentialsPage() {
                   const data = await res.json().catch(() => null);
                   if (res.ok && data?.ok && data?.verified) {
                     setMessage(tr("Password is correct.", "비밀번호가 맞습니다."));
+                    setVerifyPassword("");
                   } else {
                     setError(data?.error || tr("Password is incorrect", "비밀번호가 틀립니다"));
                   }
@@ -270,20 +271,17 @@ export default function AdminCredentialsPage() {
               >
                 {tr("Current password", "현재 비밀번호")}
               </label>
-              <input
-                type="password"
+              <PasswordInput
                 value={currentPassword}
                 onChange={(e) => setCurrentPassword(e.target.value)}
                 required
-                style={{
-                  width: "100%",
-                  maxWidth: 320,
+                style={{ width: "100%", maxWidth: 320 }}
+                inputStyle={{
                   padding: "12px 14px",
                   border: "1px solid #E8E3DB",
                   background: "#FDFBF7",
                   fontFamily: F,
                   fontSize: 13,
-                  boxSizing: "border-box",
                 }}
               />
             </div>
@@ -302,22 +300,19 @@ export default function AdminCredentialsPage() {
               >
                 {tr("New password", "새 비밀번호")}
               </label>
-              <input
-                type="password"
+              <PasswordInput
                 value={newPassword}
                 onChange={(e) => setNewPassword(e.target.value)}
                 required
                 minLength={6}
                 placeholder={tr("At least 6 characters", "6자 이상")}
-                style={{
-                  width: "100%",
-                  maxWidth: 320,
+                style={{ width: "100%", maxWidth: 320 }}
+                inputStyle={{
                   padding: "12px 14px",
                   border: "1px solid #E8E3DB",
                   background: "#FDFBF7",
                   fontFamily: F,
                   fontSize: 13,
-                  boxSizing: "border-box",
                 }}
               />
             </div>
@@ -336,21 +331,18 @@ export default function AdminCredentialsPage() {
               >
                 {tr("Confirm new password", "새 비밀번호 확인")}
               </label>
-              <input
-                type="password"
+              <PasswordInput
                 value={confirmPassword}
                 onChange={(e) => setConfirmPassword(e.target.value)}
                 required
                 minLength={6}
-                style={{
-                  width: "100%",
-                  maxWidth: 320,
+                style={{ width: "100%", maxWidth: 320 }}
+                inputStyle={{
                   padding: "12px 14px",
                   border: "1px solid #E8E3DB",
                   background: "#FDFBF7",
                   fontFamily: F,
                   fontSize: 13,
-                  boxSizing: "border-box",
                 }}
               />
             </div>

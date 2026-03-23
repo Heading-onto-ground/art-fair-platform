@@ -4,6 +4,7 @@ import React, { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import TopBar from "@/app/components/TopBar";
+import { PasswordInput } from "@/app/components/ui/PasswordInput";
 import { useLanguage } from "@/lib/useLanguage";
 import { t } from "@/lib/translate";
 import { F, S } from "@/lib/design";
@@ -301,7 +302,7 @@ export default function LoginPage() {
 
           <div className="signup-fields" style={{ display: "grid", gap: 18 }}>
             <Lbl label={t("email", lang)}><input value={email} onChange={(e) => setEmail(e.target.value)} placeholder={t("login_email_placeholder", lang)} autoComplete="email" style={inp} /></Lbl>
-            <Lbl label={t("password", lang)}><input value={password} onChange={(e) => setPassword(e.target.value)} placeholder={t("login_password_placeholder", lang)} type="password" autoComplete="current-password" style={inp} onKeyDown={(e) => { if (e.key === "Enter" && mode === "login") onLogin(); }} /></Lbl>
+            <Lbl label={t("password", lang)}><PasswordInput value={password} onChange={(e) => setPassword(e.target.value)} placeholder={t("login_password_placeholder", lang)} autoComplete="current-password" inputStyle={inp} onKeyDown={(e) => { if (e.key === "Enter" && mode === "login") onLogin(); }} /></Lbl>
 
             {mode === "signup" && (
               <>
