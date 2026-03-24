@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import AdminTopBar from "@/app/components/AdminTopBar";
 import { F, S } from "@/lib/design";
@@ -16,6 +16,14 @@ type ThreadRow = {
 };
 
 type Msg = { id: string; fromAdmin: boolean; text: string; createdAt: string };
+type PlatformUser = {
+  id: string;
+  email: string;
+  role: string;
+  name: string;
+  country: string;
+  city: string;
+};
 
 export default function AdminSupportPage() {
   const router = useRouter();
@@ -32,7 +40,10 @@ export default function AdminSupportPage() {
   const [msgLoading, setMsgLoading] = useState(false);
   const [reply, setReply] = useState("");
   const [sending, setSending] = useState(false);
-  const [newThreadEmail, setNewThreadEmail] = useState("");
+  const [platformUsers, setPlatformUsers] = useState<PlatformUser[]>([]);
+  const [loadingUsers, setLoadingUsers] = useState(false);
+  const [userQuery, setUserQuery] = useState("");
+  const [selectedNewUserId, setSelectedNewUserId] = useState("");
   const [newThreadText, setNewThreadText] = useState("");
   const [starting, setStarting] = useState(false);
   const [startResult, setStartResult] = useState<string | null>(null);
@@ -64,9 +75,53 @@ export default function AdminSupportPage() {
     }
   }, [router]);
 
+  const loadUsers = useCallback(async () => {
+    setLoadingUsers(true);
+    try {
+      const res = await fetch("/api/admin/users?excludeBots=true", {
+        credentials: "include",
+        cache: "no-store",
+      });
+      if (res.status === 401) {
+        router.replace("/admin/login");
+        return;
+      }
+      const data = await res.json().catch(() => null);
+      if (!res.ok || !Array.isArray(data?.users)) {
+        return;
+      }
+      setPlatformUsers(
+        data.users.map((u: any) => ({
+          id: String(u.id || ""),
+          email: String(u.email || ""),
+          role: String(u.role || ""),
+          name: String(u.name || ""),
+          country: String(u.country || ""),
+          city: String(u.city || ""),
+        }))
+      );
+    } finally {
+      setLoadingUsers(false);
+    }
+  }, [router]);
+
   useEffect(() => {
     loadThreads();
-  }, [loadThreads]);
+    loadUsers();
+  }, [loadThreads, loadUsers]);
+
+  const filteredUsers = useMemo(() => {
+    const q = userQuery.trim().toLowerCase();
+    if (!q) return platformUsers;
+    return platformUsers.filter((u) => {
+      return (
+        u.email.toLowerCase().includes(q) ||
+        u.name.toLowerCase().includes(q) ||
+        u.country.toLowerCase().includes(q) ||
+        u.city.toLowerCase().includes(q)
+      );
+    });
+  }, [platformUsers, userQuery]);
 
   async function openThread(id: string) {
     setSelectedId(id);
@@ -118,9 +173,8 @@ export default function AdminSupportPage() {
   }
 
   async function startConversation() {
-    const email = newThreadEmail.trim().toLowerCase();
     const text = newThreadText.trim();
-    if (!email || !text || starting) return;
+    if (!selectedNewUserId || !text || starting) return;
     setStarting(true);
     setStartResult(null);
     setStartResultTone("ok");
@@ -130,7 +184,7 @@ export default function AdminSupportPage() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
-        body: JSON.stringify({ userEmail: email, text }),
+        body: JSON.stringify({ userId: selectedNewUserId, text }),
       });
       const data = await res.json().catch(() => null);
       if (res.status === 401) {
@@ -218,9 +272,9 @@ export default function AdminSupportPage() {
             {tr("Start a new conversation", "새 쪽지 시작")}
           </div>
           <input
-            value={newThreadEmail}
-            onChange={(e) => setNewThreadEmail(e.target.value)}
-            placeholder={tr("User email", "사용자 이메일")}
+            value={userQuery}
+            onChange={(e) => setUserQuery(e.target.value)}
+            placeholder={tr("Search user/email/country...", "사용자/이메일/국가 검색...")}
             style={{
               width: "100%",
               padding: "10px 12px",
@@ -230,6 +284,65 @@ export default function AdminSupportPage() {
               boxSizing: "border-box",
             }}
           />
+          <input
+            value={
+              selectedNewUserId
+                ? (() => {
+                    const selected = platformUsers.find((u) => u.id === selectedNewUserId);
+                    if (!selected) return "";
+                    return `[${selected.role}] ${selected.name || "-"} · ${selected.email}`;
+                  })()
+                : ""
+            }
+            readOnly
+            placeholder={tr("Select a user below", "아래에서 가입자를 선택하세요")}
+            style={{
+              width: "100%",
+              padding: "10px 12px",
+              border: "1px solid #E8E3DB",
+              fontFamily: F,
+              fontSize: 13,
+              boxSizing: "border-box",
+            }}
+          />
+          <div
+            style={{
+              border: "1px solid #E8E3DB",
+              background: "#FFFFFF",
+              maxHeight: 170,
+              overflowY: "auto",
+            }}
+          >
+            {loadingUsers ? (
+              <div style={{ padding: "10px 12px", fontFamily: F, fontSize: 12, color: "#B0AAA2" }}>...</div>
+            ) : filteredUsers.length === 0 ? (
+              <div style={{ padding: "10px 12px", fontFamily: F, fontSize: 12, color: "#B0AAA2" }}>
+                {tr("No users found.", "사용자가 없습니다.")}
+              </div>
+            ) : (
+              filteredUsers.slice(0, 300).map((u) => (
+                <button
+                  key={u.id}
+                  type="button"
+                  onClick={() => setSelectedNewUserId(u.id)}
+                  style={{
+                    width: "100%",
+                    textAlign: "left",
+                    border: "none",
+                    borderBottom: "1px solid #F0EBE3",
+                    background: selectedNewUserId === u.id ? "#FAF8F4" : "#FFFFFF",
+                    padding: "9px 10px",
+                    cursor: "pointer",
+                    fontFamily: F,
+                    fontSize: 12,
+                    color: "#1A1A1A",
+                  }}
+                >
+                  [{u.role}] {u.name || "-"} · {u.email} {u.country ? `· ${u.country}/${u.city || "-"}` : ""}
+                </button>
+              ))
+            )}
+          </div>
           <textarea
             value={newThreadText}
             onChange={(e) => setNewThreadText(e.target.value)}
@@ -249,17 +362,17 @@ export default function AdminSupportPage() {
             <button
               type="button"
               onClick={startConversation}
-              disabled={starting || !newThreadEmail.trim() || !newThreadText.trim()}
+              disabled={starting || !selectedNewUserId || !newThreadText.trim()}
               style={{
                 padding: "10px 14px",
                 border: "1px solid #1A1A1A",
-                background: starting || !newThreadEmail.trim() || !newThreadText.trim() ? "#E8E3DB" : "#1A1A1A",
-                color: starting || !newThreadEmail.trim() || !newThreadText.trim() ? "#8A8580" : "#FFF",
+                background: starting || !selectedNewUserId || !newThreadText.trim() ? "#E8E3DB" : "#1A1A1A",
+                color: starting || !selectedNewUserId || !newThreadText.trim() ? "#8A8580" : "#FFF",
                 fontFamily: F,
                 fontSize: 10,
                 letterSpacing: "0.08em",
                 textTransform: "uppercase",
-                cursor: starting || !newThreadEmail.trim() || !newThreadText.trim() ? "not-allowed" : "pointer",
+                cursor: starting || !selectedNewUserId || !newThreadText.trim() ? "not-allowed" : "pointer",
               }}
             >
               {starting ? tr("Sending...", "전송 중...") : tr("Start and send", "시작하고 보내기")}
