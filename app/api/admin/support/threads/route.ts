@@ -8,6 +8,11 @@ export const dynamic = "force-dynamic";
 const BROADCAST_BATCH_SIZE = 300;
 
 type PlatformRole = "artist" | "gallery" | "curator";
+type BroadcastUserRow = {
+  id: string;
+  email: string;
+  role: PlatformRole;
+};
 
 function normalizeRoles(input: unknown): PlatformRole[] {
   const arr = Array.isArray(input) ? input : [];
@@ -27,11 +32,11 @@ function isExcludedSupportAccount(email: string) {
 }
 
 async function sendBroadcastSupportMessage(text: string, roles: PlatformRole[]) {
-  const users = await prisma.user.findMany({
+  const users: BroadcastUserRow[] = await prisma.user.findMany({
     where: { role: { in: roles } as any },
     select: { id: true, email: true, role: true },
   });
-  const targets = users.filter((u) => !isExcludedSupportAccount(u.email));
+  const targets = users.filter((u: BroadcastUserRow) => !isExcludedSupportAccount(u.email));
   if (targets.length === 0) {
     return { total: 0, sent: 0, roles };
   }
