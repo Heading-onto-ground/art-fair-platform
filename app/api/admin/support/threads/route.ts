@@ -1,7 +1,8 @@
 import { NextResponse } from "next/server";
 import { Prisma } from "@prisma/client";
 import { getAdminSession } from "@/lib/adminAuth";
-import { listThreadsForAdmin } from "@/lib/adminSupport";
+import { addAdminMessage, getOrCreateThread, listThreadsForAdmin, validateSupportText } from "@/lib/adminSupport";
+import { prisma } from "@/lib/prisma";
 
 export const dynamic = "force-dynamic";
 
@@ -19,7 +20,7 @@ function handlePrismaFailure(e: unknown) {
       );
     }
   }
-  console.error("GET /api/admin/support/threads failed:", e);
+  console.error("/api/admin/support/threads failed:", e);
   return NextResponse.json({ error: "server error" }, { status: 500 });
 }
 
@@ -50,6 +51,66 @@ export async function GET() {
           : null,
       })),
       threadsNeedingReply: needingReply,
+    });
+  } catch (e) {
+    return handlePrismaFailure(e);
+  }
+}
+
+export async function POST(req: Request) {
+  try {
+    const admin = getAdminSession();
+    if (!admin) {
+      return NextResponse.json({ error: "unauthorized" }, { status: 401 });
+    }
+
+    const body = await req.json().catch(() => null);
+    const userId = String(body?.userId || "").trim();
+    const userEmail = String(body?.userEmail || "")
+      .trim()
+      .toLowerCase();
+    const text = typeof body?.text === "string" ? body.text : "";
+
+    const err = validateSupportText(text);
+    if (err === "empty") {
+      return NextResponse.json({ error: "message required" }, { status: 400 });
+    }
+    if (err === "too_long") {
+      return NextResponse.json({ error: "message too long" }, { status: 400 });
+    }
+    if (!userId && !userEmail) {
+      return NextResponse.json({ error: "userId or userEmail required" }, { status: 400 });
+    }
+
+    const user = await prisma.user.findFirst({
+      where: userId
+        ? { id: userId }
+        : {
+            email: userEmail,
+          },
+      select: { id: true, email: true, role: true },
+    });
+    if (!user) {
+      return NextResponse.json({ error: "user not found" }, { status: 404 });
+    }
+
+    const thread = await getOrCreateThread(user.id);
+    const message = await addAdminMessage(thread.id, text.trim());
+
+    return NextResponse.json({
+      ok: true,
+      thread: {
+        id: thread.id,
+        userId: user.id,
+        userEmail: user.email,
+        userRole: user.role,
+      },
+      message: {
+        id: message.id,
+        fromAdmin: message.fromAdmin,
+        text: message.text,
+        createdAt: message.createdAt.toISOString(),
+      },
     });
   } catch (e) {
     return handlePrismaFailure(e);

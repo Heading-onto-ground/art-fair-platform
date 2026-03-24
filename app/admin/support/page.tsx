@@ -32,6 +32,11 @@ export default function AdminSupportPage() {
   const [msgLoading, setMsgLoading] = useState(false);
   const [reply, setReply] = useState("");
   const [sending, setSending] = useState(false);
+  const [newThreadEmail, setNewThreadEmail] = useState("");
+  const [newThreadText, setNewThreadText] = useState("");
+  const [starting, setStarting] = useState(false);
+  const [startResult, setStartResult] = useState<string | null>(null);
+  const [startResultTone, setStartResultTone] = useState<"ok" | "error">("ok");
   /** 목록 API 실패 */
   const [threadsError, setThreadsError] = useState<string | null>(null);
   /** 스레드 열기 / 답장 실패 */
@@ -112,6 +117,46 @@ export default function AdminSupportPage() {
     }
   }
 
+  async function startConversation() {
+    const email = newThreadEmail.trim().toLowerCase();
+    const text = newThreadText.trim();
+    if (!email || !text || starting) return;
+    setStarting(true);
+    setStartResult(null);
+    setStartResultTone("ok");
+    setDetailError(null);
+    try {
+      const res = await fetch("/api/admin/support/threads", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ userEmail: email, text }),
+      });
+      const data = await res.json().catch(() => null);
+      if (res.status === 401) {
+        router.replace("/admin/login");
+        return;
+      }
+      if (!res.ok || !data?.ok) {
+        setStartResultTone("error");
+        setStartResult((data?.message as string) || data?.error || "Failed");
+        return;
+      }
+      setNewThreadText("");
+      setStartResultTone("ok");
+      setStartResult(tr("Conversation started.", "대화를 시작했습니다."));
+      await loadThreads();
+      if (data?.thread?.id) {
+        await openThread(String(data.thread.id));
+      }
+    } catch {
+      setStartResultTone("error");
+      setStartResult("Network error");
+    } finally {
+      setStarting(false);
+    }
+  }
+
   return (
     <>
       <AdminTopBar />
@@ -158,6 +203,74 @@ export default function AdminSupportPage() {
             {tr(`${needingReply} thread(s) need a reply`, `답변 대기 ${needingReply}건`)}
           </div>
         )}
+
+        <div
+          style={{
+            marginBottom: 18,
+            border: "1px solid #E8E3DB",
+            background: "#FFFFFF",
+            padding: 14,
+            display: "grid",
+            gap: 10,
+          }}
+        >
+          <div style={{ fontFamily: F, fontSize: 11, letterSpacing: "0.08em", textTransform: "uppercase", color: "#8A8580" }}>
+            {tr("Start a new conversation", "새 쪽지 시작")}
+          </div>
+          <input
+            value={newThreadEmail}
+            onChange={(e) => setNewThreadEmail(e.target.value)}
+            placeholder={tr("User email", "사용자 이메일")}
+            style={{
+              width: "100%",
+              padding: "10px 12px",
+              border: "1px solid #E8E3DB",
+              fontFamily: F,
+              fontSize: 13,
+              boxSizing: "border-box",
+            }}
+          />
+          <textarea
+            value={newThreadText}
+            onChange={(e) => setNewThreadText(e.target.value)}
+            rows={3}
+            placeholder={tr("Write first message...", "첫 메시지를 입력하세요...")}
+            style={{
+              width: "100%",
+              padding: "10px 12px",
+              border: "1px solid #E8E3DB",
+              fontFamily: F,
+              fontSize: 13,
+              resize: "vertical",
+              boxSizing: "border-box",
+            }}
+          />
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 10 }}>
+            <button
+              type="button"
+              onClick={startConversation}
+              disabled={starting || !newThreadEmail.trim() || !newThreadText.trim()}
+              style={{
+                padding: "10px 14px",
+                border: "1px solid #1A1A1A",
+                background: starting || !newThreadEmail.trim() || !newThreadText.trim() ? "#E8E3DB" : "#1A1A1A",
+                color: starting || !newThreadEmail.trim() || !newThreadText.trim() ? "#8A8580" : "#FFF",
+                fontFamily: F,
+                fontSize: 10,
+                letterSpacing: "0.08em",
+                textTransform: "uppercase",
+                cursor: starting || !newThreadEmail.trim() || !newThreadText.trim() ? "not-allowed" : "pointer",
+              }}
+            >
+              {starting ? tr("Sending...", "전송 중...") : tr("Start and send", "시작하고 보내기")}
+            </button>
+            {startResult && (
+              <span style={{ fontFamily: F, fontSize: 12, color: startResultTone === "ok" ? "#5A7A5A" : "#8B4A4A" }}>
+                {startResult}
+              </span>
+            )}
+          </div>
+        </div>
 
         <div style={{ display: "grid", gridTemplateColumns: "minmax(260px, 340px) 1fr", gap: 24, alignItems: "start" }}>
           <div style={{ border: "1px solid #E8E3DB", background: "#FFFFFF" }}>
