@@ -1,12 +1,17 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import TopBar from "@/app/components/TopBar";
 import { F, S } from "@/lib/design";
 import { useLanguage } from "@/lib/useLanguage";
 
+type ContactMode = "message" | "email";
+
 export default function ContactPage() {
+  const router = useRouter();
   const { lang } = useLanguage();
+  const [mode, setMode] = useState<ContactMode>("message");
   const [sending, setSending] = useState(false);
   const [result, setResult] = useState<string | null>(null);
   const [form, setForm] = useState({
@@ -82,18 +87,119 @@ export default function ContactPage() {
             {tr("Support", "고객지원", "サポート", "Support")}
           </span>
           <h1 style={{ fontFamily: S, fontSize: "clamp(34px, 6vw, 48px)", fontWeight: 300, marginTop: 8 }}>
-            {tr("1:1 Inquiry", "1:1 문의", "1:1 お問い合わせ", "Contact 1:1")}
+            {tr("Contact", "문의", "お問い合わせ", "Contact")}
           </h1>
           <p style={{ marginTop: 10, fontFamily: F, fontSize: 13, color: "#8A8580", lineHeight: 1.7 }}>
-            {tr(
-              "Send us your questions, feedback, or requests. We will reply by email.",
-              "문의/피드백/요청사항을 보내주세요. 이메일로 답변드리겠습니다.",
-              "ご質問・フィードバック・ご要望をお送りください。メールで返信いたします。",
-              "Envoyez vos questions, retours ou demandes. Nous vous repondrons par email."
-            )}
+            {mode === "email"
+              ? tr(
+                  "Send us your questions, feedback, or requests. We will reply by email.",
+                  "문의/피드백/요청사항을 보내주세요. 이메일로 답변드리겠습니다.",
+                  "ご質問・フィードバック・ご要望をお送りください。メールで返信いたします。",
+                  "Envoyez vos questions, retours ou demandes. Nous vous repondrons par email."
+                )
+              : tr(
+                  "Send a note to the ROB team inside the platform (login required), or use email inquiry on the other tab.",
+                  "로그인한 가입자는 플랫폼 안에서 관리자에게 쪽지를 보낼 수 있습니다. 이메일 문의는 옆 탭에서 이용하세요.",
+                  "ログイン済みの方はプラットフォーム内で管理者へメッセージを送れます。メールでのお問い合わせは別タブからどうぞ。",
+                  "Connectez-vous pour ecrire a l’equipe dans la plateforme, ou utilisez l’onglet email."
+                )}
           </p>
         </div>
 
+        {/* 문의 방식 선택 */}
+        <div
+          role="tablist"
+          style={{
+            display: "flex",
+            gap: 0,
+            marginBottom: 20,
+            border: "1px solid #E8E3DB",
+            background: "#FAF8F4",
+            maxWidth: 480,
+          }}
+        >
+          <button
+            type="button"
+            role="tab"
+            aria-selected={mode === "message"}
+            onClick={() => setMode("message")}
+            style={{
+              flex: 1,
+              padding: "14px 16px",
+              border: "none",
+              borderRight: "1px solid #E8E3DB",
+              background: mode === "message" ? "#FFFFFF" : "transparent",
+              fontFamily: F,
+              fontSize: 12,
+              fontWeight: mode === "message" ? 600 : 400,
+              color: mode === "message" ? "#1A1A1A" : "#8A8580",
+              cursor: "pointer",
+              letterSpacing: "0.04em",
+            }}
+          >
+            {tr("Send a note", "쪽지 보내기", "メモを送る", "Message")}
+          </button>
+          <button
+            type="button"
+            role="tab"
+            aria-selected={mode === "email"}
+            onClick={() => setMode("email")}
+            style={{
+              flex: 1,
+              padding: "14px 16px",
+              border: "none",
+              background: mode === "email" ? "#FFFFFF" : "transparent",
+              fontFamily: F,
+              fontSize: 12,
+              fontWeight: mode === "email" ? 600 : 400,
+              color: mode === "email" ? "#1A1A1A" : "#8A8580",
+              cursor: "pointer",
+              letterSpacing: "0.04em",
+            }}
+          >
+            {tr("Email inquiry", "이메일 문의", "メールお問い合わせ", "Email")}
+          </button>
+        </div>
+
+        {mode === "message" ? (
+          <div
+            style={{
+              border: "1px solid #E8E3DB",
+              background: "#FFFFFF",
+              padding: "28px clamp(18px, 3vw, 32px)",
+              maxWidth: 560,
+            }}
+          >
+            <p style={{ fontFamily: F, fontSize: 14, color: "#4A4A4A", lineHeight: 1.75, margin: "0 0 20px" }}>
+              {tr(
+                "Artist, gallery, and curator accounts can exchange messages with the administrator on ROB — not by email.",
+                "작가·갤러리·큐레이터 계정으로 로그인하면, 이메일이 아닌 플랫폼 안에서 관리자와 쪽지를 주고받을 수 있습니다.",
+                "アーティスト・ギャラリー・キュレーターでログインすると、メールではなくプラットフォーム内で管理者とメッセージのやり取りができます。",
+                "Artistes, galeries et curateurs : echangez avec l’administrateur sur la plateforme."
+              )}
+            </p>
+            <button
+              type="button"
+              onClick={() => router.push("/support")}
+              style={{
+                padding: "14px 24px",
+                border: "1px solid #1A1A1A",
+                background: "#1A1A1A",
+                color: "#FFFFFF",
+                fontFamily: F,
+                fontSize: 11,
+                letterSpacing: "0.12em",
+                textTransform: "uppercase",
+                cursor: "pointer",
+              }}
+            >
+              {tr("Open messages", "쪽지 보내기로 이동", "メッセージへ進む", "Ouvrir les messages")}
+            </button>
+            <p style={{ marginTop: 18, fontFamily: F, fontSize: 12, color: "#B0AAA2" }}>
+              {tr("You will be asked to log in if needed.", "로그인이 필요하면 로그인 화면으로 이동합니다.", "未ログインの場合はログインへ進みます。", "Connexion requise si besoin.")}
+            </p>
+          </div>
+        ) : (
         <div style={{ border: "1px solid #E8E3DB", background: "#FFFFFF", padding: "20px clamp(18px, 3vw, 28px)", display: "grid", gap: 10 }}>
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
             <input
@@ -145,6 +251,7 @@ export default function ContactPage() {
             {result ? <span style={{ fontFamily: F, fontSize: 12, color: "#6A6A6A" }}>{result}</span> : null}
           </div>
         </div>
+        )}
       </main>
     </>
   );

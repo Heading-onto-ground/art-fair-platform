@@ -126,6 +126,16 @@ export default function AdminHomePage() {
       href: "/admin/users",
     },
     {
+      title: tr("User messages", "가입자 쪽지", "ユーザー側メモ", "Messages utilisateurs"),
+      description: tr(
+        "View and reply to in-platform notes from artists, galleries, and curators.",
+        "로그인 사용자가 보낸 플랫폼 내 쪽지를 확인하고 답장합니다.",
+        "ログインユーザーからのプラットフォーム内メッセージを確認・返信します。",
+        "Consultez et repondez aux messages des utilisateurs sur la plateforme."
+      ),
+      href: "/admin/support",
+    },
+    {
       title: tr("Sources", "소스", "ソース", "Sources"),
       description: tr(
         "Manage gallery source JSON and trigger sync instantly.",
