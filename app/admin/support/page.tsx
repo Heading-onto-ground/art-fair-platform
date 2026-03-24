@@ -48,6 +48,11 @@ export default function AdminSupportPage() {
   const [starting, setStarting] = useState(false);
   const [startResult, setStartResult] = useState<string | null>(null);
   const [startResultTone, setStartResultTone] = useState<"ok" | "error">("ok");
+  const [broadcastRoleFilter, setBroadcastRoleFilter] = useState<"all" | "artist" | "gallery" | "curator">("all");
+  const [broadcastText, setBroadcastText] = useState("");
+  const [broadcasting, setBroadcasting] = useState(false);
+  const [broadcastResult, setBroadcastResult] = useState<string | null>(null);
+  const [broadcastResultTone, setBroadcastResultTone] = useState<"ok" | "error">("ok");
   /** 목록 API 실패 */
   const [threadsError, setThreadsError] = useState<string | null>(null);
   /** 스레드 열기 / 답장 실패 */
@@ -122,6 +127,11 @@ export default function AdminSupportPage() {
       );
     });
   }, [platformUsers, userQuery]);
+
+  const broadcastTargetCount = useMemo(() => {
+    if (broadcastRoleFilter === "all") return platformUsers.length;
+    return platformUsers.filter((u) => u.role === broadcastRoleFilter).length;
+  }, [platformUsers, broadcastRoleFilter]);
 
   async function openThread(id: string) {
     setSelectedId(id);
@@ -211,6 +221,54 @@ export default function AdminSupportPage() {
     }
   }
 
+  async function sendBroadcastMessage() {
+    const text = broadcastText.trim();
+    if (!text || broadcasting) return;
+    setBroadcasting(true);
+    setBroadcastResult(null);
+    setBroadcastResultTone("ok");
+    const roles =
+      broadcastRoleFilter === "all"
+        ? ["artist", "gallery", "curator"]
+        : [broadcastRoleFilter];
+    try {
+      const res = await fetch("/api/admin/support/threads", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({
+          targetMode: "broadcast",
+          roles,
+          text,
+        }),
+      });
+      const data = await res.json().catch(() => null);
+      if (res.status === 401) {
+        router.replace("/admin/login");
+        return;
+      }
+      if (!res.ok || !data?.ok) {
+        setBroadcastResultTone("error");
+        setBroadcastResult((data?.message as string) || data?.error || "Failed");
+        return;
+      }
+      setBroadcastText("");
+      setBroadcastResultTone("ok");
+      setBroadcastResult(
+        tr(
+          `Broadcast sent: ${data.sent}/${data.total}`,
+          `전체 발송 완료: ${data.sent}/${data.total}`
+        )
+      );
+      await loadThreads();
+    } catch {
+      setBroadcastResultTone("error");
+      setBroadcastResult("Network error");
+    } finally {
+      setBroadcasting(false);
+    }
+  }
+
   return (
     <>
       <AdminTopBar />
@@ -257,6 +315,86 @@ export default function AdminSupportPage() {
             {tr(`${needingReply} thread(s) need a reply`, `답변 대기 ${needingReply}건`)}
           </div>
         )}
+
+        <div
+          style={{
+            marginBottom: 18,
+            border: "1px solid #E8E3DB",
+            background: "#FFFFFF",
+            padding: 14,
+            display: "grid",
+            gap: 10,
+          }}
+        >
+          <div style={{ fontFamily: F, fontSize: 11, letterSpacing: "0.08em", textTransform: "uppercase", color: "#8A8580" }}>
+            {tr("Broadcast to users", "가입자 전체 쪽지")}
+          </div>
+          <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
+            {(["all", "artist", "gallery", "curator"] as const).map((role) => (
+              <button
+                key={role}
+                type="button"
+                onClick={() => setBroadcastRoleFilter(role)}
+                style={{
+                  border: "1px solid #E8E3DB",
+                  background: broadcastRoleFilter === role ? "#1A1A1A" : "#FFFFFF",
+                  color: broadcastRoleFilter === role ? "#FFFFFF" : "#8A8580",
+                  padding: "6px 8px",
+                  fontFamily: F,
+                  fontSize: 10,
+                  letterSpacing: "0.04em",
+                  textTransform: "uppercase",
+                  cursor: "pointer",
+                }}
+              >
+                {role}
+              </button>
+            ))}
+            <span style={{ fontFamily: F, fontSize: 11, color: "#8A8580", alignSelf: "center" }}>
+              {tr("Targets", "대상")}: {broadcastTargetCount}
+            </span>
+          </div>
+          <textarea
+            value={broadcastText}
+            onChange={(e) => setBroadcastText(e.target.value)}
+            rows={3}
+            placeholder={tr("Write message to all selected users...", "선택한 전체 가입자에게 보낼 메시지를 입력하세요...")}
+            style={{
+              width: "100%",
+              padding: "10px 12px",
+              border: "1px solid #E8E3DB",
+              fontFamily: F,
+              fontSize: 13,
+              resize: "vertical",
+              boxSizing: "border-box",
+            }}
+          />
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 10 }}>
+            <button
+              type="button"
+              onClick={sendBroadcastMessage}
+              disabled={broadcasting || !broadcastText.trim() || broadcastTargetCount === 0}
+              style={{
+                padding: "10px 14px",
+                border: "1px solid #1A1A1A",
+                background: broadcasting || !broadcastText.trim() || broadcastTargetCount === 0 ? "#E8E3DB" : "#1A1A1A",
+                color: broadcasting || !broadcastText.trim() || broadcastTargetCount === 0 ? "#8A8580" : "#FFF",
+                fontFamily: F,
+                fontSize: 10,
+                letterSpacing: "0.08em",
+                textTransform: "uppercase",
+                cursor: broadcasting || !broadcastText.trim() || broadcastTargetCount === 0 ? "not-allowed" : "pointer",
+              }}
+            >
+              {broadcasting ? tr("Sending...", "전송 중...") : tr("Send to all", "전체 발송")}
+            </button>
+            {broadcastResult && (
+              <span style={{ fontFamily: F, fontSize: 12, color: broadcastResultTone === "ok" ? "#5A7A5A" : "#8B4A4A" }}>
+                {broadcastResult}
+              </span>
+            )}
+          </div>
+        </div>
 
         <div
           style={{

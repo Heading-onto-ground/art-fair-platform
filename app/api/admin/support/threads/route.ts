@@ -5,6 +5,67 @@ import { addAdminMessage, getOrCreateThread, listThreadsForAdmin, validateSuppor
 import { prisma } from "@/lib/prisma";
 
 export const dynamic = "force-dynamic";
+const BROADCAST_BATCH_SIZE = 300;
+
+type PlatformRole = "artist" | "gallery" | "curator";
+
+function normalizeRoles(input: unknown): PlatformRole[] {
+  const arr = Array.isArray(input) ? input : [];
+  const roles = arr
+    .map((v) => String(v || "").trim().toLowerCase())
+    .filter((v): v is PlatformRole => v === "artist" || v === "gallery" || v === "curator");
+  if (roles.length > 0) return Array.from(new Set(roles));
+  return ["artist", "gallery", "curator"];
+}
+
+function isExcludedSupportAccount(email: string) {
+  const e = String(email || "").trim().toLowerCase();
+  if (!e) return true;
+  if (e.includes("@invalid.local")) return true;
+  if (e.includes(".bot@rob-roleofbridge.com")) return true;
+  return false;
+}
+
+async function sendBroadcastSupportMessage(text: string, roles: PlatformRole[]) {
+  const users = await prisma.user.findMany({
+    where: { role: { in: roles } as any },
+    select: { id: true, email: true, role: true },
+  });
+  const targets = users.filter((u) => !isExcludedSupportAccount(u.email));
+  if (targets.length === 0) {
+    return { total: 0, sent: 0, roles };
+  }
+
+  const threadIds: string[] = [];
+  for (const target of targets) {
+    const thread = await prisma.adminSupportThread.upsert({
+      where: { userId: target.id },
+      update: {},
+      create: { userId: target.id },
+      select: { id: true },
+    });
+    threadIds.push(thread.id);
+  }
+
+  let sent = 0;
+  for (let i = 0; i < threadIds.length; i += BROADCAST_BATCH_SIZE) {
+    const batch = threadIds.slice(i, i + BROADCAST_BATCH_SIZE);
+    const created = await prisma.adminSupportMessage.createMany({
+      data: batch.map((threadId) => ({
+        threadId,
+        fromAdmin: true,
+        text,
+      })),
+    });
+    sent += created.count;
+  }
+  await prisma.adminSupportThread.updateMany({
+    where: { id: { in: threadIds } },
+    data: { updatedAt: new Date() },
+  });
+
+  return { total: targets.length, sent, roles };
+}
 
 function handlePrismaFailure(e: unknown) {
   if (e instanceof Prisma.PrismaClientKnownRequestError) {
@@ -65,6 +126,7 @@ export async function POST(req: Request) {
     }
 
     const body = await req.json().catch(() => null);
+    const targetMode = String(body?.targetMode || "single").trim().toLowerCase();
     const userId = String(body?.userId || "").trim();
     const userEmail = String(body?.userEmail || "")
       .trim()
@@ -78,6 +140,22 @@ export async function POST(req: Request) {
     if (err === "too_long") {
       return NextResponse.json({ error: "message too long" }, { status: 400 });
     }
+
+    if (targetMode === "broadcast") {
+      const roles = normalizeRoles(body?.roles);
+      const result = await sendBroadcastSupportMessage(text.trim(), roles);
+      if (result.total === 0) {
+        return NextResponse.json({ error: "no users resolved" }, { status: 400 });
+      }
+      return NextResponse.json({
+        ok: true,
+        targetMode: "broadcast",
+        total: result.total,
+        sent: result.sent,
+        roles: result.roles,
+      });
+    }
+
     if (!userId && !userEmail) {
       return NextResponse.json({ error: "userId or userEmail required" }, { status: 400 });
     }
@@ -96,6 +174,10 @@ export async function POST(req: Request) {
 
     const thread = await getOrCreateThread(user.id);
     const message = await addAdminMessage(thread.id, text.trim());
+    await prisma.adminSupportThread.update({
+      where: { id: thread.id },
+      data: { updatedAt: new Date() },
+    });
 
     return NextResponse.json({
       ok: true,
