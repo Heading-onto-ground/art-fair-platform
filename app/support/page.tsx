@@ -6,6 +6,7 @@ import TopBar from "@/app/components/TopBar";
 import { F, S } from "@/lib/design";
 import { useLanguage } from "@/lib/useLanguage";
 import { t } from "@/lib/translate";
+import { markAllAdminSupportMessagesSeen } from "@/lib/userSupportPending";
 
 type Msg = { id: string; fromAdmin: boolean; text: string; createdAt: string };
 
@@ -32,7 +33,9 @@ export default function SupportPage() {
         setError(data?.error || "Failed to load");
         return;
       }
-      setMessages(data.messages || []);
+      const list = data.messages || [];
+      setMessages(list);
+      markAllAdminSupportMessagesSeen(list);
     } catch {
       setError("Network error");
     } finally {

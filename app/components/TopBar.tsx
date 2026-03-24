@@ -7,6 +7,7 @@ import { useLanguage } from "@/lib/useLanguage";
 import { useAutoLocale } from "@/lib/useAutoLocale";
 import { t, getAvailableLanguages } from "@/lib/translate";
 import { F, S } from "@/lib/design";
+import { useUserSupportAlerts } from "@/lib/useUserSupportAlerts";
 
 type Role = "artist" | "gallery" | "curator";
 type MeResponse = {
@@ -185,6 +186,10 @@ export default function TopBar() {
 
   const session = me?.session;
 
+  const trToast = (en: string, ko: string, ja: string, fr: string) =>
+    lang === "ko" ? ko : lang === "ja" ? ja : lang === "fr" ? fr : en;
+  const { toastOpen, dismissToast, unreadCount: supportUnread } = useUserSupportAlerts(!!session);
+
   const artistLinks = useMemo(
     () => [
       { path: "/artist/me", label: t("nav_my_page", lang) },
@@ -283,6 +288,48 @@ export default function TopBar() {
                 </button>
               )}
 
+              {/* Admin support messages */}
+              {session && (
+                <button
+                  type="button"
+                  onClick={() => router.push("/support")}
+                  aria-label={trToast("Messages to admin", "관리자 쪽지", "管理者メッセージ", "Messages admin")}
+                  style={{
+                    position: "relative",
+                    background: "none",
+                    border: "none",
+                    cursor: "pointer",
+                    fontSize: 16,
+                    padding: "8px 10px",
+                    color: supportUnread > 0 ? "#8B7355" : "#B0AAA2",
+                  }}
+                >
+                  💬
+                  {supportUnread > 0 && (
+                    <span
+                      style={{
+                        position: "absolute",
+                        top: 2,
+                        right: 2,
+                        background: "#B85450",
+                        color: "#FFF",
+                        fontSize: 9,
+                        fontWeight: 600,
+                        minWidth: 14,
+                        height: 14,
+                        borderRadius: "50%",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        fontFamily: F,
+                      }}
+                    >
+                      {supportUnread > 9 ? "9+" : supportUnread}
+                    </span>
+                  )}
+                </button>
+              )}
+
               {/* Notification bell */}
               {session && <NotificationsBell />}
 
@@ -375,6 +422,47 @@ export default function TopBar() {
               <option key={l.code} value={l.code}>{l.name}</option>
             ))}
           </select>
+
+          {session && (
+            <button
+              type="button"
+              onClick={() => navigate("/support")}
+              aria-label={trToast("Messages to admin", "관리자 쪽지", "管理者メッセージ", "Messages admin")}
+              style={{
+                position: "relative",
+                background: "none",
+                border: "none",
+                cursor: "pointer",
+                fontSize: 16,
+                padding: "6px 8px",
+                color: supportUnread > 0 ? "#8B7355" : "#B0AAA2",
+              }}
+            >
+              💬
+              {supportUnread > 0 && (
+                <span
+                  style={{
+                    position: "absolute",
+                    top: 0,
+                    right: 0,
+                    background: "#B85450",
+                    color: "#FFF",
+                    fontSize: 8,
+                    fontWeight: 600,
+                    minWidth: 12,
+                    height: 12,
+                    borderRadius: "50%",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    fontFamily: F,
+                  }}
+                >
+                  {supportUnread > 9 ? "+" : supportUnread}
+                </span>
+              )}
+            </button>
+          )}
 
           {session && unreadCount > 0 && (
             <span style={{ background: "#8B7355", color: "#FFF", fontSize: 9, fontWeight: 600, minWidth: 18, height: 18, borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", fontFamily: F }}>
@@ -595,6 +683,82 @@ export default function TopBar() {
           header { padding: 12px 16px !important; }
         }
       `}</style>
+
+      {toastOpen ? (
+        <div
+          role="status"
+          aria-live="polite"
+          style={{
+            position: "fixed",
+            bottom: 24,
+            right: 24,
+            zIndex: 200,
+            maxWidth: 360,
+            border: "1px solid #E8E3DB",
+            background: "#FFFFFF",
+            boxShadow: "0 12px 40px rgba(0,0,0,0.12)",
+            padding: "16px 18px",
+          }}
+        >
+          <p
+            style={{
+              fontFamily: F,
+              fontSize: 13,
+              lineHeight: 1.6,
+              color: "#1A1A1A",
+              margin: "0 0 12px",
+            }}
+          >
+            {trToast(
+              "You have a new message from the ROB team. Open Messages to read it.",
+              "ROB 관리자로부터 새 쪽지가 도착했습니다. 쪽지에서 확인하세요.",
+              "ROB管理者から新しいメッセージがあります。メッセージ画面でご確認ください。",
+              "Nouveau message de l’equipe ROB. Ouvrez Messages pour le lire."
+            )}
+          </p>
+          <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
+            <button
+              type="button"
+              onClick={() => {
+                dismissToast();
+                router.push("/support");
+              }}
+              style={{
+                padding: "8px 16px",
+                border: "1px solid #1A1A1A",
+                background: "#1A1A1A",
+                color: "#FDFBF7",
+                fontFamily: F,
+                fontSize: 10,
+                fontWeight: 500,
+                letterSpacing: "0.1em",
+                textTransform: "uppercase",
+                cursor: "pointer",
+              }}
+            >
+              {trToast("Open messages", "쪽지 열기", "メッセージを開く", "Ouvrir")}
+            </button>
+            <button
+              type="button"
+              onClick={dismissToast}
+              style={{
+                padding: "8px 16px",
+                border: "1px solid #E8E3DB",
+                background: "transparent",
+                color: "#8A8580",
+                fontFamily: F,
+                fontSize: 10,
+                fontWeight: 500,
+                letterSpacing: "0.08em",
+                textTransform: "uppercase",
+                cursor: "pointer",
+              }}
+            >
+              {trToast("Dismiss", "닫기", "閉じる", "Fermer")}
+            </button>
+          </div>
+        </div>
+      ) : null}
     </>
   );
 }
