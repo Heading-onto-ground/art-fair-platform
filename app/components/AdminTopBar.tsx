@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { F, S } from "@/lib/design";
 import { useLanguage } from "@/lib/useLanguage";
+import { useAdminSupportAlerts } from "@/lib/useAdminSupportAlerts";
 
 export default function AdminTopBar() {
   const router = useRouter();
@@ -37,6 +38,9 @@ export default function AdminTopBar() {
     isGalleryProfilePreview;
   const isViewSiteActive = pathname === "/" && !isAdminView;
 
+  const supportAlertsEnabled = pathname.startsWith("/admin") && pathname !== "/admin/login";
+  const { toastOpen, dismissToast, pendingCount } = useAdminSupportAlerts(supportAlertsEnabled);
+
   useEffect(() => {
     function onClickOutside(e: MouseEvent) {
       if (!previewRef.current) return;
@@ -63,6 +67,7 @@ export default function AdminTopBar() {
   }
 
   return (
+    <>
     <header
       style={{
         position: "sticky",
@@ -133,7 +138,12 @@ export default function AdminTopBar() {
           <NavLink onClick={() => router.push("/admin/outreach")} label={tr("Dashboard", "대시보드", "ダッシュボード", "Tableau")} active={isDashboardActive} />
           <NavLink onClick={() => router.push("/admin/open-calls")} label={tr("Open Calls", "오픈콜", "オープンコール", "Open Calls")} active={isOpenCallsActive} />
           <NavLink onClick={() => router.push("/admin/users")} label={tr("Users", "가입자", "ユーザー", "Utilisateurs")} active={isUsersActive} />
-          <NavLink onClick={() => router.push("/admin/support")} label={tr("Notes", "쪽지", "メモ", "Messages")} active={isSupportActive} />
+          <NavLink
+            onClick={() => router.push("/admin/support")}
+            label={tr("Notes", "쪽지", "メモ", "Messages")}
+            active={isSupportActive}
+            badgeCount={pendingCount > 0 ? pendingCount : undefined}
+          />
           <NavLink onClick={() => router.push("/admin/sources")} label={tr("Sources", "소스", "ソース", "Sources")} active={isSourcesActive} />
           <NavLink onClick={() => router.push("/admin/about")} label={tr("About", "소개", "About", "About")} active={isAboutActive} />
           <NavLink onClick={() => router.push("/admin/security")} label={tr("Security", "보안", "セキュリティ", "Securite")} active={isSecurityActive} />
@@ -242,10 +252,97 @@ export default function AdminTopBar() {
         </nav>
       </div>
     </header>
+
+    {toastOpen ? (
+      <div
+        role="status"
+        aria-live="polite"
+        style={{
+          position: "fixed",
+          bottom: 24,
+          right: 24,
+          zIndex: 200,
+          maxWidth: 360,
+          border: "1px solid #E8E3DB",
+          background: "#FFFFFF",
+          boxShadow: "0 12px 40px rgba(0,0,0,0.12)",
+          padding: "16px 18px",
+        }}
+      >
+        <p
+          style={{
+            fontFamily: F,
+            fontSize: 13,
+            lineHeight: 1.6,
+            color: "#1A1A1A",
+            margin: "0 0 12px",
+          }}
+        >
+          {tr(
+            "A member sent a new message. Open Notes to view and reply.",
+            "가입자가 새 쪽지를 보냈습니다. 쪽지에서 확인하고 답장할 수 있습니다.",
+            "ユーザーから新しいメッセージがあります。メモで確認・返信できます。",
+            "Un membre a envoye un message. Ouvrez Messages pour repondre."
+          )}
+        </p>
+        <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
+          <button
+            type="button"
+            onClick={() => {
+              dismissToast();
+              router.push("/admin/support");
+            }}
+            style={{
+              padding: "8px 16px",
+              border: "1px solid #1A1A1A",
+              background: "#1A1A1A",
+              color: "#FDFBF7",
+              fontFamily: F,
+              fontSize: 10,
+              fontWeight: 500,
+              letterSpacing: "0.1em",
+              textTransform: "uppercase",
+              cursor: "pointer",
+            }}
+          >
+            {tr("Open Notes", "쪽지 열기", "メモを開く", "Ouvrir")}
+          </button>
+          <button
+            type="button"
+            onClick={dismissToast}
+            style={{
+              padding: "8px 16px",
+              border: "1px solid #E8E3DB",
+              background: "transparent",
+              color: "#8A8580",
+              fontFamily: F,
+              fontSize: 10,
+              fontWeight: 500,
+              letterSpacing: "0.08em",
+              textTransform: "uppercase",
+              cursor: "pointer",
+            }}
+          >
+            {tr("Dismiss", "닫기", "閉じる", "Fermer")}
+          </button>
+        </div>
+      </div>
+    ) : null}
+    </>
   );
 }
 
-function NavLink({ onClick, label, active = false }: { onClick: () => void; label: string; active?: boolean }) {
+function NavLink({
+  onClick,
+  label,
+  active = false,
+  badgeCount,
+}: {
+  onClick: () => void;
+  label: string;
+  active?: boolean;
+  badgeCount?: number;
+}) {
   return (
     <button
       onClick={onClick}
@@ -260,9 +357,33 @@ function NavLink({ onClick, label, active = false }: { onClick: () => void; labe
         cursor: "pointer",
         padding: "4px 0",
         textTransform: "uppercase",
+        display: "inline-flex",
+        alignItems: "center",
+        gap: 6,
       }}
     >
       {label}
+      {badgeCount != null && badgeCount > 0 ? (
+        <span
+          style={{
+            minWidth: 18,
+            height: 18,
+            padding: "0 5px",
+            borderRadius: 9,
+            background: "#B85450",
+            color: "#FFFFFF",
+            fontFamily: F,
+            fontSize: 10,
+            fontWeight: 600,
+            lineHeight: "18px",
+            textAlign: "center",
+            letterSpacing: 0,
+            textTransform: "none",
+          }}
+        >
+          {badgeCount > 99 ? "99+" : badgeCount}
+        </span>
+      ) : null}
     </button>
   );
 }
