@@ -27,6 +27,30 @@ model User {
   artistProfile ArtistProfile?
   galleryProfile GalleryProfile?
   curatorProfile CuratorProfile?
+  adminSupportThread AdminSupportThread?
+}
+
+// 가입자 ↔ 관리자 플랫폼 내 쪽지 (이메일 아님)
+model AdminSupportThread {
+  id        String   @id @default(cuid())
+  userId    String   @unique
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  messages  AdminSupportMessage[]
+
+  @@index([updatedAt])
+}
+
+model AdminSupportMessage {
+  id        String   @id @default(cuid())
+  threadId  String
+  thread    AdminSupportThread @relation(fields: [threadId], references: [id], onDelete: Cascade)
+  fromAdmin Boolean
+  text      String
+  createdAt DateTime @default(now())
+
+  @@index([threadId])
 }
 
 model ArtistProfile {

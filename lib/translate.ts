@@ -47,6 +47,7 @@ const dictionary: Dictionary = {
   nav_artists: { en: "Artists", ko: "작가", ja: "アーティスト", fr: "Artistes" },
   nav_shipments: { en: "Shipments", ko: "배송", ja: "配送", fr: "Expéditions" },
   nav_messages: { en: "Messages", ko: "메시지", ja: "メッセージ", fr: "Messages" },
+  nav_admin_note: { en: "Admin note", ko: "관리자 쪽지", ja: "管理者メモ", fr: "Note admin" },
   nav_my_calls: { en: "My Calls", ko: "내 오픈콜", ja: "マイコール", fr: "Mes appels" },
   nav_growth: { en: "Growth", ko: "성장", ja: "成長", fr: "Croissance" },
   nav_logout: { en: "Logout", ko: "로그아웃", ja: "ログアウト", fr: "Déconnexion" },
