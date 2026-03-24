@@ -13,7 +13,7 @@ function handlePrismaFailure(e: unknown) {
           ok: false,
           error: "schema_missing",
           message:
-            "DB에 쪽지 테이블(AdminSupportThread 등)이 없습니다. 프로덕션 DB에 연결한 뒤 `npx prisma db push`를 한 번 실행하세요.",
+            "DB에 쪽지 테이블이 없습니다. Supabase 포트 6543(Pooler)로는 db push가 안 될 수 있습니다. (1) Supabase → SQL Editor에서 저장소의 prisma/sql/create-admin-support-tables.sql 전체를 붙여넣어 실행하거나, (2) Supabase → Database Settings에서 Direct connection(보통 포트 5432) URI로 DATABASE_URL을 잡고 로컬에서 npx prisma db push 하세요.",
         },
         { status: 503 }
       );
