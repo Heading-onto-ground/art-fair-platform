@@ -5,9 +5,9 @@ import {
   getOrCreateThread,
   listMessagesForThread,
   readByRecipientForSupportMessage,
+  tryRefreshReadReceiptsAfterUserOpen,
   validateSupportText,
 } from "@/lib/adminSupport";
-import { prisma } from "@/lib/prisma";
 
 export const dynamic = "force-dynamic";
 
@@ -23,16 +23,7 @@ export async function GET() {
     const messages = await listMessagesForThread(thread.id);
     type Row = (typeof messages)[number];
 
-    await prisma.adminSupportThread.update({
-      where: { id: thread.id },
-      data: { lastReadByUserAt: new Date() },
-    });
-    const fresh = await prisma.adminSupportThread.findUnique({
-      where: { id: thread.id },
-      select: { lastReadByUserAt: true, lastReadByAdminAt: true },
-    });
-    const lur = fresh?.lastReadByUserAt ?? null;
-    const lar = fresh?.lastReadByAdminAt ?? null;
+    const { lastReadByUserAt: lur, lastReadByAdminAt: lar } = await tryRefreshReadReceiptsAfterUserOpen(thread.id);
 
     return NextResponse.json({
       ok: true,

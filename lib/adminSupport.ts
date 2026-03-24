@@ -9,13 +9,16 @@ export function validateSupportText(text: string): string | null {
   return null;
 }
 
-export async function getOrCreateThread(userId: string) {
+/** id만 사용 — DB에 읽음 컬럼이 아직 없어도 SELECT가 실패하지 않도록 */
+export async function getOrCreateThread(userId: string): Promise<{ id: string }> {
   const existing = await prisma.adminSupportThread.findUnique({
     where: { userId },
+    select: { id: true },
   });
   if (existing) return existing;
   return prisma.adminSupportThread.create({
     data: { userId },
+    select: { id: true },
   });
 }
 
@@ -51,7 +54,10 @@ export type ThreadListItem = {
 export async function listThreadsForAdmin(): Promise<ThreadListItem[]> {
   const threads = await prisma.adminSupportThread.findMany({
     orderBy: { updatedAt: "desc" },
-    include: {
+    select: {
+      id: true,
+      userId: true,
+      updatedAt: true,
       user: { select: { email: true, role: true } },
       messages: {
         orderBy: { createdAt: "desc" },
@@ -75,8 +81,57 @@ export async function listThreadsForAdmin(): Promise<ThreadListItem[]> {
 export async function getThreadForAdmin(threadId: string) {
   return prisma.adminSupportThread.findUnique({
     where: { id: threadId },
-    include: { user: { select: { email: true, role: true } } },
+    select: {
+      id: true,
+      userId: true,
+      user: { select: { email: true, role: true } },
+    },
   });
+}
+
+/** 읽음 컬럼이 아직 없으면 조용히 실패 (readByRecipient는 전부 false) */
+export async function tryRefreshReadReceiptsAfterUserOpen(threadId: string): Promise<{
+  lastReadByUserAt: Date | null;
+  lastReadByAdminAt: Date | null;
+}> {
+  try {
+    await prisma.adminSupportThread.update({
+      where: { id: threadId },
+      data: { lastReadByUserAt: new Date() },
+    });
+    const fresh = await prisma.adminSupportThread.findUnique({
+      where: { id: threadId },
+      select: { lastReadByUserAt: true, lastReadByAdminAt: true },
+    });
+    return {
+      lastReadByUserAt: fresh?.lastReadByUserAt ?? null,
+      lastReadByAdminAt: fresh?.lastReadByAdminAt ?? null,
+    };
+  } catch {
+    return { lastReadByUserAt: null, lastReadByAdminAt: null };
+  }
+}
+
+export async function tryRefreshReadReceiptsAfterAdminOpen(threadId: string): Promise<{
+  lastReadByUserAt: Date | null;
+  lastReadByAdminAt: Date | null;
+}> {
+  try {
+    await prisma.adminSupportThread.update({
+      where: { id: threadId },
+      data: { lastReadByAdminAt: new Date() },
+    });
+    const fresh = await prisma.adminSupportThread.findUnique({
+      where: { id: threadId },
+      select: { lastReadByUserAt: true, lastReadByAdminAt: true },
+    });
+    return {
+      lastReadByUserAt: fresh?.lastReadByUserAt ?? null,
+      lastReadByAdminAt: fresh?.lastReadByAdminAt ?? null,
+    };
+  } catch {
+    return { lastReadByUserAt: null, lastReadByAdminAt: null };
+  }
 }
 
 /** 상대(수신자)가 이 메시지를 읽었는지 — 스레드의 lastRead 타임스탬프 기준 */
