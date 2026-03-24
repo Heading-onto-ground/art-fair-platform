@@ -72,6 +72,48 @@ async function sendBroadcastSupportMessage(text: string, roles: PlatformRole[]) 
   return { total: targets.length, sent, roles };
 }
 
+async function sendSelectedSupportMessage(text: string, userIds: string[]) {
+  const cleanedIds = Array.from(new Set(userIds.map((id) => String(id || "").trim()).filter(Boolean)));
+  if (cleanedIds.length === 0) return { total: 0, sent: 0, threadIds: [] as string[] };
+
+  const users: BroadcastUserRow[] = await prisma.user.findMany({
+    where: { id: { in: cleanedIds } },
+    select: { id: true, email: true, role: true },
+  });
+  const targets = users.filter((u: BroadcastUserRow) => !isExcludedSupportAccount(u.email));
+  if (targets.length === 0) return { total: 0, sent: 0, threadIds: [] as string[] };
+
+  const threadIds: string[] = [];
+  for (const target of targets) {
+    const thread = await prisma.adminSupportThread.upsert({
+      where: { userId: target.id },
+      update: {},
+      create: { userId: target.id },
+      select: { id: true },
+    });
+    threadIds.push(thread.id);
+  }
+
+  let sent = 0;
+  for (let i = 0; i < threadIds.length; i += BROADCAST_BATCH_SIZE) {
+    const batch = threadIds.slice(i, i + BROADCAST_BATCH_SIZE);
+    const created = await prisma.adminSupportMessage.createMany({
+      data: batch.map((threadId) => ({
+        threadId,
+        fromAdmin: true,
+        text,
+      })),
+    });
+    sent += created.count;
+  }
+  await prisma.adminSupportThread.updateMany({
+    where: { id: { in: threadIds } },
+    data: { updatedAt: new Date() },
+  });
+
+  return { total: targets.length, sent, threadIds };
+}
+
 function handlePrismaFailure(e: unknown) {
   if (e instanceof Prisma.PrismaClientKnownRequestError) {
     if (e.code === "P2021" || e.code === "P2010") {
@@ -158,6 +200,21 @@ export async function POST(req: Request) {
         total: result.total,
         sent: result.sent,
         roles: result.roles,
+      });
+    }
+
+    if (targetMode === "selected") {
+      const userIds = Array.isArray(body?.userIds) ? body.userIds : [];
+      const result = await sendSelectedSupportMessage(text.trim(), userIds);
+      if (result.total === 0) {
+        return NextResponse.json({ error: "no users resolved" }, { status: 400 });
+      }
+      return NextResponse.json({
+        ok: true,
+        targetMode: "selected",
+        total: result.total,
+        sent: result.sent,
+        threadId: result.threadIds.length === 1 ? result.threadIds[0] : null,
       });
     }
 

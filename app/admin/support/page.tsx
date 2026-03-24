@@ -44,7 +44,7 @@ export default function AdminSupportPage() {
   const [loadingUsers, setLoadingUsers] = useState(false);
   const [userQuery, setUserQuery] = useState("");
   const [startRoleFilter, setStartRoleFilter] = useState<"all" | "artist" | "gallery" | "curator">("all");
-  const [selectedNewUserId, setSelectedNewUserId] = useState("");
+  const [selectedNewUserIds, setSelectedNewUserIds] = useState<string[]>([]);
   const [newThreadText, setNewThreadText] = useState("");
   const [starting, setStarting] = useState(false);
   const [startResult, setStartResult] = useState<string | null>(null);
@@ -117,13 +117,16 @@ export default function AdminSupportPage() {
   }, [loadThreads, loadUsers]);
 
   useEffect(() => {
-    if (!selectedNewUserId) return;
-    const selected = platformUsers.find((u) => u.id === selectedNewUserId);
-    if (!selected) return;
-    if (startRoleFilter !== "all" && selected.role !== startRoleFilter) {
-      setSelectedNewUserId("");
-    }
-  }, [startRoleFilter, selectedNewUserId, platformUsers]);
+    if (selectedNewUserIds.length === 0) return;
+    setSelectedNewUserIds((prev) =>
+      prev.filter((id) => {
+        const selected = platformUsers.find((u) => u.id === id);
+        if (!selected) return false;
+        if (startRoleFilter !== "all" && selected.role !== startRoleFilter) return false;
+        return true;
+      })
+    );
+  }, [startRoleFilter, selectedNewUserIds.length, platformUsers]);
 
   const filteredUsers = useMemo(() => {
     const q = userQuery.trim().toLowerCase();
@@ -138,6 +141,9 @@ export default function AdminSupportPage() {
       );
     });
   }, [platformUsers, userQuery, startRoleFilter]);
+
+  const allFilteredSelected =
+    filteredUsers.length > 0 && filteredUsers.every((u) => selectedNewUserIds.includes(u.id));
 
   const broadcastTargetCount = useMemo(() => {
     if (broadcastRoleFilter === "all") return platformUsers.length;
@@ -195,7 +201,7 @@ export default function AdminSupportPage() {
 
   async function startConversation() {
     const text = newThreadText.trim();
-    if (!selectedNewUserId || !text || starting) return;
+    if (selectedNewUserIds.length === 0 || !text || starting) return;
     setStarting(true);
     setStartResult(null);
     setStartResultTone("ok");
@@ -205,7 +211,7 @@ export default function AdminSupportPage() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
-        body: JSON.stringify({ userId: selectedNewUserId, text }),
+        body: JSON.stringify({ targetMode: "selected", userIds: selectedNewUserIds, text }),
       });
       const data = await res.json().catch(() => null);
       if (res.status === 401) {
@@ -219,10 +225,15 @@ export default function AdminSupportPage() {
       }
       setNewThreadText("");
       setStartResultTone("ok");
-      setStartResult(tr("Conversation started.", "대화를 시작했습니다."));
+      setStartResult(
+        tr(
+          `Sent to selected users: ${data.sent}/${data.total}`,
+          `선택 사용자 발송 완료: ${data.sent}/${data.total}`
+        )
+      );
       await loadThreads();
-      if (data?.thread?.id) {
-        await openThread(String(data.thread.id));
+      if (data?.threadId) {
+        await openThread(String(data.threadId));
       }
     } catch {
       setStartResultTone("error");
@@ -457,16 +468,22 @@ export default function AdminSupportPage() {
           </div>
           <input
             value={
-              selectedNewUserId
+              selectedNewUserIds.length > 0
                 ? (() => {
-                    const selected = platformUsers.find((u) => u.id === selectedNewUserId);
-                    if (!selected) return "";
-                    return `[${selected.role}] ${selected.name || "-"} · ${selected.email}`;
+                    if (selectedNewUserIds.length === 1) {
+                      const selected = platformUsers.find((u) => u.id === selectedNewUserIds[0]);
+                      if (!selected) return "";
+                      return `[${selected.role}] ${selected.name || "-"} · ${selected.email}`;
+                    }
+                    return tr(
+                      `${selectedNewUserIds.length} users selected`,
+                      `${selectedNewUserIds.length}명 선택됨`
+                    );
                   })()
                 : ""
             }
             readOnly
-            placeholder={tr("Select a user below", "아래에서 가입자를 선택하세요")}
+            placeholder={tr("Select users below", "아래에서 가입자를 선택하세요")}
             style={{
               width: "100%",
               padding: "10px 12px",
@@ -491,27 +508,54 @@ export default function AdminSupportPage() {
                 {tr("No users found.", "사용자가 없습니다.")}
               </div>
             ) : (
-              filteredUsers.slice(0, 300).map((u) => (
-                <button
-                  key={u.id}
-                  type="button"
-                  onClick={() => setSelectedNewUserId(u.id)}
-                  style={{
-                    width: "100%",
-                    textAlign: "left",
-                    border: "none",
-                    borderBottom: "1px solid #F0EBE3",
-                    background: selectedNewUserId === u.id ? "#FAF8F4" : "#FFFFFF",
-                    padding: "9px 10px",
-                    cursor: "pointer",
-                    fontFamily: F,
-                    fontSize: 12,
-                    color: "#1A1A1A",
-                  }}
-                >
-                  [{u.role}] {u.name || "-"} · {u.email} {u.country ? `· ${u.country}/${u.city || "-"}` : ""}
-                </button>
-              ))
+              <>
+                <div style={{ padding: "8px 10px", borderBottom: "1px solid #F0EBE3", display: "flex", gap: 8, alignItems: "center" }}>
+                  <input
+                    type="checkbox"
+                    checked={allFilteredSelected}
+                    onChange={(e) => {
+                      if (e.target.checked) {
+                        setSelectedNewUserIds(Array.from(new Set([...selectedNewUserIds, ...filteredUsers.map((u) => u.id)])));
+                      } else {
+                        const filteredSet = new Set(filteredUsers.map((u) => u.id));
+                        setSelectedNewUserIds(selectedNewUserIds.filter((id) => !filteredSet.has(id)));
+                      }
+                    }}
+                  />
+                  <span style={{ fontFamily: F, fontSize: 11, color: "#6F6A64" }}>
+                    {tr("Select all in current filter", "현재 필터 전체 선택")}
+                  </span>
+                </div>
+                {filteredUsers.slice(0, 300).map((u) => (
+                  <label
+                    key={u.id}
+                    style={{
+                      width: "100%",
+                      display: "flex",
+                      gap: 8,
+                      alignItems: "center",
+                      borderBottom: "1px solid #F0EBE3",
+                      background: selectedNewUserIds.includes(u.id) ? "#FAF8F4" : "#FFFFFF",
+                      padding: "9px 10px",
+                      fontFamily: F,
+                      fontSize: 12,
+                      color: "#1A1A1A",
+                    }}
+                  >
+                    <input
+                      type="checkbox"
+                      checked={selectedNewUserIds.includes(u.id)}
+                      onChange={(e) => {
+                        if (e.target.checked) setSelectedNewUserIds(Array.from(new Set([...selectedNewUserIds, u.id])));
+                        else setSelectedNewUserIds(selectedNewUserIds.filter((id) => id !== u.id));
+                      }}
+                    />
+                    <span>
+                      [{u.role}] {u.name || "-"} · {u.email} {u.country ? `· ${u.country}/${u.city || "-"}` : ""}
+                    </span>
+                  </label>
+                ))}
+              </>
             )}
           </div>
           <textarea
@@ -533,17 +577,17 @@ export default function AdminSupportPage() {
             <button
               type="button"
               onClick={startConversation}
-              disabled={starting || !selectedNewUserId || !newThreadText.trim()}
+              disabled={starting || selectedNewUserIds.length === 0 || !newThreadText.trim()}
               style={{
                 padding: "10px 14px",
                 border: "1px solid #1A1A1A",
-                background: starting || !selectedNewUserId || !newThreadText.trim() ? "#E8E3DB" : "#1A1A1A",
-                color: starting || !selectedNewUserId || !newThreadText.trim() ? "#8A8580" : "#FFF",
+                background: starting || selectedNewUserIds.length === 0 || !newThreadText.trim() ? "#E8E3DB" : "#1A1A1A",
+                color: starting || selectedNewUserIds.length === 0 || !newThreadText.trim() ? "#8A8580" : "#FFF",
                 fontFamily: F,
                 fontSize: 10,
                 letterSpacing: "0.08em",
                 textTransform: "uppercase",
-                cursor: starting || !selectedNewUserId || !newThreadText.trim() ? "not-allowed" : "pointer",
+                cursor: starting || selectedNewUserIds.length === 0 || !newThreadText.trim() ? "not-allowed" : "pointer",
               }}
             >
               {starting ? tr("Sending...", "전송 중...") : tr("Start and send", "시작하고 보내기")}
