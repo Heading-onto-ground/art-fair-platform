@@ -19,11 +19,12 @@ export async function GET() {
 
     const thread = await getOrCreateThread(session.userId);
     const messages = await listMessagesForThread(thread.id);
+    type Row = (typeof messages)[number];
 
     return NextResponse.json({
       ok: true,
       threadId: thread.id,
-      messages: messages.map((m) => ({
+      messages: messages.map((m: Row) => ({
         id: m.id,
         fromAdmin: m.fromAdmin,
         text: m.text,

@@ -61,7 +61,8 @@ export async function listThreadsForAdmin(): Promise<ThreadListItem[]> {
     },
   });
 
-  return threads.map((t) => ({
+  type ThreadRow = (typeof threads)[number];
+  return threads.map((t: ThreadRow) => ({
     id: t.id,
     userId: t.userId,
     userEmail: t.user.email,
