@@ -43,6 +43,7 @@ export default function AdminSupportPage() {
   const [platformUsers, setPlatformUsers] = useState<PlatformUser[]>([]);
   const [loadingUsers, setLoadingUsers] = useState(false);
   const [userQuery, setUserQuery] = useState("");
+  const [startRoleFilter, setStartRoleFilter] = useState<"all" | "artist" | "gallery" | "curator">("all");
   const [selectedNewUserId, setSelectedNewUserId] = useState("");
   const [newThreadText, setNewThreadText] = useState("");
   const [starting, setStarting] = useState(false);
@@ -115,10 +116,20 @@ export default function AdminSupportPage() {
     loadUsers();
   }, [loadThreads, loadUsers]);
 
+  useEffect(() => {
+    if (!selectedNewUserId) return;
+    const selected = platformUsers.find((u) => u.id === selectedNewUserId);
+    if (!selected) return;
+    if (startRoleFilter !== "all" && selected.role !== startRoleFilter) {
+      setSelectedNewUserId("");
+    }
+  }, [startRoleFilter, selectedNewUserId, platformUsers]);
+
   const filteredUsers = useMemo(() => {
     const q = userQuery.trim().toLowerCase();
-    if (!q) return platformUsers;
     return platformUsers.filter((u) => {
+      if (startRoleFilter !== "all" && u.role !== startRoleFilter) return false;
+      if (!q) return true;
       return (
         u.email.toLowerCase().includes(q) ||
         u.name.toLowerCase().includes(q) ||
@@ -126,7 +137,7 @@ export default function AdminSupportPage() {
         u.city.toLowerCase().includes(q)
       );
     });
-  }, [platformUsers, userQuery]);
+  }, [platformUsers, userQuery, startRoleFilter]);
 
   const broadcastTargetCount = useMemo(() => {
     if (broadcastRoleFilter === "all") return platformUsers.length;
@@ -422,6 +433,28 @@ export default function AdminSupportPage() {
               boxSizing: "border-box",
             }}
           />
+          <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
+            {(["all", "artist", "gallery", "curator"] as const).map((role) => (
+              <button
+                key={role}
+                type="button"
+                onClick={() => setStartRoleFilter(role)}
+                style={{
+                  border: "1px solid #E8E3DB",
+                  background: startRoleFilter === role ? "#1A1A1A" : "#FFFFFF",
+                  color: startRoleFilter === role ? "#FFFFFF" : "#8A8580",
+                  padding: "6px 8px",
+                  fontFamily: F,
+                  fontSize: 10,
+                  letterSpacing: "0.04em",
+                  textTransform: "uppercase",
+                  cursor: "pointer",
+                }}
+              >
+                {role}
+              </button>
+            ))}
+          </div>
           <input
             value={
               selectedNewUserId
