@@ -1,8 +1,27 @@
 import { NextResponse } from "next/server";
+import { Prisma } from "@prisma/client";
 import { getAdminSession } from "@/lib/adminAuth";
 import { listThreadsForAdmin } from "@/lib/adminSupport";
 
 export const dynamic = "force-dynamic";
+
+function handlePrismaFailure(e: unknown) {
+  if (e instanceof Prisma.PrismaClientKnownRequestError) {
+    if (e.code === "P2021" || e.code === "P2010") {
+      return NextResponse.json(
+        {
+          ok: false,
+          error: "schema_missing",
+          message:
+            "DB에 쪽지 테이블(AdminSupportThread 등)이 없습니다. 프로덕션 DB에 연결한 뒤 `npx prisma db push`를 한 번 실행하세요.",
+        },
+        { status: 503 }
+      );
+    }
+  }
+  console.error("GET /api/admin/support/threads failed:", e);
+  return NextResponse.json({ error: "server error" }, { status: 500 });
+}
 
 export async function GET() {
   try {
@@ -33,7 +52,6 @@ export async function GET() {
       threadsNeedingReply: needingReply,
     });
   } catch (e) {
-    console.error("GET /api/admin/support/threads failed:", e);
-    return NextResponse.json({ error: "server error" }, { status: 500 });
+    return handlePrismaFailure(e);
   }
 }

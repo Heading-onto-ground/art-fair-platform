@@ -32,10 +32,13 @@ export default function AdminSupportPage() {
   const [msgLoading, setMsgLoading] = useState(false);
   const [reply, setReply] = useState("");
   const [sending, setSending] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  /** 목록 API 실패 */
+  const [threadsError, setThreadsError] = useState<string | null>(null);
+  /** 스레드 열기 / 답장 실패 */
+  const [detailError, setDetailError] = useState<string | null>(null);
 
   const loadThreads = useCallback(async () => {
-    setError(null);
+    setThreadsError(null);
     try {
       const res = await fetch("/api/admin/support/threads", { credentials: "include", cache: "no-store" });
       if (res.status === 401) {
@@ -44,13 +47,13 @@ export default function AdminSupportPage() {
       }
       const data = await res.json().catch(() => null);
       if (!res.ok || !data?.ok) {
-        setError(data?.error || "Failed");
+        setThreadsError((data?.message as string) || data?.error || "Failed");
         return;
       }
       setThreads(data.threads || []);
       setNeedingReply(data.threadsNeedingReply ?? 0);
     } catch {
-      setError("Network error");
+      setThreadsError("Network error");
     } finally {
       setLoading(false);
     }
@@ -65,19 +68,19 @@ export default function AdminSupportPage() {
     setMsgLoading(true);
     setMessages([]);
     setReply("");
-    setError(null);
+    setDetailError(null);
     try {
       const res = await fetch(`/api/admin/support/${id}/messages`, { credentials: "include", cache: "no-store" });
       const data = await res.json().catch(() => null);
       if (!res.ok || !data?.ok) {
-        setError(data?.error || "Failed");
+        setDetailError((data?.message as string) || data?.error || "Failed");
         return;
       }
       setUserEmail(data.thread?.userEmail || "");
       setUserRole(data.thread?.userRole || "");
       setMessages(data.messages || []);
     } catch {
-      setError("Network error");
+      setDetailError("Network error");
     } finally {
       setMsgLoading(false);
     }
@@ -86,7 +89,7 @@ export default function AdminSupportPage() {
   async function sendReply() {
     if (!selectedId || !reply.trim() || sending) return;
     setSending(true);
-    setError(null);
+    setDetailError(null);
     try {
       const res = await fetch(`/api/admin/support/${selectedId}/messages`, {
         method: "POST",
@@ -96,14 +99,14 @@ export default function AdminSupportPage() {
       });
       const data = await res.json().catch(() => null);
       if (!res.ok || !data?.ok) {
-        setError(data?.error || "Failed");
+        setDetailError((data?.message as string) || data?.error || "Failed");
         return;
       }
       setReply("");
       setMessages((prev) => [...prev, data.message]);
       loadThreads();
     } catch {
-      setError("Network error");
+      setDetailError("Network error");
     } finally {
       setSending(false);
     }
@@ -122,6 +125,23 @@ export default function AdminSupportPage() {
             "답변은 이메일이 아니라 사용자 계정의 「관리자 쪽지」에 표시됩니다.",
           )}
         </p>
+
+        {threadsError && (
+          <div
+            style={{
+              marginBottom: 16,
+              padding: "12px 14px",
+              background: "rgba(139,74,74,0.06)",
+              border: "1px solid rgba(139,74,74,0.2)",
+              fontFamily: F,
+              fontSize: 13,
+              color: "#8B4A4A",
+              lineHeight: 1.6,
+            }}
+          >
+            {threadsError}
+          </div>
+        )}
 
         {needingReply > 0 && (
           <div
@@ -263,7 +283,9 @@ export default function AdminSupportPage() {
                 </div>
               </>
             )}
-            {error && <p style={{ fontFamily: F, fontSize: 12, color: "#8B4A4A", marginTop: 12 }}>{error}</p>}
+            {selectedId && detailError && (
+              <p style={{ fontFamily: F, fontSize: 12, color: "#8B4A4A", marginTop: 12 }}>{detailError}</p>
+            )}
           </div>
         </div>
       </main>

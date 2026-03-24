@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { Prisma } from "@prisma/client";
 import { getAdminSession } from "@/lib/adminAuth";
 import {
   addAdminMessage,
@@ -8,6 +9,24 @@ import {
 } from "@/lib/adminSupport";
 
 export const dynamic = "force-dynamic";
+
+function handlePrismaFailure(e: unknown) {
+  if (e instanceof Prisma.PrismaClientKnownRequestError) {
+    if (e.code === "P2021" || e.code === "P2010") {
+      return NextResponse.json(
+        {
+          ok: false,
+          error: "schema_missing",
+          message:
+            "DB에 쪽지 테이블이 없습니다. 프로덕션 DB에 `npx prisma db push`를 실행하세요.",
+        },
+        { status: 503 }
+      );
+    }
+  }
+  console.error("GET admin support messages failed:", e);
+  return NextResponse.json({ error: "server error" }, { status: 500 });
+}
 
 export async function GET(
   _req: Request,
@@ -44,8 +63,7 @@ export async function GET(
       })),
     });
   } catch (e) {
-    console.error("GET admin support messages failed:", e);
-    return NextResponse.json({ error: "server error" }, { status: 500 });
+    return handlePrismaFailure(e);
   }
 }
 
@@ -87,6 +105,18 @@ export async function POST(
       },
     });
   } catch (e) {
+    if (e instanceof Prisma.PrismaClientKnownRequestError) {
+      if (e.code === "P2021" || e.code === "P2010") {
+        return NextResponse.json(
+          {
+            ok: false,
+            error: "schema_missing",
+            message: "DB에 쪽지 테이블이 없습니다. `npx prisma db push`를 실행하세요.",
+          },
+          { status: 503 }
+        );
+      }
+    }
     console.error("POST admin support messages failed:", e);
     return NextResponse.json({ error: "server error" }, { status: 500 });
   }
