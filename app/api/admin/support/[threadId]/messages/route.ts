@@ -5,8 +5,10 @@ import {
   addAdminMessage,
   getThreadForAdmin,
   listMessagesForThread,
+  readByRecipientForSupportMessage,
   validateSupportText,
 } from "@/lib/adminSupport";
+import { prisma } from "@/lib/prisma";
 
 export const dynamic = "force-dynamic";
 
@@ -47,6 +49,17 @@ export async function GET(
     const messages = await listMessagesForThread(threadId);
     type Row = (typeof messages)[number];
 
+    await prisma.adminSupportThread.update({
+      where: { id: threadId },
+      data: { lastReadByAdminAt: new Date() },
+    });
+    const fresh = await prisma.adminSupportThread.findUnique({
+      where: { id: threadId },
+      select: { lastReadByUserAt: true, lastReadByAdminAt: true },
+    });
+    const lur = fresh?.lastReadByUserAt ?? null;
+    const lar = fresh?.lastReadByAdminAt ?? null;
+
     return NextResponse.json({
       ok: true,
       thread: {
@@ -60,6 +73,7 @@ export async function GET(
         fromAdmin: m.fromAdmin,
         text: m.text,
         createdAt: m.createdAt.toISOString(),
+        readByRecipient: readByRecipientForSupportMessage(m.fromAdmin, m.createdAt, lur, lar),
       })),
     });
   } catch (e) {
@@ -102,6 +116,7 @@ export async function POST(
         fromAdmin: msg.fromAdmin,
         text: msg.text,
         createdAt: msg.createdAt.toISOString(),
+        readByRecipient: false,
       },
     });
   } catch (e) {

@@ -37,6 +37,10 @@ model AdminSupportThread {
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+  /** 가입자가 쪽지함을 마지막으로 연 시각 (관리자 메시지 읽음 판단) */
+  lastReadByUserAt   DateTime?
+  /** 관리자가 해당 스레드를 마지막으로 연 시각 (가입자 메시지 읽음 판단) */
+  lastReadByAdminAt DateTime?
   messages  AdminSupportMessage[]
 
   @@index([updatedAt])

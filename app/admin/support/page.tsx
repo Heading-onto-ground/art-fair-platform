@@ -15,7 +15,7 @@ type ThreadRow = {
   lastMessage: { text: string; fromAdmin: boolean; createdAt: string } | null;
 };
 
-type Msg = { id: string; fromAdmin: boolean; text: string; createdAt: string };
+type Msg = { id: string; fromAdmin: boolean; text: string; createdAt: string; readByRecipient?: boolean };
 type PlatformUser = {
   id: string;
   email: string;
@@ -190,7 +190,7 @@ export default function AdminSupportPage() {
         return;
       }
       setReply("");
-      setMessages((prev) => [...prev, data.message]);
+      setMessages((prev) => [...prev, { ...data.message, readByRecipient: data.message.readByRecipient ?? false }]);
       loadThreads();
     } catch {
       setDetailError("Network error");
@@ -684,7 +684,23 @@ export default function AdminSupportPage() {
                         {m.fromAdmin ? tr("Admin", "관리자") : tr("User", "사용자")}
                       </div>
                       <div style={{ marginTop: 6, fontFamily: F, fontSize: 13, whiteSpace: "pre-wrap", lineHeight: 1.6 }}>{m.text}</div>
-                      <div style={{ marginTop: 6, fontFamily: F, fontSize: 10, color: "#C4BDB0" }}>{new Date(m.createdAt).toLocaleString()}</div>
+                      <div
+                        style={{
+                          marginTop: 6,
+                          display: "flex",
+                          justifyContent: "space-between",
+                          alignItems: "center",
+                          gap: 8,
+                          flexWrap: "wrap",
+                        }}
+                      >
+                        <span style={{ fontFamily: F, fontSize: 10, color: "#C4BDB0" }}>{new Date(m.createdAt).toLocaleString()}</span>
+                        {m.fromAdmin && m.readByRecipient ? (
+                          <span style={{ fontFamily: F, fontSize: 10, color: "#7A9A7A" }}>
+                            {tr("Read by user", "사용자 읽음")}
+                          </span>
+                        ) : null}
+                      </div>
                     </div>
                   ))}
                 </div>

@@ -8,7 +8,7 @@ import { useLanguage } from "@/lib/useLanguage";
 import { t } from "@/lib/translate";
 import { markAllAdminSupportMessagesSeen } from "@/lib/userSupportPending";
 
-type Msg = { id: string; fromAdmin: boolean; text: string; createdAt: string };
+type Msg = { id: string; fromAdmin: boolean; text: string; createdAt: string; readByRecipient?: boolean };
 
 export default function SupportPage() {
   const router = useRouter();
@@ -69,7 +69,7 @@ export default function SupportPage() {
         return;
       }
       setText("");
-      setMessages((prev) => [...prev, data.message]);
+      setMessages((prev) => [...prev, { ...data.message, readByRecipient: data.message.readByRecipient ?? false }]);
     } catch {
       setError("Network error");
     } finally {
@@ -142,8 +142,22 @@ export default function SupportPage() {
                           : "You"}
                   </div>
                   <div style={{ marginTop: 8, fontFamily: F, fontSize: 14, color: "#1A1A1A", lineHeight: 1.65, whiteSpace: "pre-wrap" }}>{m.text}</div>
-                  <div style={{ marginTop: 8, fontFamily: F, fontSize: 10, color: "#C4BDB0" }}>
-                    {new Date(m.createdAt).toLocaleString()}
+                  <div
+                    style={{
+                      marginTop: 8,
+                      display: "flex",
+                      justifyContent: "space-between",
+                      alignItems: "center",
+                      gap: 8,
+                      flexWrap: "wrap",
+                    }}
+                  >
+                    <span style={{ fontFamily: F, fontSize: 10, color: "#C4BDB0" }}>{new Date(m.createdAt).toLocaleString()}</span>
+                    {!m.fromAdmin && m.readByRecipient ? (
+                      <span style={{ fontFamily: F, fontSize: 10, color: "#7A9A7A" }}>
+                        {lang === "ko" ? "관리자 읽음" : lang === "ja" ? "管理者が既読" : "Read by admin"}
+                      </span>
+                    ) : null}
                   </div>
                 </div>
               ))}

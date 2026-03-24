@@ -78,3 +78,17 @@ export async function getThreadForAdmin(threadId: string) {
     include: { user: { select: { email: true, role: true } } },
   });
 }
+
+/** 상대(수신자)가 이 메시지를 읽었는지 — 스레드의 lastRead 타임스탬프 기준 */
+export function readByRecipientForSupportMessage(
+  fromAdmin: boolean,
+  messageCreatedAt: Date,
+  lastReadByUserAt: Date | null,
+  lastReadByAdminAt: Date | null
+): boolean {
+  const t = messageCreatedAt.getTime();
+  if (fromAdmin) {
+    return !!(lastReadByUserAt && lastReadByUserAt.getTime() >= t);
+  }
+  return !!(lastReadByAdminAt && lastReadByAdminAt.getTime() >= t);
+}

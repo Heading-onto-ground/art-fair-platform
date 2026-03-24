@@ -7,6 +7,8 @@ CREATE TABLE IF NOT EXISTS "AdminSupportThread" (
     "userId" TEXT NOT NULL,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "lastReadByUserAt" TIMESTAMP(3),
+    "lastReadByAdminAt" TIMESTAMP(3),
     CONSTRAINT "AdminSupportThread_pkey" PRIMARY KEY ("id")
 );
 
