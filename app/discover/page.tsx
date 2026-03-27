@@ -7,7 +7,7 @@ import TopBar from "@/app/components/TopBar";
 import { F, S } from "@/lib/design";
 import { useLanguage } from "@/lib/useLanguage";
 
-type Artist = { id: string; name: string; artistId: string; country?: string | null; genre?: string | null; profileImage?: string | null };
+type Artist = { id: string; name: string; artistId: string; country?: string | null; city?: string | null; genre?: string | null; profileImage?: string | null };
 type Space = { id: string; name: string; type?: string | null; city?: string | null; country?: string | null };
 type Curator = { id: string; name: string; organization?: string | null };
 type Exhibition = {
@@ -46,6 +46,9 @@ export default function DiscoverPage() {
   // artist discovery from exhibitions
   const [artistMap, setArtistMap] = useState<Map<string, { artist: Artist; exhibitions: Exhibition[] }>>(new Map());
 
+  // all registered artists
+  const [allArtists, setAllArtists] = useState<Artist[]>([]);
+
   const load = useCallback(async () => {
     setLoading(true);
     const params = new URLSearchParams();
@@ -73,6 +76,14 @@ export default function DiscoverPage() {
     setLoading(false);
   }, [city, country, q]);
 
+  // fetch all registered artists once on mount
+  useEffect(() => {
+    fetch("/api/artists?limit=300")
+      .then((r) => r.json())
+      .then((d) => { if (d?.artists) setAllArtists(d.artists); })
+      .catch(() => {});
+  }, []);
+
   useEffect(() => { load(); }, []); // eslint-disable-line
 
   function handleSearch(e: React.FormEvent) {
@@ -81,6 +92,12 @@ export default function DiscoverPage() {
   }
 
   const artistList = Array.from(artistMap.values()).sort((a, b) => b.exhibitions.length - a.exhibitions.length);
+
+  // Merge allArtists with exhibition data; filter by search query client-side
+  const enrichedArtists = (allArtists.length > 0 ? allArtists : artistList.map((e) => e.artist))
+    .filter((a) => !q.trim() || a.name.toLowerCase().includes(q.toLowerCase()) || (a.genre ?? "").toLowerCase().includes(q.toLowerCase()))
+    .map((a) => ({ artist: a, exhibitions: artistMap.get(a.artistId)?.exhibitions ?? [] }))
+    .sort((a, b) => b.exhibitions.length - a.exhibitions.length);
 
   return (
     <>
@@ -117,7 +134,7 @@ export default function DiscoverPage() {
             <button key={tab} onClick={() => setActiveTab(tab)} style={{ padding: "10px 20px", fontFamily: F, fontSize: 11, fontWeight: activeTab === tab ? 600 : 400, letterSpacing: "0.08em", textTransform: "uppercase", border: "none", background: "transparent", color: activeTab === tab ? "#1A1A1A" : "#B0AAA2", cursor: "pointer", borderBottom: activeTab === tab ? "2px solid #1A1A1A" : "2px solid transparent", marginBottom: -1 }}>
               {tab === "exhibitions"
                 ? (lang === "ko" ? `전시 (${total})` : `Exhibitions (${total})`)
-                : (lang === "ko" ? `작가 (${artistMap.size})` : `Artists (${artistMap.size})`)}
+                : (lang === "ko" ? `작가 (${allArtists.length || artistMap.size})` : `Artists (${allArtists.length || artistMap.size})`)}
             </button>
           ))}
         </div>
@@ -151,13 +168,13 @@ export default function DiscoverPage() {
 
         {!loading && activeTab === "artists" && (
           <>
-            {artistList.length === 0 ? (
+            {enrichedArtists.length === 0 ? (
               <div style={{ textAlign: "center", padding: "60px 0", fontFamily: F, fontSize: 13, color: "#B0AAA2" }}>
                 {lang === "ko" ? "필터 조건에 맞는 작가가 없습니다." : "No artists found for these filters."}
               </div>
             ) : (
               <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(260px, 1fr))", gap: 1, background: "#E8E3DB" }}>
-                {artistList.map(({ artist, exhibitions: exs }) => (
+                {enrichedArtists.map(({ artist, exhibitions: exs }) => (
                   <ArtistCard key={artist.artistId} artist={artist} exhibitions={exs} lang={lang} onClick={() => router.push(`/artist/public/${artist.artistId}`)} />
                 ))}
               </div>

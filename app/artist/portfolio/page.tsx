@@ -84,6 +84,7 @@ export default function ArtistPortfolioPage() {
   const [artistId, setArtistId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [activeCategory, setActiveCategory] = useState<string>("ALL");
+  const [copied, setCopied] = useState(false);
 
   const tr = (ko: string, en: string) => lang === "ko" ? ko : en;
 
@@ -263,8 +264,74 @@ export default function ArtistPortfolioPage() {
                 {tr("공모 탐색", "Open Calls")}
               </button>
             </div>
+
+            {/* ── Share Section ── */}
+            {artistId && (
+              <div style={{ marginTop: 16, padding: "14px 16px", background: "#F5F1EB", border: "1px solid #E8E3DB" }}>
+                <p style={{ fontFamily: F, fontSize: 9, fontWeight: 600, letterSpacing: "0.12em", textTransform: "uppercase", color: "#B0AAA2", margin: "0 0 8px" }}>
+                  {tr("공개 포트폴리오 링크", "Public Portfolio Link")}
+                </p>
+                <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
+                  <code style={{ fontFamily: F, fontSize: 11, color: "#4A4540", background: "#FFFFFF", padding: "6px 10px", border: "1px solid #E8E3DB", flex: 1, minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                    rob-roleofbridge.com/artist/public/{artistId}
+                  </code>
+                  <button
+                    onClick={() => {
+                      navigator.clipboard.writeText(`https://rob-roleofbridge.com/artist/public/${artistId}`);
+                      setCopied(true);
+                      setTimeout(() => setCopied(false), 2000);
+                    }}
+                    style={{ padding: "7px 14px", border: "1px solid #E8E3DB", background: copied ? "#1A1A1A" : "transparent", color: copied ? "#FDFBF7" : "#4A4540", fontFamily: F, fontSize: 9, letterSpacing: "0.1em", textTransform: "uppercase", cursor: "pointer", flexShrink: 0, transition: "all 0.2s" }}
+                  >
+                    {copied ? tr("복사됨 ✓", "Copied ✓") : tr("링크 복사", "Copy Link")}
+                  </button>
+                </div>
+                <p style={{ fontFamily: F, fontSize: 10, color: "#B0AAA2", margin: "8px 0 0", lineHeight: 1.6 }}>
+                  {tr("인스타그램 bio에 추가하면 갤러리와 큐레이터가 찾아올 수 있어요.", "Add this to your Instagram bio so galleries and curators can find you.")}
+                </p>
+              </div>
+            )}
           </div>
         </div>
+
+        {/* ── Profile Completion Bar ── */}
+        {(() => {
+          const score = [
+            profile?.bio ? 20 : 0,
+            profile?.workNote ? 15 : 0,
+            profile?.profileImage ? 15 : 0,
+            (profile?.country || profile?.city) ? 10 : 0,
+            artEvents.length > 0 ? 30 : 0,
+            series.length > 0 ? 10 : 0,
+          ].reduce((a, b) => a + b, 0);
+          if (score >= 100) return null;
+          const missing = [
+            !profile?.bio && tr("아티스트 소개", "Bio"),
+            !profile?.workNote && tr("작업 노트", "Work Note"),
+            !profile?.profileImage && tr("프로필 사진", "Profile Image"),
+            !(profile?.country || profile?.city) && tr("국가/도시", "Location"),
+            artEvents.length === 0 && tr("활동 1개", "1 Activity"),
+            series.length === 0 && tr("시리즈 1개", "1 Series"),
+          ].filter(Boolean);
+          return (
+            <div style={{ marginBottom: 28, padding: "16px 20px", background: "#FAF8F4", border: "1px solid #E8E3DB" }}>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10 }}>
+                <p style={{ fontFamily: F, fontSize: 9, fontWeight: 600, letterSpacing: "0.16em", textTransform: "uppercase", color: "#8B7355", margin: 0 }}>
+                  {tr("프로필 완성도", "Profile Completion")}
+                </p>
+                <span style={{ fontFamily: F, fontSize: 12, fontWeight: 600, color: "#1A1A1A" }}>{score}%</span>
+              </div>
+              <div style={{ height: 4, background: "#E8E3DB", borderRadius: 2, overflow: "hidden", marginBottom: 10 }}>
+                <div style={{ height: "100%", width: `${score}%`, background: "#8B7355", borderRadius: 2, transition: "width 0.5s ease" }} />
+              </div>
+              <p style={{ fontFamily: F, fontSize: 10, color: "#8A8580", margin: 0 }}>
+                {tr("추가하면 완성도가 올라가요: ", "Add to improve: ")}
+                {missing.slice(0, 3).join(" · ")}
+                {missing.length > 3 && ` +${missing.length - 3}`}
+              </p>
+            </div>
+          );
+        })()}
 
         {/* ── Welcome Banner (신규 사용자 / 데이터 없음) ── */}
         {series.length === 0 && exhibitions.length === 0 && artEvents.length === 0 && (

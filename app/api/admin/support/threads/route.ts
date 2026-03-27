@@ -3,6 +3,23 @@ import { Prisma } from "@prisma/client";
 import { getAdminSession } from "@/lib/adminAuth";
 import { addAdminMessage, getOrCreateThread, listThreadsForAdmin, validateSupportText } from "@/lib/adminSupport";
 import { prisma } from "@/lib/prisma";
+import { sendPlatformEmail } from "@/lib/email";
+
+const PLATFORM_URL = process.env.NEXT_PUBLIC_APP_URL || "https://rob-roleofbridge.com";
+
+function buildSupportNotificationEmail() {
+  const subject = "ROB — 새 메시지가 도착했습니다";
+  const text = `ROB 관리자로부터 새 메시지가 도착했습니다.\n\n아래 링크에서 확인하세요:\n${PLATFORM_URL}/support\n\nROB 팀`;
+  const html = `
+<div style="font-family:Helvetica,Arial,sans-serif;max-width:620px;margin:0 auto;padding:32px 24px;background:#fff;color:#1A1A1A;">
+  <p style="font-size:10px;letter-spacing:0.2em;text-transform:uppercase;color:#8B7355;margin:0 0 20px;">ROB — ROLE OF BRIDGE</p>
+  <h2 style="font-size:22px;font-weight:300;margin:0 0 16px;">새 메시지가 도착했습니다</h2>
+  <p style="font-size:14px;line-height:1.8;color:#4A4540;margin:0 0 24px;">ROB 관리자로부터 새 메시지가 도착했습니다. 아래 링크에서 확인해주세요.</p>
+  <a href="${PLATFORM_URL}/support" style="display:inline-block;padding:12px 28px;background:#1A1A1A;color:#fff;text-decoration:none;font-size:11px;letter-spacing:0.1em;text-transform:uppercase;">메시지 확인하기 →</a>
+  <p style="margin-top:40px;font-size:11px;color:#B0AAA2;">ROB — Role of Bridge</p>
+</div>`.trim();
+  return { subject, text, html };
+}
 
 export const dynamic = "force-dynamic";
 const BROADCAST_BATCH_SIZE = 300;
@@ -69,6 +86,14 @@ async function sendBroadcastSupportMessage(text: string, roles: PlatformRole[]) 
     data: { updatedAt: new Date() },
   });
 
+  // 이메일 알림 발송 (fire-and-forget)
+  const { subject, text, html } = buildSupportNotificationEmail();
+  await Promise.allSettled(
+    targets.map((t) =>
+      sendPlatformEmail({ emailType: "support_notification", to: t.email, subject, text, html })
+    )
+  );
+
   return { total: targets.length, sent, roles };
 }
 
@@ -110,6 +135,14 @@ async function sendSelectedSupportMessage(text: string, userIds: string[]) {
     where: { id: { in: threadIds } },
     data: { updatedAt: new Date() },
   });
+
+  // 이메일 알림 발송 (fire-and-forget)
+  const { subject, text, html } = buildSupportNotificationEmail();
+  await Promise.allSettled(
+    targets.map((t) =>
+      sendPlatformEmail({ emailType: "support_notification", to: t.email, subject, text, html })
+    )
+  );
 
   return { total: targets.length, sent, threadIds };
 }
@@ -240,6 +273,12 @@ export async function POST(req: Request) {
       where: { id: thread.id },
       data: { updatedAt: new Date() },
     });
+
+    // 이메일 알림 발송
+    const notif = buildSupportNotificationEmail();
+    sendPlatformEmail({ emailType: "support_notification", to: user.email, ...notif }).catch(
+      (e) => console.error("Support email notification failed:", e)
+    );
 
     return NextResponse.json({
       ok: true,
