@@ -87,10 +87,10 @@ async function sendBroadcastSupportMessage(text: string, roles: PlatformRole[]) 
   });
 
   // 이메일 알림 발송 (fire-and-forget)
-  const { subject, text, html } = buildSupportNotificationEmail();
+  const { subject: notifSubject, text: notifText, html: notifHtml } = buildSupportNotificationEmail();
   await Promise.allSettled(
     targets.map((t) =>
-      sendPlatformEmail({ emailType: "support_notification", to: t.email, subject, text, html })
+      sendPlatformEmail({ emailType: "support_notification", to: t.email, subject: notifSubject, text: notifText, html: notifHtml })
     )
   );
 
@@ -137,10 +137,10 @@ async function sendSelectedSupportMessage(text: string, userIds: string[]) {
   });
 
   // 이메일 알림 발송 (fire-and-forget)
-  const { subject, text, html } = buildSupportNotificationEmail();
+  const { subject: notifSubject, text: notifText, html: notifHtml } = buildSupportNotificationEmail();
   await Promise.allSettled(
     targets.map((t) =>
-      sendPlatformEmail({ emailType: "support_notification", to: t.email, subject, text, html })
+      sendPlatformEmail({ emailType: "support_notification", to: t.email, subject: notifSubject, text: notifText, html: notifHtml })
     )
   );
 
