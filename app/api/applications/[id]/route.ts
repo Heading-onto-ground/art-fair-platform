@@ -8,6 +8,25 @@ import {
 import { getOpenCallById } from "@/app/data/openCalls";
 import { createChatRoom, sendMessage } from "@/lib/chat";
 import { prisma } from "@/lib/prisma";
+import { sendPlatformEmail } from "@/lib/email";
+
+const PLATFORM_URL = process.env.NEXT_PUBLIC_APP_URL || "https://rob-roleofbridge.com";
+
+function fireApplicationResultEmail(artistEmail: string, artistName: string, galleryName: string, theme: string, accepted: boolean) {
+  if (!artistEmail) return;
+  const subject = accepted
+    ? `ROB — ${galleryName} 오픈콜 합격을 축하합니다!`
+    : `ROB — ${galleryName} 오픈콜 결과 안내`;
+  const text = accepted
+    ? `${artistName}님, ${galleryName} 오픈콜 "${theme}" 합격을 축하합니다!\n\nROB에서 갤러리와 채팅으로 배송 정보를 확인하세요.\n\n${PLATFORM_URL}/chat`
+    : `${artistName}님, ${galleryName} 오픈콜 "${theme}" 결과입니다. 이번에는 함께하지 못하게 되었습니다. 다른 오픈콜에 도전해보세요.\n\n${PLATFORM_URL}/artist`;
+  const html = accepted
+    ? `<div style="font-family:Helvetica,Arial,sans-serif;max-width:620px;margin:0 auto;padding:32px 24px;background:#fff;color:#1A1A1A;"><p style="font-size:10px;letter-spacing:0.2em;text-transform:uppercase;color:#8B7355;margin:0 0 20px;">ROB — ROLE OF BRIDGE</p><h2 style="font-size:22px;font-weight:300;margin:0 0 16px;">🎉 합격을 축하합니다!</h2><p style="font-size:14px;line-height:1.8;color:#4A4540;margin:0 0 8px;">${artistName}님,</p><p style="font-size:14px;line-height:1.8;color:#4A4540;margin:0 0 24px;"><strong>${galleryName}</strong>의 오픈콜 <em>"${theme}"</em>에 합격하셨습니다. ROB 플랫폼에서 갤러리와 채팅으로 배송 정보를 확인하세요.</p><a href="${PLATFORM_URL}/chat" style="display:inline-block;padding:12px 28px;background:#1A1A1A;color:#fff;text-decoration:none;font-size:11px;letter-spacing:0.1em;text-transform:uppercase;">채팅 확인하기 →</a><p style="margin-top:40px;font-size:10px;color:#C8C0B8;">ROB — Role of Bridge</p></div>`
+    : `<div style="font-family:Helvetica,Arial,sans-serif;max-width:620px;margin:0 auto;padding:32px 24px;background:#fff;color:#1A1A1A;"><p style="font-size:10px;letter-spacing:0.2em;text-transform:uppercase;color:#8B7355;margin:0 0 20px;">ROB — ROLE OF BRIDGE</p><h2 style="font-size:22px;font-weight:300;margin:0 0 16px;">오픈콜 결과 안내</h2><p style="font-size:14px;line-height:1.8;color:#4A4540;margin:0 0 8px;">${artistName}님,</p><p style="font-size:14px;line-height:1.8;color:#4A4540;margin:0 0 24px;"><strong>${galleryName}</strong>의 오픈콜 <em>"${theme}"</em>에서 이번에는 함께하지 못하게 되었습니다. 다음 기회에 다시 도전해주세요.</p><a href="${PLATFORM_URL}/artist" style="display:inline-block;padding:12px 28px;background:#1A1A1A;color:#fff;text-decoration:none;font-size:11px;letter-spacing:0.1em;text-transform:uppercase;">다른 오픈콜 보기 →</a><p style="margin-top:40px;font-size:10px;color:#C8C0B8;">ROB — Role of Bridge</p></div>`;
+  sendPlatformEmail({ emailType: "application_result", to: artistEmail, subject, text, html }).catch(
+    (e) => console.error("Application result email failed:", e)
+  );
+}
 
 async function recordExhibition(app: Awaited<ReturnType<typeof getApplicationById>>, openCall: Awaited<ReturnType<typeof getOpenCallById>>) {
   if (!app || !openCall) return;
@@ -129,6 +148,11 @@ export async function PATCH(
             : `✅ Your application was accepted. Please confirm shipping details.`;
         await sendMessage(roomId, session.userId, "gallery", msg);
         await recordExhibition(app, openCall);
+        fireApplicationResultEmail(app.artistEmail, app.artistName, openCall.gallery, openCall.theme, true);
+      }
+
+      if (status === "rejected" && app.status !== "rejected") {
+        fireApplicationResultEmail(app.artistEmail, app.artistName, openCall.gallery, openCall.theme, false);
       }
 
       return NextResponse.json({ application: updated }, { status: 200 });

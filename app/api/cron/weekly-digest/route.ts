@@ -16,29 +16,38 @@ function getCronAuth(req: Request): boolean {
   return new URL(req.url).searchParams.get("secret") === secret;
 }
 
-function isDeadlineWithinDays(deadline: string, days: number): boolean {
+function getThisMondayKey(): string {
+  const now = new Date();
+  const day = now.getDay(); // 0=Sun, 1=Mon...
+  const diff = day === 0 ? -6 : 1 - day;
+  const monday = new Date(now);
+  monday.setDate(now.getDate() + diff);
+  return monday.toISOString().slice(0, 10);
+}
+
+function isDeadlineUpcoming(deadline: string, withinDays = 30): boolean {
   try {
     const d = new Date(deadline);
     if (isNaN(d.getTime())) return false;
     const diff = (d.getTime() - Date.now()) / (1000 * 60 * 60 * 24);
-    return diff >= 0 && diff <= days;
+    return diff >= 0 && diff <= withinDays;
   } catch {
     return false;
   }
 }
 
-function buildHtml(openCalls: Array<{ id: string; gallery: string; theme: string; deadline: string; country: string }>): string {
+function buildHtml(openCalls: Array<{ id: string; gallery: string; theme: string; deadline: string; country: string; city: string }>): string {
   const rows = openCalls
+    .slice(0, 8)
     .map((oc) => {
       const daysLeft = Math.ceil((new Date(oc.deadline).getTime() - Date.now()) / (1000 * 60 * 60 * 24));
       return `
     <tr style="border-bottom:1px solid #F0EBE3;">
       <td style="padding:14px 0;">
-        <div style="font-size:9px;letter-spacing:0.12em;text-transform:uppercase;color:#C04040;margin-bottom:3px;">D-${daysLeft} · ${oc.country}</div>
+        <div style="font-size:9px;letter-spacing:0.12em;text-transform:uppercase;color:#8B7355;margin-bottom:3px;">${oc.country}${oc.city ? " / " + oc.city : ""} · D-${daysLeft}</div>
         <div style="font-size:15px;color:#1A1A1A;margin-bottom:2px;">${oc.gallery}</div>
         <div style="font-size:12px;color:#6A6660;margin-bottom:6px;">${oc.theme}</div>
-        <div style="font-size:11px;color:#B0AAA2;margin-bottom:6px;">마감: ${oc.deadline}</div>
-        <a href="${PLATFORM_URL}/open-calls/${oc.id}" style="font-size:10px;color:#8B7355;text-decoration:underline;">지금 지원하기 →</a>
+        <a href="${PLATFORM_URL}/open-calls/${oc.id}" style="font-size:10px;color:#8B7355;text-decoration:underline;">지원하기 →</a>
       </td>
     </tr>`;
     })
@@ -47,32 +56,35 @@ function buildHtml(openCalls: Array<{ id: string; gallery: string; theme: string
   return `
 <div style="font-family:Helvetica,Arial,sans-serif;max-width:620px;margin:0 auto;padding:32px 24px;background:#fff;color:#1A1A1A;">
   <p style="font-size:10px;letter-spacing:0.2em;text-transform:uppercase;color:#8B7355;margin:0 0 20px;">ROB — ROLE OF BRIDGE</p>
-  <h2 style="font-size:22px;font-weight:300;margin:0 0 8px;">마감이 다가오고 있습니다</h2>
-  <p style="font-size:13px;color:#8A8580;margin:0 0 28px;">These open calls are closing soon</p>
+  <h2 style="font-size:22px;font-weight:300;margin:0 0 8px;">이번 주 오픈콜</h2>
+  <p style="font-size:13px;color:#8A8580;margin:0 0 28px;">This week's open calls on ROB</p>
   <table style="width:100%;border-collapse:collapse;">${rows}</table>
-  <p style="margin-top:32px;font-size:10px;color:#C8C0B8;">ROB — Role of Bridge</p>
+  <div style="margin-top:28px;padding-top:20px;border-top:1px solid #E8E3DB;">
+    <a href="${PLATFORM_URL}/artist" style="display:inline-block;padding:12px 28px;background:#1A1A1A;color:#fff;text-decoration:none;font-size:11px;letter-spacing:0.1em;text-transform:uppercase;">전체 오픈콜 보기 →</a>
+  </div>
+  <p style="margin-top:24px;font-size:10px;color:#C8C0B8;">ROB — Role of Bridge · <a href="${PLATFORM_URL}" style="color:#8B7355;">rob-roleofbridge.com</a></p>
 </div>`.trim();
 }
 
-// Cron: daily at 8am UTC
 export async function GET(req: Request) {
   if (!getCronAuth(req)) return NextResponse.json({ error: "unauthorized" }, { status: 401 });
 
-  const approaching = await prisma.openCall.findMany({
+  const mondayKey = getThisMondayKey();
+  const emailType = `weekly_digest_${mondayKey}`;
+
+  const allOpenCalls = await prisma.openCall.findMany({
     where: { isExternal: false },
     select: { id: true, gallery: true, theme: true, deadline: true, country: true, city: true },
-  }).then((calls) => calls.filter((oc) => isDeadlineWithinDays(oc.deadline, 5)));
+    orderBy: { deadline: "asc" },
+  });
 
-  if (approaching.length === 0) return NextResponse.json({ ok: true, sent: 0, reason: "no deadlines approaching" });
+  const upcoming = allOpenCalls.filter((oc) => isDeadlineUpcoming(oc.deadline, 30));
+  if (upcoming.length === 0) return NextResponse.json({ ok: true, sent: 0, reason: "no upcoming open calls" });
 
   const artists = await prisma.user.findMany({
     where: { role: "artist" },
     select: { email: true },
   });
-
-  // Use today's date as dedup key so reminder is sent once per day max
-  const today = new Date().toISOString().slice(0, 10);
-  const emailType = `deadline_reminder_${today}`;
 
   let sent = 0;
   for (const artist of artists) {
@@ -84,25 +96,17 @@ export async function GET(req: Request) {
     )) as Array<{ count: bigint }>;
     if (Number(rows[0]?.count ?? 0) > 0) continue;
 
-    const text = `마감이 다가오는 오픈콜:\n\n${approaching.map((oc) => {
-      const d = Math.ceil((new Date(oc.deadline).getTime() - Date.now()) / 86400000);
-      return `• D-${d} | ${oc.gallery} — "${oc.theme}" | 마감: ${oc.deadline}`;
-    }).join("\n")}\n\n${PLATFORM_URL}/artist\n\nROB 팀`;
+    const text = `이번 주 ROB 오픈콜:\n\n${upcoming.slice(0, 8).map((oc) => `• ${oc.gallery} — "${oc.theme}" | 마감: ${oc.deadline}`).join("\n")}\n\n전체 보기: ${PLATFORM_URL}/artist\n\nROB 팀`;
 
     await sendPlatformEmail({
       emailType,
       to: artist.email,
-      subject: `ROB — 마감 임박 오픈콜 ${approaching.length}건`,
+      subject: `ROB 주간 오픈콜 — ${upcoming.length}건의 기회`,
       text,
-      html: buildHtml(approaching),
+      html: buildHtml(upcoming),
     });
     sent++;
   }
 
-  return NextResponse.json({ ok: true, sent, approaching: approaching.length });
-}
-
-// POST: manual trigger (admin use)
-export async function POST(req: Request) {
-  return GET(req);
+  return NextResponse.json({ ok: true, sent, openCallCount: upcoming.length });
 }
