@@ -61,7 +61,7 @@ export async function GET(req: Request) {
   const approaching = await prisma.openCall.findMany({
     where: { isExternal: false },
     select: { id: true, gallery: true, theme: true, deadline: true, country: true, city: true },
-  }).then((calls) => calls.filter((oc) => isDeadlineWithinDays(oc.deadline, 5)));
+  }).then((calls: Array<{ id: string; gallery: string; theme: string; deadline: string; country: string; city: string }>) => calls.filter((oc) => isDeadlineWithinDays(oc.deadline, 5)));
 
   if (approaching.length === 0) return NextResponse.json({ ok: true, sent: 0, reason: "no deadlines approaching" });
 
