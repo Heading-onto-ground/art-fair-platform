@@ -84,11 +84,11 @@ export async function GET(req: Request) {
       if (!user.email || user.email.includes("@invalid.local") || user.email.includes(".bot@")) continue;
 
       // Skip if already sent
-      const rows = await prisma.$queryRawUnsafe<Array<{ count: bigint }>>(
+      const rows = (await prisma.$queryRawUnsafe(
         `SELECT COUNT(*) as count FROM "EmailLog" WHERE "emailType" = $1 AND "toEmail" = $2 AND "status" = 'sent'`,
         step.emailType,
         user.email
-      );
+      )) as Array<{ count: bigint }>;
       if (Number(rows[0]?.count ?? 0) > 0) continue;
 
       await sendPlatformEmail({
