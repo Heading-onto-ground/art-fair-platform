@@ -72,13 +72,14 @@ export async function GET(req: Request) {
   const mondayKey = getThisMondayKey();
   const emailType = `weekly_digest_${mondayKey}`;
 
-  const allOpenCalls = await prisma.openCall.findMany({
+  type OpenCallRow = { id: string; gallery: string; theme: string; deadline: string; country: string; city: string };
+  const allOpenCalls: OpenCallRow[] = await prisma.openCall.findMany({
     where: { isExternal: false },
     select: { id: true, gallery: true, theme: true, deadline: true, country: true, city: true },
     orderBy: { deadline: "asc" },
   });
 
-  const upcoming = allOpenCalls.filter((oc) => isDeadlineUpcoming(oc.deadline, 30));
+  const upcoming: OpenCallRow[] = allOpenCalls.filter((oc) => isDeadlineUpcoming(oc.deadline, 30));
   if (upcoming.length === 0) return NextResponse.json({ ok: true, sent: 0, reason: "no upcoming open calls" });
 
   const artists = await prisma.user.findMany({
