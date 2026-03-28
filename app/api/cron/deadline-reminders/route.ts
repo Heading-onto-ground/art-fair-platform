@@ -58,10 +58,12 @@ function buildHtml(openCalls: Array<{ id: string; gallery: string; theme: string
 export async function GET(req: Request) {
   if (!getCronAuth(req)) return NextResponse.json({ error: "unauthorized" }, { status: 401 });
 
-  const approaching = await prisma.openCall.findMany({
+  type OpenCallRow = { id: string; gallery: string; theme: string; deadline: string; country: string; city: string };
+  const allCalls: OpenCallRow[] = await prisma.openCall.findMany({
     where: { isExternal: false },
     select: { id: true, gallery: true, theme: true, deadline: true, country: true, city: true },
-  }).then((calls: Array<{ id: string; gallery: string; theme: string; deadline: string; country: string; city: string }>) => calls.filter((oc) => isDeadlineWithinDays(oc.deadline, 5)));
+  });
+  const approaching: OpenCallRow[] = allCalls.filter((oc) => isDeadlineWithinDays(oc.deadline, 5));
 
   if (approaching.length === 0) return NextResponse.json({ ok: true, sent: 0, reason: "no deadlines approaching" });
 
