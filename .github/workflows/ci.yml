@@ -10,7 +10,7 @@ on:
 
 jobs:
   web:
-    name: Web (test, build)
+    name: Web (lint, test, build)
     runs-on: ubuntu-latest
 
     steps:
@@ -26,6 +26,9 @@ jobs:
 
       - name: Install dependencies
         run: npm ci
+
+      - name: Lint (web)
+        run: npm run lint:web
 
       - name: Unit tests
         run: npm run test

@@ -20,6 +20,28 @@ type BotPost = {
   createdAt: number;
 };
 
+type HealthSummary = {
+  signups: {
+    last7Days: { artist: number; gallery: number; curator: number; total: number };
+    last30Days: { artist: number; gallery: number; curator: number; total: number };
+  };
+  profileHealth: {
+    artists: { total: number; completed: number; completionRate: number; activated: number };
+    galleries: { total: number; completed: number; completionRate: number };
+  };
+  funnel30d: {
+    artists: { signups: number; profileStarted: number; profileCompleted: number; activatedPortfolio: number };
+    galleries: { signups: number; profileStarted: number; profileCompleted: number };
+  };
+  operations: {
+    supportNeedsReply: number;
+    pendingExternalOutreach: number;
+    failedEmails24h: number;
+    openCallsCreated7d: number;
+  };
+  actions: Array<{ label: string; href: string; level: "high" | "medium" | "low" }>;
+};
+
 export default function AdminHomePage() {
   const router = useRouter();
   const { lang } = useLanguage();
@@ -31,6 +53,7 @@ export default function AdminHomePage() {
   const [botRunMsg, setBotRunMsg] = useState<string | null>(null);
   const [botExists, setBotExists] = useState(0);
   const [botDeleting, setBotDeleting] = useState(false);
+  const [health, setHealth] = useState<HealthSummary | null>(null);
 
   const BOT_LIST = [
     { name: "Yuna Kim", genre: "Photography", location: "Seoul, Korea" },
@@ -56,6 +79,12 @@ export default function AdminHomePage() {
       .then((d) => {
         if (d.botsExist) setBotExists(d.botsExist);
         if (Array.isArray(d.recentPosts)) setBotPosts(d.recentPosts);
+      })
+      .catch(() => {});
+    fetch("/api/admin/health", { credentials: "include", cache: "no-store" })
+      .then((r) => r.json())
+      .then((d) => {
+        if (d?.ok) setHealth(d);
       })
       .catch(() => {});
   }, [authenticated]);
@@ -236,6 +265,102 @@ export default function AdminHomePage() {
             {tr("Control Center", "컨트롤 센터", "コントロールセンター", "Centre de controle")}
           </h1>
         </div>
+
+        {health && (
+          <section style={{ marginBottom: 26, border: "1px solid #E8E3DB", background: "#FFFFFF", padding: 18 }}>
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 14 }}>
+              <span
+                style={{
+                  fontFamily: F,
+                  fontSize: 10,
+                  fontWeight: 500,
+                  letterSpacing: "0.18em",
+                  textTransform: "uppercase",
+                  color: "#8B7355",
+                }}
+              >
+                {tr("Today priorities", "오늘 우선순위", "本日の優先順位", "Priorités du jour")}
+              </span>
+              <span style={{ fontFamily: F, fontSize: 11, color: "#B0AAA2" }}>
+                7d signups: {health.signups.last7Days.total}
+              </span>
+            </div>
+
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(4, minmax(0,1fr))", gap: 10, marginBottom: 14 }}>
+              <div style={{ border: "1px solid #F0EBE3", padding: 12 }}>
+                <div style={{ fontFamily: F, fontSize: 10, color: "#B0AAA2", textTransform: "uppercase", letterSpacing: "0.08em" }}>
+                  Support
+                </div>
+                <div style={{ fontFamily: S, fontSize: 28, color: "#1A1A1A", marginTop: 6 }}>{health.operations.supportNeedsReply}</div>
+                <div style={{ fontFamily: F, fontSize: 11, color: "#8A8580" }}>threads needing reply</div>
+              </div>
+              <div style={{ border: "1px solid #F0EBE3", padding: 12 }}>
+                <div style={{ fontFamily: F, fontSize: 10, color: "#B0AAA2", textTransform: "uppercase", letterSpacing: "0.08em" }}>
+                  Outreach
+                </div>
+                <div style={{ fontFamily: S, fontSize: 28, color: "#1A1A1A", marginTop: 6 }}>{health.operations.pendingExternalOutreach}</div>
+                <div style={{ fontFamily: F, fontSize: 11, color: "#8A8580" }}>pending follow-up</div>
+              </div>
+              <div style={{ border: "1px solid #F0EBE3", padding: 12 }}>
+                <div style={{ fontFamily: F, fontSize: 10, color: "#B0AAA2", textTransform: "uppercase", letterSpacing: "0.08em" }}>
+                  Profile completion
+                </div>
+                <div style={{ fontFamily: S, fontSize: 28, color: "#1A1A1A", marginTop: 6 }}>
+                  {Math.round(health.profileHealth.artists.completionRate * 100)}%
+                </div>
+                <div style={{ fontFamily: F, fontSize: 11, color: "#8A8580" }}>artist completion rate</div>
+              </div>
+              <div style={{ border: "1px solid #F0EBE3", padding: 12 }}>
+                <div style={{ fontFamily: F, fontSize: 10, color: "#B0AAA2", textTransform: "uppercase", letterSpacing: "0.08em" }}>
+                  Failed emails
+                </div>
+                <div style={{ fontFamily: S, fontSize: 28, color: "#1A1A1A", marginTop: 6 }}>{health.operations.failedEmails24h}</div>
+                <div style={{ fontFamily: F, fontSize: 11, color: "#8A8580" }}>last 24 hours</div>
+              </div>
+            </div>
+
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginBottom: 12 }}>
+              <div style={{ border: "1px solid #F0EBE3", padding: 12 }}>
+                <div style={{ fontFamily: F, fontSize: 10, color: "#B0AAA2", textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 8 }}>
+                  Artist funnel (30d)
+                </div>
+                <div style={{ fontFamily: F, fontSize: 12, color: "#4A4540", lineHeight: 1.9 }}>
+                  Signups {health.funnel30d.artists.signups} → Started {health.funnel30d.artists.profileStarted} → Completed {health.funnel30d.artists.profileCompleted} → Activated {health.funnel30d.artists.activatedPortfolio}
+                </div>
+              </div>
+              <div style={{ border: "1px solid #F0EBE3", padding: 12 }}>
+                <div style={{ fontFamily: F, fontSize: 10, color: "#B0AAA2", textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 8 }}>
+                  Gallery funnel (30d)
+                </div>
+                <div style={{ fontFamily: F, fontSize: 12, color: "#4A4540", lineHeight: 1.9 }}>
+                  Signups {health.funnel30d.galleries.signups} → Started {health.funnel30d.galleries.profileStarted} → Completed {health.funnel30d.galleries.profileCompleted}
+                </div>
+              </div>
+            </div>
+
+            <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
+              {health.actions.map((a) => (
+                <button
+                  key={`${a.href}-${a.label}`}
+                  onClick={() => router.push(a.href)}
+                  style={{
+                    border: "1px solid #E8E3DB",
+                    background: a.level === "high" ? "#FFF6F5" : a.level === "medium" ? "#FFFBF3" : "#F8F7F4",
+                    color: "#4A4540",
+                    padding: "8px 12px",
+                    fontFamily: F,
+                    fontSize: 11,
+                    letterSpacing: "0.04em",
+                    textTransform: "none",
+                    cursor: "pointer",
+                  }}
+                >
+                  {a.label}
+                </button>
+              ))}
+            </div>
+          </section>
+        )}
 
         <div
           style={{
