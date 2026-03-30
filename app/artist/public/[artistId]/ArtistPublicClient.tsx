@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
+import Link from "next/link";
 import TopBar from "@/app/components/TopBar";
 import { F, S } from "@/lib/design";
 
@@ -56,7 +57,16 @@ const EVENT_COLOR: Record<string, string> = {
 
 export default function ArtistPublicClient() {
   const { artistId } = useParams<{ artistId: string }>();
-  const [data, setData] = useState<{ name: string; userId?: string | null; workNote?: string | null; exhibitions: Exhibition[]; series: SeriesItem[]; artEvents: ArtEventItem[] } | null>(null);
+  const [data, setData] = useState<{
+    name: string;
+    userId?: string | null;
+    workNote?: string | null;
+    trustScore?: number;
+    trustLevel?: "basic" | "verified" | "trusted";
+    exhibitions: Exhibition[];
+    series: SeriesItem[];
+    artEvents: ArtEventItem[];
+  } | null>(null);
   const [me, setMe] = useState<{ session?: { userId: string; role: string } } | null>(null);
   const [notFound, setNotFound] = useState(false);
   const [following, setFollowing] = useState(false);
@@ -119,6 +129,13 @@ export default function ArtistPublicClient() {
     );
   }
 
+  const trust =
+    data.trustLevel === "trusted"
+      ? { label: "Trusted", color: "#2E6B45", bg: "#EDF7F1", border: "#D6EAD8" }
+      : data.trustLevel === "verified"
+        ? { label: "Verified", color: "#7A6030", bg: "#FFF6E8", border: "#EFD9B7" }
+        : { label: "Basic", color: "#8A8580", bg: "#F5F3F0", border: "#ECEAE6" };
+
   return (
     <>
       <TopBar />
@@ -139,6 +156,14 @@ export default function ArtistPublicClient() {
       <h1 style={{ fontFamily: S, fontSize: 40, fontWeight: 300, color: "#1A1A1A", marginTop: 8, marginBottom: 8 }}>
         {data.name}
       </h1>
+      <div style={{ display: "inline-flex", alignItems: "center", gap: 8, marginBottom: 8 }}>
+        <span style={{ fontFamily: F, fontSize: 10, fontWeight: 600, letterSpacing: "0.07em", color: trust.color, background: trust.bg, border: `1px solid ${trust.border}`, padding: "3px 8px" }}>
+          {trust.label}
+        </span>
+        <span style={{ fontFamily: F, fontSize: 10, color: "#8A8580" }}>
+          Trust score {Math.max(0, Math.min(100, Number(data.trustScore ?? 0)))}
+        </span>
+      </div>
       <p style={{ fontFamily: F, fontSize: 11, color: "#B0AAA2", letterSpacing: "0.08em", marginBottom: 32 }}>
         {artistId}
       </p>
@@ -159,12 +184,12 @@ export default function ArtistPublicClient() {
           <p style={{ fontFamily: F, fontSize: 12, color: "#1E40AF", marginBottom: 14, lineHeight: 1.5 }}>
             전시를 등록하면 여기 타임라인에 자동으로 쌓입니다.
           </p>
-          <a
+          <Link
             href="/exhibitions/new"
             style={{ display: "inline-flex", alignItems: "center", gap: 8, padding: "12px 24px", background: "#2563EB", color: "#FFFFFF", fontFamily: F, fontSize: 11, fontWeight: 600, letterSpacing: "0.1em", textTransform: "uppercase", textDecoration: "none", borderRadius: 8 }}
           >
             + Add Exhibition
-          </a>
+          </Link>
         </div>
       )}
 
@@ -195,12 +220,12 @@ export default function ArtistPublicClient() {
           >
             Invite a Gallery →
           </a>
-          <a
+          <Link
             href="/open-calls"
             style={{ padding: "9px 16px", border: "1px solid #E8E3DB", background: "#FFFFFF", fontFamily: F, fontSize: 10, fontWeight: 600, color: "#6A6660", letterSpacing: "0.1em", textTransform: "uppercase", textDecoration: "none" }}
           >
             Explore Open Calls →
-          </a>
+          </Link>
         </div>
       )}
 

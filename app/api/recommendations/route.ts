@@ -70,7 +70,13 @@ export async function GET() {
     const applications = await listApplicationsByArtist(session.userId);
     const appliedIds = new Set(applications.map((a) => a.openCallId));
 
-    const genre = "genre" in profile ? (profile as any).genre ?? "" : "";
+    const profileWithGenre = profile as { genre?: unknown };
+    const genre = typeof profileWithGenre.genre === "string" ? profileWithGenre.genre : "";
+    const profileTips: string[] = [];
+    if (!profile.country) profileTips.push("Add your country for stronger local matching");
+    if (!profile.city) profileTips.push("Add your city to prioritize nearby opportunities");
+    if (!genre) profileTips.push("Set your main genre to improve theme matching");
+    if (!profile.bio) profileTips.push("Write a short bio so galleries can understand your practice");
     const artist = {
       userId: session.userId,
       name: profile.name ?? "",
@@ -101,9 +107,24 @@ export async function GET() {
           : matched
     ).slice(0, 5);
 
+    const nextDeadline = recommendations
+      .map((r) => ({ id: r.id, deadline: r.deadline, ms: new Date(r.deadline).getTime() - Date.now() }))
+      .filter((r) => Number.isFinite(r.ms) && r.ms > 0)
+      .sort((a, b) => a.ms - b.ms)[0];
+
     return NextResponse.json({
       recommendations,
       totalAvailable: openCalls.filter((oc) => !appliedIds.has(oc.id)).length,
+      profileTips,
+      nextAction:
+        nextDeadline
+          ? {
+              type: "deadline",
+              openCallId: nextDeadline.id,
+              deadline: nextDeadline.deadline,
+              daysLeft: Math.max(1, Math.ceil(nextDeadline.ms / (1000 * 60 * 60 * 24))),
+            }
+          : null,
     });
   } catch (e) {
     console.error("GET /api/recommendations failed:", e);

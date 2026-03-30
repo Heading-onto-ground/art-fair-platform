@@ -2,7 +2,6 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import Link from "next/link";
 import TopBar from "@/app/components/TopBar";
 import OpenCallPoster from "@/app/components/OpenCallPoster";
 import { useLanguage } from "@/lib/useLanguage";
@@ -27,6 +26,29 @@ function hostFromUrl(url?: string): string {
   } catch {
     return "";
   }
+}
+
+function formatDeadlineLocal(deadline: string, lang: string): string {
+  const d = new Date(deadline);
+  if (Number.isNaN(d.getTime())) return deadline;
+  const locale = lang === "ko" ? "ko-KR" : lang === "ja" ? "ja-JP" : lang === "fr" ? "fr-FR" : "en-US";
+  return new Intl.DateTimeFormat(locale, { year: "numeric", month: "short", day: "numeric" }).format(d);
+}
+
+function buildApplyTemplate(lang: string, gallery: string, theme: string, variant: "short" | "portfolio" | "local") {
+  if (lang === "ko") {
+    if (variant === "portfolio") return `안녕하세요 ${gallery} 팀,\n\n"${theme}" 오픈콜에 지원하고 싶습니다. 제 작업 방향과 기존 포트폴리오가 이번 주제와 잘 맞는다고 생각합니다. 검토 부탁드립니다.\n\n감사합니다.`;
+    if (variant === "local") return `안녕하세요 ${gallery} 팀,\n\n같은 지역 기반으로 활동하며 "${theme}" 주제에 관심이 있어 지원드립니다. 전시/협업 관련 논의를 이어가고 싶습니다.\n\n감사합니다.`;
+    return `안녕하세요 ${gallery} 팀,\n\n"${theme}" 오픈콜에 지원드립니다. 제 작업이 이번 전시 취지와 맞아 검토 부탁드립니다.\n\n감사합니다.`;
+  }
+  if (lang === "ja") {
+    if (variant === "portfolio") return `${gallery} チームの皆様\n\n「${theme}」オープンコールに応募いたします。私の制作テーマとポートフォリオが本企画に適していると考えています。ご確認をお願いいたします。`;
+    if (variant === "local") return `${gallery} チームの皆様\n\n同地域で活動しており、「${theme}」に強い関心があります。展示・協働についてご相談できれば幸いです。`;
+    return `${gallery} チームの皆様\n\n「${theme}」オープンコールに応募いたします。企画意図に沿う内容だと考えております。よろしくお願いいたします。`;
+  }
+  if (variant === "portfolio") return `Hello ${gallery} team,\n\nI would like to apply for "${theme}". I believe my current body of work and portfolio align with this open call. Thank you for reviewing my application.`;
+  if (variant === "local") return `Hello ${gallery} team,\n\nI am based in your region and very interested in "${theme}". I would love to discuss possible exhibition collaboration through this open call.`;
+  return `Hello ${gallery} team,\n\nI am applying to "${theme}" and would be grateful for your review. I believe my practice aligns well with this opportunity.`;
 }
 
 export default function OpenCallDetailPage({ params }: { params: { id: string } }) {
@@ -234,7 +256,7 @@ export default function OpenCallDetailPage({ params }: { params: { id: string } 
                 <span style={{ fontFamily: F, fontSize: 10, fontWeight: 500, letterSpacing: "0.1em", color: "#B0AAA2", textTransform: "uppercase" }}>
                   {lang === "ko" ? "작가 지원 마감일" : t("deadline", lang)}
                 </span>
-                <div style={{ fontFamily: S, fontSize: 22, fontWeight: 400, color: "#1A1A1A", marginTop: 4 }}>{openCall.deadline}</div>
+                <div style={{ fontFamily: S, fontSize: 22, fontWeight: 400, color: "#1A1A1A", marginTop: 4 }}>{formatDeadlineLocal(openCall.deadline, lang)}</div>
               </div>
 
             </div>
@@ -252,7 +274,7 @@ export default function OpenCallDetailPage({ params }: { params: { id: string } 
                   textDecoration: "none",
                 }}
               >
-                {lang === "ko" ? "캘린더 추가" : lang === "ja" ? "カレンダー追加" : "Add to Calendar"}
+                {t("oc_add_calendar", lang)}
               </a>
               <button onClick={() => router.push("/open-calls")} style={{ ...btn(false), background: "transparent", color: "#8A8580", border: "1px solid #E8E3DB" }}>{t("oc_back_to_list", lang)}</button>
             </div>
@@ -326,6 +348,17 @@ export default function OpenCallDetailPage({ params }: { params: { id: string } 
                   </div>
                 ) : (
                   <div>
+                    <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 10 }}>
+                      <button type="button" onClick={() => setApplyMessage(buildApplyTemplate(lang, openCall.gallery, openCall.theme, "short"))} style={{ border: "1px solid #E8E3DB", background: "#FFFFFF", color: "#8A8580", fontFamily: F, fontSize: 10, letterSpacing: "0.08em", padding: "6px 10px", cursor: "pointer" }}>
+                        {t("oc_tpl_short", lang)}
+                      </button>
+                      <button type="button" onClick={() => setApplyMessage(buildApplyTemplate(lang, openCall.gallery, openCall.theme, "portfolio"))} style={{ border: "1px solid #E8E3DB", background: "#FFFFFF", color: "#8A8580", fontFamily: F, fontSize: 10, letterSpacing: "0.08em", padding: "6px 10px", cursor: "pointer" }}>
+                        {t("oc_tpl_portfolio", lang)}
+                      </button>
+                      <button type="button" onClick={() => setApplyMessage(buildApplyTemplate(lang, openCall.gallery, openCall.theme, "local"))} style={{ border: "1px solid #E8E3DB", background: "#FFFFFF", color: "#8A8580", fontFamily: F, fontSize: 10, letterSpacing: "0.08em", padding: "6px 10px", cursor: "pointer" }}>
+                        {t("oc_tpl_local", lang)}
+                      </button>
+                    </div>
                     <textarea value={applyMessage} onChange={(e) => setApplyMessage(e.target.value)} placeholder={t("oc_write_message", lang)} rows={4} style={{ ...inp, resize: "vertical" }} />
                     <button onClick={applyToOpenCall} disabled={applying} style={{ ...btn(applying), marginTop: 12 }}>
                       {applying ? "..." : t("oc_submit_application", lang)}

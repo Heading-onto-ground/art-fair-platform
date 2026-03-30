@@ -16,11 +16,15 @@ type Recommendation = {
   isExternal?: boolean;
 };
 
+type NextAction = { type: "deadline"; openCallId: string; deadline: string; daysLeft: number } | null;
+
 export default function RecommendationBanner() {
   const router = useRouter();
   const [recs, setRecs] = useState<Recommendation[]>([]);
   const [loading, setLoading] = useState(true);
   const [dismissed, setDismissed] = useState(false);
+  const [profileTips, setProfileTips] = useState<string[]>([]);
+  const [nextAction, setNextAction] = useState<NextAction>(null);
 
   useEffect(() => {
     (async () => {
@@ -28,6 +32,8 @@ export default function RecommendationBanner() {
         const res = await fetch("/api/recommendations", { cache: "no-store", credentials: "include" });
         const data = await res.json();
         if (data.recommendations) setRecs(data.recommendations);
+        if (Array.isArray(data.profileTips)) setProfileTips(data.profileTips);
+        if (data.nextAction) setNextAction(data.nextAction as NextAction);
       } catch {
         // Silent fail — recommendations are optional
       } finally {
@@ -59,8 +65,28 @@ export default function RecommendationBanner() {
       </div>
 
       {/* Cards */}
+      {(profileTips.length > 0 || nextAction) && (
+        <div style={{ padding: "14px 32px", borderBottom: "1px solid #E8E3DB", background: "#FCFAF6" }}>
+          {nextAction ? (
+            <div style={{ fontFamily: F, fontSize: 11, color: "#6A6660", marginBottom: profileTips.length ? 8 : 0 }}>
+              Next action: deadline in {nextAction.daysLeft} day(s).{" "}
+              <button
+                onClick={() => router.push(`/open-calls/${nextAction.openCallId}`)}
+                style={{ border: "none", background: "transparent", color: "#8B7355", cursor: "pointer", textDecoration: "underline", padding: 0, fontFamily: F, fontSize: 11 }}
+              >
+                Open call details
+              </button>
+            </div>
+          ) : null}
+          {profileTips.slice(0, 2).map((tip, idx) => (
+            <div key={idx} style={{ fontFamily: F, fontSize: 10, color: "#8A8580", marginTop: idx === 0 ? 0 : 4 }}>
+              • {tip}
+            </div>
+          ))}
+        </div>
+      )}
       <div style={{ display: "grid", gap: 1, background: "#E8E3DB" }}>
-        {recs.slice(0, 3).map((rec, i) => {
+        {recs.slice(0, 3).map((rec) => {
           const daysLeft = Math.ceil((new Date(rec.deadline).getTime() - Date.now()) / (1000 * 60 * 60 * 24));
           const scorePercent = Math.round(rec.matchScore * 100);
 

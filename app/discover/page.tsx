@@ -8,7 +8,17 @@ import GlobalSearch from "@/app/components/GlobalSearch";
 import { F, S } from "@/lib/design";
 import { useLanguage } from "@/lib/useLanguage";
 
-type Artist = { id: string; name: string; artistId: string; country?: string | null; city?: string | null; genre?: string | null; profileImage?: string | null };
+type Artist = {
+  id: string;
+  name: string;
+  artistId: string;
+  country?: string | null;
+  city?: string | null;
+  genre?: string | null;
+  profileImage?: string | null;
+  trustScore?: number;
+  trustLevel?: "basic" | "verified" | "trusted";
+};
 type Space = { id: string; name: string; type?: string | null; city?: string | null; country?: string | null };
 type Curator = { id: string; name: string; organization?: string | null };
 type Exhibition = {
@@ -228,6 +238,12 @@ function ExhibitionCard({ ex, lang, onClick }: { ex: Exhibition; lang: string; o
 }
 
 function ArtistCard({ artist, exhibitions, lang, onClick }: { artist: Artist; exhibitions: Exhibition[]; lang: string; onClick: () => void }) {
+  const trust =
+    artist.trustLevel === "trusted"
+      ? { label: "Trusted", color: "#2E6B45", bg: "#EDF7F1", border: "#D6EAD8" }
+      : artist.trustLevel === "verified"
+        ? { label: "Verified", color: "#7A6030", bg: "#FFF6E8", border: "#EFD9B7" }
+        : { label: "Basic", color: "#8A8580", bg: "#F5F3F0", border: "#ECEAE6" };
   return (
     <div onClick={onClick} style={{ background: "#FDFBF7", padding: 24, cursor: "pointer", transition: "background 0.2s" }}
       onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = "#F5F0E8"; }}
@@ -241,11 +257,19 @@ function ArtistCard({ artist, exhibitions, lang, onClick }: { artist: Artist; ex
           </div>
         )}
         <div>
-          <div style={{ fontFamily: S, fontSize: 18, fontWeight: 400, color: "#1A1A1A" }}>{artist.name}</div>
+          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+            <div style={{ fontFamily: S, fontSize: 18, fontWeight: 400, color: "#1A1A1A" }}>{artist.name}</div>
+            <span style={{ fontFamily: F, fontSize: 9, fontWeight: 600, letterSpacing: "0.06em", color: trust.color, background: trust.bg, border: `1px solid ${trust.border}`, padding: "2px 7px" }}>
+              {trust.label}
+            </span>
+          </div>
           <div style={{ fontFamily: F, fontSize: 10, color: "#8A8580", letterSpacing: "0.05em" }}>
             {[artist.country, artist.genre].filter(Boolean).join(" · ")}
           </div>
         </div>
+      </div>
+      <div style={{ fontFamily: F, fontSize: 10, color: "#B0AAA2", marginBottom: 8 }}>
+        Trust score: {Math.max(0, Math.min(100, Number(artist.trustScore ?? 0)))}
       </div>
       <div style={{ fontFamily: F, fontSize: 10, color: "#8B7355", letterSpacing: "0.08em" }}>
         {exhibitions.length} {lang === "ko" ? "전시" : exhibitions.length === 1 ? "exhibition" : "exhibitions"}

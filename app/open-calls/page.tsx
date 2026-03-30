@@ -1,6 +1,5 @@
 "use client";
 
-import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import TopBar from "@/app/components/TopBar";
@@ -29,6 +28,13 @@ function normalizeCountry(input: string): string {
     return "한국";
   }
   return v;
+}
+
+function formatDeadlineLocal(deadline: string, lang: string): string {
+  const d = new Date(deadline);
+  if (Number.isNaN(d.getTime())) return deadline;
+  const locale = lang === "ko" ? "ko-KR" : lang === "ja" ? "ja-JP" : lang === "fr" ? "fr-FR" : "en-US";
+  return new Intl.DateTimeFormat(locale, { year: "numeric", month: "short", day: "numeric" }).format(d);
 }
 
 type ScoreBreakdown = { country: number; genre: number; city: number; bio: number; total: number };
@@ -375,7 +381,7 @@ export default function OpenCallsPage() {
                     <span style={{ fontFamily: F, fontSize: 9, fontWeight: 500, letterSpacing: "0.1em", textTransform: "uppercase", color: "#B0AAA2" }}>
                       {lang === "ko" ? "작가 지원 마감일" : t("deadline", lang)}
                     </span>
-                    <div style={{ fontFamily: S, fontSize: 18, fontWeight: 400, color: "#1A1A1A", marginTop: 4 }}>{o.deadline}</div>
+                    <div style={{ fontFamily: S, fontSize: 18, fontWeight: 400, color: "#1A1A1A", marginTop: 4 }}>{formatDeadlineLocal(o.deadline, lang)}</div>
                     <a
                       href={`/api/open-calls/${o.id}/calendar`}
                       onClick={(e) => e.stopPropagation()}
@@ -393,7 +399,7 @@ export default function OpenCallsPage() {
                         textDecoration: "none",
                       }}
                     >
-                      {lang === "ko" ? "캘린더" : lang === "ja" ? "カレンダー" : "Calendar"}
+                    {t("oc_calendar_short", lang)}
                     </a>
                   </div>
                 </div>
