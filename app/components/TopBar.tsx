@@ -213,10 +213,10 @@ export default function TopBar() {
         { path: "/feed", label: lang === "ko" ? "피드" : "FEED" },
         { path: "/network", label: lang === "ko" ? "네트워크" : "NETWORK" },
         { path: "/community", label: t("nav_community", lang) },
-        { path: "/about", label: "ABOUT" },
         { path: "/contact", label: lang === "ko" ? "문의" : lang === "ja" ? "お問い合わせ" : "CONTACT" },
       ],
     },
+    { path: "/about", label: "ABOUT" },
   ], [lang]);
 
   const galleryNav = useMemo((): NavEntry[] => [
@@ -230,10 +230,10 @@ export default function TopBar() {
         { path: "/galleries", label: t("nav_galleries", lang) },
         { path: "/community", label: t("nav_community", lang) },
         { path: "/admin/outreach", label: t("nav_growth", lang) },
-        { path: "/about", label: "ABOUT" },
         { path: "/contact", label: lang === "ko" ? "문의" : lang === "ja" ? "お問い合わせ" : "CONTACT" },
       ],
     },
+    { path: "/about", label: "ABOUT" },
   ], [lang]);
 
   const curatorNav = useMemo((): NavEntry[] => [
@@ -246,10 +246,10 @@ export default function TopBar() {
         { path: "/galleries", label: t("nav_galleries", lang) },
         { path: "/curators", label: lang === "ko" ? "큐레이터" : "CURATORS" },
         { path: "/community", label: t("nav_community", lang) },
-        { path: "/about", label: "ABOUT" },
         { path: "/contact", label: lang === "ko" ? "문의" : lang === "ja" ? "お問い合わせ" : "CONTACT" },
       ],
     },
+    { path: "/about", label: "ABOUT" },
   ], [lang]);
 
   const navEntries = useMemo(
