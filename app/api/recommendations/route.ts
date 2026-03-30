@@ -40,6 +40,10 @@ function isLikelyGarbageGalleryName(name: string) {
   return false;
 }
 
+function normalizedText(input: string) {
+  return String(input || "").trim().toLowerCase();
+}
+
 export async function GET() {
   try {
     const session = getServerSession();
@@ -93,6 +97,52 @@ export async function GET() {
       appliedIds
     );
 
+    // Behavior-aware reranking:
+    // learn lightweight preference signals from the artist's previous applications.
+    const openCallById = new Map(openCalls.map((oc) => [oc.id, oc]));
+    const countryPref = new Map<string, number>();
+    const keywordPref = new Map<string, number>();
+    for (const app of applications) {
+      const oc = openCallById.get(app.openCallId);
+      if (!oc) continue;
+      const c = normalizedText(oc.country);
+      countryPref.set(c, (countryPref.get(c) || 0) + 1);
+      for (const token of normalizedText(oc.theme).split(/[\s,/—–-]+/g)) {
+        if (token.length < 4) continue;
+        keywordPref.set(token, (keywordPref.get(token) || 0) + 1);
+      }
+    }
+
+    const reranked = matched
+      .map((m) => {
+        let boost = 0;
+        const reasons = [...m.matchReasons];
+
+        const countryBoost = Math.min(0.09, (countryPref.get(normalizedText(m.country)) || 0) * 0.03);
+        if (countryBoost > 0) {
+          boost += countryBoost;
+          reasons.push("Aligned with your past submissions");
+        }
+
+        let themeBoost = 0;
+        for (const token of normalizedText(m.theme).split(/[\s,/—–-]+/g)) {
+          if (token.length < 4) continue;
+          const hit = keywordPref.get(token) || 0;
+          if (hit > 0) themeBoost += Math.min(0.01 * hit, 0.03);
+        }
+        if (themeBoost > 0) {
+          boost += Math.min(0.09, themeBoost);
+          reasons.push("Matches your application pattern");
+        }
+
+        return {
+          ...m,
+          matchScore: Math.min(1, Number((m.matchScore + boost).toFixed(4))),
+          matchReasons: Array.from(new Set(reasons)).slice(0, 6),
+        };
+      })
+      .sort((a, b) => b.matchScore - a.matchScore);
+
     const pinnedOpenCallId = await getPinnedOpenCallId();
     const pinnedGalleryId = pinnedOpenCallId ? null : await getPinnedOpenCallGalleryId(); // legacy fallback
 
@@ -101,10 +151,10 @@ export async function GET() {
 
     const recommendations = (
       pinnedMatched
-        ? [pinnedMatched, ...matched.filter((m) => m.id !== pinnedMatched.id)]
+        ? [pinnedMatched, ...reranked.filter((m) => m.id !== pinnedMatched.id)]
         : pinnedGalleryId
-          ? [...matched.filter((m) => m.galleryId === pinnedGalleryId), ...matched.filter((m) => m.galleryId !== pinnedGalleryId)]
-          : matched
+          ? [...reranked.filter((m) => m.galleryId === pinnedGalleryId), ...reranked.filter((m) => m.galleryId !== pinnedGalleryId)]
+          : reranked
     ).slice(0, 5);
 
     const nextDeadline = recommendations

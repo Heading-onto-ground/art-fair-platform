@@ -24,7 +24,7 @@ export async function PATCH(
       return NextResponse.json({ error: "invalid status" }, { status: 400 });
     }
 
-    const updated = await updateInviteStatus(params.id, status);
+    const updated = await updateInviteStatus(params.id, status, "gallery");
     return NextResponse.json({ invite: updated }, { status: 200 });
   } catch (e) {
     console.error("PATCH /api/gallery/invites/[id] failed:", e);

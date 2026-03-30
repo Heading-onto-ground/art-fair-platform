@@ -63,6 +63,7 @@ export default function ArtistPublicClient() {
     workNote?: string | null;
     trustScore?: number;
     trustLevel?: "basic" | "verified" | "trusted";
+    verification?: { verified: boolean; label?: string | null; approvedAt?: number | null };
     exhibitions: Exhibition[];
     series: SeriesItem[];
     artEvents: ArtEventItem[];
@@ -157,6 +158,11 @@ export default function ArtistPublicClient() {
         {data.name}
       </h1>
       <div style={{ display: "inline-flex", alignItems: "center", gap: 8, marginBottom: 8 }}>
+        {data.verification?.verified ? (
+          <span style={{ fontFamily: F, fontSize: 10, fontWeight: 600, letterSpacing: "0.07em", color: "#1C4D80", background: "#EAF3FF", border: "1px solid #C9DDF7", padding: "3px 8px" }}>
+            {data.verification.label || "Verified Artist"}
+          </span>
+        ) : null}
         <span style={{ fontFamily: F, fontSize: 10, fontWeight: 600, letterSpacing: "0.07em", color: trust.color, background: trust.bg, border: `1px solid ${trust.border}`, padding: "3px 8px" }}>
           {trust.label}
         </span>

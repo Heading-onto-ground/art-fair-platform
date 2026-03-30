@@ -27,6 +27,17 @@ type Stats = {
   withPortfolio: number;
 };
 
+type VerificationRequest = {
+  id: string;
+  userId: string;
+  artistId: string;
+  artistName: string;
+  email: string;
+  note?: string;
+  status: "pending" | "approved" | "rejected";
+  createdAt: number;
+};
+
 export default function AdminUsersPage() {
   const router = useRouter();
   const { lang } = useLanguage();
@@ -42,6 +53,8 @@ export default function AdminUsersPage() {
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [deleting, setDeleting] = useState(false);
   const [clearingPortfolio, setClearingPortfolio] = useState<string | null>(null);
+  const [verificationRequests, setVerificationRequests] = useState<VerificationRequest[]>([]);
+  const [reviewingRequestId, setReviewingRequestId] = useState<string | null>(null);
   const tr = (en: string, ko: string, ja: string, fr: string) =>
     lang === "ko" ? ko : lang === "ja" ? ja : lang === "fr" ? fr : en;
 
@@ -66,18 +79,44 @@ export default function AdminUsersPage() {
     setLoading(true);
     setErr(null);
     try {
-      const res = await fetch("/api/admin/users", { cache: "no-store", credentials: "include" });
-      const data = await res.json().catch(() => null);
-      if (!res.ok) throw new Error(data?.error ?? `HTTP ${res.status}`);
-      setUsers(Array.isArray(data?.users) ? data.users : []);
-      setStats(data?.stats ?? null);
+      const [resUsers, resVerify] = await Promise.all([
+        fetch("/api/admin/users", { cache: "no-store", credentials: "include" }),
+        fetch("/api/admin/verification/requests", { cache: "no-store", credentials: "include" }),
+      ]);
+      const dataUsers = await resUsers.json().catch(() => null);
+      const dataVerify = await resVerify.json().catch(() => null);
+      if (!resUsers.ok) throw new Error(dataUsers?.error ?? `HTTP ${resUsers.status}`);
+      setUsers(Array.isArray(dataUsers?.users) ? dataUsers.users : []);
+      setStats(dataUsers?.stats ?? null);
+      setVerificationRequests(Array.isArray(dataVerify?.requests) ? dataVerify.requests : []);
       setSelectedIds(new Set());
-    } catch (e: any) {
-      setErr(e?.message ?? tr("Failed to load users", "가입자 목록 로드 실패", "ユーザー読み込み失敗", "Échec du chargement des utilisateurs"));
+    } catch (e: unknown) {
+      const message = e instanceof Error ? e.message : null;
+      setErr(message ?? tr("Failed to load users", "가입자 목록 로드 실패", "ユーザー読み込み失敗", "Échec du chargement des utilisateurs"));
       setUsers([]);
       setStats(null);
     } finally {
       setLoading(false);
+    }
+  }
+
+  async function reviewVerification(requestId: string, action: "approved" | "rejected") {
+    if (reviewingRequestId) return;
+    setReviewingRequestId(requestId);
+    try {
+      const res = await fetch("/api/admin/verification/requests", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ requestId, action }),
+      });
+      const data = await res.json().catch(() => null);
+      if (!res.ok || !data?.ok) throw new Error(data?.error ?? "failed");
+      await loadUsers();
+    } catch (e: unknown) {
+      setErr((e instanceof Error ? e.message : null) ?? "Failed to review verification request");
+    } finally {
+      setReviewingRequestId(null);
     }
   }
 
@@ -194,9 +233,9 @@ export default function AdminUsersPage() {
         );
       }
       await loadUsers();
-    } catch (e: any) {
+    } catch (e: unknown) {
       setErr(
-        e?.message ??
+        (e instanceof Error ? e.message : null) ??
           tr(
             "Failed to delete users",
             "가입자 삭제 실패",
@@ -370,6 +409,47 @@ export default function AdminUsersPage() {
                 )}
               </div>
             </div>
+
+            {verificationRequests.filter((r) => r.status === "pending").length > 0 && (
+              <div style={{ border: "1px solid #E5E0DB", background: "#FFFFFF", padding: 16, marginBottom: 16 }}>
+                <div style={{ fontFamily: F, fontSize: 10, letterSpacing: "0.1em", textTransform: "uppercase", color: "#8A8580", marginBottom: 12 }}>
+                  {tr("Pending Verification Requests", "검증 요청 대기", "検証リクエスト待機", "Demandes de verification en attente")}
+                </div>
+                <div style={{ display: "grid", gap: 8 }}>
+                  {verificationRequests
+                    .filter((r) => r.status === "pending")
+                    .slice(0, 12)
+                    .map((r) => (
+                      <div key={r.id} style={{ border: "1px solid #EDE7DE", background: "#FAF8F4", padding: "10px 12px", display: "flex", justifyContent: "space-between", gap: 10, alignItems: "center" }}>
+                        <div>
+                          <div style={{ fontFamily: F, fontSize: 12, color: "#1A1A1A" }}>
+                            {r.artistName || r.artistId} · {r.email}
+                          </div>
+                          <div style={{ fontFamily: F, fontSize: 10, color: "#8A8580", marginTop: 2 }}>
+                            {new Date(r.createdAt).toLocaleDateString()} {r.note ? `· ${r.note}` : ""}
+                          </div>
+                        </div>
+                        <div style={{ display: "flex", gap: 6 }}>
+                          <button
+                            onClick={() => reviewVerification(r.id, "approved")}
+                            disabled={reviewingRequestId === r.id}
+                            style={{ padding: "6px 10px", border: "1px solid #1A1A1A", background: "#1A1A1A", color: "#FFFFFF", fontFamily: F, fontSize: 10, letterSpacing: "0.06em", cursor: "pointer" }}
+                          >
+                            {reviewingRequestId === r.id ? "..." : "Approve"}
+                          </button>
+                          <button
+                            onClick={() => reviewVerification(r.id, "rejected")}
+                            disabled={reviewingRequestId === r.id}
+                            style={{ padding: "6px 10px", border: "1px solid #C8A0A0", background: "transparent", color: "#8B4A4A", fontFamily: F, fontSize: 10, letterSpacing: "0.06em", cursor: "pointer" }}
+                          >
+                            Reject
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                </div>
+              </div>
+            )}
 
             <div style={{ display: "flex", gap: 10, flexWrap: "wrap", marginBottom: 14 }}>
               {(["ALL", "artist", "gallery"] as const).map((r) => (

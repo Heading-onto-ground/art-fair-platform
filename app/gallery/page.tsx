@@ -54,6 +54,10 @@ type Invite = {
   message: string;
   status: "sent" | "viewed" | "accepted" | "declined";
   createdAt: number;
+  viewedAt?: number;
+  respondedAt?: number;
+  responseTimeHours?: number;
+  lastActor?: "gallery" | "artist";
 };
 
 type InviteTemplates = {
@@ -475,6 +479,23 @@ export default function GalleryPage() {
     () => applications.filter((a) => a.status === "submitted").length,
     [applications]
   );
+  const inviteStats = useMemo(() => {
+    const total = invites.length;
+    const viewed = invites.filter((i) => !!i.viewedAt).length;
+    const replied = invites.filter((i) => i.status === "accepted" || i.status === "declined").length;
+    const accepted = invites.filter((i) => i.status === "accepted").length;
+    const avgResponseHours =
+      replied > 0
+        ? Number(
+            (
+              invites
+                .filter((i) => (i.status === "accepted" || i.status === "declined") && typeof i.responseTimeHours === "number")
+                .reduce((sum, i) => sum + Number(i.responseTimeHours || 0), 0) / replied
+            ).toFixed(1)
+          )
+        : 0;
+    return { total, viewed, replied, accepted, avgResponseHours };
+  }, [invites]);
 
   const openCallThemeById = useMemo(() => {
     const map: Record<string, string> = {};
@@ -1013,6 +1034,22 @@ export default function GalleryPage() {
 
         {/* Invites Section */}
         <Section number="05" title={t("gallery_invites", lang)}>
+          {invites.length > 0 && (
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(140px, 1fr))", gap: 8, marginBottom: 14 }}>
+              {[
+                { label: "Sent", value: inviteStats.total },
+                { label: "Viewed", value: inviteStats.viewed },
+                { label: "Replied", value: inviteStats.replied },
+                { label: "Accepted", value: inviteStats.accepted },
+                { label: "Avg h", value: inviteStats.avgResponseHours },
+              ].map((x) => (
+                <div key={x.label} style={{ border: "1px solid #E8E3DB", background: "#FAF8F4", padding: "10px 12px" }}>
+                  <div style={{ fontFamily: F, fontSize: 9, letterSpacing: "0.08em", textTransform: "uppercase", color: "#8A8580", marginBottom: 6 }}>{x.label}</div>
+                  <div style={{ fontFamily: S, fontSize: 20, color: "#1A1A1A", lineHeight: 1 }}>{x.value}</div>
+                </div>
+              ))}
+            </div>
+          )}
           {invites.length === 0 ? (
             <EmptyState>{t("gallery_no_invites", lang)}</EmptyState>
           ) : (
@@ -1035,6 +1072,11 @@ export default function GalleryPage() {
                       </p>
                       <p style={{ fontFamily: F, fontSize: 11, color: "#8A8A8A" }}>
                         Status: {i.status} · {new Date(i.createdAt).toLocaleDateString()}
+                      </p>
+                      <p style={{ fontFamily: F, fontSize: 11, color: "#8A8A8A", marginTop: 4 }}>
+                        {i.viewedAt ? `Viewed ${new Date(i.viewedAt).toLocaleDateString()}` : "Not viewed yet"}
+                        {i.respondedAt ? ` · Replied ${new Date(i.respondedAt).toLocaleDateString()}` : ""}
+                        {typeof i.responseTimeHours === "number" ? ` · ${i.responseTimeHours}h` : ""}
                       </p>
                     </div>
                     <div style={{ display: "flex", gap: 8 }}>

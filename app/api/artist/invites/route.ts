@@ -36,7 +36,7 @@ export async function PATCH(req: Request) {
       return NextResponse.json({ error: "not found" }, { status: 404 });
     }
 
-    const updated = await updateInviteStatus(id, status);
+    const updated = await updateInviteStatus(id, status, "artist");
     return NextResponse.json({ invite: updated }, { status: 200 });
   } catch (e) {
     console.error("PATCH /api/artist/invites failed:", e);

@@ -15,7 +15,24 @@ import { useToast } from "@/lib/toast";
 type MeResponse = { session: { userId: string; role: "artist" | "gallery"; email: string } | null; profile: { id: string; artistId: string; name: string; startedYear: number; genre: string; instagram?: string; country: string; city: string; website?: string; bio?: string; portfolioUrl?: string; profileImage?: string | null; workNote?: string | null; createdAt: number; updatedAt?: number } | null };
 type Application = { id: string; openCallId: string; galleryId: string; status: string; shippingStatus: string };
 type OpenCall = { id: string; gallery: string; city: string; country: string; theme: string; deadline: string };
-type Invite = { id: string; galleryId: string; openCallId: string; message: string; status: string; createdAt: number };
+type Invite = {
+  id: string;
+  galleryId: string;
+  openCallId: string;
+  message: string;
+  status: string;
+  createdAt: number;
+  viewedAt?: number;
+  respondedAt?: number;
+  responseTimeHours?: number;
+  lastActor?: "gallery" | "artist";
+};
+type VerificationState = {
+  verified: boolean;
+  badgeLabel?: string | null;
+  approvedAt?: number | null;
+  latestRequest?: { status: "pending" | "approved" | "rejected"; createdAt: number; reviewNote?: string } | null;
+};
 
 const inp: React.CSSProperties = { width: "100%", padding: "14px 16px", background: "#FFFFFF", border: "1px solid #E8E3DB", color: "#1A1A1A", fontFamily: F, fontSize: 13, fontWeight: 400, outline: "none" };
 const inpHighlight: React.CSSProperties = { ...inp, border: "1px solid #8B7355", background: "#FFFBF5" };
@@ -55,6 +72,9 @@ export default function ArtistMePage() {
   const [inviteArtistId, setInviteArtistId] = useState("");
   const [invitingExId, setInvitingExId] = useState<string | null>(null);
   const [helpOpen, setHelpOpen] = useState<Record<string, boolean>>({ onboarding: true, timeline: false, network: false });
+  const [verification, setVerification] = useState<VerificationState | null>(null);
+  const [verificationNote, setVerificationNote] = useState("");
+  const [verificationSubmitting, setVerificationSubmitting] = useState(false);
 
   type SeriesItem = { id: string; title: string; description?: string | null; startYear?: number | null; endYear?: number | null; works?: string | null; isPublic: boolean };
   const [seriesList, setSeriesList] = useState<SeriesItem[]>([]); const [seriesForm, setSeriesForm] = useState<{ title: string; description: string; startYear: string; endYear: string; works: string; isPublic: boolean } | null>(null); const [editingSeriesId, setEditingSeriesId] = useState<string | null>(null); const [seriesSaving, setSeriesSaving] = useState(false);
@@ -129,10 +149,32 @@ export default function ArtistMePage() {
       timeline: !exPublic || !exArtistId,
     }));
   }, [loadingMe, exPublic, exArtistId]);
-  useEffect(() => { if (!me?.session || adminReadOnly) return; loadApplications(); loadInvites(); loadExhibitions(); loadSeries(); loadSelfExhibitions(); loadArtEvents(); }, [me?.session?.userId, adminReadOnly]);
+  useEffect(() => { if (!me?.session || adminReadOnly) return; loadApplications(); loadInvites(); loadExhibitions(); loadSeries(); loadSelfExhibitions(); loadArtEvents(); loadVerification(); }, [me?.session?.userId, adminReadOnly]);
 
   const loadApplications = async () => { const [appsRes, ocRes] = await Promise.all([fetch("/api/applications", { cache: "default", credentials: "include" }), fetch("/api/open-calls", { cache: "default" })]); const appsJson = await appsRes.json().catch(() => null); const ocJson = await ocRes.json().catch(() => null); const map: Record<string, OpenCall> = {}; for (const oc of ocJson?.openCalls ?? []) map[oc.id] = oc; setOpenCallMap(map); setApplications(appsJson?.applications ?? []); };
-  const loadInvites = async () => { const res = await fetch("/api/artist/invites", { cache: "default", credentials: "include" }); const data = await res.json().catch(() => null); if (res.ok) setInvites(data?.invites ?? []); };
+  const loadVerification = async () => {
+    const res = await fetch("/api/artist/verification/status", { cache: "no-store", credentials: "include" });
+    const data = await res.json().catch(() => null);
+    if (res.ok && data) setVerification(data as VerificationState);
+  };
+  const loadInvites = async () => {
+    const res = await fetch("/api/artist/invites", { cache: "default", credentials: "include" });
+    const data = await res.json().catch(() => null);
+    if (!res.ok) return;
+    const list = (data?.invites ?? []) as Invite[];
+    setInvites(list);
+    const unseen = list.filter((i) => i.status === "sent");
+    if (unseen.length === 0) return;
+    await Promise.all(
+      unseen.map((i) =>
+        fetch("/api/artist/invites", {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ id: i.id, status: "viewed" }),
+        }).catch(() => null)
+      )
+    );
+  };
   const loadExhibitions = async () => { const res = await fetch("/api/artist/exhibitions", { credentials: "include" }); const data = await res.json().catch(() => null); if (data) { setExhibitions(data.exhibitions ?? []); setExPublic(!!data.exhibitionsPublic); setExArtistId(data.artistId ?? null); } };
   const loadSelfExhibitions = async () => { const res = await fetch("/api/artist/self-exhibitions", { credentials: "include" }); const data = await res.json().catch(() => null); if (data?.exhibitions) setSelfExhibitions(data.exhibitions); };
   const saveSelfEx = async () => { if (selfExSaving || !selfExForm?.title?.trim()) return; setSelfExSaving(true); const method = editingSelfExId ? "PATCH" : "POST"; const body = { ...(editingSelfExId ? { id: editingSelfExId } : {}), ...selfExForm }; const res = await fetch("/api/artist/self-exhibitions", { method, headers: { "Content-Type": "application/json" }, credentials: "include", body: JSON.stringify(body) }); const data = await res.json().catch(() => null); if (data?.ok) { setSelfExForm(null); setEditingSelfExId(null); toastSuccess(editingSelfExId ? "수정됨" : "전시 등록됨"); await loadSelfExhibitions(); } else { toastError(data?.error ?? "저장 실패"); } setSelfExSaving(false); };
@@ -148,6 +190,28 @@ export default function ArtistMePage() {
   const deleteSeries = async (id: string) => { if (!window.confirm("이 시리즈를 삭제하시겠습니까?")) return; const res = await fetch("/api/artist/series", { method: "DELETE", headers: { "Content-Type": "application/json" }, credentials: "include", body: JSON.stringify({ id }) }); if ((await res.json().catch(() => null))?.ok) { toastSuccess("삭제됨"); await loadSeries(); } };
   const toggleExPublic = async () => { if (exToggling) return; setExToggling(true); const next = !exPublic; setExPublic(next); await fetch("/api/artist/exhibitions", { method: "PATCH", headers: { "Content-Type": "application/json" }, credentials: "include", body: JSON.stringify({ exhibitionsPublic: next }) }).catch(() => setExPublic(!next)); setExToggling(false); };
   const updateInviteStatus = async (id: string, status: string) => { if (adminReadOnly) return; const res = await fetch("/api/artist/invites", { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ id, status }) }); const data = await res.json().catch(() => null); if (res.ok && data?.invite) setInvites((p) => p.map((i) => (i.id === id ? data.invite : i))); };
+  const requestVerification = async () => {
+    if (verificationSubmitting) return;
+    setVerificationSubmitting(true);
+    try {
+      const res = await fetch("/api/artist/verification/request", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ note: verificationNote }),
+      });
+      const data = await res.json().catch(() => null);
+      if (res.ok && data?.ok) {
+        toastSuccess(lang === "ko" ? "검증 요청이 접수되었습니다." : "Verification request submitted.");
+        setVerificationNote("");
+        await loadVerification();
+      } else {
+        toastError(data?.error ?? "Failed to request verification");
+      }
+    } finally {
+      setVerificationSubmitting(false);
+    }
+  };
 
   type Tab = "profile" | "works" | "timeline" | "applications";
   const initialTab = (searchParams.get("tab") as Tab) || "profile";
@@ -358,11 +422,37 @@ export default function ArtistMePage() {
               <p style={{ fontFamily: F, fontSize: 13, color: "#8A8580", fontWeight: 300 }}>{profile ? `${profile.city}, ${profile.country}` : t("profile_complete", lang)}</p>
               <div style={{ marginTop: 20, display: "flex", gap: 10, flexWrap: "wrap" }}>
                 {profile?.artistId && <Tag>{profile.artistId}</Tag>}
+                {verification?.verified && <Tag accent>{verification.badgeLabel || "Verified Artist"}</Tag>}
                 {profile?.startedYear && <Tag>{new Date().getFullYear() - profile.startedYear + 1} years</Tag>}
                 {profile?.genre && <Tag>{profile.genre}</Tag>}
                 {profile?.instagram && <a href={profile.instagram} target="_blank" rel="noreferrer" style={{ textDecoration: "none" }}><Tag accent>Instagram</Tag></a>}
                 {profile?.website && <a href={profile.website} target="_blank" rel="noreferrer" style={{ textDecoration: "none" }}><Tag accent>Website</Tag></a>}
               </div>
+              {!adminReadOnly && (
+                <div style={{ marginTop: 18, border: "1px solid #E8E3DB", background: "#FAF8F4", padding: 14 }}>
+                  <p style={{ fontFamily: F, fontSize: 11, color: "#6A6660", margin: "0 0 10px" }}>
+                    {verification?.verified
+                      ? (lang === "ko" ? "검증 뱃지가 활성화되어 공개 프로필에 표시됩니다." : "Your verification badge is active and visible on your public profile.")
+                      : verification?.latestRequest?.status === "pending"
+                        ? (lang === "ko" ? "검증 요청이 심사 중입니다." : "Your verification request is under review.")
+                        : (lang === "ko" ? "기관/큐레이터 신뢰 강화를 위해 검증 요청을 보낼 수 있습니다." : "Submit a verification request to strengthen curator and institution trust.")}
+                  </p>
+                  {!verification?.verified && (
+                    <>
+                      <textarea
+                        value={verificationNote}
+                        onChange={(e) => setVerificationNote(e.target.value)}
+                        rows={2}
+                        placeholder={lang === "ko" ? "참고 링크/소개(선택)" : "Optional note (links/background)"}
+                        style={{ ...inp, resize: "vertical", marginBottom: 10 }}
+                      />
+                      <button onClick={requestVerification} disabled={verificationSubmitting} style={btnStyle(verificationSubmitting)}>
+                        {verificationSubmitting ? "..." : (lang === "ko" ? "검증 요청" : "Request Verification")}
+                      </button>
+                    </>
+                  )}
+                </div>
+              )}
             </Section>
 
             {/* Edit */}
@@ -813,7 +903,13 @@ export default function ArtistMePage() {
                     <div key={i.id} style={{ padding: 24, background: "#FFFFFF" }}>
                       <p style={{ fontFamily: F, fontSize: 10, fontWeight: 500, letterSpacing: "0.08em", textTransform: "uppercase", color: "#B0AAA2", marginBottom: 8 }}>Gallery: {i.galleryId} · {new Date(i.createdAt).toLocaleDateString()}</p>
                       <p style={{ fontFamily: F, fontSize: 13, color: "#1A1A1A", marginBottom: 8, fontWeight: 300 }}>{i.message}</p>
-                      <p style={{ fontFamily: F, fontSize: 11, color: "#8A8580", marginBottom: 16 }}>Status: <span style={{ color: i.status === "accepted" ? "#5A7A5A" : "#1A1A1A" }}>{i.status}</span></p>
+                      <p style={{ fontFamily: F, fontSize: 11, color: "#8A8580", marginBottom: 6 }}>
+                        Status: <span style={{ color: i.status === "accepted" ? "#5A7A5A" : "#1A1A1A" }}>{i.status}</span>
+                      </p>
+                      <p style={{ fontFamily: F, fontSize: 10, color: "#B0AAA2", marginBottom: 16 }}>
+                        {i.viewedAt ? `Viewed ${new Date(i.viewedAt).toLocaleDateString()}` : "Not viewed yet"}
+                        {i.respondedAt ? ` · Replied ${new Date(i.respondedAt).toLocaleDateString()}` : ""}
+                      </p>
                       <div style={{ display: "flex", gap: 12 }}>
                         <button onClick={() => updateInviteStatus(i.id, "accepted")} style={{ padding: "10px 24px", border: "none", background: "#1A1A1A", color: "#FDFBF7", fontFamily: F, fontSize: 10, fontWeight: 500, letterSpacing: "0.08em", textTransform: "uppercase", cursor: "pointer" }}>{t("profile_accept", lang)}</button>
                         <button onClick={() => updateInviteStatus(i.id, "declined")} style={{ padding: "10px 24px", border: "1px solid #8B4A4A", background: "transparent", color: "#8B4A4A", fontFamily: F, fontSize: 10, fontWeight: 500, letterSpacing: "0.08em", textTransform: "uppercase", cursor: "pointer" }}>{t("profile_decline", lang)}</button>
