@@ -85,6 +85,27 @@ a {
   transition: color 0.3s ease;
 }
 
+.skip-link {
+  position: absolute;
+  top: -48px;
+  left: 0;
+  background: #1A1A1A;
+  color: #FDFBF7;
+  padding: 8px 16px;
+  font-family: var(--font-inter), "Inter", sans-serif;
+  font-size: 12px;
+  font-weight: 500;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  text-decoration: none;
+  z-index: 9999;
+  transition: top 0.2s ease;
+}
+
+.skip-link:focus-visible {
+  top: 0;
+}
+
 a:hover {
   color: var(--accent);
 }

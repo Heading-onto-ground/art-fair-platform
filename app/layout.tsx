@@ -73,27 +73,7 @@ export default function RootLayout({
         <meta name="google" content="notranslate" />
       </head>
       <body>
-        <a
-          href="#main-content"
-          style={{
-            position: "absolute",
-            top: -48,
-            left: 0,
-            background: "#1A1A1A",
-            color: "#FDFBF7",
-            padding: "8px 16px",
-            fontFamily: "Inter, sans-serif",
-            fontSize: 12,
-            fontWeight: 500,
-            letterSpacing: "0.08em",
-            textTransform: "uppercase",
-            textDecoration: "none",
-            zIndex: 9999,
-            transition: "top 0.2s",
-          }}
-          onFocus={(e) => { e.currentTarget.style.top = "0"; }}
-          onBlur={(e) => { e.currentTarget.style.top = "-48px"; }}
-        >
+        <a href="#main-content" className="skip-link">
           Skip to content
         </a>
         <ToastProvider>{children}</ToastProvider>
