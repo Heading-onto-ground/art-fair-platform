@@ -65,13 +65,10 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      translate="no"
       className={`${inter.variable} ${cormorant.variable}`}
       suppressHydrationWarning
     >
-      <head>
-        <meta name="google" content="notranslate" />
-      </head>
+      <head />
       <body>
         <a href="#main-content" className="skip-link">
           Skip to content
