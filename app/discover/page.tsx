@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import TopBar from "@/app/components/TopBar";
+import GlobalSearch from "@/app/components/GlobalSearch";
 import { F, S } from "@/lib/design";
 import { useLanguage } from "@/lib/useLanguage";
 
@@ -118,7 +119,12 @@ export default function DiscoverPage() {
           </p>
         </div>
 
-        {/* Search bar */}
+        {/* Global Search */}
+        <div style={{ marginBottom: 20 }}>
+          <GlobalSearch lang={lang} />
+        </div>
+
+        {/* Exhibition-specific filters */}
         <form onSubmit={handleSearch} style={{ display: "flex", gap: 8, marginBottom: 28, flexWrap: "wrap" }}>
           <input value={q} onChange={e => setQ(e.target.value)} placeholder={lang === "ko" ? "전시명 검색" : "Search exhibitions…"} style={{ ...inp, flex: "1 1 200px" }} />
           <input value={city} onChange={e => setCity(e.target.value)} placeholder={lang === "ko" ? "도시" : "City"} style={{ ...inp, flex: "0 1 140px" }} />

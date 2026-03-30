@@ -580,6 +580,22 @@ export default function GalleryPage() {
                 : (lang === "ko" ? "오픈콜 만들기" : lang === "ja" ? "オープンコール作成" : "Create Open Call")}
             </button>
             <button
+              onClick={() => router.push("/gallery/analytics")}
+              style={{
+                padding: "10px 20px",
+                border: "1px solid #E5E0DB",
+                background: "transparent",
+                color: "#4A4A4A",
+                fontFamily: F,
+                fontSize: 10,
+                letterSpacing: "0.1em",
+                textTransform: "uppercase",
+                cursor: "pointer",
+              }}
+            >
+              {lang === "ko" ? "Analytics" : "Analytics"}
+            </button>
+            <button
               onClick={refresh}
               style={{
                 padding: "10px 20px",

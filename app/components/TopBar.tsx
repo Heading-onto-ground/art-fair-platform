@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState, useRef } from "react";
 import NotificationsBell from "./NotificationsBell";
-import { useRouter } from "next/navigation";
+import { useRouter, usePathname } from "next/navigation";
 import { useLanguage } from "@/lib/useLanguage";
 import { useAutoLocale } from "@/lib/useAutoLocale";
 import { t, getAvailableLanguages } from "@/lib/translate";
@@ -24,6 +24,9 @@ type Notification = {
   read: boolean;
   createdAt: number;
 };
+
+type NavItem = { path: string; label: string };
+type NavEntry = NavItem | { label: string; items: NavItem[] };
 
 const ME_CACHE_KEY = "afp_topbar_me_v1";
 const ME_CACHE_TTL_MS = 30_000;
@@ -80,6 +83,7 @@ async function fetchMe(options?: { preferCache?: boolean }): Promise<MeResponse 
 
 export default function TopBar() {
   const router = useRouter();
+  const pathname = usePathname();
   const [me, setMe] = useState<MeResponse | null>(null);
   const [mounted, setMounted] = useState(false);
   const { lang, setLang } = useLanguage();
@@ -92,6 +96,7 @@ export default function TopBar() {
 
   // Mobile menu state
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [mobileOpenGroup, setMobileOpenGroup] = useState<string | null>(null);
 
   useEffect(() => {
     setMounted(true);
@@ -145,11 +150,6 @@ export default function TopBar() {
     return () => { document.removeEventListener("mousedown", handleClickOutside); document.removeEventListener("keydown", handleEsc); };
   }, []);
 
-  // Close mobile menu on route change
-  useEffect(() => {
-    setMobileMenuOpen(false);
-  }, []);
-
   async function markAsRead(id: string) {
     try {
       await fetch("/api/notifications", { method: "POST", headers: { "Content-Type": "application/json" }, credentials: "include", body: JSON.stringify({ action: "mark_read", notificationId: id }) });
@@ -181,6 +181,7 @@ export default function TopBar() {
 
   function navigate(path: string) {
     setMobileMenuOpen(false);
+    setMobileOpenGroup(null);
     router.push(path);
   }
 
@@ -190,65 +191,90 @@ export default function TopBar() {
     lang === "ko" ? ko : lang === "ja" ? ja : lang === "fr" ? fr : en;
   const { toastOpen, dismissToast, unreadCount: supportUnread } = useUserSupportAlerts(!!session);
 
-  const artistLinks = useMemo(
-    () => [
-      { path: "/artist/me", label: t("nav_my_page", lang) },
-      { path: "/artist/portfolio", label: lang === "ko" ? "내 작업" : lang === "ja" ? "マイ作品" : "MY WORKS" },
-      { path: "/open-calls", label: t("nav_open_calls", lang) },
-      { path: "/artist/me#applications", label: t("nav_my_calls", lang) },
-      { path: "/discover", label: lang === "ko" ? "발견" : lang === "ja" ? "発見" : "DISCOVER" },
-      { path: "/feed", label: lang === "ko" ? "피드" : "FEED" },
-      { path: "/network", label: lang === "ko" ? "네트워크" : "NETWORK" },
-      { path: "/artists", label: t("nav_artists", lang) },
-      { path: "/galleries", label: t("nav_galleries", lang) },
-      { path: "/curators", label: lang === "ko" ? "큐레이터" : lang === "ja" ? "キュレーター" : "CURATORS" },
-      { path: "/spaces", label: lang === "ko" ? "공간" : lang === "ja" ? "スペース" : "SPACES" },
-      { path: "/community", label: t("nav_community", lang) },
-      { path: "/about", label: "ABOUT" },
-      { path: "/contact", label: lang === "ko" ? "문의" : lang === "ja" ? "お問い合わせ" : "CONTACT" },
-    ],
-    [lang]
+  // ── Grouped nav entries ──────────────────────────────────────────────────
+  const artistNav = useMemo((): NavEntry[] => [
+    { path: "/artist/me", label: lang === "ko" ? "내 페이지" : lang === "ja" ? "マイページ" : "MY PAGE" },
+    { path: "/open-calls", label: t("nav_open_calls", lang) },
+    {
+      label: lang === "ko" ? "탐색" : lang === "ja" ? "探索" : "EXPLORE",
+      items: [
+        { path: "/artist/portfolio", label: lang === "ko" ? "내 작업" : lang === "ja" ? "マイ作品" : "MY WORKS" },
+        { path: "/artist/me#applications", label: t("nav_my_calls", lang) },
+        { path: "/discover", label: lang === "ko" ? "발견" : lang === "ja" ? "発見" : "DISCOVER" },
+        { path: "/artists", label: t("nav_artists", lang) },
+        { path: "/galleries", label: t("nav_galleries", lang) },
+        { path: "/curators", label: lang === "ko" ? "큐레이터" : lang === "ja" ? "キュレーター" : "CURATORS" },
+        { path: "/spaces", label: lang === "ko" ? "공간" : lang === "ja" ? "スペース" : "SPACES" },
+      ],
+    },
+    {
+      label: lang === "ko" ? "커뮤니티" : lang === "ja" ? "コミュニティ" : "COMMUNITY",
+      items: [
+        { path: "/feed", label: lang === "ko" ? "피드" : "FEED" },
+        { path: "/network", label: lang === "ko" ? "네트워크" : "NETWORK" },
+        { path: "/community", label: t("nav_community", lang) },
+        { path: "/about", label: "ABOUT" },
+        { path: "/contact", label: lang === "ko" ? "문의" : lang === "ja" ? "お問い合わせ" : "CONTACT" },
+      ],
+    },
+  ], [lang]);
+
+  const galleryNav = useMemo((): NavEntry[] => [
+    { path: "/gallery/me", label: t("nav_my_page", lang) },
+    { path: "/gallery", label: t("nav_my_calls", lang) },
+    { path: "/artists", label: t("nav_artists", lang) },
+    {
+      label: lang === "ko" ? "더 보기" : lang === "ja" ? "もっと見る" : "MORE",
+      items: [
+        { path: "/open-calls", label: t("nav_open_calls", lang) },
+        { path: "/galleries", label: t("nav_galleries", lang) },
+        { path: "/community", label: t("nav_community", lang) },
+        { path: "/admin/outreach", label: t("nav_growth", lang) },
+        { path: "/about", label: "ABOUT" },
+        { path: "/contact", label: lang === "ko" ? "문의" : lang === "ja" ? "お問い合わせ" : "CONTACT" },
+      ],
+    },
+  ], [lang]);
+
+  const curatorNav = useMemo((): NavEntry[] => [
+    { path: "/curator", label: t("nav_my_page", lang) },
+    { path: "/artists", label: t("nav_artists", lang) },
+    { path: "/open-calls", label: t("nav_open_calls", lang) },
+    {
+      label: lang === "ko" ? "더 보기" : lang === "ja" ? "もっと見る" : "MORE",
+      items: [
+        { path: "/galleries", label: t("nav_galleries", lang) },
+        { path: "/curators", label: lang === "ko" ? "큐레이터" : "CURATORS" },
+        { path: "/community", label: t("nav_community", lang) },
+        { path: "/about", label: "ABOUT" },
+        { path: "/contact", label: lang === "ko" ? "문의" : lang === "ja" ? "お問い合わせ" : "CONTACT" },
+      ],
+    },
+  ], [lang]);
+
+  const navEntries = useMemo(
+    () => session?.role === "artist" ? artistNav : session?.role === "gallery" ? galleryNav : session?.role === "curator" ? curatorNav : [],
+    [session?.role, artistNav, galleryNav, curatorNav]
   );
 
-  const curatorLinks = useMemo(
-    () => [
-      { path: "/curator", label: t("nav_my_page", lang) },
-      { path: "/artists", label: t("nav_artists", lang) },
-      { path: "/galleries", label: t("nav_galleries", lang) },
-      { path: "/open-calls", label: t("nav_open_calls", lang) },
-      { path: "/curators", label: lang === "ko" ? "큐레이터" : "CURATORS" },
-      { path: "/community", label: t("nav_community", lang) },
-      { path: "/about", label: "ABOUT" },
-      { path: "/contact", label: lang === "ko" ? "문의" : lang === "ja" ? "お問い合わせ" : "CONTACT" },
-    ],
-    [lang]
-  );
-
-  const galleryLinks = useMemo(
-    () => [
-      { path: "/gallery/me", label: t("nav_my_page", lang) },
-      { path: "/artists", label: t("nav_artists", lang) },
-      { path: "/galleries", label: t("nav_galleries", lang) },
-      { path: "/open-calls", label: t("nav_open_calls", lang) },
-      { path: "/gallery", label: t("nav_my_calls", lang) },
-      { path: "/community", label: t("nav_community", lang) },
-      { path: "/admin/outreach", label: t("nav_growth", lang) },
-      { path: "/about", label: "ABOUT" },
-      { path: "/contact", label: lang === "ko" ? "문의" : lang === "ja" ? "お問い合わせ" : "CONTACT" },
-    ],
-    [lang]
-  );
-
-  const navLinks = useMemo(
-    () => (session?.role === "artist" ? artistLinks : session?.role === "gallery" ? galleryLinks : session?.role === "curator" ? curatorLinks : []),
-    [session?.role, artistLinks, galleryLinks, curatorLinks]
-  );
+  // All flat nav paths for prefetching
+  const allNavPaths = useMemo(() => {
+    const paths: string[] = [];
+    for (const entry of navEntries) {
+      if ("path" in entry) paths.push(entry.path);
+      else entry.items.forEach((i) => paths.push(i.path));
+    }
+    return paths;
+  }, [navEntries]);
 
   useEffect(() => {
-    for (const link of navLinks) {
-      router.prefetch(link.path);
-    }
-  }, [router, navLinks]);
+    for (const p of allNavPaths) router.prefetch(p);
+  }, [router, allNavPaths]);
+
+  function isActive(path: string): boolean {
+    if (path.includes("#")) return pathname === path.split("#")[0];
+    return pathname === path || (path !== "/" && pathname.startsWith(path + "/"));
+  }
 
   return (
     <>
@@ -272,9 +298,25 @@ export default function TopBar() {
         <nav className="desktop-nav" style={{ display: "flex", gap: 0, alignItems: "center" }}>
           {session ? (
             <>
-              {navLinks.map((link) => (
-                <NavBtn key={link.path} onClick={() => router.push(link.path)}>{link.label}</NavBtn>
-              ))}
+              {navEntries.map((entry) =>
+                "path" in entry ? (
+                  <NavBtn
+                    key={entry.path}
+                    onClick={() => router.push(entry.path)}
+                    active={isActive(entry.path)}
+                  >
+                    {entry.label}
+                  </NavBtn>
+                ) : (
+                  <NavDropdown
+                    key={entry.label}
+                    label={entry.label}
+                    items={entry.items}
+                    onNavigate={(path) => router.push(path)}
+                    isActive={entry.items.some((i) => isActive(i.path))}
+                  />
+                )
+              )}
 
               {/* Add Exhibition CTA — artist only */}
               {session.role === "artist" && (
@@ -289,49 +331,47 @@ export default function TopBar() {
               )}
 
               {/* Admin support messages */}
-              {session && (
-                <button
-                  type="button"
-                  onClick={() => router.push("/support")}
-                  aria-label={trToast("Messages to admin", "관리자 쪽지", "管理者メッセージ", "Messages admin")}
-                  style={{
-                    position: "relative",
-                    background: "none",
-                    border: "none",
-                    cursor: "pointer",
-                    fontSize: 16,
-                    padding: "8px 10px",
-                    color: supportUnread > 0 ? "#8B7355" : "#B0AAA2",
-                  }}
-                >
-                  💬
-                  {supportUnread > 0 && (
-                    <span
-                      style={{
-                        position: "absolute",
-                        top: 2,
-                        right: 2,
-                        background: "#B85450",
-                        color: "#FFF",
-                        fontSize: 9,
-                        fontWeight: 600,
-                        minWidth: 14,
-                        height: 14,
-                        borderRadius: "50%",
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "center",
-                        fontFamily: F,
-                      }}
-                    >
-                      {supportUnread > 9 ? "9+" : supportUnread}
-                    </span>
-                  )}
-                </button>
-              )}
+              <button
+                type="button"
+                onClick={() => router.push("/support")}
+                aria-label={trToast("Messages to admin", "관리자 쪽지", "管理者メッセージ", "Messages admin")}
+                style={{
+                  position: "relative",
+                  background: "none",
+                  border: "none",
+                  cursor: "pointer",
+                  fontSize: 16,
+                  padding: "8px 10px",
+                  color: supportUnread > 0 ? "#8B7355" : "#B0AAA2",
+                }}
+              >
+                💬
+                {supportUnread > 0 && (
+                  <span
+                    style={{
+                      position: "absolute",
+                      top: 2,
+                      right: 2,
+                      background: "#B85450",
+                      color: "#FFF",
+                      fontSize: 9,
+                      fontWeight: 600,
+                      minWidth: 14,
+                      height: 14,
+                      borderRadius: "50%",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      fontFamily: F,
+                    }}
+                  >
+                    {supportUnread > 9 ? "9+" : supportUnread}
+                  </span>
+                )}
+              </button>
 
               {/* Notification bell */}
-              {session && <NotificationsBell />}
+              <NotificationsBell />
 
               <div style={{ width: 1, height: 20, background: "#E8E3DB", margin: "0 16px" }} />
 
@@ -368,37 +408,13 @@ export default function TopBar() {
               </select>
               <button
                 onClick={() => router.push("/about")}
-                style={{
-                  padding: "8px 12px",
-                  border: "1px solid #E8E3DB",
-                  background: "transparent",
-                  color: "#4A4A4A",
-                  fontFamily: F,
-                  fontSize: 10,
-                  fontWeight: 500,
-                  letterSpacing: "0.08em",
-                  textTransform: "uppercase",
-                  cursor: "pointer",
-                  marginRight: 8,
-                }}
+                style={{ padding: "8px 12px", border: "1px solid #E8E3DB", background: "transparent", color: "#4A4A4A", fontFamily: F, fontSize: 10, fontWeight: 500, letterSpacing: "0.08em", textTransform: "uppercase", cursor: "pointer", marginRight: 8 }}
               >
                 About
               </button>
               <button
                 onClick={() => router.push("/contact")}
-                style={{
-                  padding: "8px 12px",
-                  border: "1px solid #E8E3DB",
-                  background: "transparent",
-                  color: "#4A4A4A",
-                  fontFamily: F,
-                  fontSize: 10,
-                  fontWeight: 500,
-                  letterSpacing: "0.08em",
-                  textTransform: "uppercase",
-                  cursor: "pointer",
-                  marginRight: 8,
-                }}
+                style={{ padding: "8px 12px", border: "1px solid #E8E3DB", background: "transparent", color: "#4A4A4A", fontFamily: F, fontSize: 10, fontWeight: 500, letterSpacing: "0.08em", textTransform: "uppercase", cursor: "pointer", marginRight: 8 }}
               >
                 {lang === "ko" ? "문의" : lang === "ja" ? "お問い合わせ" : "Contact"}
               </button>
@@ -494,15 +510,7 @@ export default function TopBar() {
       {mobileMenuOpen && (
         <div
           className="mobile-menu-overlay"
-          style={{
-            position: "fixed",
-            top: 0,
-            left: 0,
-            right: 0,
-            bottom: 0,
-            background: "rgba(0,0,0,0.3)",
-            zIndex: 40,
-          }}
+          style={{ position: "fixed", top: 0, left: 0, right: 0, bottom: 0, background: "rgba(0,0,0,0.3)", zIndex: 40 }}
           onClick={() => setMobileMenuOpen(false)}
         />
       )}
@@ -540,44 +548,85 @@ export default function TopBar() {
               </button>
             )}
 
-            {navLinks.map((link) => (
-              <button
-                key={link.path}
-                onClick={() => navigate(link.path)}
-                style={{
-                  display: "block",
-                  width: "100%",
-                  padding: "16px 24px",
-                  border: "none",
-                  background: "transparent",
-                  color: "#4A4A4A",
-                  fontFamily: F,
-                  fontSize: 12,
-                  fontWeight: 500,
-                  letterSpacing: "0.08em",
-                  textTransform: "uppercase",
-                  textAlign: "left",
-                  cursor: "pointer",
-                }}
-              >
-                {link.label}
-              </button>
-            ))}
-
-            {/* Notifications (gallery) */}
-            {session.role === "gallery" && notifications.length > 0 && (
-              <div style={{ borderTop: "1px solid #F0EBE3", margin: "4px 0" }}>
-                <div style={{ padding: "12px 24px 4px", fontFamily: F, fontSize: 9, fontWeight: 500, letterSpacing: "0.15em", textTransform: "uppercase", color: "#8A8580" }}>
-                  {t("notifications", lang)} {unreadCount > 0 && `(${unreadCount})`}
+            {navEntries.map((entry) =>
+              "path" in entry ? (
+                <button
+                  key={entry.path}
+                  onClick={() => navigate(entry.path)}
+                  style={{
+                    display: "block",
+                    width: "100%",
+                    padding: "16px 24px",
+                    border: "none",
+                    borderLeft: isActive(entry.path) ? "3px solid #1A1A1A" : "3px solid transparent",
+                    background: "transparent",
+                    color: isActive(entry.path) ? "#1A1A1A" : "#4A4A4A",
+                    fontFamily: F,
+                    fontSize: 12,
+                    fontWeight: isActive(entry.path) ? 600 : 500,
+                    letterSpacing: "0.08em",
+                    textTransform: "uppercase",
+                    textAlign: "left",
+                    cursor: "pointer",
+                  }}
+                >
+                  {entry.label}
+                </button>
+              ) : (
+                <div key={entry.label}>
+                  <button
+                    onClick={() => setMobileOpenGroup(mobileOpenGroup === entry.label ? null : entry.label)}
+                    style={{
+                      display: "flex",
+                      justifyContent: "space-between",
+                      alignItems: "center",
+                      width: "100%",
+                      padding: "16px 24px",
+                      border: "none",
+                      borderLeft: entry.items.some((i) => isActive(i.path)) ? "3px solid #8B7355" : "3px solid transparent",
+                      background: "transparent",
+                      color: entry.items.some((i) => isActive(i.path)) ? "#8B7355" : "#4A4A4A",
+                      fontFamily: F,
+                      fontSize: 12,
+                      fontWeight: 500,
+                      letterSpacing: "0.08em",
+                      textTransform: "uppercase",
+                      textAlign: "left",
+                      cursor: "pointer",
+                    }}
+                  >
+                    {entry.label}
+                    <span style={{ fontSize: 9, color: "#B0AAA2" }}>{mobileOpenGroup === entry.label ? "▲" : "▼"}</span>
+                  </button>
+                  {mobileOpenGroup === entry.label && (
+                    <div style={{ borderTop: "1px solid #F0EBE3", background: "#FAF8F4" }}>
+                      {entry.items.map((item) => (
+                        <button
+                          key={item.path}
+                          onClick={() => navigate(item.path)}
+                          style={{
+                            display: "block",
+                            width: "100%",
+                            padding: "13px 36px",
+                            border: "none",
+                            background: isActive(item.path) ? "rgba(139,115,85,0.06)" : "transparent",
+                            color: isActive(item.path) ? "#8B7355" : "#6A6660",
+                            fontFamily: F,
+                            fontSize: 11,
+                            fontWeight: isActive(item.path) ? 600 : 400,
+                            letterSpacing: "0.08em",
+                            textTransform: "uppercase",
+                            textAlign: "left",
+                            cursor: "pointer",
+                          }}
+                        >
+                          {item.label}
+                        </button>
+                      ))}
+                    </div>
+                  )}
                 </div>
-                {notifications.slice(0, 5).map((notif) => (
-                  <div key={notif.id} onClick={() => { handleNotificationClick(notif); setMobileMenuOpen(false); }}
-                    style={{ padding: "10px 24px", cursor: "pointer", background: notif.read ? "transparent" : "rgba(139,115,85,0.04)" }}>
-                    <div style={{ fontFamily: F, fontSize: 11, fontWeight: notif.read ? 400 : 600, color: notif.read ? "#B0AAA2" : "#1A1A1A" }}>{notif.title}</div>
-                    <div style={{ fontFamily: F, fontSize: 11, color: "#8A8580", marginTop: 2 }}>{notif.message.slice(0, 60)}...</div>
-                  </div>
-                ))}
-              </div>
+              )
             )}
 
             {/* Logout */}
@@ -608,57 +657,19 @@ export default function TopBar() {
           <div style={{ padding: "16px 24px" }}>
             <button
               onClick={() => navigate("/about")}
-              style={{
-                width: "100%",
-                padding: "12px",
-                border: "1px solid #E8E3DB",
-                background: "transparent",
-                color: "#4A4A4A",
-                fontFamily: F,
-                fontSize: 10,
-                fontWeight: 500,
-                letterSpacing: "0.09em",
-                textTransform: "uppercase",
-                cursor: "pointer",
-                marginBottom: 8,
-              }}
+              style={{ width: "100%", padding: "12px", border: "1px solid #E8E3DB", background: "transparent", color: "#4A4A4A", fontFamily: F, fontSize: 10, fontWeight: 500, letterSpacing: "0.09em", textTransform: "uppercase", cursor: "pointer", marginBottom: 8 }}
             >
               About
             </button>
             <button
               onClick={() => navigate("/contact")}
-              style={{
-                width: "100%",
-                padding: "12px",
-                border: "1px solid #E8E3DB",
-                background: "transparent",
-                color: "#4A4A4A",
-                fontFamily: F,
-                fontSize: 10,
-                fontWeight: 500,
-                letterSpacing: "0.09em",
-                textTransform: "uppercase",
-                cursor: "pointer",
-                marginBottom: 8,
-              }}
+              style={{ width: "100%", padding: "12px", border: "1px solid #E8E3DB", background: "transparent", color: "#4A4A4A", fontFamily: F, fontSize: 10, fontWeight: 500, letterSpacing: "0.09em", textTransform: "uppercase", cursor: "pointer", marginBottom: 8 }}
             >
               {lang === "ko" ? "문의" : lang === "ja" ? "お問い合わせ" : "Contact"}
             </button>
             <button
               onClick={() => navigate("/login")}
-              style={{
-                width: "100%",
-                padding: "14px",
-                border: "1px solid #1A1A1A",
-                background: "#1A1A1A",
-                color: "#FDFBF7",
-                fontFamily: F,
-                fontSize: 11,
-                fontWeight: 500,
-                letterSpacing: "0.1em",
-                textTransform: "uppercase",
-                cursor: "pointer",
-              }}
+              style={{ width: "100%", padding: "14px", border: "1px solid #1A1A1A", background: "#1A1A1A", color: "#FDFBF7", fontFamily: F, fontSize: 11, fontWeight: 500, letterSpacing: "0.1em", textTransform: "uppercase", cursor: "pointer" }}
             >
               {t("enter", lang)}
             </button>
@@ -700,59 +711,26 @@ export default function TopBar() {
             padding: "16px 18px",
           }}
         >
-          <p
-            style={{
-              fontFamily: F,
-              fontSize: 13,
-              lineHeight: 1.6,
-              color: "#1A1A1A",
-              margin: "0 0 12px",
-            }}
-          >
+          <p style={{ fontFamily: F, fontSize: 13, lineHeight: 1.6, color: "#1A1A1A", margin: "0 0 12px" }}>
             {trToast(
               "You have a new message from the ROB team. Open Messages to read it.",
               "ROB 관리자로부터 새 쪽지가 도착했습니다. 쪽지에서 확인하세요.",
               "ROB管理者から新しいメッセージがあります。メッセージ画面でご確認ください。",
-              "Nouveau message de l’equipe ROB. Ouvrez Messages pour le lire."
+              "Nouveau message de l'equipe ROB. Ouvrez Messages pour le lire."
             )}
           </p>
           <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
             <button
               type="button"
-              onClick={() => {
-                dismissToast();
-                router.push("/support");
-              }}
-              style={{
-                padding: "8px 16px",
-                border: "1px solid #1A1A1A",
-                background: "#1A1A1A",
-                color: "#FDFBF7",
-                fontFamily: F,
-                fontSize: 10,
-                fontWeight: 500,
-                letterSpacing: "0.1em",
-                textTransform: "uppercase",
-                cursor: "pointer",
-              }}
+              onClick={() => { dismissToast(); router.push("/support"); }}
+              style={{ padding: "8px 16px", border: "1px solid #1A1A1A", background: "#1A1A1A", color: "#FDFBF7", fontFamily: F, fontSize: 10, fontWeight: 500, letterSpacing: "0.1em", textTransform: "uppercase", cursor: "pointer" }}
             >
               {trToast("Open messages", "쪽지 열기", "メッセージを開く", "Ouvrir")}
             </button>
             <button
               type="button"
               onClick={dismissToast}
-              style={{
-                padding: "8px 16px",
-                border: "1px solid #E8E3DB",
-                background: "transparent",
-                color: "#8A8580",
-                fontFamily: F,
-                fontSize: 10,
-                fontWeight: 500,
-                letterSpacing: "0.08em",
-                textTransform: "uppercase",
-                cursor: "pointer",
-              }}
+              style={{ padding: "8px 16px", border: "1px solid #E8E3DB", background: "transparent", color: "#8A8580", fontFamily: F, fontSize: 10, fontWeight: 500, letterSpacing: "0.08em", textTransform: "uppercase", cursor: "pointer" }}
             >
               {trToast("Dismiss", "닫기", "閉じる", "Fermer")}
             </button>
@@ -763,12 +741,160 @@ export default function TopBar() {
   );
 }
 
-function NavBtn({ onClick, children }: { onClick: () => void; children: React.ReactNode }) {
+// ── NavBtn with active indicator ─────────────────────────────────────────
+function NavBtn({ onClick, children, active }: { onClick: () => void; children: React.ReactNode; active?: boolean }) {
   return (
-    <button onClick={onClick} style={{ padding: "8px 14px", border: "none", background: "transparent", color: "#8A8580", fontFamily: F, fontSize: 10, fontWeight: 500, letterSpacing: "0.08em", textTransform: "uppercase", cursor: "pointer", transition: "color 0.3s ease" }}
+    <button
+      onClick={onClick}
+      style={{
+        position: "relative",
+        padding: "8px 14px",
+        border: "none",
+        background: "transparent",
+        color: active ? "#1A1A1A" : "#8A8580",
+        fontFamily: F,
+        fontSize: 10,
+        fontWeight: active ? 600 : 500,
+        letterSpacing: "0.08em",
+        textTransform: "uppercase",
+        cursor: "pointer",
+        transition: "color 0.2s ease",
+      }}
       onMouseEnter={(e) => { e.currentTarget.style.color = "#1A1A1A"; }}
-      onMouseLeave={(e) => { e.currentTarget.style.color = "#8A8580"; }}>
+      onMouseLeave={(e) => { e.currentTarget.style.color = active ? "#1A1A1A" : "#8A8580"; }}
+    >
       {children}
+      {active && (
+        <span style={{
+          position: "absolute",
+          bottom: 2,
+          left: "50%",
+          transform: "translateX(-50%)",
+          width: 16,
+          height: 1,
+          background: "#1A1A1A",
+        }} />
+      )}
     </button>
+  );
+}
+
+// ── NavDropdown ───────────────────────────────────────────────────────────
+function NavDropdown({
+  label,
+  items,
+  onNavigate,
+  isActive,
+}: {
+  label: string;
+  items: NavItem[];
+  onNavigate: (path: string) => void;
+  isActive: boolean;
+}) {
+  const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    function handleOutside(e: MouseEvent) {
+      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
+    }
+    function handleEsc(e: KeyboardEvent) { if (e.key === "Escape") setOpen(false); }
+    document.addEventListener("mousedown", handleOutside);
+    document.addEventListener("keydown", handleEsc);
+    return () => {
+      document.removeEventListener("mousedown", handleOutside);
+      document.removeEventListener("keydown", handleEsc);
+    };
+  }, []);
+
+  return (
+    <div
+      ref={ref}
+      style={{ position: "relative" }}
+      onMouseEnter={() => setOpen(true)}
+      onMouseLeave={() => setOpen(false)}
+    >
+      <button
+        onClick={() => setOpen(!open)}
+        aria-haspopup="true"
+        aria-expanded={open}
+        style={{
+          position: "relative",
+          padding: "8px 14px",
+          border: "none",
+          background: "transparent",
+          color: isActive ? "#8B7355" : open ? "#1A1A1A" : "#8A8580",
+          fontFamily: F,
+          fontSize: 10,
+          fontWeight: isActive ? 600 : 500,
+          letterSpacing: "0.08em",
+          textTransform: "uppercase",
+          cursor: "pointer",
+          transition: "color 0.2s ease",
+          display: "flex",
+          alignItems: "center",
+          gap: 4,
+        }}
+      >
+        {label}
+        <span style={{ fontSize: 7, opacity: 0.6, marginTop: 1 }}>{open ? "▲" : "▼"}</span>
+        {isActive && (
+          <span style={{
+            position: "absolute",
+            bottom: 2,
+            left: "50%",
+            transform: "translateX(-50%)",
+            width: 16,
+            height: 1,
+            background: "#8B7355",
+          }} />
+        )}
+      </button>
+
+      {open && (
+        <div
+          style={{
+            position: "absolute",
+            top: "100%",
+            left: "50%",
+            transform: "translateX(-50%)",
+            background: "#FDFBF7",
+            border: "1px solid #E8E3DB",
+            boxShadow: "0 8px 32px rgba(0,0,0,0.08)",
+            minWidth: 180,
+            zIndex: 100,
+            padding: "6px 0",
+          }}
+        >
+          {items.map((item) => (
+            <button
+              key={item.path}
+              onClick={() => { setOpen(false); onNavigate(item.path); }}
+              style={{
+                display: "block",
+                width: "100%",
+                padding: "10px 18px",
+                border: "none",
+                background: "transparent",
+                color: "#4A4A4A",
+                fontFamily: F,
+                fontSize: 10,
+                fontWeight: 500,
+                letterSpacing: "0.08em",
+                textTransform: "uppercase",
+                textAlign: "left",
+                cursor: "pointer",
+                transition: "background 0.15s",
+                whiteSpace: "nowrap",
+              }}
+              onMouseEnter={(e) => { e.currentTarget.style.background = "#F5F0E8"; e.currentTarget.style.color = "#1A1A1A"; }}
+              onMouseLeave={(e) => { e.currentTarget.style.background = "transparent"; e.currentTarget.style.color = "#4A4A4A"; }}
+            >
+              {item.label}
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
   );
 }

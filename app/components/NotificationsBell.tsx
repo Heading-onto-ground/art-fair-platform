@@ -62,6 +62,9 @@ export default function NotificationsBell() {
     <div ref={ref} style={{ position: "relative" }}>
       <button
         onClick={() => (open ? setOpen(false) : loadAndOpen())}
+        aria-label={`Notifications${unread > 0 ? ` (${unread} unread)` : ""}`}
+        aria-haspopup="true"
+        aria-expanded={open}
         style={{ position: "relative", background: "none", border: "none", cursor: "pointer", fontSize: 15, padding: "8px 10px", color: unread > 0 ? "#8B7355" : "#B0AAA2" }}
       >
         🔔
@@ -72,7 +75,7 @@ export default function NotificationsBell() {
         )}
       </button>
       {open && (
-        <div style={{ position: "absolute", top: "100%", right: 0, marginTop: 8, width: 300, maxHeight: 360, overflowY: "auto", background: "#FFFFFF", border: "1px solid #E8E3DB", boxShadow: "0 8px 32px rgba(0,0,0,0.08)", zIndex: 100 }}>
+        <div role="listbox" aria-label="Notifications" style={{ position: "absolute", top: "100%", right: 0, marginTop: 8, width: 300, maxHeight: 360, overflowY: "auto", background: "#FFFFFF", border: "1px solid #E8E3DB", boxShadow: "0 8px 32px rgba(0,0,0,0.08)", zIndex: 100 }}>
           {items.length === 0 ? (
             <div style={{ padding: "24px 18px", textAlign: "center", color: "#B0AAA2", fontFamily: F, fontSize: 12 }}>알림 없음</div>
           ) : items.map((n) => (

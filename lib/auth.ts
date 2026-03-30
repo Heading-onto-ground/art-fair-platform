@@ -128,7 +128,7 @@ export async function listArtistProfiles(): Promise<ArtistListItem[]> {
     },
   });
   return artists
-    .map(({ portfolioUrl, series, ...a }: typeof artists[number]) => ({ ...a, role: "artist" as const, email: "", hasPortfolio: !!portfolioUrl, seriesCount: series.length, seriesTitles: series.map((s: any) => s.title) }))
+    .map(({ portfolioUrl, series, ...a }: typeof artists[number]) => ({ ...a, role: "artist" as const, email: "", hasPortfolio: !!portfolioUrl, seriesCount: series.length, seriesTitles: series.map((s: { id: string; title: string }) => s.title) }))
     .sort((a: ArtistListItem, b: ArtistListItem) => {
       if (a.hasPortfolio !== b.hasPortfolio) return a.hasPortfolio ? -1 : 1;
       return Number(b.updatedAt) - Number(a.updatedAt);

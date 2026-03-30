@@ -5,6 +5,16 @@ import { useRouter } from "next/navigation";
 import AdminTopBar from "@/app/components/AdminTopBar";
 import { F, S } from "@/lib/design";
 
+type DiscoverResult = {
+  citiesAttempted?: number;
+  citiesWithResults?: number;
+  profilesFetched?: number;
+  profilesWithWebsite?: number;
+  profilesWithEmail?: number;
+  upserted?: number;
+  error?: string;
+};
+
 type GalleryEmailRow = {
   id: string;
   galleryName: string;
@@ -27,6 +37,10 @@ export default function AdminGalleryEmailsPage() {
   const [query, setQuery] = useState("");
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [deleting, setDeleting] = useState(false);
+  const [discovering, setDiscovering] = useState(false);
+  const [discoverResult, setDiscoverResult] = useState<DiscoverResult | null>(null);
+  const [crawling, setCrawling] = useState(false);
+  const [crawlResult, setCrawlResult] = useState<string | null>(null);
 
   useEffect(() => {
     (async () => {
@@ -70,6 +84,38 @@ export default function AdminGalleryEmailsPage() {
     setSelected((prev) => { const next = new Set(prev); next.has(id) ? next.delete(id) : next.add(id); return next; });
   }
 
+  async function discoverGalleries() {
+    if (discovering) return;
+    setDiscovering(true);
+    setDiscoverResult(null);
+    try {
+      const res = await fetch("/api/cron/crawl-gallery-directory-sources?run=1&limit=150", { credentials: "include" });
+      const data = await res.json();
+      setDiscoverResult(data);
+      if (data.ok) await load();
+    } catch (e: unknown) {
+      setDiscoverResult({ error: String(e) });
+    } finally {
+      setDiscovering(false);
+    }
+  }
+
+  async function crawlEmails() {
+    if (crawling) return;
+    setCrawling(true);
+    setCrawlResult(null);
+    try {
+      const res = await fetch("/api/cron/crawl-gallery-info?run=1", { credentials: "include" });
+      const data = await res.json();
+      setCrawlResult(data.ok ? `완료 — 처리: ${data.processed ?? "?"} / 업데이트: ${data.updated ?? "?"}` : `오류: ${data.error ?? "unknown"}`);
+      if (data.ok) await load();
+    } catch (e: unknown) {
+      setCrawlResult(`오류: ${String(e)}`);
+    } finally {
+      setCrawling(false);
+    }
+  }
+
   async function deleteSelected() {
     if (!selected.size || deleting) return;
     if (!window.confirm(`${selected.size}개 항목을 삭제하시겠습니까?`)) return;
@@ -102,6 +148,47 @@ export default function AdminGalleryEmailsPage() {
           <span style={{ fontFamily: F, fontSize: 10, fontWeight: 500, letterSpacing: "0.2em", textTransform: "uppercase", color: "#8B7355" }}>Admin</span>
           <h1 style={{ fontFamily: S, fontSize: 36, fontWeight: 300, color: "#1A1A1A", marginTop: 8 }}>Gallery Emails</h1>
           {stats && <p style={{ fontFamily: F, fontSize: 12, color: "#8A8580", marginTop: 6 }}>Total: {stats.total} · Active: {stats.active}</p>}
+        </div>
+
+        {/* ── Discovery controls ── */}
+        <div style={{ marginBottom: 28, padding: "20px 24px", border: "1px solid #E8E3DB", background: "#FDFBF7" }}>
+          <p style={{ fontFamily: F, fontSize: 10, fontWeight: 500, letterSpacing: "0.15em", textTransform: "uppercase", color: "#8B7355", marginBottom: 14 }}>갤러리 발굴 파이프라인</p>
+          <p style={{ fontFamily: F, fontSize: 12, color: "#8A8580", marginBottom: 16, lineHeight: 1.6 }}>
+            1단계: galleriesnow.net 25개 도시에서 갤러리 웹사이트 URL 수집<br />
+            2단계: 각 웹사이트 방문 → 이메일 추출
+          </p>
+          <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
+            <button
+              onClick={discoverGalleries}
+              disabled={discovering}
+              style={{ padding: "10px 20px", border: "none", background: discovering ? "#E8E3DB" : "#1A1A1A", color: discovering ? "#8A8580" : "#FDFBF7", fontFamily: F, fontSize: 10, fontWeight: 500, letterSpacing: "0.1em", textTransform: "uppercase", cursor: discovering ? "not-allowed" : "pointer" }}
+            >
+              {discovering ? "스크래핑 중..." : "1단계: 갤러리 URL 수집"}
+            </button>
+            <button
+              onClick={crawlEmails}
+              disabled={crawling}
+              style={{ padding: "10px 20px", border: "1px solid #1A1A1A", background: crawling ? "#E8E3DB" : "transparent", color: crawling ? "#8A8580" : "#1A1A1A", fontFamily: F, fontSize: 10, fontWeight: 500, letterSpacing: "0.1em", textTransform: "uppercase", cursor: crawling ? "not-allowed" : "pointer" }}
+            >
+              {crawling ? "크롤링 중..." : "2단계: 이메일 추출"}
+            </button>
+          </div>
+          {discoverResult && (
+            <div style={{ marginTop: 14, padding: "10px 14px", background: discoverResult.error ? "#FDF8F8" : "#F8FDF8", border: `1px solid ${discoverResult.error ? "#C0A0A0" : "#A0C0A0"}`, fontFamily: F, fontSize: 12 }}>
+              {discoverResult.error ? (
+                <span style={{ color: "#8B3A3A" }}>오류: {discoverResult.error}</span>
+              ) : (
+                <span style={{ color: "#3A5A3A" }}>
+                  도시 {discoverResult.citiesWithResults}/{discoverResult.citiesAttempted} 성공 · 프로필 {discoverResult.profilesFetched}개 방문 · 웹사이트 {discoverResult.profilesWithWebsite}개 · 이메일 {discoverResult.profilesWithEmail}개 직접 확보 · DB 저장 {discoverResult.upserted}개
+                </span>
+              )}
+            </div>
+          )}
+          {crawlResult && (
+            <div style={{ marginTop: 10, padding: "10px 14px", background: "#F8FDF8", border: "1px solid #A0C0A0", fontFamily: F, fontSize: 12, color: "#3A5A3A" }}>
+              {crawlResult}
+            </div>
+          )}
         </div>
 
         <div style={{ display: "flex", gap: 10, marginBottom: 16, alignItems: "center" }}>

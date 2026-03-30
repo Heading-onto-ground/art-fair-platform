@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Inter, Cormorant_Garamond } from "next/font/google";
 import "./globals.css";
+import { ToastProvider } from "@/lib/toast";
 
 // ── Self-hosted fonts via next/font (no render-blocking @import) ──
 const inter = Inter({
@@ -71,7 +72,32 @@ export default function RootLayout({
       <head>
         <meta name="google" content="notranslate" />
       </head>
-      <body>{children}</body>
+      <body>
+        <a
+          href="#main-content"
+          style={{
+            position: "absolute",
+            top: -48,
+            left: 0,
+            background: "#1A1A1A",
+            color: "#FDFBF7",
+            padding: "8px 16px",
+            fontFamily: "Inter, sans-serif",
+            fontSize: 12,
+            fontWeight: 500,
+            letterSpacing: "0.08em",
+            textTransform: "uppercase",
+            textDecoration: "none",
+            zIndex: 9999,
+            transition: "top 0.2s",
+          }}
+          onFocus={(e) => { e.currentTarget.style.top = "0"; }}
+          onBlur={(e) => { e.currentTarget.style.top = "-48px"; }}
+        >
+          Skip to content
+        </a>
+        <ToastProvider>{children}</ToastProvider>
+      </body>
     </html>
   );
 }

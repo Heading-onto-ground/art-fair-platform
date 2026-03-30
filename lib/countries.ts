@@ -19,8 +19,27 @@ export const COUNTRIES: string[] = [
   "폴란드", "터키", "뉴질랜드", "인도네시아", "태국", "베트남", "말레이시아", "필리핀",
 ];
 
+// English display names matching COUNTRIES order (for bilingual select options)
+const ENGLISH_NAMES: Record<string, string> = {
+  "한국": "South Korea", "일본": "Japan", "중국": "China", "미국": "United States",
+  "영국": "United Kingdom", "프랑스": "France", "독일": "Germany", "이탈리아": "Italy",
+  "스위스": "Switzerland", "호주": "Australia", "캐나다": "Canada", "네덜란드": "Netherlands",
+  "스페인": "Spain", "벨기에": "Belgium", "오스트리아": "Austria", "스웨덴": "Sweden",
+  "노르웨이": "Norway", "덴마크": "Denmark", "싱가포르": "Singapore", "홍콩": "Hong Kong",
+  "대만": "Taiwan", "브라질": "Brazil", "멕시코": "Mexico", "인도": "India",
+  "러시아": "Russia", "포르투갈": "Portugal", "폴란드": "Poland", "터키": "Turkey",
+  "뉴질랜드": "New Zealand", "인도네시아": "Indonesia", "태국": "Thailand",
+  "베트남": "Vietnam", "말레이시아": "Malaysia", "필리핀": "Philippines",
+};
+
 export function normalizeCountry(raw: string): string {
   if (!raw) return "";
   const trimmed = raw.trim();
   return ALIASES[trimmed.toLowerCase()] ?? ALIASES[trimmed] ?? trimmed;
+}
+
+/** Returns select option label: "South Korea (한국)" */
+export function countryOptionLabel(canonical: string): string {
+  const en = ENGLISH_NAMES[canonical];
+  return en ? `${en} (${canonical})` : canonical;
 }

@@ -23,16 +23,6 @@
   --accent-hover: #6B5A45;
   --accent-soft: rgba(139, 115, 85, 0.08);
 
-  /* ROB V2 — Blue theme (artist profile) */
-  --rob-blue: #0066FF;
-  --rob-blue-hover: #0052CC;
-  --rob-blue-soft: rgba(0, 102, 255, 0.08);
-  --rob-bg: #F8F9FA;
-  --rob-bg-card: #FFFFFF;
-  --rob-text: #1A1A1A;
-  --rob-text-muted: #6B7280;
-  --rob-border: #E5E7EB;
-  
   --success: #5A7A5A;
   --error: #8B4A4A;
   --warning: #9A8A5A;
@@ -110,6 +100,16 @@ button {
   transition: all 0.3s ease;
   border: none;
   outline: none;
+}
+
+/* Keyboard focus — visible ring for accessibility */
+button:focus-visible,
+a:focus-visible,
+input:focus-visible,
+textarea:focus-visible,
+select:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
 }
 
 button:disabled {

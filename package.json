@@ -12,12 +12,16 @@
     "prisma:migrate": "prisma migrate dev",
     "seed": "npx tsx prisma/seed.ts",
     "import:opencalls": "npx tsx scripts/import-open-calls-from-csv.ts",
-    "import:wikidata:galleries": "npx tsx scripts/import-wikidata-galleries.ts"
+    "import:wikidata:galleries": "npx tsx scripts/import-wikidata-galleries.ts",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:coverage": "vitest run --coverage"
   },
   "dependencies": {
     "@prisma/adapter-pg": "^7.3.0",
     "@prisma/client": "^7.3.0",
     "@types/leaflet": "^1.9.21",
+    "@vercel/blob": "^2.3.2",
     "bcryptjs": "^3.0.3",
     "dotenv": "^17.2.4",
     "leaflet": "^1.9.4",
@@ -35,11 +39,13 @@
     "@types/pg": "^8.16.0",
     "@types/react": "^19",
     "@types/react-dom": "^19",
+    "@vitest/coverage-v8": "^4.1.2",
     "eslint": "^9",
     "eslint-config-next": "16.1.1",
     "tailwindcss": "^4",
     "tsx": "^4.7.0",
-    "typescript": "^5"
+    "typescript": "^5",
+    "vitest": "^4.1.2"
   },
   "prisma": {
     "seed": "npx tsx prisma/seed.ts"

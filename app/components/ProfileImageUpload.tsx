@@ -1,11 +1,11 @@
 "use client";
 
 import { useRef, useState } from "react";
-import { F } from "@/lib/design";
+import { F, colors } from "@/lib/design";
 
 type Props = {
   currentImage?: string | null;
-  onUploaded: (dataUri: string) => void;
+  onUploaded: (url: string) => void;
   size?: number;
 };
 
@@ -21,46 +21,72 @@ export default function ProfileImageUpload({ currentImage, onUploaded, size = 12
 
     setError(null);
 
-    // Validate type
     if (!file.type.startsWith("image/")) {
       setError("Please select an image file");
       return;
     }
 
-    // Validate size (max 2MB original, will be resized)
-    if (file.size > 2 * 1024 * 1024) {
-      setError("Image too large (max 2MB)");
+    if (file.size > 5 * 1024 * 1024) {
+      setError("Image too large (max 5MB)");
       return;
     }
 
     setUploading(true);
 
     try {
-      // Resize image client-side
-      const dataUri = await resizeImage(file, 400, 400, 0.85);
-      setPreview(dataUri);
+      // 1. Vercel Blob 업로드 시도
+      const formData = new FormData();
+      formData.append("file", file);
 
-      // Upload to server
-      const res = await fetch("/api/profile/image", {
+      const blobRes = await fetch("/api/profile/image/upload", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
         credentials: "include",
-        body: JSON.stringify({ image: dataUri }),
+        body: formData,
       });
 
-      const data = await res.json().catch(() => null);
-      if (!res.ok || !data?.ok) {
-        setError(data?.error || "Upload failed");
+      const blobData = await blobRes.json().catch(() => null);
+
+      if (blobRes.ok && blobData?.ok && blobData?.url) {
+        // Vercel Blob 성공
+        setPreview(blobData.url);
+        onUploaded(blobData.url);
         return;
       }
 
-      onUploaded(dataUri);
-    } catch (err) {
+      // 2. Fallback: base64 방식 (BLOB_READ_WRITE_TOKEN 미설정 시)
+      if (blobData?.fallback) {
+        const dataUri = await resizeImage(file, 400, 400, 0.85);
+        setPreview(dataUri);
+
+        const res = await fetch("/api/profile/image", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          credentials: "include",
+          body: JSON.stringify({ image: dataUri }),
+        });
+
+        const data = await res.json().catch(() => null);
+        if (!res.ok || !data?.ok) {
+          setError(data?.error || "Upload failed");
+          return;
+        }
+
+        onUploaded(dataUri);
+        return;
+      }
+
+      setError(blobData?.error || "Upload failed");
+    } catch {
       setError("Upload failed");
     } finally {
       setUploading(false);
+      // input 초기화 (같은 파일 재선택 가능하도록)
+      if (inputRef.current) inputRef.current.value = "";
     }
   }
+
+  // 이미지가 URL인지 base64인지 판별
+  const isExternalUrl = preview && (preview.startsWith("http://") || preview.startsWith("https://"));
 
   return (
     <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 12 }}>
@@ -70,29 +96,30 @@ export default function ProfileImageUpload({ currentImage, onUploaded, size = 12
           width: size,
           height: size,
           borderRadius: "50%",
-          border: "2px solid #E8E3DB",
+          border: `2px solid ${colors.border}`,
           overflow: "hidden",
           cursor: uploading ? "wait" : "pointer",
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
-          background: preview ? "transparent" : "#F5F1EB",
+          background: preview ? "transparent" : colors.bgSecondary,
           transition: "border-color 0.3s",
           position: "relative",
         }}
-        onMouseEnter={(e) => { e.currentTarget.style.borderColor = "#8B7355"; }}
-        onMouseLeave={(e) => { e.currentTarget.style.borderColor = "#E8E3DB"; }}
+        onMouseEnter={(e) => { e.currentTarget.style.borderColor = colors.accent; }}
+        onMouseLeave={(e) => { e.currentTarget.style.borderColor = colors.border; }}
       >
         {preview ? (
           <img
             src={preview}
             alt="Profile"
             style={{ width: "100%", height: "100%", objectFit: "cover" }}
+            referrerPolicy={isExternalUrl ? "no-referrer" : undefined}
           />
         ) : (
           <div style={{ textAlign: "center" }}>
-            <div style={{ fontSize: 28, color: "#D4CEC4", marginBottom: 4 }}>+</div>
-            <div style={{ fontFamily: F, fontSize: 8, fontWeight: 500, letterSpacing: "0.1em", textTransform: "uppercase", color: "#B0AAA2" }}>
+            <div style={{ fontSize: 28, color: colors.borderDark, marginBottom: 4 }}>+</div>
+            <div style={{ fontFamily: F, fontSize: 8, fontWeight: 500, letterSpacing: "0.1em", textTransform: "uppercase", color: colors.textLight }}>
               Photo
             </div>
           </div>
@@ -102,13 +129,13 @@ export default function ProfileImageUpload({ currentImage, onUploaded, size = 12
           <div style={{
             position: "absolute",
             inset: 0,
-            background: "rgba(253,251,247,0.8)",
+            background: "rgba(253,251,247,0.85)",
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
             borderRadius: "50%",
           }}>
-            <div style={{ fontFamily: F, fontSize: 10, color: "#8B7355" }}>...</div>
+            <div style={{ fontFamily: F, fontSize: 10, color: colors.accent }}>...</div>
           </div>
         )}
       </div>
@@ -118,9 +145,9 @@ export default function ProfileImageUpload({ currentImage, onUploaded, size = 12
         disabled={uploading}
         style={{
           padding: "8px 16px",
-          border: "1px solid #E8E3DB",
+          border: `1px solid ${colors.border}`,
           background: "transparent",
-          color: "#8A8580",
+          color: colors.textMuted,
           fontFamily: F,
           fontSize: 9,
           fontWeight: 500,
@@ -133,7 +160,7 @@ export default function ProfileImageUpload({ currentImage, onUploaded, size = 12
       </button>
 
       {error && (
-        <div style={{ fontFamily: F, fontSize: 11, color: "#8B4A4A", textAlign: "center" }}>{error}</div>
+        <div style={{ fontFamily: F, fontSize: 11, color: colors.error, textAlign: "center", maxWidth: size + 40 }}>{error}</div>
       )}
 
       <input
@@ -147,7 +174,7 @@ export default function ProfileImageUpload({ currentImage, onUploaded, size = 12
   );
 }
 
-/** Resize image to max dimensions and return base64 data URI */
+/** Resize image to max dimensions and return base64 data URI (fallback용) */
 function resizeImage(file: File, maxW: number, maxH: number, quality: number): Promise<string> {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
@@ -156,19 +183,16 @@ function resizeImage(file: File, maxW: number, maxH: number, quality: number): P
       img.onload = () => {
         let w = img.width;
         let h = img.height;
-
         if (w > maxW || h > maxH) {
           const ratio = Math.min(maxW / w, maxH / h);
           w = Math.round(w * ratio);
           h = Math.round(h * ratio);
         }
-
         const canvas = document.createElement("canvas");
         canvas.width = w;
         canvas.height = h;
         const ctx = canvas.getContext("2d")!;
         ctx.drawImage(img, 0, 0, w, h);
-
         resolve(canvas.toDataURL("image/jpeg", quality));
       };
       img.onerror = reject;

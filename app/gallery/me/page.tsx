@@ -1,10 +1,13 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import TopBar from "@/app/components/TopBar";
 import ProfileImageUpload from "@/app/components/ProfileImageUpload";
+import EmptyState from "@/app/components/EmptyState";
+import { useToast } from "@/lib/toast";
 import { F, S } from "@/lib/design";
+import { COUNTRIES, normalizeCountry, countryOptionLabel } from "@/lib/countries";
 
 type Role = "artist" | "gallery";
 
@@ -69,8 +72,8 @@ export default function GalleryMePage() {
     bio: "",
   });
 
+  const { success: toastSuccess, error: toastError } = useToast();
   const [saveLoading, setSaveLoading] = useState(false);
-  const [msg, setMsg] = useState<string | null>(null);
   const [exhibitions, setExhibitions] = useState<Exhibition[]>([]);
   const [exLoading, setExLoading] = useState(false);
   const [exForm, setExForm] = useState({
@@ -80,7 +83,6 @@ export default function GalleryMePage() {
     year: String(new Date().getFullYear()),
     summary: "",
   });
-  const [exMsg, setExMsg] = useState<string | null>(null);
   const [notifyPost, setNotifyPost] = useState(false);
   const loadMe = async () => {
     if (isAdminView) {
@@ -115,7 +117,7 @@ export default function GalleryMePage() {
       setForm({
         galleryId: p.galleryId ?? "",
         name: p.name ?? "",
-        country: p.country ?? "",
+        country: normalizeCountry(p.country ?? ""),
         city: p.city ?? "",
         address: p.address ?? "",
         foundedYear: p.foundedYear ? String(p.foundedYear) : "",
@@ -153,10 +155,9 @@ export default function GalleryMePage() {
 
   const addExhibition = async () => {
     if (adminReadOnly) {
-      setExMsg("Read-only admin preview mode");
+      toastError("Read-only admin preview mode");
       return;
     }
-    setExMsg(null);
     try {
       const res = await fetch("/api/gallery/exhibitions", {
         method: "POST",
@@ -171,13 +172,14 @@ export default function GalleryMePage() {
       });
       const data = await res.json().catch(() => null);
       if (!res.ok || !data?.exhibition) {
-        setExMsg(data?.error ?? "Failed to add exhibition");
+        toastError(data?.error ?? "Failed to add exhibition");
         return;
       }
       setExhibitions((p) => [data.exhibition as Exhibition, ...p]);
       setExForm((p) => ({ ...p, title: "", city: "", summary: "" }));
+      toastSuccess("Exhibition added");
     } catch {
-      setExMsg("Server error");
+      toastError("Server error");
     }
   };
 
@@ -210,31 +212,25 @@ export default function GalleryMePage() {
 
   const onSave = async () => {
     if (adminReadOnly) {
-      setMsg("Read-only admin preview mode");
+      toastError("Read-only admin preview mode");
       return;
     }
-    setMsg(null);
     setSaveLoading(true);
-
     try {
       const res = await fetch("/api/profile/save", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(form),
+        body: JSON.stringify({ ...form, country: normalizeCountry(form.country) }),
       });
-
       const json = await res.json().catch(() => null);
-
       if (!res.ok || !json?.ok) {
-        setMsg(json?.error ?? `Save failed (${res.status})`);
-        setSaveLoading(false);
+        toastError(json?.error ?? `Save failed (${res.status})`);
         return;
       }
-
-      setMsg("Profile saved successfully");
+      toastSuccess("Profile saved");
       await loadMe();
     } catch {
-      setMsg("Server error");
+      toastError("Server error");
     } finally {
       setSaveLoading(false);
     }
@@ -242,6 +238,19 @@ export default function GalleryMePage() {
 
   const session = me?.session as Session | null;
   const profile = me?.profile as GalleryProfile | null;
+
+  const completionItems = useMemo(() => {
+    const items = [
+      { label: "Gallery Name", done: !!form.name.trim(), anchor: "edit-profile" },
+      { label: "Gallery ID", done: !!form.galleryId.trim(), anchor: "edit-profile" },
+      { label: "Location", done: !!form.country.trim() && !!form.city.trim(), anchor: "edit-profile" },
+      { label: "Bio", done: form.bio.trim().length >= 20, anchor: "edit-profile" },
+      { label: "Profile Image", done: !!profile?.profileImage, anchor: "profile-summary" },
+      { label: "Instagram / Website", done: !!(form.instagram.trim() || form.website.trim()), anchor: "edit-profile" },
+      { label: "Exhibition History", done: exhibitions.length > 0, anchor: "exhibition-history" },
+    ];
+    return items;
+  }, [form, profile?.profileImage, exhibitions.length]);
 
   const inputStyle: React.CSSProperties = {
     width: "100%",
@@ -313,6 +322,35 @@ export default function GalleryMePage() {
           </div>
         ) : (
           <>
+            {/* Gallery Profile Completion */}
+            {!adminReadOnly && (() => {
+              const done = completionItems.filter((i) => i.done).length;
+              const total = completionItems.length;
+              if (done === total) return null;
+              return (
+                <div style={{ marginBottom: 32, padding: "20px 24px", border: "1px solid #E8E3DB", background: "#FDFBF7" }}>
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
+                    <span style={{ fontFamily: F, fontSize: 10, fontWeight: 600, letterSpacing: "0.12em", textTransform: "uppercase", color: "#8B7355" }}>Profile Completion</span>
+                    <span style={{ fontFamily: F, fontSize: 11, color: "#1A1A1A", fontWeight: 600 }}>{done}/{total}</span>
+                  </div>
+                  <div style={{ height: 3, background: "#E8E3DB", marginBottom: 16 }}>
+                    <div style={{ height: "100%", width: `${(done / total) * 100}%`, background: "#8B7355", transition: "width 0.3s ease" }} />
+                  </div>
+                  <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
+                    {completionItems.filter((i) => !i.done).map((item) => (
+                      <button
+                        key={item.label}
+                        onClick={() => document.getElementById(item.anchor)?.scrollIntoView({ behavior: "smooth", block: "start" })}
+                        style={{ padding: "5px 12px", border: "1px dashed #D4C9B8", background: "transparent", color: "#8B7355", fontFamily: F, fontSize: 9, fontWeight: 500, letterSpacing: "0.08em", textTransform: "uppercase", cursor: "pointer" }}
+                      >
+                        + {item.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              );
+            })()}
+
             {/* Quick links: 배송, 메시지 */}
             {!adminReadOnly && (
               <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: 12, marginBottom: 40 }}>
@@ -339,7 +377,7 @@ export default function GalleryMePage() {
               </div>
             )}
             {/* Profile Summary */}
-            <Section number="01" title="Profile Summary">
+            <Section number="01" title="Profile Summary" id="profile-summary">
               <div style={{ display: "flex", justifyContent: "center", marginBottom: 24 }}>
                 <ProfileImageUpload
                   currentImage={profile?.profileImage}
@@ -370,7 +408,7 @@ export default function GalleryMePage() {
             </Section>
 
             {/* Edit Form */}
-            <Section number="02" title="Edit Profile">
+            <Section number="02" title="Edit Profile" id="edit-profile">
               <div style={{ display: "grid", gap: 20 }}>
                 <Field label="Gallery ID">
                   <input value={form.galleryId} onChange={(e) => setForm((p) => ({ ...p, galleryId: e.target.value }))} placeholder="GAL-0001" style={inputStyle} />
@@ -380,7 +418,10 @@ export default function GalleryMePage() {
                 </Field>
                 <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 20 }}>
                   <Field label="Country">
-                    <input value={form.country} onChange={(e) => setForm((p) => ({ ...p, country: e.target.value }))} placeholder="e.g. United Kingdom" style={inputStyle} />
+                    <select value={form.country} onChange={(e) => setForm((p) => ({ ...p, country: e.target.value }))} style={{ ...inputStyle, appearance: "none", backgroundImage: "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%238A8580'/%3E%3C/svg%3E\")", backgroundRepeat: "no-repeat", backgroundPosition: "right 12px center", paddingRight: 32 }}>
+                      <option value="">-- Select --</option>
+                      {COUNTRIES.map((c) => <option key={c} value={c}>{countryOptionLabel(c)}</option>)}
+                    </select>
                   </Field>
                   <Field label="City">
                     <input value={form.city} onChange={(e) => setForm((p) => ({ ...p, city: e.target.value }))} placeholder="e.g. London" style={inputStyle} />
@@ -421,7 +462,6 @@ export default function GalleryMePage() {
                 >
                   {saveLoading ? "Saving..." : "Save Profile"}
                 </button>
-                {msg && <span style={{ fontFamily: F, fontSize: 12, color: msg.includes("success") ? "#3D5A3D" : "#8B3A3A" }}>{msg}</span>}
               </div>
 
               {profile?.updatedAt && (
@@ -432,7 +472,7 @@ export default function GalleryMePage() {
             </Section>
 
             {/* Exhibition History */}
-            <Section number="03" title="Exhibition History">
+            <Section number="03" title="Exhibition History" id="exhibition-history">
               <div style={{ display: "grid", gap: 16, marginBottom: 24 }}>
                 <Field label="Title">
                   <input value={exForm.title} onChange={(e) => setExForm((p) => ({ ...p, title: e.target.value }))} placeholder="Exhibition title" style={inputStyle} />
@@ -474,14 +514,15 @@ export default function GalleryMePage() {
               >
                 Add Exhibition
               </button>
-              {exMsg && <p style={{ fontFamily: F, fontSize: 12, color: "#8B3A3A" }}>{exMsg}</p>}
-
               {exLoading ? (
                 <p style={{ fontFamily: F, fontSize: 12, color: "#8A8A8A" }}>Loading...</p>
               ) : exhibitions.length === 0 ? (
-                <p style={{ fontFamily: S, fontSize: 16, fontStyle: "italic", color: "#8A8A8A" }}>
-                  No exhibitions yet.
-                </p>
+                <EmptyState
+                  compact
+                  icon="🎨"
+                  title="No exhibitions yet"
+                  description="Add your gallery's exhibition history to build credibility with artists."
+                />
               ) : (
                 <div style={{ display: "grid", gap: 1, background: "#E5E0DB", marginTop: 24 }}>
                   {exhibitions.map((ex) => (
@@ -558,9 +599,9 @@ export default function GalleryMePage() {
   );
 }
 
-function Section({ number, title, children }: { number: string; title: string; children: React.ReactNode }) {
+function Section({ number, title, children, id }: { number: string; title: string; children: React.ReactNode; id?: string }) {
   return (
-    <div style={{ marginBottom: 48 }}>
+    <div id={id} style={{ marginBottom: 48 }}>
       <div style={{ display: "flex", alignItems: "baseline", gap: 16, marginBottom: 20 }}>
         <span style={{ fontFamily: F, fontSize: 10, letterSpacing: "0.2em", color: "#B0B0B0" }}>{number}</span>
         <h2 style={{ fontFamily: S, fontSize: 24, fontWeight: 400, color: "#1A1A1A" }}>{title}</h2>

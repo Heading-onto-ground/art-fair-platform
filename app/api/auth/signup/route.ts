@@ -1,10 +1,11 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import bcrypt from "bcryptjs";
 import type { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { sendVerificationEmail, detectEmailLang, sendPlatformEmail } from "@/lib/email";
 import { createOrRefreshVerificationToken } from "@/lib/emailVerification";
 import { getRoleWelcomeTemplate } from "@/lib/adminMailTemplates";
+import { consumeRateLimit, getClientIp } from "@/lib/rateLimit";
 
 type Role = "artist" | "gallery" | "curator";
 
@@ -12,8 +13,22 @@ export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 const EMAIL_VERIFICATION_REQUIRED = true;
 
-export async function POST(req: Request) {
+// 5 signups per IP per hour
+const SIGNUP_MAX = 5;
+const SIGNUP_WINDOW_MS = 60 * 60 * 1000;
+
+export async function POST(req: NextRequest) {
   try {
+    const ip = getClientIp(req);
+    const rate = consumeRateLimit({ key: `signup:${ip}`, max: SIGNUP_MAX, windowMs: SIGNUP_WINDOW_MS });
+    if (!rate.allowed) {
+      const retryAfter = Math.max(1, Math.ceil((rate.resetAt - Date.now()) / 1000));
+      return NextResponse.json(
+        { ok: false, error: "too many requests", retryAfterSeconds: retryAfter },
+        { status: 429, headers: { "Retry-After": String(retryAfter) } }
+      );
+    }
+
     if (!process.env.DATABASE_URL) {
       console.error("POST /api/auth/signup: DATABASE_URL is not set");
       return NextResponse.json(

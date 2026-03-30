@@ -1,3 +1,8 @@
+// NOTE: In-memory rate limiting — works within a single Node.js process instance.
+// On Vercel serverless, each cold start resets counters. This still provides
+// meaningful protection for warm instances but is not guaranteed across all requests.
+// For stricter enforcement, replace with a persistent store (e.g. Upstash Redis).
+
 type Bucket = {
   count: number;
   resetAt: number;
