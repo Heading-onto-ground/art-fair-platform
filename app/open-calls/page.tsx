@@ -376,6 +376,25 @@ export default function OpenCallsPage() {
                       {lang === "ko" ? "작가 지원 마감일" : t("deadline", lang)}
                     </span>
                     <div style={{ fontFamily: S, fontSize: 18, fontWeight: 400, color: "#1A1A1A", marginTop: 4 }}>{o.deadline}</div>
+                    <a
+                      href={`/api/open-calls/${o.id}/calendar`}
+                      onClick={(e) => e.stopPropagation()}
+                      style={{
+                        display: "inline-block",
+                        marginTop: 8,
+                        fontFamily: F,
+                        fontSize: 10,
+                        letterSpacing: "0.07em",
+                        textTransform: "uppercase",
+                        color: "#8A8580",
+                        border: "1px solid #E8E3DB",
+                        background: "#FFFFFF",
+                        padding: "6px 10px",
+                        textDecoration: "none",
+                      }}
+                    >
+                      {lang === "ko" ? "캘린더" : lang === "ja" ? "カレンダー" : "Calendar"}
+                    </a>
                   </div>
                 </div>
               </div>

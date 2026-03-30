@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { computeArtistTrust } from "@/lib/trustScore";
 
 export const dynamic = "force-dynamic";
 
@@ -7,7 +8,7 @@ export async function GET(_req: Request, { params }: { params: { artistId: strin
   const { artistId } = params;
 
   const profileRows = await prisma.$queryRawUnsafe(
-    `SELECT "userId", "artistId", name, "exhibitions_public", "workNote", bio, id, country, city, genre, "startedYear", instagram, website, "profileImage" FROM "ArtistProfile" WHERE "artistId" = $1 LIMIT 1`,
+    `SELECT "userId", "artistId", name, "exhibitions_public", "workNote", bio, id, country, city, genre, "startedYear", instagram, website, "profileImage", "portfolioUrl" FROM "ArtistProfile" WHERE "artistId" = $1 LIMIT 1`,
     artistId
   ).catch(() => []) as any[];
 
@@ -56,6 +57,19 @@ export async function GET(_req: Request, { params }: { params: { artistId: strin
     orderBy: { startDate: "desc" },
   }).catch(() => []);
 
+  const trust = computeArtistTrust({
+    bio: profile.bio ?? null,
+    country: profile.country ?? null,
+    city: profile.city ?? null,
+    instagram: profile.instagram ?? null,
+    website: profile.website ?? null,
+    profileImage: profile.profileImage ?? null,
+    hasPortfolio: !!profile.portfolioUrl,
+    seriesCount: series.length,
+    artEventCount: artEvents.length,
+    exhibitionCount: selfExhibitions.length + exhibitions.length,
+  });
+
   return NextResponse.json({
     name: profile.name,
     artistId: profile.artistId,
@@ -73,5 +87,8 @@ export async function GET(_req: Request, { params }: { params: { artistId: strin
     selfExhibitions,
     series,
     artEvents,
+    trustScore: trust.score,
+    trustLevel: trust.level,
+    trustSignals: trust.signals,
   });
 }

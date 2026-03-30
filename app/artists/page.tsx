@@ -21,6 +21,8 @@ type Artist = {
   startedYear?: number;
   genre?: string;
   updatedAt?: number;
+  trustScore?: number;
+  trustLevel?: "basic" | "verified" | "trusted";
 };
 
 type MeResponse = {
@@ -304,6 +306,21 @@ export default function ArtistsPage() {
                       <div style={{ display: "flex", alignItems: "baseline", gap: 8, marginBottom: 3 }}>
                         <span style={{ fontFamily: S, fontSize: 12, color: "#D4CEC4", flexShrink: 0 }}>{String(idx + 1).padStart(2, "0")}</span>
                         <h3 style={{ fontFamily: S, fontSize: 17, fontWeight: 400, color: "#1A1A1A", margin: 0, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{a.name}</h3>
+                        <span
+                          style={{
+                            fontFamily: F,
+                            fontSize: 9,
+                            fontWeight: 600,
+                            letterSpacing: "0.06em",
+                            color: trustBadge(a.trustLevel).color,
+                            background: trustBadge(a.trustLevel).bg,
+                            border: `1px solid ${trustBadge(a.trustLevel).border}`,
+                            padding: "2px 7px",
+                            flexShrink: 0,
+                          }}
+                        >
+                          {trustBadge(a.trustLevel).label}
+                        </span>
                       </div>
                       <p style={{ fontFamily: F, fontSize: 10, color: "#8A8580", margin: 0 }}>
                         {[a.city, a.country].filter(Boolean).join(", ") || "—"}
@@ -323,6 +340,9 @@ export default function ArtistsPage() {
                     </span>
                     <span style={{ fontFamily: F, fontSize: 9, fontWeight: 500, letterSpacing: "0.07em", color: (a.seriesCount ?? 0) > 0 ? "#5A5A8B" : "#B0AAA2", background: (a.seriesCount ?? 0) > 0 ? "#EDEDF7" : "#F5F3F0", padding: "3px 8px", border: `1px solid ${(a.seriesCount ?? 0) > 0 ? "#D4D4EE" : "#ECEAE6"}` }}>
                       {(a.seriesCount ?? 0) > 0 ? `Series ${a.seriesCount}` : "Series —"}
+                    </span>
+                    <span style={{ fontFamily: F, fontSize: 9, fontWeight: 600, letterSpacing: "0.07em", color: "#4A4A4A", background: "#F8F5EE", padding: "3px 8px", border: "1px solid #ECE2D3" }}>
+                      Trust {Math.max(0, Math.min(100, Number(a.trustScore ?? 0)))}
                     </span>
                     <button
                       onClick={(e) => { e.stopPropagation(); setFavorites((p) => ({ ...p, [a.userId]: !p[a.userId] })); }}
@@ -347,4 +367,10 @@ export default function ArtistsPage() {
       </main>
     </>
   );
+}
+
+function trustBadge(level?: "basic" | "verified" | "trusted") {
+  if (level === "trusted") return { label: "Trusted", color: "#2E6B45", bg: "#EDF7F1", border: "#D6EAD8" };
+  if (level === "verified") return { label: "Verified", color: "#7A6030", bg: "#FFF6E8", border: "#EFD9B7" };
+  return { label: "Basic", color: "#8A8580", bg: "#F5F3F0", border: "#ECEAE6" };
 }

@@ -242,6 +242,18 @@ export default function OpenCallDetailPage({ params }: { params: { id: string } 
             {/* Actions */}
             <div style={{ marginTop: 28, display: "flex", gap: 12, flexWrap: "wrap" }}>
               {canContact && !openCall.isExternal && <button onClick={contactGallery} disabled={contacting} style={btn(contacting)}>{contacting ? "..." : t("oc_contact_gallery", lang)}</button>}
+              <a
+                href={`/api/open-calls/${openCall.id}/calendar`}
+                onClick={(e) => e.stopPropagation()}
+                style={{
+                  ...btn(false),
+                  display: "inline-flex",
+                  alignItems: "center",
+                  textDecoration: "none",
+                }}
+              >
+                {lang === "ko" ? "캘린더 추가" : lang === "ja" ? "カレンダー追加" : "Add to Calendar"}
+              </a>
               <button onClick={() => router.push("/open-calls")} style={{ ...btn(false), background: "transparent", color: "#8A8580", border: "1px solid #E8E3DB" }}>{t("oc_back_to_list", lang)}</button>
             </div>
 

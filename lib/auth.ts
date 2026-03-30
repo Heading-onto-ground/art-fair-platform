@@ -5,6 +5,7 @@ import { cookies } from "next/headers";
 import bcrypt from "bcryptjs";
 import { prisma } from "@/lib/prisma";
 import { signSession, verifySession } from "@/lib/session";
+import { computeArtistTrust, type TrustLevel } from "@/lib/trustScore";
 
 /** ===== Types ===== */
 export type Role = "artist" | "gallery" | "curator";
@@ -115,7 +116,14 @@ export async function getProfileByUserId(userId: string): Promise<Profile | null
   return null;
 }
 
-type ArtistListItem = Omit<ArtistProfile, "portfolioUrl"> & { hasPortfolio: boolean; seriesCount: number };
+type ArtistListItem = Omit<ArtistProfile, "portfolioUrl"> & {
+  hasPortfolio: boolean;
+  seriesCount: number;
+  artEventCount: number;
+  trustScore: number;
+  trustLevel: TrustLevel;
+  trustSignals: string[];
+};
 
 export async function listArtistProfiles(): Promise<ArtistListItem[]> {
   const artists = await prisma.artistProfile.findMany({
@@ -125,10 +133,35 @@ export async function listArtistProfiles(): Promise<ArtistListItem[]> {
       bio: true, profileImage: true, createdAt: true, updatedAt: true,
       portfolioUrl: true,
       series: { where: { isPublic: true }, select: { id: true, title: true }, orderBy: { createdAt: "desc" }, take: 5 },
+      _count: { select: { artEvents: true } },
     },
   });
   return artists
-    .map(({ portfolioUrl, series, ...a }: typeof artists[number]) => ({ ...a, role: "artist" as const, email: "", hasPortfolio: !!portfolioUrl, seriesCount: series.length, seriesTitles: series.map((s: { id: string; title: string }) => s.title) }))
+    .map(({ portfolioUrl, series, _count, ...a }: typeof artists[number]) => {
+      const trust = computeArtistTrust({
+        bio: a.bio,
+        country: a.country,
+        city: a.city,
+        instagram: a.instagram,
+        website: a.website,
+        profileImage: a.profileImage,
+        hasPortfolio: !!portfolioUrl,
+        seriesCount: series.length,
+        artEventCount: _count.artEvents,
+      });
+      return {
+        ...a,
+        role: "artist" as const,
+        email: "",
+        hasPortfolio: !!portfolioUrl,
+        seriesCount: series.length,
+        artEventCount: _count.artEvents,
+        trustScore: trust.score,
+        trustLevel: trust.level,
+        trustSignals: trust.signals,
+        seriesTitles: series.map((s: { id: string; title: string }) => s.title),
+      };
+    })
     .sort((a: ArtistListItem, b: ArtistListItem) => {
       if (a.hasPortfolio !== b.hasPortfolio) return a.hasPortfolio ? -1 : 1;
       return Number(b.updatedAt) - Number(a.updatedAt);
