@@ -29,7 +29,9 @@ type Gallery = {
   foundedYear?: number;
 };
 type Role = "artist" | "gallery";
-type MeResponse = { session: { userId: string; role: Role; email?: string } | null; profile: any | null };
+type MeResponse = { session: { userId: string; role: Role; email?: string } | null; profile: unknown | null };
+type LocalGuide = { title: string; checklist: string[] };
+type ArtistSessionProfile = { country?: string | null };
 
 function hostFromUrl(url?: string): string {
   if (!url) return "";
@@ -288,8 +290,10 @@ export default function ArtistPage() {
   >({});
   const [showOriginalById, setShowOriginalById] = useState<Record<string, boolean>>({});
   const [translatingById, setTranslatingById] = useState<Record<string, boolean>>({});
+  const [localGuide, setLocalGuide] = useState<LocalGuide | null>(null);
+  const profileCountry = ((me?.profile as ArtistSessionProfile | null)?.country ?? "").trim();
   const preferredCountry = normalizeCountry(
-    ((me?.profile?.country ?? "").trim() || (autoCountry ?? "").trim())
+    (profileCountry || (autoCountry ?? "").trim())
   );
 
   function load() {
@@ -333,6 +337,16 @@ export default function ArtistPage() {
       setReady(true); // Triggers SWR fetches
     })();
   }, [router, isAdminView]);
+
+  useEffect(() => {
+    if (!ready || adminReadOnly) return;
+    fetch("/api/onboarding/local-guide", { credentials: "include", cache: "no-store" })
+      .then((r) => r.json())
+      .then((d) => {
+        if (d?.ok && d?.guide) setLocalGuide(d.guide as LocalGuide);
+      })
+      .catch(() => {});
+  }, [ready, adminReadOnly]);
 
   // Dynamic country list from data
   const countries = useMemo(() => {
@@ -554,7 +568,7 @@ export default function ArtistPage() {
       const data = await res.json().catch(() => null);
       if (!res.ok || !data?.roomId) throw new Error(data?.error ?? "Failed");
       router.push(`/chat/${String(data.roomId)}`);
-    } catch (e: any) { setContactError(e?.message ?? "Failed"); }
+    } catch (e: unknown) { setContactError(e instanceof Error ? e.message : "Failed"); }
     finally { setContactingId(null); }
   }
 
@@ -615,6 +629,22 @@ export default function ArtistPage() {
 
         {/* Personalized Recommendations */}
         <RecommendationBanner />
+
+        {localGuide && (
+          <div style={{ marginBottom: 28, border: "1px solid #E8E3DB", background: "#FFFFFF", padding: "16px 20px" }}>
+            <div style={{ fontFamily: F, fontSize: 10, letterSpacing: "0.12em", textTransform: "uppercase", color: "#8B7355", marginBottom: 8 }}>
+              {lang === "ko" ? "국가별 온보딩 경로" : lang === "ja" ? "国別オンボーディング" : "Country onboarding path"}
+            </div>
+            <div style={{ fontFamily: S, fontSize: 20, color: "#1A1A1A", marginBottom: 10 }}>{localGuide.title}</div>
+            <div style={{ display: "grid", gap: 6 }}>
+              {localGuide.checklist.map((item, i) => (
+                <div key={i} style={{ fontFamily: F, fontSize: 12, color: "#6A6660" }}>
+                  • {item}
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
 
         {/* Community Section */}
         <div style={{ marginBottom: 36, border: "1px solid #E8E3DB", background: "#FFFFFF", padding: "clamp(20px, 3vw, 32px)" }}>

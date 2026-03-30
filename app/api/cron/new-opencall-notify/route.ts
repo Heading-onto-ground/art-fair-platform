@@ -2,6 +2,7 @@ export const runtime = "nodejs";
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { sendPlatformEmail } from "@/lib/email";
+import { shouldSendNowForCountry } from "@/lib/globalOps";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 60;
@@ -65,12 +66,13 @@ export async function GET(req: Request) {
 
   const artists = await prisma.user.findMany({
     where: { role: "artist" },
-    select: { email: true, artistProfile: { select: { name: true } } },
+    select: { email: true, artistProfile: { select: { name: true, country: true } } },
   });
 
   let sent = 0;
   for (const artist of artists) {
     if (!artist.email || artist.email.includes("@invalid.local") || artist.email.includes(".bot@")) continue;
+    if (!shouldSendNowForCountry(new Date(), artist.artistProfile?.country || "")) continue;
 
     // Skip if already sent today
     const rows = (await prisma.$queryRawUnsafe(
