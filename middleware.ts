@@ -17,7 +17,9 @@ const PROTECTED_PREFIXES = [
 const ADMIN_PREFIX = "/admin";
 const ADMIN_LOGIN = "/admin/login";
 
-// Auth pages — redirect away if already logged in
+// Auth pages — always allow access.
+// Rationale: cookie presence alone does not guarantee a valid session,
+// and strict redirect here can lock users out of the login screen.
 const AUTH_PATHS = ["/login", "/forgot-password", "/reset-password"];
 
 export function middleware(req: NextRequest) {
@@ -34,12 +36,8 @@ export function middleware(req: NextRequest) {
     return NextResponse.next();
   }
 
-  // ── Redirect logged-in users away from auth pages ─────────────────────────
+  // ── Auth pages ─────────────────────────────────────────────────────────────
   if (AUTH_PATHS.some((p) => pathname === p)) {
-    if (hasSession) {
-      // Let client-side handle role-based destination — just go home
-      return NextResponse.redirect(new URL("/", req.url));
-    }
     return NextResponse.next();
   }
 
