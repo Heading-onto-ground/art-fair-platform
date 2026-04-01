@@ -3,19 +3,12 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { sendPlatformEmail } from "@/lib/email";
 import { shouldSendNowForCountry } from "@/lib/globalOps";
+import { isCronAuthorized } from "@/lib/cronAuth";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 60;
 
 const PLATFORM_URL = process.env.NEXT_PUBLIC_APP_URL || "https://rob-roleofbridge.com";
-
-function getCronAuth(req: Request): boolean {
-  const secret = process.env.CRON_SECRET;
-  if (!secret) return process.env.NODE_ENV !== "production";
-  const auth = req.headers.get("authorization") ?? "";
-  if (auth === `Bearer ${secret}`) return true;
-  return new URL(req.url).searchParams.get("secret") === secret;
-}
 
 function getThisMondayKey(): string {
   const now = new Date();
@@ -68,7 +61,7 @@ function buildHtml(openCalls: Array<{ id: string; gallery: string; theme: string
 }
 
 export async function GET(req: Request) {
-  if (!getCronAuth(req)) return NextResponse.json({ error: "unauthorized" }, { status: 401 });
+  if (!isCronAuthorized(req)) return NextResponse.json({ error: "unauthorized" }, { status: 401 });
 
   const mondayKey = getThisMondayKey();
   const emailType = `weekly_digest_${mondayKey}`;

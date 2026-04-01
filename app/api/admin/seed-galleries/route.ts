@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import bcrypt from "bcryptjs";
+import crypto from "crypto";
+import { getAdminSession } from "@/lib/adminAuth";
 
 export const dynamic = "force-dynamic";
 
@@ -64,15 +66,20 @@ const GALLERIES = [
   { name: "Anna Schwartz Gallery", city: "Melbourne", country: "호주", website: "https://www.annaschwartzgallery.com", founded: 1986, bio: "Leading Melbourne gallery representing significant Australian and international contemporary artists.", address: "185 Flinders Lane, Melbourne VIC 3000" },
 ];
 
-export async function POST(req: Request) {
-  // Simple admin check via header or body
-  const body = await req.json().catch(() => ({}));
-  if (body.adminKey !== "rob-admin-2026") {
+export async function POST() {
+  const admin = getAdminSession();
+  if (!admin) {
     return NextResponse.json({ error: "unauthorized" }, { status: 401 });
   }
 
+  if (process.env.ADMIN_ENABLE_SEED_GALLERIES !== "true") {
+    return NextResponse.json(
+      { error: "disabled. Set ADMIN_ENABLE_SEED_GALLERIES=true to allow." },
+      { status: 403 }
+    );
+  }
+
   const results: { name: string; status: string }[] = [];
-  const dummyPasswordHash = bcrypt.hashSync("gallery-directory-2026", 10);
 
   for (const g of GALLERIES) {
     const email = `directory_${g.name.toLowerCase().replace(/[^a-z0-9]/g, "_")}@rob-roleofbridge.com`;
@@ -117,7 +124,7 @@ export async function POST(req: Request) {
         data: {
           email,
           role: "gallery",
-          passwordHash: dummyPasswordHash,
+          passwordHash: bcrypt.hashSync(crypto.randomBytes(32).toString("hex"), 12),
         },
       });
 

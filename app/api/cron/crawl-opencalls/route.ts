@@ -4,39 +4,13 @@ import { createOpenCall, listOpenCalls } from "@/app/data/openCalls";
 import { prisma } from "@/lib/prisma";
 import { syncGalleryEmailDirectory } from "@/lib/galleryEmailDirectory";
 import { validateExternalOpenCalls } from "@/lib/openCallValidation";
+import { isCronAuthorized } from "@/lib/cronAuth";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 300;
 
-type CronSecretAuthSource = "query" | "header" | "bearer" | "none";
-
-function getCronSecretFromRequest(req: Request, url: URL): { provided: string; source: CronSecretAuthSource } {
-  const qp = String(url.searchParams.get("secret") || "").trim();
-  if (qp) return { provided: qp, source: "query" };
-  const header = String(req.headers.get("x-cron-secret") || "").trim();
-  if (header) return { provided: header, source: "header" };
-  const auth = String(req.headers.get("authorization") || "").trim();
-  const m = auth.match(/^Bearer\s+(.+)$/i);
-  if (m?.[1]) return { provided: m[1].trim(), source: "bearer" };
-  return { provided: "", source: "none" };
-}
-
-function requireCronSecret(req: Request, url: URL) {
-  const expected = String(process.env.CRON_SECRET || "").trim();
-  if (!expected) {
-    return NextResponse.json({ error: "server error", detail: "CRON_SECRET is not set" }, { status: 500 });
-  }
-  const { provided, source } = getCronSecretFromRequest(req, url);
-  const authSource = source;
-  const expected6 = expected.slice(0, 6);
-  const provided6 = provided.slice(0, 6);
-  console.log("[cron] crawl-opencalls secret check", {
-    authSource,
-    expected6,
-    provided6,
-    hasProvided: !!provided,
-  });
-  if (!provided || provided !== expected) {
+function requireCronAuth(req: Request) {
+  if (!isCronAuthorized(req, { allowDevWithoutSecret: false, allowAdminSession: true })) {
     return NextResponse.json({ error: "unauthorized" }, { status: 401 });
   }
   return null;
@@ -1238,7 +1212,10 @@ async function runCrawlJob() {
   };
 }
 
-export async function POST() {
+export async function POST(req: Request) {
+  const auth = requireCronAuth(req);
+  if (auth) return auth;
+
   const jobName = "crawl-opencalls";
   const activeRunId = await findActiveRunningCrawlRun(jobName);
   if (activeRunId) {
@@ -1270,14 +1247,14 @@ export async function POST() {
 }
 
 export async function GET(req: Request) {
-  const url = new URL(req.url);
-  const auth = requireCronSecret(req, url);
+  const auth = requireCronAuth(req);
   if (auth) return auth;
+  const url = new URL(req.url);
 
   const isCron = req.headers.get("x-vercel-cron") === "1";
-  const forceRun = url.searchParams.get("run") === "1";
+  const manualRun = req.headers.get("x-cron-run") === "1";
 
-  if (isCron || forceRun) {
+  if (isCron || manualRun) {
     const jobName = "crawl-opencalls";
     const activeRunId = await findActiveRunningCrawlRun(jobName);
     if (activeRunId) {

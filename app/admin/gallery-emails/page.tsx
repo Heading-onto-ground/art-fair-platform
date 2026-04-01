@@ -89,7 +89,7 @@ export default function AdminGalleryEmailsPage() {
     setDiscovering(true);
     setDiscoverResult(null);
     try {
-      const res = await fetch("/api/cron/crawl-gallery-directory-sources?run=1&limit=150", { credentials: "include" });
+      const res = await fetch("/api/cron/crawl-gallery-directory-sources?limit=150", { credentials: "include" });
       const data = await res.json();
       setDiscoverResult(data);
       if (data.ok) await load();
@@ -105,7 +105,7 @@ export default function AdminGalleryEmailsPage() {
     setCrawling(true);
     setCrawlResult(null);
     try {
-      const res = await fetch("/api/cron/crawl-gallery-info?run=1", { credentials: "include" });
+      const res = await fetch("/api/cron/crawl-gallery-info", { credentials: "include" });
       const data = await res.json();
       setCrawlResult(data.ok ? `완료 — 처리: ${data.processed ?? "?"} / 업데이트: ${data.updated ?? "?"}` : `오류: ${data.error ?? "unknown"}`);
       if (data.ok) await load();

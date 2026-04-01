@@ -5,17 +5,17 @@ export const maxDuration = 300;
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { ensureExternalGalleryDirectoryTable } from "@/lib/externalGalleryDirectory";
+import { isCronAuthorized as isCronRequestAuthorized } from "@/lib/cronAuth";
 
 // fixed bigint key = hashtext('crawl_gallery_info') as a safe JS integer
 const LOCK_KEY = 723_641_298;
 
 // ── auth ──────────────────────────────────────────────────────────────────────
 function isCronAuthorized(req: Request) {
-  const run = String(new URL(req.url).searchParams.get("run") || "");
-  if (run === "1") return true;
-  const authHeader = req.headers.get("authorization") || "";
-  const expected = process.env.CRON_SECRET || "";
-  return !!expected && authHeader === `Bearer ${expected}`;
+  return isCronRequestAuthorized(req, {
+    allowDevWithoutSecret: false,
+    allowAdminSession: true,
+  });
 }
 
 // ── run tracking ──────────────────────────────────────────────────────────────

@@ -14,29 +14,24 @@ const LOGIN_WINDOW_MS = 10 * 60 * 1000;
 const LOGIN_MAX_ATTEMPTS = 10;
 
 export async function GET() {
-  const hasDb = !!process.env.DATABASE_URL;
   return NextResponse.json(
     {
       ok: false,
       error: "Method Not Allowed. Use POST to log in.",
-      debug: { hasDatabaseUrl: hasDb },
     },
     { status: 405, headers: { Allow: "POST" } }
   );
 }
 
-function json500(details: string) {
-  return NextResponse.json(
-    { ok: false, error: "server error", details },
-    { status: 500 }
-  );
+function json500() {
+  return NextResponse.json({ ok: false, error: "server error" }, { status: 500 });
 }
 
 export async function POST(req: Request) {
   try {
     if (!process.env.DATABASE_URL) {
       console.error("POST /api/auth/login: DATABASE_URL is not set");
-      return json500("DATABASE_URL is not set");
+      return json500();
     }
     const body = await req.json().catch(() => null);
 
@@ -72,7 +67,7 @@ export async function POST(req: Request) {
 
     const user = await findUserByEmailRole(emailLower, role);
     if (!user || !verifyPassword(user, password)) {
-      return NextResponse.json({ ok: false, error: "wrong password" }, { status: 401 });
+      return NextResponse.json({ ok: false, error: "invalid credentials" }, { status: 401 });
     }
     if (EMAIL_VERIFICATION_REQUIRED) {
       const verification = await getEmailVerificationState({
@@ -142,7 +137,6 @@ export async function POST(req: Request) {
     return res;
   } catch (e) {
     console.error("POST /api/auth/login failed:", e);
-    const details = e instanceof Error ? e.message : String(e) || "unknown error";
-    return json500(details);
+    return json500();
   }
 }

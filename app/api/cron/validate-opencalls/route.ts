@@ -1,23 +1,18 @@
 import { NextResponse } from "next/server";
 import { validateExternalOpenCalls } from "@/lib/openCallValidation";
+import { isCronAuthorized } from "@/lib/cronAuth";
 
 export const dynamic = "force-dynamic";
 
 export async function GET(req: Request) {
-  const url = new URL(req.url);
-  const isCron = req.headers.get("x-vercel-cron") === "1";
-  const forceRun = url.searchParams.get("run") === "1";
-
-  if (!isCron && !forceRun) {
-    return NextResponse.json({
-      message: "Use ?run=1 or Vercel cron header to run validation",
-    });
+  if (!isCronAuthorized(req)) {
+    return NextResponse.json({ error: "unauthorized" }, { status: 401 });
   }
 
   try {
     const validation = await validateExternalOpenCalls();
     return NextResponse.json({
-      triggeredBy: isCron ? "vercel-cron" : "query",
+      triggeredBy: req.headers.get("x-vercel-cron") === "1" ? "vercel-cron" : "authorized",
       validation,
     });
   } catch (e) {

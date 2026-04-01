@@ -8,10 +8,8 @@ import { getAdminPasswordHash } from "@/lib/adminSettings";
 
 const ADMIN_COOKIE = "afp_admin_session";
 
-// Default admin credentials (development only)
-const ADMIN_EMAIL = process.env.ADMIN_EMAIL || "admin@rob-roleofbridge.com";
-const LEGACY_ADMIN_EMAIL = "admin@rob.art";
-const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || "rob-admin-dev";
+const ADMIN_EMAIL = String(process.env.ADMIN_EMAIL || "").trim().toLowerCase();
+const ADMIN_PASSWORD = String(process.env.ADMIN_PASSWORD || "").trim();
 
 export type AdminSession = {
   email: string;
@@ -20,12 +18,13 @@ export type AdminSession = {
 };
 
 function isAllowedAdminEmail(email: string): boolean {
-  const normalized = email.toLowerCase().trim();
-  const matchesPrimary = normalized === ADMIN_EMAIL.toLowerCase().trim();
-  const matchesLegacy =
-    !process.env.ADMIN_EMAIL &&
-    (normalized === LEGACY_ADMIN_EMAIL || normalized === "contact@rob-roleofbridge.com");
-  return matchesPrimary || matchesLegacy;
+  if (!ADMIN_EMAIL) {
+    if (process.env.NODE_ENV === "production") {
+      console.error("ADMIN_EMAIL is required in production");
+    }
+    return false;
+  }
+  return email.toLowerCase().trim() === ADMIN_EMAIL;
 }
 
 /** Verify admin credentials (async — checks DB first, then env) */
@@ -40,11 +39,13 @@ export async function verifyAdminCredentials(
     return bcrypt.compareSync(password, storedHash);
   }
 
-  // Fallback to env
-  if (process.env.NODE_ENV === "production" && !String(process.env.ADMIN_PASSWORD || "").trim()) {
-    console.error("ADMIN_PASSWORD is required in production when no DB password is set");
+  if (!ADMIN_PASSWORD) {
+    if (process.env.NODE_ENV === "production") {
+      console.error("ADMIN_PASSWORD is required in production when no DB password is set");
+    }
     return false;
   }
+
   return password === ADMIN_PASSWORD;
 }
 

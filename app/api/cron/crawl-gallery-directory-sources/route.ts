@@ -13,6 +13,7 @@ import {
   canonicalizeDirectoryGalleries,
   type RawDirectoryGallery,
 } from "@/lib/galleryDirectoryQuality";
+import { isCronAuthorized as isCronRequestAuthorized } from "@/lib/cronAuth";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -20,11 +21,10 @@ export const maxDuration = 300;
 
 // ── Auth ──────────────────────────────────────────────────────────────────────
 function isCronAuthorized(req: Request) {
-  const run = String(new URL(req.url).searchParams.get("run") || "");
-  if (run === "1") return true;
-  const expected = String(process.env.CRON_SECRET || "").trim();
-  if (!expected) return false;
-  return req.headers.get("authorization") === `Bearer ${expected}`;
+  return isCronRequestAuthorized(req, {
+    allowDevWithoutSecret: false,
+    allowAdminSession: true,
+  });
 }
 
 // ── Target cities ─────────────────────────────────────────────────────────────

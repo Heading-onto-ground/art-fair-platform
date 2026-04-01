@@ -35,8 +35,19 @@ export function clearRateLimit(key: string) {
 }
 
 export function getClientIp(req: Request) {
-  const forwarded = String(req.headers.get("x-forwarded-for") || "");
+  const fromXRealIp = String(req.headers.get("x-real-ip") || "").trim();
+  if (fromXRealIp) return fromXRealIp;
+
+  const fromVercel = String(req.headers.get("x-vercel-forwarded-for") || "").trim();
+  if (fromVercel) return fromVercel.split(",")[0].trim();
+
+  const fromCf = String(req.headers.get("cf-connecting-ip") || "").trim();
+  if (fromCf) return fromCf;
+
+  // Last resort only. In some deployments this header may be spoofed.
+  const forwarded = String(req.headers.get("x-forwarded-for") || "").trim();
   if (forwarded) return forwarded.split(",")[0].trim();
-  return String(req.headers.get("x-real-ip") || "unknown").trim() || "unknown";
+
+  return "unknown";
 }
 

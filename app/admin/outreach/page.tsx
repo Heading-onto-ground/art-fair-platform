@@ -228,7 +228,10 @@ export default function OutreachPage() {
     setCrawling(true);
     setCrawlResult(null);
     try {
-      const res = await fetch("/api/cron/crawl-opencalls", { method: "POST" });
+      const res = await fetch("/api/cron/crawl-opencalls", {
+        method: "POST",
+        credentials: "include",
+      });
       const data = await res.json();
       if (!res.ok || data?.error) {
         const detail = data?.error || `HTTP ${res.status}`;
@@ -257,6 +260,7 @@ export default function OutreachPage() {
       const res = await fetch("/api/cron/deadline-reminders", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
+        credentials: "include",
         body: JSON.stringify({ withinDays: 30 }),
       });
       const data = await res.json();

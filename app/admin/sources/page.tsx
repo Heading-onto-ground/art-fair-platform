@@ -108,8 +108,9 @@ export default function AdminSourcesPage() {
     setSyncing(true);
     setStatus(null);
     try {
-      const res = await fetch("/api/cron/sync-gallery-directory?run=1", {
+      const res = await fetch("/api/cron/sync-gallery-directory", {
         cache: "no-store",
+        credentials: "include",
       });
       const data = await res.json();
       if (!data?.ok) {

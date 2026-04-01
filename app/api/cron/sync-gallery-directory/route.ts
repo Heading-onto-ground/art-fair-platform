@@ -7,17 +7,17 @@ import {
 } from "@/lib/galleryDirectoryQuality";
 import { loadPortalGallerySources } from "@/lib/portalGallerySourcesStore";
 import { syncGalleryEmailDirectory } from "@/lib/galleryEmailDirectory";
+import { isCronAuthorized as isCronRequestAuthorized } from "@/lib/cronAuth";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 export const maxDuration = 300;
 
 function isCronAuthorized(req: Request) {
-  const run = String(new URL(req.url).searchParams.get("run") || "");
-  if (run === "1") return true;
-  const authHeader = req.headers.get("authorization") || "";
-  const expected = process.env.CRON_SECRET || "";
-  return !!expected && authHeader === `Bearer ${expected}`;
+  return isCronRequestAuthorized(req, {
+    allowDevWithoutSecret: false,
+    allowAdminSession: true,
+  });
 }
 
 export async function GET(req: Request) {

@@ -56,7 +56,6 @@ function cuid() {
 
 async function main() {
   const client = await pool.connect();
-  const dummyHash = bcrypt.hashSync("gallery-directory-2026", 10);
   let created = 0, updated = 0, errors = 0;
 
   try {
@@ -87,7 +86,7 @@ async function main() {
           userId = cuid();
           await client.query(
             `INSERT INTO "User" (id, email, role, "passwordHash") VALUES ($1, $2, 'gallery', $3)`,
-            [userId, email, dummyHash]
+            [userId, email, bcrypt.hashSync(crypto.randomBytes(32).toString("hex"), 12)]
           );
           // Create profile
           const profileId = cuid();

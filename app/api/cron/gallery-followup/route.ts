@@ -2,19 +2,12 @@ export const runtime = "nodejs";
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { sendPlatformEmail } from "@/lib/email";
+import { isCronAuthorized } from "@/lib/cronAuth";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 60;
 
 const PLATFORM_URL = process.env.NEXT_PUBLIC_APP_URL || "https://rob-roleofbridge.com";
-
-function getCronAuth(req: Request): boolean {
-  const secret = process.env.CRON_SECRET;
-  if (!secret) return process.env.NODE_ENV !== "production";
-  const auth = req.headers.get("authorization") ?? "";
-  if (auth === `Bearer ${secret}`) return true;
-  return new URL(req.url).searchParams.get("secret") === secret;
-}
 
 function buildHtml(galleryName: string): string {
   const signupUrl = `${PLATFORM_URL}/login?role=gallery&ref=followup`;
@@ -30,7 +23,7 @@ function buildHtml(galleryName: string): string {
 }
 
 export async function GET(req: Request) {
-  if (!getCronAuth(req)) return NextResponse.json({ error: "unauthorized" }, { status: 401 });
+  if (!isCronAuthorized(req)) return NextResponse.json({ error: "unauthorized" }, { status: 401 });
 
   // Find outreach records sent 14-21 days ago that haven't signed up
   const fourteenDaysAgo = new Date(Date.now() - 14 * 24 * 60 * 60 * 1000);

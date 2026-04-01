@@ -31,10 +31,7 @@ export async function POST(req: NextRequest) {
 
     if (!process.env.DATABASE_URL) {
       console.error("POST /api/auth/signup: DATABASE_URL is not set");
-      return NextResponse.json(
-        { ok: false, error: "server error", details: "DATABASE_URL is not set" },
-        { status: 500 }
-      );
+      return NextResponse.json({ ok: false, error: "server error" }, { status: 500 });
     }
     const body = await req.json().catch(() => null);
     const role = String(body?.role ?? "") as Role;
@@ -192,7 +189,6 @@ export async function POST(req: NextRequest) {
           welcomeEmailSent: welcomeSent,
           email,
           error: "verification email send failed",
-          details: sent.error || "failed to send verification email",
           welcomeError,
         },
         { status: 200 }
@@ -215,10 +211,6 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ ok: false, error: "user exists" }, { status: 409 });
     }
     console.error("POST /api/auth/signup failed:", e);
-    const details = e instanceof Error ? e.message : String(e) || "unknown error";
-    return NextResponse.json(
-      { ok: false, error: "server error", details },
-      { status: 500 }
-    );
+    return NextResponse.json({ ok: false, error: "server error" }, { status: 500 });
   }
 }

@@ -2,6 +2,7 @@ export const runtime = "nodejs";
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { createPost, addComment } from "@/app/data/community";
+import { isCronAuthorized } from "@/lib/cronAuth";
 
 export const dynamic = "force-dynamic";
 
@@ -55,15 +56,7 @@ function pickTwo<T>(arr: T[]): [T, T] {
 }
 
 export async function GET(req: Request) {
-  const secret = process.env.CRON_SECRET;
-  const url = new URL(req.url);
-  const authHeader = req.headers.get("authorization") || "";
-  const provided = url.searchParams.get("secret") || req.headers.get("x-cron-secret") || (authHeader.startsWith("Bearer ") ? authHeader.slice(7) : "") || "";
-  const authorized =
-    !secret ||
-    authHeader === `Bearer ${secret}` ||
-    provided === secret;
-  if (!authorized) return NextResponse.json({ error: "unauthorized" }, { status: 401 });
+  if (!isCronAuthorized(req)) return NextResponse.json({ error: "unauthorized" }, { status: 401 });
 
   const [email1, email2] = pickTwo(BOT_EMAILS);
   const results = [];
