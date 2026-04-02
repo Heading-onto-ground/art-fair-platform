@@ -64,6 +64,25 @@ type GalleryEmailStats = {
   countries: EmailCountryCount[];
 };
 
+type InstagramLead = {
+  galleryId: string;
+  name: string;
+  country: string;
+  city: string;
+  website?: string | null;
+  sourcePortal?: string | null;
+  qualityScore: number;
+  instagram: string;
+  lastStatus?: string | null;
+  lastSentAt?: string | null;
+};
+
+type InstagramStats = {
+  total: number;
+  sent: number;
+  unsent: number;
+};
+
 export default function OutreachPage() {
   const router = useRouter();
   const { lang } = useLanguage();
@@ -86,6 +105,15 @@ export default function OutreachPage() {
   const [sendingOutreach, setSendingOutreach] = useState<string | null>(null);
   const [outreachResults, setOutreachResults] = useState<Record<string, string>>({});
   const [emailStats, setEmailStats] = useState<GalleryEmailStats | null>(null);
+  const [instagramLeads, setInstagramLeads] = useState<InstagramLead[]>([]);
+  const [instagramStats, setInstagramStats] = useState<InstagramStats | null>(null);
+  const [instagramCountry, setInstagramCountry] = useState<string>("ALL");
+  const [instagramSearch, setInstagramSearch] = useState<string>("");
+  const [instagramTemplate, setInstagramTemplate] = useState<string>(
+    "Hi {gallery}, this is ROB (Role of Bridge). We share open calls and connect galleries with artists globally. If you are open to collaboration, we'd love to introduce your gallery on ROB."
+  );
+  const [instagramBusy, setInstagramBusy] = useState<string | null>(null);
+  const [instagramResult, setInstagramResult] = useState<string | null>(null);
 
   // Single send form
   const [singleForm, setSingleForm] = useState({ to: "", galleryName: "", country: "한국", language: "en" });
@@ -114,19 +142,23 @@ export default function OutreachPage() {
   async function loadData() {
     setLoading(true);
     try {
-      const [outreachRes, extRes, emailRes] = await Promise.all([
+      const [outreachRes, extRes, emailRes, instagramRes] = await Promise.all([
         fetch("/api/outreach", { cache: "no-store" }),
         fetch("/api/admin/external-apps", { cache: "no-store" }),
         fetch("/api/admin/gallery-emails", { cache: "no-store", credentials: "include" }),
+        fetch("/api/admin/instagram-outreach?limit=400", { cache: "no-store", credentials: "include" }),
       ]);
       const outreachData = await outreachRes.json();
       const extData = await extRes.json();
       const emailData = await emailRes.json();
+      const instagramData = await instagramRes.json();
       setStats(outreachData.stats || null);
       setRecords(outreachData.records || []);
       setExtApps(extData.applications || []);
       setExtStats(extData.stats || null);
       setEmailStats(emailData?.stats || null);
+      setInstagramLeads(instagramData?.rows || []);
+      setInstagramStats(instagramData?.stats || null);
     } catch { }
     finally { setLoading(false); }
   }
@@ -269,10 +301,118 @@ export default function OutreachPage() {
     finally { setReminding(false); }
   }
 
+  function buildInstagramMessage(lead: InstagramLead) {
+    return instagramTemplate
+      .replaceAll("{gallery}", lead.name || "")
+      .replaceAll("{city}", lead.city || "")
+      .replaceAll("{country}", lead.country || "");
+  }
+
+  async function markInstagramStatus(lead: InstagramLead, status: "prepared" | "copied" | "opened" | "sent", message?: string) {
+    await fetch("/api/admin/instagram-outreach", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      credentials: "include",
+      body: JSON.stringify({
+        action: "mark",
+        instagram: lead.instagram,
+        galleryName: lead.name,
+        country: lead.country,
+        city: lead.city,
+        status,
+        message: message || buildInstagramMessage(lead),
+      }),
+    });
+  }
+
+  async function copyInstagramMessage(lead: InstagramLead) {
+    const key = `copy:${lead.instagram}`;
+    setInstagramBusy(key);
+    setInstagramResult(null);
+    try {
+      await navigator.clipboard.writeText(buildInstagramMessage(lead));
+      await markInstagramStatus(lead, "copied");
+      setInstagramResult(`${tr("Copied DM text for", "DM 문구 복사 완료:", "DM文面をコピー:", "DM copié pour")} ${lead.name}`);
+      loadData();
+    } catch {
+      setInstagramResult(tr("Failed to copy", "복사 실패", "コピー失敗", "Échec copie"));
+    } finally {
+      setInstagramBusy(null);
+    }
+  }
+
+  async function openInstagramProfile(lead: InstagramLead) {
+    const key = `open:${lead.instagram}`;
+    setInstagramBusy(key);
+    setInstagramResult(null);
+    try {
+      window.open(lead.instagram, "_blank", "noopener,noreferrer");
+      await markInstagramStatus(lead, "opened");
+      setInstagramResult(`${tr("Opened profile:", "프로필 열기:", "プロフィールを開きました:", "Profil ouvert:")} ${lead.instagram}`);
+      loadData();
+    } catch {
+      setInstagramResult(tr("Failed to open profile", "프로필 열기 실패", "プロフィールを開けませんでした", "Échec ouverture profil"));
+    } finally {
+      setInstagramBusy(null);
+    }
+  }
+
+  async function markInstagramSent(lead: InstagramLead) {
+    const key = `sent:${lead.instagram}`;
+    setInstagramBusy(key);
+    setInstagramResult(null);
+    try {
+      await markInstagramStatus(lead, "sent");
+      setInstagramResult(`${tr("Marked as sent:", "발송 처리 완료:", "送信済みに設定:", "Marqué envoyé:")} ${lead.name}`);
+      loadData();
+    } catch {
+      setInstagramResult(tr("Failed to save", "저장 실패", "保存失敗", "Échec enregistrement"));
+    } finally {
+      setInstagramBusy(null);
+    }
+  }
+
+  async function copyInstagramBatchPack(limit = 20) {
+    const key = `batch:${limit}`;
+    setInstagramBusy(key);
+    setInstagramResult(null);
+    try {
+      const targets = visibleInstagramLeads
+        .filter((x) => x.lastStatus !== "sent")
+        .slice(0, limit);
+      if (!targets.length) {
+        setInstagramResult(tr("No unsent targets in current filter", "현재 필터에 미발송 대상이 없습니다", "現在のフィルタに未送信対象がありません", "Aucune cible non envoyée dans le filtre actuel"));
+        return;
+      }
+      const pack = targets
+        .map((g, idx) => {
+          const msg = buildInstagramMessage(g);
+          return `${idx + 1}. ${g.name} (${g.city}, ${g.country})\n${g.instagram}\n${msg}`;
+        })
+        .join("\n\n---\n\n");
+      await navigator.clipboard.writeText(pack);
+      setInstagramResult(
+        `${tr("Copied batch pack", "일괄 패키지 복사 완료", "一括パックをコピー", "Pack lot copié")} (${targets.length})`
+      );
+    } catch {
+      setInstagramResult(tr("Failed to copy batch pack", "일괄 패키지 복사 실패", "一括パックのコピー失敗", "Échec copie pack lot"));
+    } finally {
+      setInstagramBusy(null);
+    }
+  }
+
   const inp: React.CSSProperties = { width: "100%", padding: "14px 16px", background: "#FFFFFF", border: "1px solid #E8E3DB", color: "#1A1A1A", fontFamily: F, fontSize: 13, fontWeight: 400, outline: "none" };
   const btn = (disabled: boolean): React.CSSProperties => ({ padding: "12px 24px", border: "none", background: disabled ? "#E8E3DB" : "#1A1A1A", color: disabled ? "#8A8580" : "#FDFBF7", fontFamily: F, fontSize: 10, fontWeight: 500, letterSpacing: "0.1em", textTransform: "uppercase", cursor: disabled ? "not-allowed" : "pointer" });
 
   const countries = ["ALL", ...(emailStats?.countries || []).map((c) => c.country).filter(Boolean)];
+  const instagramCountries = ["ALL", ...Array.from(new Set(instagramLeads.map((x) => x.country).filter(Boolean)))];
+  const visibleInstagramLeads = instagramLeads.filter((x) => {
+    const byCountry = instagramCountry === "ALL" || x.country === instagramCountry;
+    const q = instagramSearch.trim().toLowerCase();
+    const hay = `${x.name} ${x.city} ${x.country} ${x.instagram}`.toLowerCase();
+    const bySearch = !q || hay.includes(q);
+    return byCountry && bySearch;
+  });
 
   if (authenticated === null) {
     return (
@@ -597,6 +737,122 @@ export default function OutreachPage() {
                 </div>
               ))}
             </div>
+          )}
+        </Section>
+
+        {/* Instagram DM Outreach (Semi-automatic) */}
+        <Section number="07" title={tr("Instagram DM Outreach", "인스타 DM 아웃리치", "Instagram DM アウトリーチ", "Outreach DM Instagram")}>
+          <p style={{ fontFamily: F, fontSize: 12, color: "#8A8580", marginBottom: 12 }}>
+            {tr(
+              "Use this for policy-safe outreach: copy the DM text, open profile, then send manually in Instagram.",
+              "정책 리스크를 줄인 반자동 방식입니다. DM 문구 복사 → 프로필 열기 → 인스타에서 수동 발송 순서로 사용하세요.",
+              "ポリシーに配慮した半自動方式です。文面コピー→プロフィールを開く→Instagramで手動送信。",
+              "Workflow semi-automatique et sûr: copier le DM, ouvrir le profil, puis envoyer manuellement."
+            )}
+          </p>
+          {instagramStats && (
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 1, background: "#E8E3DB", marginBottom: 20 }}>
+              <Stat value={instagramStats.total} label={tr("Instagram Targets", "인스타 대상", "Instagram対象", "Cibles Instagram")} />
+              <Stat value={instagramStats.sent} label={tr("Marked Sent", "발송 처리", "送信済み", "Marqués envoyés")} />
+              <Stat value={instagramStats.unsent} label={tr("Unsent", "미발송", "未送信", "Non envoyés")} />
+            </div>
+          )}
+
+          <div style={{ marginBottom: 16 }}>
+            <div style={{ fontFamily: F, fontSize: 10, fontWeight: 500, letterSpacing: "0.08em", textTransform: "uppercase", color: "#8B7355", marginBottom: 8 }}>
+              {tr("DM Template", "DM 템플릿", "DMテンプレート", "Template DM")}
+            </div>
+            <textarea
+              value={instagramTemplate}
+              onChange={(e) => setInstagramTemplate(e.target.value)}
+              rows={4}
+              style={{ ...inp, resize: "vertical", minHeight: 92 }}
+            />
+            <p style={{ marginTop: 8, fontFamily: F, fontSize: 11, color: "#B0AAA2" }}>
+              {tr("Variables", "변수", "変数", "Variables")}: {"{gallery}"}, {"{city}"}, {"{country}"}
+            </p>
+          </div>
+
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 240px", gap: 12, marginBottom: 16 }}>
+            <input
+              value={instagramSearch}
+              onChange={(e) => setInstagramSearch(e.target.value)}
+              placeholder={tr("Search gallery/city/country/instagram", "갤러리/도시/국가/인스타 검색", "ギャラリー/都市/国/インスタ検索", "Rechercher galerie/ville/pays/instagram")}
+              style={inp}
+            />
+            <select value={instagramCountry} onChange={(e) => setInstagramCountry(e.target.value)} style={inp}>
+              {instagramCountries.map((c) => (
+                <option key={c} value={c}>{c}</option>
+              ))}
+            </select>
+          </div>
+          <div style={{ display: "flex", gap: 8, marginBottom: 16 }}>
+            <button onClick={() => copyInstagramBatchPack(20)} disabled={instagramBusy === "batch:20"} style={btn(instagramBusy === "batch:20")}>
+              {instagramBusy === "batch:20"
+                ? tr("Preparing...", "준비 중...", "準備中...", "Préparation...")
+                : tr("Copy batch pack (top 20 unsent)", "일괄 패키지 복사 (미발송 상위 20)", "一括パックコピー（未送信上位20）", "Copier le pack lot (top 20 non envoyés)")}
+            </button>
+          </div>
+
+          {visibleInstagramLeads.length === 0 ? (
+            <p style={{ fontFamily: F, fontSize: 13, color: "#B0AAA2", textAlign: "center", padding: 24 }}>
+              {tr("No Instagram-ready gallery records found.", "인스타 계정이 있는 갤러리 데이터가 없습니다.", "Instagramアカウント付きギャラリーが見つかりません。", "Aucune galerie avec compte Instagram trouvée.")}
+            </p>
+          ) : (
+            <div style={{ display: "grid", gap: 1, background: "#E8E3DB" }}>
+              {visibleInstagramLeads.slice(0, 150).map((g) => (
+                <div key={`${g.galleryId}_${g.instagram}`} style={{ padding: "14px 16px", background: "#FFFFFF" }}>
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12, marginBottom: 8 }}>
+                    <div>
+                      <div style={{ fontFamily: F, fontSize: 13, fontWeight: 600, color: "#1A1A1A" }}>{g.name}</div>
+                      <div style={{ fontFamily: F, fontSize: 11, color: "#8A8580" }}>
+                        {g.city}, {g.country} · {g.instagram}
+                      </div>
+                    </div>
+                    <div style={{ fontFamily: F, fontSize: 10, color: g.lastStatus === "sent" ? "#5A7A5A" : "#8B7355" }}>
+                      {g.lastStatus
+                        ? `${tr("Status", "상태", "ステータス", "Statut")}: ${g.lastStatus}`
+                        : `${tr("Status", "상태", "ステータス", "Statut")}: -`}
+                    </div>
+                  </div>
+                  <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                    <button
+                      onClick={() => copyInstagramMessage(g)}
+                      disabled={instagramBusy === `copy:${g.instagram}`}
+                      style={btn(instagramBusy === `copy:${g.instagram}`)}
+                    >
+                      {instagramBusy === `copy:${g.instagram}`
+                        ? tr("Copying...", "복사 중...", "コピー中...", "Copie...")
+                        : tr("Copy DM text", "DM 문구 복사", "DM文面コピー", "Copier le DM")}
+                    </button>
+                    <button
+                      onClick={() => openInstagramProfile(g)}
+                      disabled={instagramBusy === `open:${g.instagram}`}
+                      style={btn(instagramBusy === `open:${g.instagram}`)}
+                    >
+                      {instagramBusy === `open:${g.instagram}`
+                        ? tr("Opening...", "열는 중...", "開く中...", "Ouverture...")
+                        : tr("Open profile", "프로필 열기", "プロフィールを開く", "Ouvrir le profil")}
+                    </button>
+                    <button
+                      onClick={() => markInstagramSent(g)}
+                      disabled={instagramBusy === `sent:${g.instagram}`}
+                      style={btn(instagramBusy === `sent:${g.instagram}`)}
+                    >
+                      {instagramBusy === `sent:${g.instagram}`
+                        ? tr("Saving...", "저장 중...", "保存中...", "Sauvegarde...")
+                        : tr("Mark as sent", "발송 처리", "送信済みに設定", "Marquer envoyé")}
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {instagramResult && (
+            <p style={{ marginTop: 12, fontFamily: F, fontSize: 12, color: "#5A7A5A" }}>
+              {instagramResult}
+            </p>
           )}
         </Section>
       </main>
