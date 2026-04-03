@@ -414,6 +414,15 @@ export default function OutreachPage() {
     return byCountry && bySearch;
   });
 
+  const displayInstagramStats =
+    instagramStats === null
+      ? null
+      : {
+          total: visibleInstagramLeads.length,
+          sent: visibleInstagramLeads.filter((x) => x.lastStatus === "sent").length,
+          unsent: visibleInstagramLeads.filter((x) => x.lastStatus !== "sent").length,
+        };
+
   if (authenticated === null) {
     return (
       <main style={{ minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", background: "#FDFBF7" }}>
@@ -750,11 +759,11 @@ export default function OutreachPage() {
               "Workflow semi-automatique et sûr: copier le DM, ouvrir le profil, puis envoyer manuellement."
             )}
           </p>
-          {instagramStats && (
+          {displayInstagramStats && (
             <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 1, background: "#E8E3DB", marginBottom: 20 }}>
-              <Stat value={instagramStats.total} label={tr("Instagram Targets", "인스타 대상", "Instagram対象", "Cibles Instagram")} />
-              <Stat value={instagramStats.sent} label={tr("Marked Sent", "발송 처리", "送信済み", "Marqués envoyés")} />
-              <Stat value={instagramStats.unsent} label={tr("Unsent", "미발송", "未送信", "Non envoyés")} />
+              <Stat value={displayInstagramStats.total} label={tr("Instagram Targets", "인스타 대상", "Instagram対象", "Cibles Instagram")} />
+              <Stat value={displayInstagramStats.sent} label={tr("Marked Sent", "발송 처리", "送信済み", "Marqués envoyés")} />
+              <Stat value={displayInstagramStats.unsent} label={tr("Unsent", "미발송", "未送信", "Non envoyés")} />
             </div>
           )}
 
@@ -796,7 +805,19 @@ export default function OutreachPage() {
 
           {visibleInstagramLeads.length === 0 ? (
             <p style={{ fontFamily: F, fontSize: 13, color: "#B0AAA2", textAlign: "center", padding: 24 }}>
-              {tr("No Instagram-ready gallery records found.", "인스타 계정이 있는 갤러리 데이터가 없습니다.", "Instagramアカウント付きギャラリーが見つかりません。", "Aucune galerie avec compte Instagram trouvée.")}
+              {instagramLeads.length === 0
+                ? tr(
+                    "No Instagram-ready gallery records found.",
+                    "인스타 계정이 있는 갤러리 데이터가 없습니다.",
+                    "Instagramアカウント付きギャラリーが見つかりません。",
+                    "Aucune galerie avec compte Instagram trouvée."
+                  )
+                : tr(
+                    "No galleries match the current search or country filter.",
+                    "검색어 또는 국가 필터에 맞는 갤러리가 없습니다.",
+                    "検索または国のフィルタに一致するギャラリーがありません。",
+                    "Aucune galerie ne correspond au filtre de recherche ou au pays."
+                  )}
             </p>
           ) : (
             <div style={{ display: "grid", gap: 1, background: "#E8E3DB" }}>

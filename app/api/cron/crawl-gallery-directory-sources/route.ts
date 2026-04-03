@@ -32,8 +32,6 @@ function isCronAuthorized(req: Request) {
 type CityTarget = { country: string; city: string; slug: string };
 
 const DEFAULT_CITIES: CityTarget[] = [
-  // 한국
-  { country: "한국", city: "Seoul", slug: "south-korea/seoul" },
   // 일본
   { country: "일본", city: "Tokyo", slug: "japan/tokyo" },
   { country: "일본", city: "Osaka", slug: "japan/osaka" },
@@ -104,6 +102,8 @@ const DEFAULT_CITIES: CityTarget[] = [
   { country: "호주", city: "Melbourne", slug: "australia/melbourne" },
   { country: "호주", city: "Brisbane", slug: "australia/brisbane" },
   { country: "뉴질랜드", city: "Auckland", slug: "new-zealand/auckland" },
+  // 한국 (프로필 상한 시 앞선 지역 우선 — 한국은 마지막)
+  { country: "한국", city: "Seoul", slug: "south-korea/seoul" },
 ];
 
 const BASE_URL = "https://www.galleriesnow.net";
