@@ -30,6 +30,9 @@ export default function AdminSourcesPage() {
   const [saving, setSaving] = useState(false);
   const [syncing, setSyncing] = useState(false);
   const [status, setStatus] = useState<string | null>(null);
+  const [countryFilter, setCountryFilter] = useState<string>("ALL");
+  const [sortKey, setSortKey] = useState<"country" | "city" | "name">("country");
+  const [sortDir, setSortDir] = useState<"asc" | "desc">("asc");
 
   useEffect(() => {
     (async () => {
@@ -137,6 +140,31 @@ export default function AdminSourcesPage() {
     return Object.entries(map).sort((a, b) => b[1] - a[1]);
   }, [rows]);
 
+  const countryOptions = useMemo(
+    () => ["ALL", ...byCountry.map(([country]) => country)],
+    [byCountry]
+  );
+
+  const sortedRows = useMemo(() => {
+    const filtered = rows.filter((r) => {
+      if (countryFilter === "ALL") return true;
+      return String(r.country || "").trim() === countryFilter;
+    });
+
+    const dir = sortDir === "asc" ? 1 : -1;
+    return [...filtered].sort((a, b) => {
+      const av = String((a as any)[sortKey] || "").trim().toLowerCase();
+      const bv = String((b as any)[sortKey] || "").trim().toLowerCase();
+      if (av < bv) return -1 * dir;
+      if (av > bv) return 1 * dir;
+      const an = String(a.name || "").trim().toLowerCase();
+      const bn = String(b.name || "").trim().toLowerCase();
+      if (an < bn) return -1;
+      if (an > bn) return 1;
+      return 0;
+    });
+  }, [rows, countryFilter, sortDir, sortKey]);
+
   if (authenticated === null) {
     return (
       <main style={{ minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", background: "#FDFBF7" }}>
@@ -200,23 +228,89 @@ export default function AdminSourcesPage() {
         )}
 
         <div style={{ display: "grid", gridTemplateColumns: "2fr 1fr", gap: 16 }}>
-          <textarea
-            value={text}
-            onChange={(e) => setText(e.target.value)}
-            spellCheck={false}
-            style={{
-              width: "100%",
-              minHeight: 560,
-              border: "1px solid #E8E3DB",
-              background: "#FFFFFF",
-              padding: 14,
-              outline: "none",
-              fontFamily: "ui-monospace, SFMono-Regular, Menlo, Consolas, monospace",
-              fontSize: 12,
-              lineHeight: 1.5,
-              color: "#1A1A1A",
-            }}
-          />
+          <div style={{ display: "grid", gap: 12 }}>
+            <textarea
+              value={text}
+              onChange={(e) => setText(e.target.value)}
+              spellCheck={false}
+              style={{
+                width: "100%",
+                minHeight: 380,
+                border: "1px solid #E8E3DB",
+                background: "#FFFFFF",
+                padding: 14,
+                outline: "none",
+                fontFamily: "ui-monospace, SFMono-Regular, Menlo, Consolas, monospace",
+                fontSize: 12,
+                lineHeight: 1.5,
+                color: "#1A1A1A",
+              }}
+            />
+            <div style={{ border: "1px solid #E8E3DB", background: "#FFFFFF", padding: 14 }}>
+              <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 12 }}>
+                <select
+                  value={countryFilter}
+                  onChange={(e) => setCountryFilter(e.target.value)}
+                  style={{ padding: "8px 10px", border: "1px solid #E8E3DB", fontFamily: F, fontSize: 11, color: "#4A4A4A" }}
+                >
+                  {countryOptions.map((country) => (
+                    <option key={country} value={country}>
+                      {country === "ALL" ? tr("All countries", "전체 국가", "全ての国", "Tous les pays") : country}
+                    </option>
+                  ))}
+                </select>
+                <select
+                  value={sortKey}
+                  onChange={(e) => setSortKey(e.target.value as "country" | "city" | "name")}
+                  style={{ padding: "8px 10px", border: "1px solid #E8E3DB", fontFamily: F, fontSize: 11, color: "#4A4A4A" }}
+                >
+                  <option value="country">{tr("Sort by country", "국가순", "国順", "Par pays")}</option>
+                  <option value="city">{tr("Sort by city", "도시순", "都市順", "Par ville")}</option>
+                  <option value="name">{tr("Sort by gallery", "갤러리명순", "ギャラリー名順", "Par galerie")}</option>
+                </select>
+                <select
+                  value={sortDir}
+                  onChange={(e) => setSortDir(e.target.value as "asc" | "desc")}
+                  style={{ padding: "8px 10px", border: "1px solid #E8E3DB", fontFamily: F, fontSize: 11, color: "#4A4A4A" }}
+                >
+                  <option value="asc">{tr("Ascending", "오름차순", "昇順", "Croissant")}</option>
+                  <option value="desc">{tr("Descending", "내림차순", "降順", "Décroissant")}</option>
+                </select>
+              </div>
+              <div style={{ fontFamily: F, fontSize: 11, color: "#8A8580", marginBottom: 10 }}>
+                {tr("Showing", "표시 중", "表示中", "Affichage")} {sortedRows.length} / {rows.length}
+              </div>
+              <div style={{ maxHeight: 320, overflow: "auto", border: "1px solid #F0EDE8" }}>
+                <div style={{ display: "grid", gridTemplateColumns: "1.2fr 1fr 1fr", gap: 8, padding: "8px 10px", borderBottom: "1px solid #F0EDE8", background: "#FAF8F4" }}>
+                  <span style={{ fontFamily: F, fontSize: 10, letterSpacing: "0.08em", textTransform: "uppercase", color: "#8A8580" }}>
+                    {tr("Gallery", "갤러리", "ギャラリー", "Galerie")}
+                  </span>
+                  <span style={{ fontFamily: F, fontSize: 10, letterSpacing: "0.08em", textTransform: "uppercase", color: "#8A8580" }}>
+                    {tr("Country", "국가", "国", "Pays")}
+                  </span>
+                  <span style={{ fontFamily: F, fontSize: 10, letterSpacing: "0.08em", textTransform: "uppercase", color: "#8A8580" }}>
+                    {tr("City", "도시", "都市", "Ville")}
+                  </span>
+                </div>
+                {sortedRows.map((r, idx) => (
+                  <div
+                    key={`${r.name}_${r.country}_${r.city}_${idx}`}
+                    style={{
+                      display: "grid",
+                      gridTemplateColumns: "1.2fr 1fr 1fr",
+                      gap: 8,
+                      padding: "8px 10px",
+                      borderBottom: "1px solid #F8F6F2",
+                    }}
+                  >
+                    <span style={{ fontFamily: F, fontSize: 11, color: "#1A1A1A" }}>{r.name}</span>
+                    <span style={{ fontFamily: F, fontSize: 11, color: "#4A4A4A" }}>{r.country || "-"}</span>
+                    <span style={{ fontFamily: F, fontSize: 11, color: "#4A4A4A" }}>{r.city || "-"}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
           <div style={{ border: "1px solid #E8E3DB", background: "#FFFFFF", padding: 14 }}>
             <div style={{ fontFamily: F, fontSize: 10, letterSpacing: "0.1em", textTransform: "uppercase", color: "#8A8580", marginBottom: 10 }}>
               {tr("Overview", "개요", "概要", "Apercu")}
