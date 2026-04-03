@@ -37,35 +37,73 @@ const DEFAULT_CITIES: CityTarget[] = [
   // 일본
   { country: "일본", city: "Tokyo", slug: "japan/tokyo" },
   { country: "일본", city: "Osaka", slug: "japan/osaka" },
+  { country: "일본", city: "Kyoto", slug: "japan/kyoto" },
+  { country: "일본", city: "Fukuoka", slug: "japan/fukuoka" },
   // 중국/아시아
   { country: "중국", city: "Beijing", slug: "china/beijing" },
   { country: "중국", city: "Shanghai", slug: "china/shanghai" },
+  { country: "중국", city: "Shenzhen", slug: "china/shenzhen" },
+  { country: "중국", city: "Guangzhou", slug: "china/guangzhou" },
   { country: "홍콩", city: "Hong Kong", slug: "hong-kong/hong-kong" },
   { country: "싱가포르", city: "Singapore", slug: "singapore/singapore" },
+  { country: "대만", city: "Taipei", slug: "taiwan/taipei" },
+  { country: "태국", city: "Bangkok", slug: "thailand/bangkok" },
   // 미국
   { country: "미국", city: "New York", slug: "usa/new-york" },
   { country: "미국", city: "Los Angeles", slug: "usa/los-angeles" },
   { country: "미국", city: "Chicago", slug: "usa/chicago" },
   { country: "미국", city: "Miami", slug: "usa/miami" },
   { country: "미국", city: "San Francisco", slug: "usa/san-francisco" },
+  { country: "미국", city: "Houston", slug: "usa/houston" },
+  { country: "미국", city: "Dallas", slug: "usa/dallas" },
+  { country: "미국", city: "Washington DC", slug: "usa/washington-dc" },
+  { country: "미국", city: "Boston", slug: "usa/boston" },
+  { country: "미국", city: "Seattle", slug: "usa/seattle" },
+  { country: "미국", city: "Atlanta", slug: "usa/atlanta" },
   // 캐나다
   { country: "캐나다", city: "Toronto", slug: "canada/toronto" },
+  { country: "캐나다", city: "Vancouver", slug: "canada/vancouver" },
+  { country: "캐나다", city: "Montreal", slug: "canada/montreal" },
   // 영국
   { country: "영국", city: "London", slug: "uk/london" },
+  { country: "영국", city: "Manchester", slug: "uk/manchester" },
+  { country: "영국", city: "Glasgow", slug: "uk/glasgow" },
   // 유럽
   { country: "프랑스", city: "Paris", slug: "france/paris" },
+  { country: "프랑스", city: "Lyon", slug: "france/lyon" },
   { country: "독일", city: "Berlin", slug: "germany/berlin" },
   { country: "독일", city: "Cologne", slug: "germany/cologne" },
+  { country: "독일", city: "Munich", slug: "germany/munich" },
+  { country: "독일", city: "Hamburg", slug: "germany/hamburg" },
   { country: "이탈리아", city: "Milan", slug: "italy/milan" },
   { country: "이탈리아", city: "Rome", slug: "italy/rome" },
+  { country: "이탈리아", city: "Venice", slug: "italy/venice" },
   { country: "스위스", city: "Basel", slug: "switzerland/basel" },
   { country: "스위스", city: "Zurich", slug: "switzerland/zurich" },
   { country: "네덜란드", city: "Amsterdam", slug: "netherlands/amsterdam" },
+  { country: "네덜란드", city: "Rotterdam", slug: "netherlands/rotterdam" },
   { country: "벨기에", city: "Brussels", slug: "belgium/brussels" },
   { country: "스페인", city: "Madrid", slug: "spain/madrid" },
+  { country: "스페인", city: "Barcelona", slug: "spain/barcelona" },
+  { country: "포르투갈", city: "Lisbon", slug: "portugal/lisbon" },
+  { country: "오스트리아", city: "Vienna", slug: "austria/vienna" },
+  { country: "덴마크", city: "Copenhagen", slug: "denmark/copenhagen" },
+  { country: "스웨덴", city: "Stockholm", slug: "sweden/stockholm" },
+  { country: "핀란드", city: "Helsinki", slug: "finland/helsinki" },
+  { country: "노르웨이", city: "Oslo", slug: "norway/oslo" },
+  { country: "아일랜드", city: "Dublin", slug: "ireland/dublin" },
+  // 중동/남미
+  { country: "UAE", city: "Dubai", slug: "uae/dubai" },
+  { country: "카타르", city: "Doha", slug: "qatar/doha" },
+  { country: "브라질", city: "Sao Paulo", slug: "brazil/sao-paulo" },
+  { country: "브라질", city: "Rio de Janeiro", slug: "brazil/rio-de-janeiro" },
+  { country: "멕시코", city: "Mexico City", slug: "mexico/mexico-city" },
+  { country: "아르헨티나", city: "Buenos Aires", slug: "argentina/buenos-aires" },
   // 오세아니아
   { country: "호주", city: "Sydney", slug: "australia/sydney" },
   { country: "호주", city: "Melbourne", slug: "australia/melbourne" },
+  { country: "호주", city: "Brisbane", slug: "australia/brisbane" },
+  { country: "뉴질랜드", city: "Auckland", slug: "new-zealand/auckland" },
 ];
 
 const BASE_URL = "https://www.galleriesnow.net";
@@ -116,6 +154,32 @@ function extractGalleryProfileLinks(html: string): string[] {
     }
   }
   return results;
+}
+
+function extractListingPaginationUrls(html: string, baseListingUrl: string): string[] {
+  const urls: string[] = [];
+  const seen = new Set<string>();
+  const normalizedBase = baseListingUrl.replace(/\/+$/, "");
+  const re = /href=["']([^"']+)["']/gi;
+  let m: RegExpExecArray | null;
+  while ((m = re.exec(html)) !== null) {
+    const href = String(m[1] || "").trim();
+    if (!href) continue;
+    let absolute = "";
+    try {
+      absolute = new URL(href, `${normalizedBase}/`).toString();
+    } catch {
+      continue;
+    }
+    const normalized = absolute.replace(/\/+$/, "");
+    if (!normalized.startsWith(normalizedBase)) continue;
+    const hasPageSignal = /[?&](?:page|p)=\d+/i.test(normalized) || /\/page\/\d+$/i.test(normalized);
+    if (!hasPageSignal) continue;
+    if (seen.has(normalized)) continue;
+    seen.add(normalized);
+    urls.push(normalized);
+  }
+  return urls;
 }
 
 // Extract the gallery's real website URL from their galleriesnow.net profile page
@@ -187,7 +251,21 @@ export async function GET(req: Request) {
   // Optional: limit to specific city slug, e.g. ?city=uk/london
   const cityFilter = searchParams.get("city") || null;
   // Per-run limit on profile page fetches (keeps runtime under 5 min)
-  const maxProfiles = Number(searchParams.get("limit") ?? "150");
+  const maxProfiles = Number(
+    searchParams.get("limit") ??
+    process.env.CRAWL_GALLERY_DIRECTORY_PROFILE_LIMIT ??
+    "900"
+  );
+  const perCityProfileLimit = Number(
+    searchParams.get("perCityLimit") ??
+    process.env.CRAWL_GALLERY_DIRECTORY_PER_CITY_LIMIT ??
+    "200"
+  );
+  const maxPagesPerCity = Number(
+    searchParams.get("maxPages") ??
+    process.env.CRAWL_GALLERY_DIRECTORY_MAX_PAGES_PER_CITY ??
+    "5"
+  );
 
   const cities = cityFilter
     ? DEFAULT_CITIES.filter((c) => c.slug === cityFilter)
@@ -201,6 +279,7 @@ export async function GET(req: Request) {
   const stats = {
     citiesAttempted: 0,
     citiesWithResults: 0,
+    listingPagesFetched: 0,
     profilesFetched: 0,
     profilesWithWebsite: 0,
     profilesWithEmail: 0,
@@ -213,20 +292,36 @@ export async function GET(req: Request) {
     stats.citiesAttempted++;
     const listingUrl = `${BASE_URL}/galleries/${target.slug}/`;
 
-    const listingHtml = await fetchHtml(listingUrl);
-    await sleep(DELAY_MS);
+    const listingQueue = [listingUrl];
+    const seenListingUrls = new Set<string>([listingUrl.replace(/\/+$/, "")]);
+    const profilePathSet = new Set<string>();
 
-    if (!listingHtml) {
-      stats.errors++;
-      continue;
+    while (listingQueue.length > 0 && seenListingUrls.size <= maxPagesPerCity) {
+      const url = String(listingQueue.shift() || "").trim();
+      if (!url) continue;
+      const listingHtml = await fetchHtml(url);
+      await sleep(DELAY_MS);
+      stats.listingPagesFetched++;
+      if (!listingHtml) {
+        stats.errors++;
+        continue;
+      }
+      const profilePaths = extractGalleryProfileLinks(listingHtml);
+      for (const p of profilePaths) profilePathSet.add(p);
+      const paginationUrls = extractListingPaginationUrls(listingHtml, listingUrl);
+      for (const nextUrl of paginationUrls) {
+        if (seenListingUrls.size >= maxPagesPerCity) break;
+        const key = nextUrl.replace(/\/+$/, "");
+        if (seenListingUrls.has(key)) continue;
+        seenListingUrls.add(key);
+        listingQueue.push(nextUrl);
+      }
     }
 
-    const profilePaths = extractGalleryProfileLinks(listingHtml);
+    const profilePaths = Array.from(profilePathSet).slice(0, Math.max(1, perCityProfileLimit));
     if (profilePaths.length === 0) {
-      stats.errors++;
       continue;
     }
-
     stats.citiesWithResults++;
 
     for (const profilePath of profilePaths) {
@@ -272,6 +367,10 @@ export async function GET(req: Request) {
   return NextResponse.json({
     ok: true,
     ...stats,
+    citiesConfigured: cities.length,
+    maxProfiles,
+    perCityProfileLimit,
+    maxPagesPerCity,
     discovered: raw.length,
     upserted: canonical.length,
   });

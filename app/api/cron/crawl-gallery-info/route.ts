@@ -224,24 +224,45 @@ export async function GET(req: Request) {
 
   await ensureGalleryColumns();
 
+  const { searchParams } = new URL(req.url);
+  const mode = String(searchParams.get("mode") || process.env.CRAWL_GALLERY_INFO_MODE || "instagram").trim().toLowerCase();
+  const batchLimit = Math.max(
+    20,
+    Number.parseInt(
+      String(searchParams.get("limit") || process.env.CRAWL_GALLERY_INFO_BATCH_LIMIT || "240"),
+      10
+    ) || 240
+  );
+  const workerCount = Math.max(
+    2,
+    Number.parseInt(
+      String(searchParams.get("workers") || process.env.CRAWL_GALLERY_INFO_WORKERS || "8"),
+      10
+    ) || 8
+  );
   const counters = { processed: 0, updated: 0, skipped: 0, errors: 0 };
   const startedAt = Date.now();
   const runId = await startRun();
 
   try {
+    const whereMissing =
+      mode === "all"
+        ? `("instagram" IS NULL OR "foundedYear" IS NULL OR "externalEmail" IS NULL OR "spaceSize" IS NULL)`
+        : `("instagram" IS NULL)`;
     const rows = (await prisma.$queryRawUnsafe(
       `SELECT "galleryId", "website", "instagram", "foundedYear", "spaceSize", "externalEmail",
               crawl_fail_count
        FROM "ExternalGalleryDirectory"
        WHERE "website" IS NOT NULL
-         AND ("instagram" IS NULL OR "foundedYear" IS NULL)
+         AND ${whereMissing}
          AND (
            crawl_fail_count IS NULL OR crawl_fail_count = 0 OR
            (crawl_fail_count < 3  AND (last_crawled_at IS NULL OR last_crawled_at < NOW() - INTERVAL '6 hours')) OR
            (crawl_fail_count >= 3 AND (last_crawled_at IS NULL OR last_crawled_at < NOW() - INTERVAL '24 hours'))
          )
        ORDER BY "qualityScore" DESC, "updatedAt" ASC
-       LIMIT 60`
+       LIMIT $1`,
+      batchLimit
     )) as Array<{
       galleryId: string;
       website: string;
@@ -254,7 +275,7 @@ export async function GET(req: Request) {
 
     counters.processed = rows.length;
 
-    await Promise.all(Array.from({ length: 4 }, async () => {
+    await Promise.all(Array.from({ length: workerCount }, async () => {
       let row: typeof rows[0] | undefined;
       while ((row = rows.shift())) {
         try {
@@ -329,7 +350,7 @@ export async function GET(req: Request) {
     await finishRun(runId, "success", counters, Date.now() - startedAt, null);
     if (counters.errors > 0)
       await sendWebhook({ event: "crawl_gallery_info", status: "success_with_errors", runId: String(runId), ...counters });
-    return NextResponse.json({ ok: true, runId: String(runId), ...counters });
+    return NextResponse.json({ ok: true, runId: String(runId), mode, batchLimit, workerCount, ...counters });
   } catch (e: any) {
     counters.errors++;
     const sample = String(e?.message || "unknown").slice(0, 300);
