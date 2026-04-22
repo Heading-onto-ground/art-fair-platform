@@ -70,7 +70,7 @@ async function fetchMe(options?: { preferCache?: boolean }): Promise<MeResponse 
   }
   try {
     const res = await fetch("/api/auth/me?lite=1", {
-      cache: "default",
+      cache: "no-store",
       credentials: "include",
     });
     const data = (await res.json().catch(() => null)) as MeResponse | null;
@@ -193,13 +193,19 @@ export default function TopBar() {
 
   // ── Grouped nav entries ──────────────────────────────────────────────────
   const artistNav = useMemo((): NavEntry[] => [
-    { path: "/artist/me", label: lang === "ko" ? "내 페이지" : lang === "ja" ? "マイページ" : "MY PAGE" },
+    {
+      label: lang === "ko" ? "내 페이지" : lang === "ja" ? "マイページ" : "MY PAGE",
+      items: [
+        { path: "/artist/me", label: lang === "ko" ? "내 페이지" : lang === "ja" ? "マイページ" : "MY PAGE" },
+        { path: "/artist/portfolio", label: lang === "ko" ? "내 작업" : lang === "ja" ? "マイ作品" : "MY WORKS" },
+        { path: "/artist/me#applications", label: t("nav_my_calls", lang) },
+      ],
+    },
     { path: "/open-calls", label: t("nav_open_calls", lang) },
+    { path: "/support", label: lang === "ko" ? "고객 지원" : lang === "ja" ? "サポート" : "SUPPORT" },
     {
       label: lang === "ko" ? "탐색" : lang === "ja" ? "探索" : "EXPLORE",
       items: [
-        { path: "/artist/portfolio", label: lang === "ko" ? "내 작업" : lang === "ja" ? "マイ作品" : "MY WORKS" },
-        { path: "/artist/me#applications", label: t("nav_my_calls", lang) },
         { path: "/discover", label: lang === "ko" ? "발견" : lang === "ja" ? "発見" : "DISCOVER" },
         { path: "/artists", label: t("nav_artists", lang) },
         { path: "/galleries", label: t("nav_galleries", lang) },
@@ -223,6 +229,7 @@ export default function TopBar() {
     { path: "/gallery/me", label: t("nav_my_page", lang) },
     { path: "/gallery", label: t("nav_my_calls", lang) },
     { path: "/artists", label: t("nav_artists", lang) },
+    { path: "/support", label: lang === "ko" ? "고객 지원" : lang === "ja" ? "サポート" : "SUPPORT" },
     {
       label: lang === "ko" ? "더 보기" : lang === "ja" ? "もっと見る" : "MORE",
       items: [
@@ -240,6 +247,7 @@ export default function TopBar() {
     { path: "/curator", label: t("nav_my_page", lang) },
     { path: "/artists", label: t("nav_artists", lang) },
     { path: "/open-calls", label: t("nav_open_calls", lang) },
+    { path: "/support", label: lang === "ko" ? "고객 지원" : lang === "ja" ? "サポート" : "SUPPORT" },
     {
       label: lang === "ko" ? "더 보기" : lang === "ja" ? "もっと見る" : "MORE",
       items: [
