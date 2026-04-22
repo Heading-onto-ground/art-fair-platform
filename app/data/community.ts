@@ -105,12 +105,16 @@ export async function createPost(input: {
       prisma.galleryProfile.findMany({ where: { notify_new_community_post: true }, select: { userId: true } }),
     ]);
     const userIds = [...new Set([...artists, ...galleries].map((p) => p.userId))];
-    if (userIds.length) {
+    const targetUserIds = userIds.filter((userId) => userId !== input.authorId);
+    if (targetUserIds.length) {
       await prisma.notification.createMany({
-        data: userIds.map((userId) => ({
+        data: targetUserIds.map((userId) => ({
           userId,
           type: "community_new_post",
-          payload: { post_id: post.id, title: post.title },
+          title: "New community post",
+          message: post.title,
+          link: `/community/${post.id}`,
+          data: { postId: post.id, title: post.title },
         })),
       });
     }
