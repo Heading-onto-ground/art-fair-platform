@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useMemo } from "react";
+import { type ChangeEvent, useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useLanguage } from "@/lib/useLanguage";
 import { t } from "@/lib/translate";
@@ -40,6 +40,14 @@ type Comment = {
 
 type Session = { userId: string; role: string; email?: string };
 
+type MagazineReport = {
+  title: string;
+  generatedAt: string;
+  todayTopic: string;
+  goodOpinions: string[];
+  keyTakeaways: string[];
+};
+
 const CATEGORIES = [
   { key: "all", emoji: "" },
   { key: "find_collab", emoji: "🎭" },
@@ -76,6 +84,14 @@ export default function CommunityPage() {
   const [editingCommentText, setEditingCommentText] = useState("");
   const [likedByMap, setLikedByMap] = useState<Record<string, string[]>>({});
   const [showLikedByPostId, setShowLikedByPostId] = useState<string | null>(null);
+  const [magazineTitle, setMagazineTitle] = useState("Community Daily Magazine");
+  const [transcriptInput, setTranscriptInput] = useState("");
+  const [magazineReport, setMagazineReport] = useState<MagazineReport | null>(null);
+  const [magazinePdfBase64, setMagazinePdfBase64] = useState<string>("");
+  const [magazineFileName, setMagazineFileName] = useState<string>("community-magazine.pdf");
+  const [magazineLoading, setMagazineLoading] = useState(false);
+  const [magazineError, setMagazineError] = useState<string | null>(null);
+  const [magazineAnalysis, setMagazineAnalysis] = useState<"llm" | "heuristic" | null>(null);
 
   // Translation state: { [postId]: { title, content, comments: { [commentId]: string }, loading } }
   const [translations, setTranslations] = useState<Record<string, {
@@ -228,6 +244,67 @@ export default function CommunityPage() {
     }
   }
 
+  async function handleGenerateMagazine() {
+    if (!transcriptInput.trim()) return;
+    setMagazineLoading(true);
+    setMagazineError(null);
+    try {
+      const res = await fetch("/api/community/magazine", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          transcript: transcriptInput,
+          title: magazineTitle,
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setMagazineError(data?.error || "생성 중 오류가 발생했습니다.");
+        return;
+      }
+      setMagazineReport(data.report ?? null);
+      setMagazineAnalysis(
+        data.analysis === "llm" || data.analysis === "heuristic" ? data.analysis : null
+      );
+      setMagazinePdfBase64(data.pdfBase64 ?? "");
+      setMagazineFileName(data.fileName ?? "community-magazine.pdf");
+    } catch (error) {
+      console.error(error);
+      setMagazineError("생성 중 오류가 발생했습니다.");
+    } finally {
+      setMagazineLoading(false);
+    }
+  }
+
+  async function handleTranscriptFileChange(e: ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    try {
+      const text = await file.text();
+      setTranscriptInput(text);
+      setMagazineError(null);
+    } catch (error) {
+      console.error(error);
+      setMagazineError("파일을 읽는 중 오류가 발생했습니다.");
+    } finally {
+      e.currentTarget.value = "";
+    }
+  }
+
+  function downloadMagazinePdf() {
+    if (!magazinePdfBase64) return;
+    const bytes = Uint8Array.from(atob(magazinePdfBase64), (ch) => ch.charCodeAt(0));
+    const blob = new Blob([bytes], { type: "application/pdf" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = magazineFileName;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    URL.revokeObjectURL(url);
+  }
+
   function timeAgo(ts: number): string {
     const diff = Date.now() - ts;
     const mins = Math.floor(diff / 60000);
@@ -262,6 +339,83 @@ export default function CommunityPage() {
             {t("community_subtitle", lang)}
           </p>
         </div>
+
+        <section style={{ background: "#FFFFFF", border: "1px solid #E8E3DB", padding: 24, marginBottom: 28 }}>
+          <div style={{ fontFamily: F, fontSize: 10, fontWeight: 600, letterSpacing: "0.12em", textTransform: "uppercase", color: "#8B7355", marginBottom: 8 }}>
+            Community AI Magazine
+          </div>
+          <p style={{ fontFamily: F, fontSize: 12, color: "#8A8580", margin: "0 0 16px", lineHeight: 1.6 }}>
+            대화 로그를 붙여넣으면 오늘의 주제, 좋았던 의견, 핵심 요약을 자동으로 뽑아 PDF로 만들어 드립니다.
+          </p>
+          <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 12 }}>
+            <label style={{ padding: "8px 12px", border: "1px solid #E8E3DB", background: "#FAF8F4", color: "#6E655B", fontFamily: F, fontSize: 10, letterSpacing: "0.08em", textTransform: "uppercase", cursor: "pointer" }}>
+              파일 업로드
+              <input type="file" accept=".txt,.md,.json,text/plain,application/json" onChange={handleTranscriptFileChange} style={{ display: "none" }} />
+            </label>
+            <span style={{ fontFamily: F, fontSize: 11, color: "#B0AAA2" }}>
+              txt / md / json 지원
+            </span>
+          </div>
+          <input
+            type="text"
+            value={magazineTitle}
+            onChange={(e) => setMagazineTitle(e.target.value)}
+            placeholder="매거진 제목"
+            style={{ width: "100%", marginBottom: 12, padding: "10px 12px", border: "1px solid #E8E3DB", fontFamily: F, fontSize: 12, outline: "none", boxSizing: "border-box" }}
+          />
+          <textarea
+            value={transcriptInput}
+            onChange={(e) => setTranscriptInput(e.target.value)}
+            placeholder={"예시)\nA: 오늘 전시 기획 이야기해요\nB: 교육 프로그램 아이디어가 특히 좋았어요\nC: 커뮤니티 인터뷰를 묶어 뉴스레터처럼 만들면 좋겠어요"}
+            rows={8}
+            style={{ width: "100%", marginBottom: 12, padding: "12px", border: "1px solid #E8E3DB", fontFamily: F, fontSize: 12, outline: "none", lineHeight: 1.7, boxSizing: "border-box", resize: "vertical" }}
+          />
+          <div style={{ display: "flex", gap: 10, alignItems: "center", marginBottom: magazineError ? 10 : 0 }}>
+            <button
+              onClick={handleGenerateMagazine}
+              disabled={magazineLoading || !transcriptInput.trim()}
+              style={{ padding: "10px 16px", border: "1px solid #1A1A1A", background: "#1A1A1A", color: "#FDFBF7", fontFamily: F, fontSize: 10, letterSpacing: "0.08em", textTransform: "uppercase", cursor: magazineLoading ? "wait" : "pointer", opacity: transcriptInput.trim() ? 1 : 0.5 }}
+            >
+              {magazineLoading ? "분석 중..." : "분석 + PDF 생성"}
+            </button>
+            <button
+              onClick={downloadMagazinePdf}
+              disabled={!magazinePdfBase64}
+              style={{ padding: "10px 16px", border: "1px solid #E8E3DB", background: "#FFFFFF", color: "#8A8580", fontFamily: F, fontSize: 10, letterSpacing: "0.08em", textTransform: "uppercase", cursor: magazinePdfBase64 ? "pointer" : "not-allowed", opacity: magazinePdfBase64 ? 1 : 0.5 }}
+            >
+              PDF 다운로드
+            </button>
+          </div>
+          {magazineError && (
+            <div style={{ fontFamily: F, fontSize: 11, color: "#A33A3A", marginBottom: 8 }}>
+              {magazineError}
+            </div>
+          )}
+          {magazineReport && (
+            <div style={{ marginTop: 14, paddingTop: 14, borderTop: "1px solid #F0EBE3" }}>
+              {magazineAnalysis && (
+                <div style={{ fontFamily: F, fontSize: 10, color: "#B0AAA2", marginBottom: 6 }}>
+                  분석: {magazineAnalysis === "llm" ? "AI 요약" : "기본(키워드) 분석"}
+                </div>
+              )}
+              <div style={{ fontFamily: F, fontSize: 11, color: "#8B7355", marginBottom: 8 }}>
+                오늘의 주제: <strong style={{ color: "#1A1A1A" }}>{magazineReport.todayTopic}</strong>
+              </div>
+              <div style={{ fontFamily: F, fontSize: 11, color: "#8A8580", marginBottom: 6 }}>좋았던 의견</div>
+              <div style={{ fontFamily: F, fontSize: 12, color: "#3A3A3A", lineHeight: 1.6, marginBottom: 10 }}>
+                {magazineReport.goodOpinions.map((item, idx) => (
+                  <div key={`good-${idx}`}>- {item}</div>
+                ))}
+              </div>
+              <div style={{ fontFamily: F, fontSize: 11, color: "#8A8580", marginBottom: 6 }}>핵심 요약</div>
+              <div style={{ fontFamily: F, fontSize: 12, color: "#3A3A3A", lineHeight: 1.6 }}>
+                {magazineReport.keyTakeaways.map((item, idx) => (
+                  <div key={`take-${idx}`}>- {item}</div>
+                ))}
+              </div>
+            </div>
+          )}
+        </section>
 
         {/* Category Tabs */}
         <div style={{ display: "flex", gap: 8, marginBottom: 32, flexWrap: "wrap", alignItems: "center", justifyContent: "space-between" }}>
