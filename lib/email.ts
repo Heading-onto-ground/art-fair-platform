@@ -280,6 +280,86 @@ export async function sendVerificationEmail(input: VerificationEmailInput): Prom
   });
 }
 
+function escapeHtmlForEmail(s: string): string {
+  return String(s)
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;");
+}
+
+export type ArtistVerificationRejectedEmailInput = {
+  to: string;
+  artistName: string;
+  reviewNote?: string | null;
+};
+
+export async function sendArtistVerificationRejectedEmail(
+  input: ArtistVerificationRejectedEmailInput,
+): Promise<{ ok: boolean; error?: string }> {
+  const to = input.to.trim();
+  if (!to) return { ok: false, error: "missing to" };
+
+  const name = (input.artistName || "").trim();
+  const note = (input.reviewNote || "").trim();
+
+  const textEnLines = [
+    `Hi${name ? ` ${name}` : ""},`,
+    ``,
+    `Your artist verification request on ROB (Role of Bridge) was not approved at this time.`,
+  ];
+  if (note) {
+    textEnLines.push(``, `Message from our team:`, note);
+  }
+  textEnLines.push(
+    ``,
+    `You may update your profile and submit a new verification request anytime from:`,
+    `${PLATFORM_URL}/artist/me`,
+    ``,
+    `— ROB`,
+  );
+
+  const textKoLines = [
+    `${name ? `${name}님` : "안녕하세요"},`,
+    ``,
+    `요청해 주신 ROB(Role of Bridge) 작가 검증은 이번에 승인되지 않았습니다.`,
+  ];
+  if (note) {
+    textKoLines.push(``, `[운영 안내]`, note);
+  }
+  textKoLines.push(
+    ``,
+    `프로필을 보완한 뒤 작가 페이지에서 언제든지 다시 요청할 수 있습니다:`,
+    `${PLATFORM_URL}/artist/me`,
+    ``,
+    `— ROB`,
+  );
+
+  const textBody = [...textEnLines, ``, `---`, ``, ...textKoLines].join("\n");
+
+  const noteBlock = note
+    ? `<div style="margin:16px 0;padding:12px 14px;background:#FAF8F4;border:1px solid #E8E3DB;font-size:14px;line-height:1.6;white-space:pre-wrap;">${escapeHtmlForEmail(note)}</div>`
+    : `<p style="color:#6A6660;font-size:13px;font-style:italic;margin:16px 0;">No additional message was included.</p>`;
+
+  const htmlBody = `
+<div style="font-family:Helvetica,Arial,sans-serif;max-width:620px;margin:0 auto;padding:24px;background:#ffffff;color:#111111;">
+  <h2 style="margin:0 0 12px 0;font-size:18px;">ROB — Role of Bridge</h2>
+  <p style="font-size:14px;line-height:1.7;margin:0 0 6px;"><strong>English.</strong> Your artist verification request was not approved at this time.</p>
+  <p style="font-size:14px;line-height:1.7;margin:0 0 14px;"><strong>한국어.</strong> 작가 검증 요청이 이번에는 승인되지 않았습니다.</p>
+  ${noteBlock}
+  <p style="font-size:14px;line-height:1.7;margin-top:18px;"><a href="${PLATFORM_URL}/artist/me" style="color:#1A1A1A;text-decoration:underline;">${PLATFORM_URL}/artist/me</a></p>
+</div>`;
+
+  return sendPlatformEmail({
+    emailType: "artist_verification_rejected",
+    to,
+    subject: `[ROB] Artist verification update · 작가 검증 안내`,
+    html: htmlBody,
+    text: textBody,
+    meta: { artistName: name, hasNote: !!note },
+  });
+}
+
 export type EmailAttachment = {
   filename: string;
   content: string; // base64-encoded

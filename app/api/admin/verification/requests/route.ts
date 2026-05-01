@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { sendArtistVerificationRejectedEmail } from "@/lib/email";
 import { getAdminSession } from "@/lib/adminAuth";
 import { listVerificationRequests, reviewVerificationRequest } from "@/lib/verification";
 
@@ -40,6 +41,22 @@ export async function PATCH(req: Request) {
     });
 
     if (!updated) return NextResponse.json({ error: "request not found" }, { status: 404 });
+
+    if (action === "rejected") {
+      const to = String(updated.email || "").trim();
+      if (to) {
+        try {
+          await sendArtistVerificationRejectedEmail({
+            to,
+            artistName: updated.artistName || "",
+            reviewNote: updated.reviewNote,
+          });
+        } catch (e) {
+          console.error("PATCH /api/admin/verification/reject email failed:", e);
+        }
+      }
+    }
+
     return NextResponse.json({ ok: true, request: updated }, { status: 200 });
   } catch (e) {
     console.error("PATCH /api/admin/verification/requests failed:", e);

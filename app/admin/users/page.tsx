@@ -102,13 +102,29 @@ export default function AdminUsersPage() {
 
   async function reviewVerification(requestId: string, action: "approved" | "rejected") {
     if (reviewingRequestId) return;
+
+    let reviewNote: string | undefined;
+    if (action === "rejected") {
+      const prompted = window.prompt(
+        tr(
+          "Reject: optional message to send to the artist by email (leave blank for default notice only). Cancel to abort.",
+          "거절: 작가에게 이메일로 보낼 안내(선택). 비우면 기본 안내만 발송합니다. 취소하면 거절하지 않습니다.",
+          "却下：アーティストへメールで送るメッセージ（任意）。空欄は定型文のみ。キャンセルで中止。",
+          "Refus : message optionnel envoye par email a l'artiste. Vide = notification standard uniquement. Annuler pour abandonner."
+        ),
+        ""
+      );
+      if (prompted === null) return;
+      reviewNote = prompted.trim() || undefined;
+    }
+
     setReviewingRequestId(requestId);
     try {
       const res = await fetch("/api/admin/verification/requests", {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
-        body: JSON.stringify({ requestId, action }),
+        body: JSON.stringify({ requestId, action, ...(reviewNote ? { reviewNote } : {}) }),
       });
       const data = await res.json().catch(() => null);
       if (!res.ok || !data?.ok) throw new Error(data?.error ?? "failed");

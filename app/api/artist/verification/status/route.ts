@@ -18,7 +18,9 @@ export async function GET() {
 
     const approval = await getVerificationByUserId(session.userId);
     const requests = await listVerificationRequests();
-    const latest = requests.find((r) => r.userId === session.userId) || null;
+    const forUser = requests.filter((r) => r.userId === session.userId);
+    forUser.sort((a, b) => b.updatedAt - a.updatedAt);
+    const latest = forUser[0] || null;
 
     return NextResponse.json(
       {

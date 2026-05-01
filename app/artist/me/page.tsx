@@ -31,12 +31,31 @@ type VerificationState = {
   verified: boolean;
   badgeLabel?: string | null;
   approvedAt?: number | null;
-  latestRequest?: { status: "pending" | "approved" | "rejected"; createdAt: number; reviewNote?: string } | null;
+  latestRequest?:
+    | {
+        status: "pending" | "approved" | "rejected";
+        createdAt: number;
+        updatedAt?: number;
+        reviewedAt?: number;
+        reviewNote?: string | null;
+      }
+    | null;
 };
 
 const inp: React.CSSProperties = { width: "100%", padding: "14px 16px", background: "#FFFFFF", border: "1px solid #E8E3DB", color: "#1A1A1A", fontFamily: F, fontSize: 13, fontWeight: 400, outline: "none" };
 const inpHighlight: React.CSSProperties = { ...inp, border: "1px solid #8B7355", background: "#FFFBF5" };
 const btnStyle = (disabled: boolean): React.CSSProperties => ({ padding: "14px 32px", border: "none", background: disabled ? "#E8E3DB" : "#1A1A1A", color: disabled ? "#8A8580" : "#FDFBF7", fontFamily: F, fontSize: 11, fontWeight: 500, letterSpacing: "0.1em", textTransform: "uppercase", cursor: disabled ? "not-allowed" : "pointer" });
+
+function formatApiError(error: string | undefined, lang: string) {
+  if (!error) return lang === "ko" ? "요청 처리에 실패했습니다." : "Request failed.";
+  if (error === "free_plan_series_limit_reached") return lang === "ko" ? "무료 플랜 시리즈 최대 개수(30개)에 도달했습니다." : "You reached the free plan series limit (30).";
+  if (error === "free_plan_art_events_limit_reached") return lang === "ko" ? "무료 플랜 활동 기록 최대 개수(200개)에 도달했습니다." : "You reached the free plan activity limit (200).";
+  if (error === "free_plan_self_exhibitions_limit_reached") return lang === "ko" ? "무료 플랜 전시 등록 최대 개수(50개)에 도달했습니다." : "You reached the free plan exhibition limit (50).";
+  if (error === "free_plan_portfolio_upload_daily_limit_reached") return lang === "ko" ? "오늘 포트폴리오 업로드 한도(10회)에 도달했습니다." : "You reached today's portfolio upload limit (10).";
+  if (error === "file_too_large") return lang === "ko" ? "PDF 파일이 너무 큽니다. 10MB 이하로 업로드해주세요." : "PDF is too large. Upload 10MB or less.";
+  if (error === "title_required") return lang === "ko" ? "제목은 필수입니다." : "Title is required.";
+  return error;
+}
 
 export default function ArtistMePage() {
   const router = useRouter();
@@ -177,16 +196,16 @@ export default function ArtistMePage() {
   };
   const loadExhibitions = async () => { const res = await fetch("/api/artist/exhibitions", { credentials: "include" }); const data = await res.json().catch(() => null); if (data) { setExhibitions(data.exhibitions ?? []); setExPublic(!!data.exhibitionsPublic); setExArtistId(data.artistId ?? null); } };
   const loadSelfExhibitions = async () => { const res = await fetch("/api/artist/self-exhibitions", { credentials: "include" }); const data = await res.json().catch(() => null); if (data?.exhibitions) setSelfExhibitions(data.exhibitions); };
-  const saveSelfEx = async () => { if (selfExSaving || !selfExForm?.title?.trim()) return; setSelfExSaving(true); const method = editingSelfExId ? "PATCH" : "POST"; const body = { ...(editingSelfExId ? { id: editingSelfExId } : {}), ...selfExForm }; const res = await fetch("/api/artist/self-exhibitions", { method, headers: { "Content-Type": "application/json" }, credentials: "include", body: JSON.stringify(body) }); const data = await res.json().catch(() => null); if (data?.ok) { setSelfExForm(null); setEditingSelfExId(null); toastSuccess(editingSelfExId ? "수정됨" : "전시 등록됨"); await loadSelfExhibitions(); } else { toastError(data?.error ?? "저장 실패"); } setSelfExSaving(false); };
+  const saveSelfEx = async () => { if (selfExSaving || !selfExForm?.title?.trim()) return; setSelfExSaving(true); const method = editingSelfExId ? "PATCH" : "POST"; const body = { ...(editingSelfExId ? { id: editingSelfExId } : {}), ...selfExForm }; const res = await fetch("/api/artist/self-exhibitions", { method, headers: { "Content-Type": "application/json" }, credentials: "include", body: JSON.stringify(body) }); const data = await res.json().catch(() => null); if (data?.ok) { setSelfExForm(null); setEditingSelfExId(null); toastSuccess(editingSelfExId ? "수정됨" : "전시 등록됨"); await loadSelfExhibitions(); } else { toastError(formatApiError(data?.error, lang)); } setSelfExSaving(false); };
   const deleteSelfEx = async (id: string) => { if (!window.confirm("이 전시를 삭제하시겠습니까?")) return; const res = await fetch("/api/artist/self-exhibitions", { method: "DELETE", headers: { "Content-Type": "application/json" }, credentials: "include", body: JSON.stringify({ id }) }); if ((await res.json().catch(() => null))?.ok) { toastSuccess("삭제됨"); await loadSelfExhibitions(); } };
   const inviteArtist = async (exhibitionId: string) => { if (!inviteArtistId.trim()) return; const res = await fetch(`/api/artist/self-exhibitions/${exhibitionId}`, { method: "POST", headers: { "Content-Type": "application/json" }, credentials: "include", body: JSON.stringify({ inviteArtistId: inviteArtistId.trim() }) }); const data = await res.json().catch(() => null); if (data?.ok) { setInviteArtistId(""); setInvitingExId(null); toastSuccess("초대 완료"); await loadSelfExhibitions(); } else { toastError(data?.error === "artist_not_found" ? "작가를 찾을 수 없습니다" : data?.error === "already_invited" ? "이미 초대됨" : "초대 실패"); } };
   const loadSeries = async () => { const res = await fetch("/api/artist/series", { credentials: "include" }); const data = await res.json().catch(() => null); if (data?.series) setSeriesList(data.series); };
   const loadArtEvents = async () => { const res = await fetch("/api/artist/art-events", { credentials: "include" }); const data = await res.json().catch(() => null); if (data?.artEvents) setArtEvents(data.artEvents); };
-  const saveArtEvent = async () => { if (artEventSaving || !artEventForm?.title?.trim() || !artEventForm.year) return; setArtEventSaving(true); const method = editingArtEventId ? "PATCH" : "POST"; const body = { ...(editingArtEventId ? { id: editingArtEventId } : {}), ...artEventForm, year: Number(artEventForm.year) }; const res = await fetch("/api/artist/art-events", { method, headers: { "Content-Type": "application/json" }, credentials: "include", body: JSON.stringify(body) }); const data = await res.json().catch(() => null); if (data?.ok) { setArtEventForm(null); setEditingArtEventId(null); toastSuccess(editingArtEventId ? "수정됨" : "추가됨"); await loadArtEvents(); } else { toastError(data?.error ?? "저장 실패"); } setArtEventSaving(false); };
+  const saveArtEvent = async () => { if (artEventSaving || !artEventForm?.title?.trim() || !artEventForm.year) return; setArtEventSaving(true); const method = editingArtEventId ? "PATCH" : "POST"; const body = { ...(editingArtEventId ? { id: editingArtEventId } : {}), ...artEventForm, year: Number(artEventForm.year) }; const res = await fetch("/api/artist/art-events", { method, headers: { "Content-Type": "application/json" }, credentials: "include", body: JSON.stringify(body) }); const data = await res.json().catch(() => null); if (data?.ok) { setArtEventForm(null); setEditingArtEventId(null); toastSuccess(editingArtEventId ? "수정됨" : "추가됨"); await loadArtEvents(); } else { toastError(formatApiError(data?.error, lang)); } setArtEventSaving(false); };
   const deleteArtEvent = async (id: string) => { if (!window.confirm("이 활동을 삭제하시겠습니까?")) return; const res = await fetch("/api/artist/art-events", { method: "DELETE", headers: { "Content-Type": "application/json" }, credentials: "include", body: JSON.stringify({ id }) }); if ((await res.json().catch(() => null))?.ok) { toastSuccess("삭제됨"); await loadArtEvents(); } };
   const saveWorkNote = async () => { setWorkNoteSaving(true); const res = await fetch("/api/profile/save", { method: "POST", headers: { "Content-Type": "application/json" }, credentials: "include", body: JSON.stringify({ workNote }) }); if (res.ok) { toastSuccess("저장됨"); } else { toastError("저장 실패"); } setWorkNoteSaving(false); };
   const emptySeriesForm = () => ({ title: "", description: "", startYear: "", endYear: "", works: "", isPublic: true });
-  const saveSeries = async () => { if (seriesSaving || !seriesForm?.title?.trim()) return; setSeriesSaving(true); const method = editingSeriesId ? "PATCH" : "POST"; const body = { ...seriesForm, ...(editingSeriesId ? { id: editingSeriesId } : {}), startYear: seriesForm.startYear ? Number(seriesForm.startYear) : null, endYear: seriesForm.endYear ? Number(seriesForm.endYear) : null }; const res = await fetch("/api/artist/series", { method, headers: { "Content-Type": "application/json" }, credentials: "include", body: JSON.stringify(body) }); const data = await res.json().catch(() => null); if (data?.ok) { setSeriesForm(null); setEditingSeriesId(null); toastSuccess(editingSeriesId ? "수정됨" : "시리즈 추가됨"); await loadSeries(); } else { toastError("저장 실패"); } setSeriesSaving(false); };
+  const saveSeries = async () => { if (seriesSaving || !seriesForm?.title?.trim()) return; setSeriesSaving(true); const method = editingSeriesId ? "PATCH" : "POST"; const body = { ...seriesForm, ...(editingSeriesId ? { id: editingSeriesId } : {}), startYear: seriesForm.startYear ? Number(seriesForm.startYear) : null, endYear: seriesForm.endYear ? Number(seriesForm.endYear) : null }; const res = await fetch("/api/artist/series", { method, headers: { "Content-Type": "application/json" }, credentials: "include", body: JSON.stringify(body) }); const data = await res.json().catch(() => null); if (data?.ok) { setSeriesForm(null); setEditingSeriesId(null); toastSuccess(editingSeriesId ? "수정됨" : "시리즈 추가됨"); await loadSeries(); } else { toastError(formatApiError(data?.error, lang)); } setSeriesSaving(false); };
   const deleteSeries = async (id: string) => { if (!window.confirm("이 시리즈를 삭제하시겠습니까?")) return; const res = await fetch("/api/artist/series", { method: "DELETE", headers: { "Content-Type": "application/json" }, credentials: "include", body: JSON.stringify({ id }) }); if ((await res.json().catch(() => null))?.ok) { toastSuccess("삭제됨"); await loadSeries(); } };
   const toggleExPublic = async () => { if (exToggling) return; setExToggling(true); const next = !exPublic; setExPublic(next); await fetch("/api/artist/exhibitions", { method: "PATCH", headers: { "Content-Type": "application/json" }, credentials: "include", body: JSON.stringify({ exhibitionsPublic: next }) }).catch(() => setExPublic(!next)); setExToggling(false); };
   const updateInviteStatus = async (id: string, status: string) => { if (adminReadOnly) return; const res = await fetch("/api/artist/invites", { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ id, status }) }); const data = await res.json().catch(() => null); if (res.ok && data?.invite) setInvites((p) => p.map((i) => (i.id === id ? data.invite : i))); };
@@ -275,7 +294,7 @@ export default function ArtistMePage() {
       const form = new FormData(); form.append("file", file);
       const res = await fetch("/api/profile/upload", { method: "POST", body: form });
       const data = await res.json().catch(() => null);
-      if (!res.ok || !data?.ok) { toastError(data?.error ?? "Upload failed"); return; }
+      if (!res.ok || !data?.ok) { toastError(formatApiError(data?.error, lang)); return; }
       toastSuccess(lang === "ko" ? "포트폴리오가 업로드되었습니다." : "Portfolio uploaded");
       setFile(null); await loadMe();
     } finally { setUploading(false); }
@@ -435,9 +454,43 @@ export default function ArtistMePage() {
                       ? (lang === "ko" ? "검증 뱃지가 활성화되어 공개 프로필에 표시됩니다." : "Your verification badge is active and visible on your public profile.")
                       : verification?.latestRequest?.status === "pending"
                         ? (lang === "ko" ? "검증 요청이 심사 중입니다." : "Your verification request is under review.")
-                        : (lang === "ko" ? "기관/큐레이터 신뢰 강화를 위해 검증 요청을 보낼 수 있습니다." : "Submit a verification request to strengthen curator and institution trust.")}
+                        : verification?.latestRequest?.status === "rejected"
+                          ? (lang === "ko"
+                              ? "최근 검증 요청이 승인되지 않았습니다. 아래 안내를 확인한 뒤 프로필을 보완하고 다시 요청할 수 있습니다."
+                              : "Your latest verification request was not approved. Review the note below if provided, update your profile, and you may submit again.")
+                          : lang === "ko"
+                            ? "기관/큐레이터 신뢰 강화를 위해 검증 요청을 보낼 수 있습니다."
+                            : "Submit a verification request to strengthen curator and institution trust."}
                   </p>
-                  {!verification?.verified && (
+                  {!verification?.verified && verification?.latestRequest?.status === "rejected" && (
+                    <div
+                      style={{
+                        marginBottom: 12,
+                        padding: "12px 14px",
+                        background: "#FDF8F8",
+                        border: "1px solid #E8D6D6",
+                        fontFamily: F,
+                        fontSize: 11,
+                        color: "#5A4545",
+                        lineHeight: 1.55,
+                      }}
+                    >
+                      {verification.latestRequest.reviewNote?.trim()
+                        ? (lang === "ko" ? <>운영팀 안내: {verification.latestRequest.reviewNote}</> : <>From our team: {verification.latestRequest.reviewNote}</>)
+                        : (lang === "ko"
+                            ? "별도 안내 문구는 남겨지지 않았습니다. 같은 내용으로는 재심사가 어렵다면 프로필·참고 링크를 보완해 주세요."
+                            : "No detailed message was provided. Improve your profile and optional links before resubmitting.")}
+                      {(verification.latestRequest.reviewedAt ?? verification.latestRequest.updatedAt) != null ? (
+                        <div style={{ marginTop: 8, fontSize: 10, color: "#8A8580" }}>
+                          {lang === "ko" ? "처리 일시: " : "Updated: "}
+                          {new Date(
+                            verification.latestRequest.reviewedAt ?? verification.latestRequest.updatedAt ?? verification.latestRequest.createdAt
+                          ).toLocaleString()}
+                        </div>
+                      ) : null}
+                    </div>
+                  )}
+                  {!verification?.verified && verification?.latestRequest?.status !== "pending" && (
                     <>
                       <textarea
                         value={verificationNote}
@@ -501,6 +554,9 @@ export default function ArtistMePage() {
               )}
               <div style={{ padding: 24, border: "1px dashed #E8E3DB", background: "#FAF8F4" }}>
                 <p style={{ fontFamily: F, fontSize: 10, fontWeight: 500, letterSpacing: "0.1em", textTransform: "uppercase", color: "#8A8580", marginBottom: 16 }}>{profile?.portfolioUrl ? t("profile_replace", lang) : t("profile_upload", lang)}</p>
+                <p style={{ fontFamily: F, fontSize: 11, color: "#8A8580", margin: "0 0 12px" }}>
+                  {lang === "ko" ? "무료 플랜: PDF 10MB 이하, 하루 10회 업로드" : "Free plan: PDF up to 10MB, 10 uploads/day"}
+                </p>
                 <div style={{ display: "flex", gap: 16, alignItems: "center", flexWrap: "wrap" }}>
                   <label style={{ padding: "12px 24px", border: "1px solid #E8E3DB", background: "#FFFFFF", color: "#8A8580", fontFamily: F, fontSize: 11, fontWeight: 400, cursor: "pointer" }}>
                     {file ? file.name : t("profile_select_pdf", lang)}
@@ -670,6 +726,9 @@ export default function ArtistMePage() {
               <p style={{ fontFamily: F, fontSize: 11, color: "#8A8580", marginBottom: 16 }}>
                 {lang === "ko" ? "연작이나 시리즈 단위로 작업을 묶어 맥락을 구조화하세요. 공개로 설정하면 공개 프로필에 표시됩니다." : "Group your works into series to structure context. Public series appear on your public profile."}
               </p>
+              <p style={{ fontFamily: F, fontSize: 11, color: "#B0AAA2", marginTop: -6, marginBottom: 16 }}>
+                {lang === "ko" ? "무료 플랜 최대 30개" : "Free plan maximum: 30 series"}
+              </p>
               {seriesList.length > 0 && (
                 <div style={{ display: "grid", gap: 1, background: "#E8E3DB", marginBottom: 20 }}>
                   {seriesList.map((s) => (
@@ -727,6 +786,9 @@ export default function ArtistMePage() {
             <Section number="08" title={lang === "ko" ? "전시 등록" : "Register Exhibition"} id="self_exhibitions">
               <p style={{ fontFamily: F, fontSize: 11, color: "#8A8580", marginBottom: 16 }}>
                 {lang === "ko" ? "직접 참여한 전시를 등록하고 다른 작가를 초대해 연결하세요." : "Register exhibitions you participated in and invite other artists."}
+              </p>
+              <p style={{ fontFamily: F, fontSize: 11, color: "#B0AAA2", marginTop: -6, marginBottom: 16 }}>
+                {lang === "ko" ? "무료 플랜 최대 50개" : "Free plan maximum: 50 exhibitions"}
               </p>
               {selfExhibitions.length > 0 && (
                 <div style={{ display: "grid", gap: 1, background: "#E8E3DB", marginBottom: 20 }}>
@@ -824,6 +886,9 @@ export default function ArtistMePage() {
 
             {/* Activity Timeline */}
             <Section number="09" title={lang === "ko" ? "활동 타임라인" : "Activity Timeline"} id="art_events">
+              <p style={{ fontFamily: F, fontSize: 11, color: "#B0AAA2", marginBottom: 16 }}>
+                {lang === "ko" ? "무료 플랜 최대 200개" : "Free plan maximum: 200 activities"}
+              </p>
               {artEvents.length > 0 && (
                 <div style={{ display: "grid", gap: 1, background: "#E8E3DB", marginBottom: 20 }}>
                   {artEvents.map((ev) => (
