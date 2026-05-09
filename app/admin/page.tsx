@@ -42,6 +42,47 @@ type HealthSummary = {
   actions: Array<{ label: string; href: string; level: "high" | "medium" | "low" }>;
 };
 
+type DailyIngestSummary = {
+  ok: boolean;
+  hours: number;
+  since: string;
+  counts: { openCalls: number; platformGalleries: number; directoryGalleries: number };
+  openCalls: Array<{
+    id: string;
+    theme: string;
+    gallery: string;
+    city: string;
+    country: string;
+    deadline: string;
+    isExternal: boolean;
+    createdAt: number;
+    updatedAt: number;
+    change: "new" | "updated";
+  }>;
+  platformGalleries: Array<{
+    userId: string;
+    email: string;
+    galleryId: string;
+    name: string;
+    city: string;
+    country: string;
+    change: "signup" | "profile_touch";
+    userCreatedAt: number;
+    profileUpdatedAt: number | null;
+  }>;
+  directoryGalleries: Array<{
+    id: string;
+    email: string;
+    galleryName: string;
+    country: string | null;
+    city: string | null;
+    source: string;
+    createdAt: number;
+    updatedAt: number;
+    change: "new" | "updated";
+  }>;
+};
+
 export default function AdminHomePage() {
   const router = useRouter();
   const { lang } = useLanguage();
@@ -54,6 +95,10 @@ export default function AdminHomePage() {
   const [botExists, setBotExists] = useState(0);
   const [botDeleting, setBotDeleting] = useState(false);
   const [health, setHealth] = useState<HealthSummary | null>(null);
+  const [dailyIngest, setDailyIngest] = useState<DailyIngestSummary | null>(null);
+  const [dailyLoading, setDailyLoading] = useState(false);
+  const [ingestHours, setIngestHours] = useState(24);
+  const [ingestNonce, setIngestNonce] = useState(0);
 
   const BOT_LIST = [
     { name: "Yuna Kim", genre: "Photography", location: "Seoul, Korea" },
@@ -88,6 +133,30 @@ export default function AdminHomePage() {
       })
       .catch(() => {});
   }, [authenticated]);
+
+  useEffect(() => {
+    if (!authenticated) return;
+    let cancelled = false;
+    (async () => {
+      setDailyLoading(true);
+      try {
+        const res = await fetch(`/api/admin/daily-ingest?hours=${ingestHours}`, {
+          credentials: "include",
+          cache: "no-store",
+        });
+        const d = await res.json().catch(() => null);
+        if (!cancelled && d?.ok) setDailyIngest(d as DailyIngestSummary);
+        else if (!cancelled) setDailyIngest(null);
+      } catch {
+        if (!cancelled) setDailyIngest(null);
+      } finally {
+        if (!cancelled) setDailyLoading(false);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [authenticated, ingestHours, ingestNonce]);
 
   const tr = (en: string, ko: string, ja: string, fr: string) =>
     lang === "ko" ? ko : lang === "ja" ? ja : lang === "fr" ? fr : en;
@@ -213,6 +282,16 @@ export default function AdminHomePage() {
         "Envoyez des emails directs depuis l'admin avec adresse de reponse."
       ),
       href: "/admin/mail",
+    },
+    {
+      title: tr("Agent Logs", "업무일지", "業務ログ", "Journal agent"),
+      description: tr(
+        "Review daily AI agent work logs generated automatically.",
+        "AI 에이전트의 일일 자동 업무 기록을 확인합니다.",
+        "AIエージェントの日次自動ログを確認します。",
+        "Consultez les journaux quotidiens automatiques des agents IA."
+      ),
+      href: "/admin/agent-logs",
     },
     {
       title: tr("Gallery Emails", "갤러리 이메일", "ギャラリーメール", "Emails galeries"),
@@ -361,6 +440,243 @@ export default function AdminHomePage() {
             </div>
           </section>
         )}
+
+        <section style={{ marginBottom: 26, border: "1px solid #E8E3DB", background: "#FFFFFF", padding: 18 }}>
+          <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", justifyContent: "space-between", gap: 12, marginBottom: 14 }}>
+            <span
+              style={{
+                fontFamily: F,
+                fontSize: 10,
+                fontWeight: 500,
+                letterSpacing: "0.18em",
+                textTransform: "uppercase",
+                color: "#8B7355",
+              }}
+            >
+              {tr("Recent crawler & listings", "최근 반영 내역", "最近の反映", "Ajouts récents")}
+            </span>
+            <div style={{ display: "flex", flexWrap: "wrap", gap: 8, alignItems: "center" }}>
+              {([24, 48, 168] as const).map((h) => (
+                <button
+                  key={h}
+                  type="button"
+                  onClick={() => setIngestHours(h)}
+                  style={{
+                    padding: "6px 12px",
+                    border: ingestHours === h ? "1px solid #1A1A1A" : "1px solid #E8E3DB",
+                    background: ingestHours === h ? "#1A1A1A" : "#FFFFFF",
+                    color: ingestHours === h ? "#FDFBF7" : "#4A4540",
+                    fontFamily: F,
+                    fontSize: 10,
+                    letterSpacing: "0.06em",
+                    textTransform: "uppercase",
+                    cursor: "pointer",
+                  }}
+                >
+                  {h === 168 ? tr("7d", "7일", "7日", "7j") : h === 48 ? tr("48h", "48시간", "48時間", "48h") : tr("24h", "24시간", "24時間", "24h")}
+                </button>
+              ))}
+              <button
+                type="button"
+                disabled={dailyLoading}
+                onClick={() => setIngestNonce((n) => n + 1)}
+                style={{
+                  padding: "6px 12px",
+                  border: "1px solid #E8E3DB",
+                  background: "transparent",
+                  fontFamily: F,
+                  fontSize: 10,
+                  letterSpacing: "0.06em",
+                  cursor: dailyLoading ? "not-allowed" : "pointer",
+                  color: "#6A6560",
+                }}
+                title={tr("Reload", "다시 불러오기", "再読み込み", "Recharger")}
+              >
+                {dailyLoading ? "…" : tr("Refresh", "새로고침", "更新", "Actualiser")}
+              </button>
+            </div>
+          </div>
+          {dailyIngest && (
+            <p style={{ fontFamily: F, fontSize: 11, color: "#8A8580", margin: "0 0 14px 0" }}>
+              {tr("Window starts at (UTC)", "기준 시각 UTC", "基準 UTC", "Depuis UTC")}: {dailyIngest.since} ·{" "}
+              {tr("Open calls", "오픈콜", "オープンコール", "Open calls")}: {dailyIngest.counts.openCalls}
+              {" · "}
+              {tr("Platform galleries", "플랫폼 갤러리 가입·프로필", "プラットフォームギャラリー", "Galeries plateforme")}:{" "}
+              {dailyIngest.counts.platformGalleries}
+              {" · "}
+              {tr("Directory (crawl)", "이메일 디렉터리(크롤)", "ディレクトリ", "Répertoire")}:{" "}
+              {dailyIngest.counts.directoryGalleries}
+            </p>
+          )}
+          {dailyLoading && !dailyIngest ? (
+            <p style={{ fontFamily: F, fontSize: 12, color: "#B0AAA2", margin: 0 }}>
+              {tr("Loading…", "불러오는 중…", "読み込み中…", "Chargement…")}
+            </p>
+          ) : dailyIngest ? (
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))", gap: 14 }}>
+              <div style={{ border: "1px solid #F0EBE3" }}>
+                <div
+                  style={{
+                    padding: "8px 10px",
+                    borderBottom: "1px solid #F0EBE3",
+                    fontFamily: F,
+                    fontSize: 9,
+                    letterSpacing: "0.12em",
+                    textTransform: "uppercase",
+                    color: "#B0AAA2",
+                  }}
+                >
+                  {tr("Open calls (created/updated)", "오픈콜 (신규·수정)", "オープンコール", "Open calls")}
+                </div>
+                <div style={{ maxHeight: 280, overflow: "auto" }}>
+                  {dailyIngest.openCalls.length === 0 ? (
+                    <p style={{ padding: 12, fontFamily: F, fontSize: 11, color: "#B0AAA2", margin: 0 }}>—</p>
+                  ) : (
+                    dailyIngest.openCalls.map((o) => (
+                      <div
+                        key={o.id}
+                        style={{
+                          padding: "8px 10px",
+                          borderBottom: "1px solid #F7F4F0",
+                          fontFamily: F,
+                          fontSize: 11,
+                          color: "#4A4540",
+                        }}
+                      >
+                        <div style={{ display: "flex", justifyContent: "space-between", gap: 8, alignItems: "baseline" }}>
+                          <span style={{ fontSize: 9, color: o.change === "new" ? "#4A7C59" : "#8B7355", textTransform: "uppercase" }}>
+                            {o.change === "new" ? tr("New", "신규", "新規", "Nouv.") : tr("Updated", "수정", "更新", "Maj")}
+                            {o.isExternal ? ` · ${tr("ext", "외부", "外部", "ext")}` : ""}
+                          </span>
+                          <a
+                            href={`/open-calls/${o.id}`}
+                            target="_blank"
+                            rel="noreferrer"
+                            style={{ fontSize: 9, color: "#8B7355", textDecoration: "none", whiteSpace: "nowrap" }}
+                          >
+                            {tr("Open", "열기", "開く", "Ouvrir")} →
+                          </a>
+                        </div>
+                        <div style={{ marginTop: 4, fontWeight: 500, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{o.theme}</div>
+                        <div style={{ marginTop: 2, fontSize: 10, color: "#8A8580", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                          {o.gallery} · {o.city}, {o.country} · DL {o.deadline}
+                        </div>
+                      </div>
+                    ))
+                  )}
+                </div>
+              </div>
+
+              <div style={{ border: "1px solid #F0EBE3" }}>
+                <div
+                  style={{
+                    padding: "8px 10px",
+                    borderBottom: "1px solid #F0EBE3",
+                    fontFamily: F,
+                    fontSize: 9,
+                    letterSpacing: "0.12em",
+                    textTransform: "uppercase",
+                    color: "#B0AAA2",
+                  }}
+                >
+                  {tr("Gallery directory (email crawl)", "갤러리 디렉터리", "ギャラリーディレクトリ", "Répertoire emails")}
+                </div>
+                <div style={{ maxHeight: 280, overflow: "auto" }}>
+                  {dailyIngest.directoryGalleries.length === 0 ? (
+                    <p style={{ padding: 12, fontFamily: F, fontSize: 11, color: "#B0AAA2", margin: 0 }}>—</p>
+                  ) : (
+                    dailyIngest.directoryGalleries.map((g) => (
+                      <div key={g.id} style={{ padding: "8px 10px", borderBottom: "1px solid #F7F4F0", fontFamily: F, fontSize: 11 }}>
+                        <span style={{ fontSize: 9, color: g.change === "new" ? "#4A7C59" : "#8B7355", textTransform: "uppercase" }}>
+                          {g.change === "new" ? tr("New", "신규", "新規", "Nouv.") : tr("Updated", "수정", "更新", "Maj")}
+                        </span>
+                        <div style={{ marginTop: 4, fontWeight: 500 }}>{g.galleryName}</div>
+                        <div style={{ marginTop: 2, fontSize: 10, color: "#8A8580", wordBreak: "break-all" }}>{g.email}</div>
+                        <div style={{ marginTop: 2, fontSize: 10, color: "#B0AAA2" }}>{g.source}</div>
+                      </div>
+                    ))
+                  )}
+                </div>
+                <div style={{ padding: "6px 10px", borderTop: "1px solid #F0EBE3" }}>
+                  <button
+                    type="button"
+                    onClick={() => router.push("/admin/gallery-emails")}
+                    style={{
+                      padding: "4px 0",
+                      border: "none",
+                      background: "none",
+                      color: "#8B7355",
+                      fontFamily: F,
+                      fontSize: 10,
+                      cursor: "pointer",
+                      letterSpacing: "0.06em",
+                      textTransform: "uppercase",
+                    }}
+                  >
+                    {tr("Full gallery emails →", "갤러리 이메일 전체 →", "一覧へ →", "Tout voir →")}
+                  </button>
+                </div>
+              </div>
+
+              <div style={{ border: "1px solid #F0EBE3" }}>
+                <div
+                  style={{
+                    padding: "8px 10px",
+                    borderBottom: "1px solid #F0EBE3",
+                    fontFamily: F,
+                    fontSize: 9,
+                    letterSpacing: "0.12em",
+                    textTransform: "uppercase",
+                    color: "#B0AAA2",
+                  }}
+                >
+                  {tr("Platform gallery accounts", "플랫폼 가입 갤러리", "登録ギャラリー", "Galeries inscrites")}
+                </div>
+                <div style={{ maxHeight: 280, overflow: "auto" }}>
+                  {dailyIngest.platformGalleries.length === 0 ? (
+                    <p style={{ padding: 12, fontFamily: F, fontSize: 11, color: "#B0AAA2", margin: 0 }}>—</p>
+                  ) : (
+                    dailyIngest.platformGalleries.map((g) => (
+                      <div key={g.userId} style={{ padding: "8px 10px", borderBottom: "1px solid #F7F4F0", fontFamily: F, fontSize: 11 }}>
+                        <span style={{ fontSize: 9, color: g.change === "signup" ? "#4A7C59" : "#8B7355", textTransform: "uppercase" }}>
+                          {g.change === "signup"
+                            ? tr("Signup", "가입", "登録", "Inscr.")
+                            : tr("Profile", "프로필", "プロフィール", "Profil")}
+                        </span>
+                        <div style={{ marginTop: 4, fontWeight: 500 }}>{g.name || g.galleryId || g.email}</div>
+                        <div style={{ marginTop: 2, fontSize: 10, color: "#8A8580", wordBreak: "break-all" }}>{g.email}</div>
+                        <div style={{ marginTop: 2, fontSize: 10, color: "#B0AAA2" }}>
+                          {[g.city, g.country].filter(Boolean).join(", ") || "—"}
+                        </div>
+                      </div>
+                    ))
+                  )}
+                </div>
+                <div style={{ padding: "6px 10px", borderTop: "1px solid #F0EBE3" }}>
+                  <button
+                    type="button"
+                    onClick={() => router.push("/admin/users")}
+                    style={{
+                      padding: "4px 0",
+                      border: "none",
+                      background: "none",
+                      color: "#8B7355",
+                      fontFamily: F,
+                      fontSize: 10,
+                      cursor: "pointer",
+                      letterSpacing: "0.06em",
+                      textTransform: "uppercase",
+                    }}
+                  >
+                    {tr("Users →", "가입자 →", "ユーザー →", "Utilisateurs →")}
+                  </button>
+                </div>
+              </div>
+            </div>
+          ) : (
+            <p style={{ fontFamily: F, fontSize: 12, color: "#B0AAA2", margin: 0 }}>—</p>
+          )}
+        </section>
 
         <div
           style={{
