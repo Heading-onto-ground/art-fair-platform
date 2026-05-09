@@ -265,19 +265,26 @@ export default function OutreachPage() {
         credentials: "include",
       });
       const data = await res.json();
-      if (!res.ok || data?.error) {
+      if (!res.ok || data?.error || data?.status === "error") {
         const detail = data?.error || `HTTP ${res.status}`;
         setCrawlResult(
           `${tr("Crawler failed", "크롤러 실패", "クローラー失敗", "Échec du crawler")}: ${detail}`
         );
         return;
       }
-      const importedCount = Array.isArray(data?.imported) ? data.imported.length : null;
-      setCrawlResult(
-        importedCount !== null
-          ? `${data?.message || tr("Crawler completed", "크롤러 완료", "クローラー完了", "Crawler terminé")} (${tr("imported", "신규 반영", "新規反映", "importés")}: ${importedCount})`
-          : data?.message || tr("Crawler completed", "크롤러 완료", "クローラー完了", "Crawler terminé")
-      );
+      const base = data?.message || tr("Crawler completed", "크롤러 완료", "クローラー完了", "Crawler terminé");
+      const n = typeof data.itemsNew === "number" ? data.itemsNew : null;
+      let line =
+        n !== null && n >= 0
+          ? `${base} (${tr("imported", "신규 반영", "新規反映", "importés")}: ${n})`
+          : base;
+      if (data?.crawlerDisabled) {
+        line = `${tr("Crawler is off", "크롤러 비활성화", "クローラー無効", "Crawler desactive")}: ${base}`;
+      }
+      if (Array.isArray(data.importErrors) && data.importErrors.length > 0) {
+        line += ` · ${tr("import errors (sample)", "가져오기 오류 샘플", "取り込みエラー", "erreurs import")}: ${data.importErrors.length}`;
+      }
+      setCrawlResult(line);
       loadData();
     } catch {
       setCrawlResult(tr("Crawler failed", "크롤러 실패", "クローラー失敗", "Échec du crawler"));

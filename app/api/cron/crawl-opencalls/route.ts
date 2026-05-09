@@ -1226,11 +1226,12 @@ export async function POST(req: Request) {
   let status: "success" | "error" = "success";
   let error: string | null = null;
   let itemsNew = 0;
+  let crawlResult: Awaited<ReturnType<typeof runCrawlJob>> | null = null;
 
   try {
     runId = await insertCrawlRun(jobName);
-    const data = await runCrawlJob();
-    itemsNew = Array.isArray((data as any)?.imported) ? (data as any).imported.length : 0;
+    crawlResult = await runCrawlJob();
+    itemsNew = Array.isArray(crawlResult?.imported) ? crawlResult.imported.length : 0;
   } catch (e: any) {
     status = "error";
     error = String(e?.message || "unknown").slice(0, 500);
@@ -1243,7 +1244,22 @@ export async function POST(req: Request) {
   }
 
   const lastCrawl = toIsoStringOrNull(await getLastCrawl(jobName));
-  return NextResponse.json({ ok: true, lastCrawl, runId, status });
+  const importedPreview = crawlResult?.imported?.slice(0, 40) ?? [];
+  const importErrorsPreview = crawlResult?.importErrors?.slice(0, 10) ?? [];
+  return NextResponse.json({
+    ok: status === "success",
+    lastCrawl,
+    runId,
+    status,
+    error: error || undefined,
+    itemsNew,
+    message: crawlResult?.message,
+    imported: importedPreview,
+    importErrors: importErrorsPreview,
+    crawlerDisabled: String(crawlResult?.message || "").includes("disabled"),
+    droppedExpired: crawlResult?.droppedExpired,
+    skippedDuplicates: crawlResult?.skipped,
+  });
 }
 
 export async function GET(req: Request) {
