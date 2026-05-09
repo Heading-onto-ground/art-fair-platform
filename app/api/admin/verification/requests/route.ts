@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { sendArtistVerificationRejectedEmail } from "@/lib/email";
 import { getAdminSession } from "@/lib/adminAuth";
 import { listVerificationRequests, reviewVerificationRequest } from "@/lib/verification";
+import { isVerificationReviewReasonKey } from "@/lib/verificationReasons";
 
 export const dynamic = "force-dynamic";
 
@@ -26,10 +27,17 @@ export async function PATCH(req: Request) {
     const requestId = String(body?.requestId || "").trim();
     const action = body?.action;
     const reviewNote = String(body?.reviewNote || "").trim();
+    const reviewReasonKeyRaw = String(body?.reviewReasonKey || "").trim();
+    const reviewReasonKey = isVerificationReviewReasonKey(reviewReasonKeyRaw)
+      ? reviewReasonKeyRaw
+      : undefined;
     const label = String(body?.label || "").trim();
 
     if (!requestId || !["approved", "rejected"].includes(action)) {
       return NextResponse.json({ error: "invalid input" }, { status: 400 });
+    }
+    if (action === "rejected" && !reviewReasonKey) {
+      return NextResponse.json({ error: "reviewReasonKey required for rejection" }, { status: 400 });
     }
 
     const updated = await reviewVerificationRequest({
@@ -37,6 +45,7 @@ export async function PATCH(req: Request) {
       action,
       reviewerEmail: admin.email,
       reviewNote: reviewNote || undefined,
+      reviewReasonKey,
       label: label || undefined,
     });
 
@@ -49,6 +58,7 @@ export async function PATCH(req: Request) {
           await sendArtistVerificationRejectedEmail({
             to,
             artistName: updated.artistName || "",
+            reviewReasonKey: updated.reviewReasonKey,
             reviewNote: updated.reviewNote,
           });
         } catch (e) {

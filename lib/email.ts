@@ -1,6 +1,11 @@
 // Email sending utility using Resend
 // Set RESEND_API_KEY in .env.local to enable email sending
 import { logEmailEvent } from "@/lib/emailLog";
+import {
+  getVerificationReasonGuidance,
+  getVerificationReasonTitle,
+  type VerificationReviewReasonKey,
+} from "@/lib/verificationReasons";
 
 const RESEND_API_KEY = process.env.RESEND_API_KEY || "";
 const FROM_EMAIL = process.env.FROM_EMAIL || "onboarding@resend.dev";
@@ -291,6 +296,7 @@ function escapeHtmlForEmail(s: string): string {
 export type ArtistVerificationRejectedEmailInput = {
   to: string;
   artistName: string;
+  reviewReasonKey?: VerificationReviewReasonKey;
   reviewNote?: string | null;
 };
 
@@ -301,6 +307,11 @@ export async function sendArtistVerificationRejectedEmail(
   if (!to) return { ok: false, error: "missing to" };
 
   const name = (input.artistName || "").trim();
+  const reasonKey = input.reviewReasonKey;
+  const reasonTitleEn = reasonKey ? getVerificationReasonTitle(reasonKey, "en") : "";
+  const reasonTitleKo = reasonKey ? getVerificationReasonTitle(reasonKey, "ko") : "";
+  const reasonGuideEn = reasonKey ? getVerificationReasonGuidance(reasonKey, "en") : "";
+  const reasonGuideKo = reasonKey ? getVerificationReasonGuidance(reasonKey, "ko") : "";
   const note = (input.reviewNote || "").trim();
 
   const textEnLines = [
@@ -308,6 +319,12 @@ export async function sendArtistVerificationRejectedEmail(
     ``,
     `Your artist verification request on ROB (Role of Bridge) was not approved at this time.`,
   ];
+  if (reasonTitleEn) {
+    textEnLines.push(``, `Primary reason: ${reasonTitleEn}`);
+  }
+  if (reasonGuideEn) {
+    textEnLines.push(`Guidance: ${reasonGuideEn}`);
+  }
   if (note) {
     textEnLines.push(``, `Message from our team:`, note);
   }
@@ -324,6 +341,12 @@ export async function sendArtistVerificationRejectedEmail(
     ``,
     `요청해 주신 ROB(Role of Bridge) 작가 검증은 이번에 승인되지 않았습니다.`,
   ];
+  if (reasonTitleKo) {
+    textKoLines.push(``, `[주요 사유] ${reasonTitleKo}`);
+  }
+  if (reasonGuideKo) {
+    textKoLines.push(`[보완 가이드] ${reasonGuideKo}`);
+  }
   if (note) {
     textKoLines.push(``, `[운영 안내]`, note);
   }
@@ -340,12 +363,23 @@ export async function sendArtistVerificationRejectedEmail(
   const noteBlock = note
     ? `<div style="margin:16px 0;padding:12px 14px;background:#FAF8F4;border:1px solid #E8E3DB;font-size:14px;line-height:1.6;white-space:pre-wrap;">${escapeHtmlForEmail(note)}</div>`
     : `<p style="color:#6A6660;font-size:13px;font-style:italic;margin:16px 0;">No additional message was included.</p>`;
+  const reasonBlock = reasonTitleEn
+    ? `<div style="margin:14px 0 10px;padding:12px 14px;background:#F7F5F1;border:1px solid #E8E3DB;font-size:13px;line-height:1.6;">
+        <div><strong>Reason:</strong> ${escapeHtmlForEmail(reasonTitleEn)}</div>
+        ${
+          reasonGuideEn
+            ? `<div style="margin-top:6px;color:#4A4540;"><strong>Guidance:</strong> ${escapeHtmlForEmail(reasonGuideEn)}</div>`
+            : ""
+        }
+      </div>`
+    : "";
 
   const htmlBody = `
 <div style="font-family:Helvetica,Arial,sans-serif;max-width:620px;margin:0 auto;padding:24px;background:#ffffff;color:#111111;">
   <h2 style="margin:0 0 12px 0;font-size:18px;">ROB — Role of Bridge</h2>
   <p style="font-size:14px;line-height:1.7;margin:0 0 6px;"><strong>English.</strong> Your artist verification request was not approved at this time.</p>
   <p style="font-size:14px;line-height:1.7;margin:0 0 14px;"><strong>한국어.</strong> 작가 검증 요청이 이번에는 승인되지 않았습니다.</p>
+  ${reasonBlock}
   ${noteBlock}
   <p style="font-size:14px;line-height:1.7;margin-top:18px;"><a href="${PLATFORM_URL}/artist/me" style="color:#1A1A1A;text-decoration:underline;">${PLATFORM_URL}/artist/me</a></p>
 </div>`;
@@ -356,7 +390,7 @@ export async function sendArtistVerificationRejectedEmail(
     subject: `[ROB] Artist verification update · 작가 검증 안내`,
     html: htmlBody,
     text: textBody,
-    meta: { artistName: name, hasNote: !!note },
+    meta: { artistName: name, reviewReasonKey: reasonKey || "", hasNote: !!note },
   });
 }
 

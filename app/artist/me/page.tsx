@@ -11,6 +11,7 @@ import { t } from "@/lib/translate";
 import { F, S } from "@/lib/design";
 import { COUNTRIES, normalizeCountry, countryOptionLabel } from "@/lib/countries";
 import { useToast } from "@/lib/toast";
+import type { VerificationReviewReasonKey } from "@/lib/verificationReasons";
 
 type MeResponse = { session: { userId: string; role: "artist" | "gallery"; email: string } | null; profile: { id: string; artistId: string; name: string; startedYear: number; genre: string; instagram?: string; country: string; city: string; website?: string; bio?: string; portfolioUrl?: string; profileImage?: string | null; workNote?: string | null; createdAt: number; updatedAt?: number } | null };
 type Application = { id: string; openCallId: string; galleryId: string; status: string; shippingStatus: string };
@@ -38,9 +39,64 @@ type VerificationState = {
         updatedAt?: number;
         reviewedAt?: number;
         reviewNote?: string | null;
+        reviewReasonKey?: VerificationReviewReasonKey;
       }
     | null;
 };
+
+function verificationReasonText(
+  key: VerificationReviewReasonKey | undefined,
+  lang: string,
+): { title: string; guidance: string } | null {
+  if (!key) return null;
+  const ko = lang === "ko";
+  const map: Record<VerificationReviewReasonKey, { title: string; guidance: string }> = ko
+    ? {
+        insufficient_public_evidence: {
+          title: "공개 근거 부족",
+          guidance: "공개 전시/보도/기관 링크를 추가하고 다시 요청해 주세요.",
+        },
+        identity_mismatch: {
+          title: "제출 정보 간 신원 불일치",
+          guidance: "프로필 이름과 제출 링크의 주체를 일치시킨 뒤 재요청해 주세요.",
+        },
+        portfolio_quality_incomplete: {
+          title: "포트폴리오/프로필 정보 부족",
+          guidance: "작업 맥락과 최근 활동을 보완해 주세요.",
+        },
+        broken_or_unverifiable_links: {
+          title: "링크 접근 불가/검증 불가",
+          guidance: "비공개/오류 링크 대신 공개 검증 가능한 링크로 교체해 주세요.",
+        },
+        policy_or_safety_risk: {
+          title: "정책/안전 기준 이슈",
+          guidance: "정책 기준에 맞게 수정 후 다시 요청해 주세요.",
+        },
+      }
+    : {
+        insufficient_public_evidence: {
+          title: "Not enough public evidence",
+          guidance: "Add verifiable public links (exhibitions/public notices) and resubmit.",
+        },
+        identity_mismatch: {
+          title: "Identity mismatch across submitted links",
+          guidance: "Ensure profile identity and submitted links match, then resubmit.",
+        },
+        portfolio_quality_incomplete: {
+          title: "Portfolio/profile incomplete",
+          guidance: "Strengthen profile context and recent activity details.",
+        },
+        broken_or_unverifiable_links: {
+          title: "Links are inaccessible or unverifiable",
+          guidance: "Replace private/broken links with accessible evidence links.",
+        },
+        policy_or_safety_risk: {
+          title: "Policy or safety risk",
+          guidance: "Update the submission to meet policy/safety standards and request again.",
+        },
+      };
+  return map[key] || null;
+}
 
 const inp: React.CSSProperties = { width: "100%", padding: "14px 16px", background: "#FFFFFF", border: "1px solid #E8E3DB", color: "#1A1A1A", fontFamily: F, fontSize: 13, fontWeight: 400, outline: "none" };
 const inpHighlight: React.CSSProperties = { ...inp, border: "1px solid #8B7355", background: "#FFFBF5" };
@@ -253,6 +309,15 @@ export default function ArtistMePage() {
     }
   }
 
+  function openSeriesComposer() {
+    setTab("works");
+    setEditingSeriesId(null);
+    setSeriesForm(emptySeriesForm());
+    setTimeout(() => {
+      document.getElementById("series")?.scrollIntoView({ behavior: "smooth", block: "start" });
+    }, 120);
+  }
+
   const canSave = useMemo(() => name.trim() && artistId.trim() && startedYear.trim() && genre.trim() && country.trim() && city.trim(), [name, artistId, startedYear, genre, country, city]);
 
   const completionData = useMemo((): ProfileCompletionData => ({
@@ -267,6 +332,34 @@ export default function ArtistMePage() {
     hasArtEvents: artEvents.length > 0,
     hasPortfolioUrl: !!(me?.profile as any)?.portfolioUrl,
   }), [name, me?.profile, genre, country, city, bio, instagram, website, workNote, seriesList, artEvents]);
+
+  const evidenceChecklist = useMemo(() => {
+    const items = [
+      {
+        id: "profile",
+        done: completionData.hasName && completionData.hasGenre && completionData.hasLocation,
+        label: lang === "ko" ? "기본 프로필 완성" : "Complete basic profile",
+      },
+      {
+        id: "series",
+        done: seriesList.length > 0,
+        label: lang === "ko" ? "작업 시리즈 1개 이상" : "At least one series",
+      },
+      {
+        id: "portfolio",
+        done: completionData.hasPortfolioUrl,
+        label: lang === "ko" ? "포트폴리오 업로드" : "Upload portfolio",
+      },
+      {
+        id: "context",
+        done: workNote.trim().length >= 20 || artEvents.length > 0,
+        label: lang === "ko" ? "작업 맥락 작성 (노트/활동)" : "Add work context (note/activity)",
+      },
+    ];
+    const done = items.filter((x) => x.done).length;
+    const score = Math.round((done / items.length) * 100);
+    return { items, done, total: items.length, score };
+  }, [completionData, seriesList.length, workNote, artEvents.length, lang]);
 
   const onToggleNotify = async (val: boolean) => {
     setNotifyPost(val);
@@ -448,6 +541,48 @@ export default function ArtistMePage() {
                 {profile?.website && <a href={profile.website} target="_blank" rel="noreferrer" style={{ textDecoration: "none" }}><Tag accent>Website</Tag></a>}
               </div>
               {!adminReadOnly && (
+                <div style={{ marginTop: 16, border: "1px solid #E8E3DB", background: "#FFFFFF", padding: 14 }}>
+                  <div style={{ display: "flex", justifyContent: "space-between", gap: 10, flexWrap: "wrap", alignItems: "center", marginBottom: 8 }}>
+                    <strong style={{ fontFamily: F, fontSize: 11, color: "#1A1A1A", letterSpacing: "0.06em", textTransform: "uppercase" }}>
+                      {lang === "ko" ? "활동 증명 준비도" : "Activity Evidence Readiness"}
+                    </strong>
+                    <span style={{ fontFamily: F, fontSize: 10, color: "#8B7355" }}>
+                      {evidenceChecklist.done}/{evidenceChecklist.total} · {evidenceChecklist.score}%
+                    </span>
+                  </div>
+                  <div style={{ display: "grid", gap: 6, marginBottom: 10 }}>
+                    {evidenceChecklist.items.map((item) => (
+                      <div key={item.id} style={{ display: "flex", alignItems: "center", gap: 8, fontFamily: F, fontSize: 11, color: item.done ? "#4A7C59" : "#6A6660" }}>
+                        <span aria-hidden>{item.done ? "✓" : "○"}</span>
+                        <span>{item.label}</span>
+                      </div>
+                    ))}
+                  </div>
+                  <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                    <button
+                      onClick={openSeriesComposer}
+                      style={{ padding: "7px 12px", border: "1px solid #1A1A1A", background: "#1A1A1A", color: "#FDFBF7", fontFamily: F, fontSize: 10, letterSpacing: "0.08em", textTransform: "uppercase", cursor: "pointer" }}
+                    >
+                      {lang === "ko" ? "시리즈 시작" : "Start Series"}
+                    </button>
+                    {!completionData.hasPortfolioUrl && (
+                      <button
+                        onClick={() => switchToAnchor("portfolio_upload")}
+                        style={{ padding: "7px 12px", border: "1px solid #E8E3DB", background: "transparent", color: "#6A6660", fontFamily: F, fontSize: 10, letterSpacing: "0.08em", textTransform: "uppercase", cursor: "pointer" }}
+                      >
+                        {lang === "ko" ? "포트폴리오 업로드" : "Upload Portfolio"}
+                      </button>
+                    )}
+                    <a
+                      href="/guide?role=artist"
+                      style={{ padding: "7px 12px", border: "1px solid #E8E3DB", color: "#8B7355", textDecoration: "none", fontFamily: F, fontSize: 10, letterSpacing: "0.08em", textTransform: "uppercase" }}
+                    >
+                      {lang === "ko" ? "아티스트 안내" : "Artist Guide"}
+                    </a>
+                  </div>
+                </div>
+              )}
+              {!adminReadOnly && (
                 <div style={{ marginTop: 18, border: "1px solid #E8E3DB", background: "#FAF8F4", padding: 14 }}>
                   <p style={{ fontFamily: F, fontSize: 11, color: "#6A6660", margin: "0 0 10px" }}>
                     {verification?.verified
@@ -475,6 +610,17 @@ export default function ArtistMePage() {
                         lineHeight: 1.55,
                       }}
                     >
+                      {verificationReasonText(verification.latestRequest.reviewReasonKey, lang) && (
+                        <div style={{ marginBottom: 8 }}>
+                          <strong>
+                            {lang === "ko" ? "거절 사유: " : "Reason: "}
+                            {verificationReasonText(verification.latestRequest.reviewReasonKey, lang)?.title}
+                          </strong>
+                          <div style={{ marginTop: 4 }}>
+                            {verificationReasonText(verification.latestRequest.reviewReasonKey, lang)?.guidance}
+                          </div>
+                        </div>
+                      )}
                       {verification.latestRequest.reviewNote?.trim()
                         ? (lang === "ko" ? <>운영팀 안내: {verification.latestRequest.reviewNote}</> : <>From our team: {verification.latestRequest.reviewNote}</>)
                         : (lang === "ko"
@@ -538,6 +684,23 @@ export default function ArtistMePage() {
 
             {/* ── WORKS TAB ───────────────────────────── */}
             {tab === "works" && <>
+            {!adminReadOnly && seriesList.length === 0 && (
+              <Section number="02-1" title={lang === "ko" ? "빠른 시작" : "Quick Start"}>
+                <div style={{ border: "1px solid #E8E3DB", background: "#FAF8F4", padding: 14 }}>
+                  <p style={{ margin: "0 0 10px 0", fontFamily: F, fontSize: 12, color: "#6A6660" }}>
+                    {lang === "ko"
+                      ? "초기 단계부터 시리즈를 기록해 두면 활동 증명과 검증 준비에 가장 큰 도움이 됩니다."
+                      : "Starting a series early helps build credible activity records and verification readiness."}
+                  </p>
+                  <button
+                    onClick={openSeriesComposer}
+                    style={{ padding: "8px 14px", border: "1px solid #1A1A1A", background: "#1A1A1A", color: "#FDFBF7", fontFamily: F, fontSize: 10, letterSpacing: "0.08em", textTransform: "uppercase", cursor: "pointer" }}
+                  >
+                    {lang === "ko" ? "첫 시리즈 만들기" : "Create First Series"}
+                  </button>
+                </div>
+              </Section>
+            )}
             <Section number="03" title={t("profile_portfolio", lang)} id="portfolio_upload">
               {profile?.portfolioUrl && (
                 <div style={{ marginBottom: 20, display: "flex", gap: 10, alignItems: "center", flexWrap: "wrap" }}>
@@ -694,6 +857,9 @@ export default function ArtistMePage() {
                 </div>
               </div>
               <div style={{ marginTop: 20 }}>
+                <a href="/guide?role=artist" style={{ display: "inline-block", padding: "12px 24px", border: "1px solid #E8E3DB", background: "#FFFFFF", color: "#8B7355", fontFamily: F, fontSize: 10, fontWeight: 600, letterSpacing: "0.1em", textTransform: "uppercase", textDecoration: "none", cursor: "pointer", marginRight: 8 }}>
+                  {lang === "ko" ? "사용 가이드" : "Guide"}
+                </a>
                 <a href="/contact" style={{ display: "inline-block", padding: "12px 24px", border: "1px solid #E8E3DB", background: "#FFFFFF", color: "#8B7355", fontFamily: F, fontSize: 10, fontWeight: 600, letterSpacing: "0.1em", textTransform: "uppercase", textDecoration: "none", cursor: "pointer" }}>
                   {lang === "ko" ? "문의하기" : "Contact us"}
                 </a>

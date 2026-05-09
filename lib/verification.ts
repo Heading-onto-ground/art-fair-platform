@@ -1,4 +1,5 @@
 import { prisma } from "@/lib/prisma";
+import { type VerificationReviewReasonKey } from "@/lib/verificationReasons";
 
 const REQUESTS_KEY = "artist_verification_requests_v1";
 const APPROVALS_KEY = "artist_verification_approvals_v1";
@@ -16,6 +17,7 @@ export type VerificationRequest = {
   reviewedAt?: number;
   reviewerEmail?: string;
   reviewNote?: string;
+  reviewReasonKey?: VerificationReviewReasonKey;
 };
 
 export type VerificationApproval = {
@@ -113,6 +115,7 @@ export async function reviewVerificationRequest(input: {
   action: "approved" | "rejected";
   reviewerEmail?: string;
   reviewNote?: string;
+  reviewReasonKey?: VerificationReviewReasonKey;
   label?: string;
 }): Promise<VerificationRequest | null> {
   const list = await listVerificationRequests();
@@ -128,6 +131,7 @@ export async function reviewVerificationRequest(input: {
     reviewedAt: now,
     reviewerEmail: input.reviewerEmail,
     reviewNote: input.reviewNote,
+    reviewReasonKey: input.reviewReasonKey,
   };
   list[idx] = updated;
   await setSetting(REQUESTS_KEY, JSON.stringify(list));

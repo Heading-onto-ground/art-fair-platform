@@ -6,6 +6,7 @@ import AdminTopBar from "@/app/components/AdminTopBar";
 import { CardSkeleton } from "@/app/components/Skeleton";
 import { F, S } from "@/lib/design";
 import { useLanguage } from "@/lib/useLanguage";
+import type { VerificationReviewReasonKey } from "@/lib/verificationReasons";
 
 type AdminUser = {
   id: string;
@@ -37,6 +38,56 @@ type VerificationRequest = {
   status: "pending" | "approved" | "rejected";
   createdAt: number;
 };
+
+const REVIEW_REASON_MENU: Array<{
+  idx: string;
+  key: VerificationReviewReasonKey;
+  en: string;
+  ko: string;
+  ja: string;
+  fr: string;
+}> = [
+  {
+    idx: "1",
+    key: "insufficient_public_evidence",
+    en: "Not enough public evidence",
+    ko: "공개 근거 부족",
+    ja: "公開根拠不足",
+    fr: "Preuves publiques insuffisantes",
+  },
+  {
+    idx: "2",
+    key: "identity_mismatch",
+    en: "Identity mismatch across links",
+    ko: "제출 정보 간 신원 불일치",
+    ja: "提出情報の本人不一致",
+    fr: "Incohérence d'identité",
+  },
+  {
+    idx: "3",
+    key: "portfolio_quality_incomplete",
+    en: "Portfolio/profile incomplete",
+    ko: "포트폴리오/프로필 보완 필요",
+    ja: "ポートフォリオ/プロフィール不足",
+    fr: "Portfolio/profil incomplet",
+  },
+  {
+    idx: "4",
+    key: "broken_or_unverifiable_links",
+    en: "Broken or unverifiable links",
+    ko: "링크 접근 불가/검증 불가",
+    ja: "リンク不可/検証不可",
+    fr: "Liens cassés ou non vérifiables",
+  },
+  {
+    idx: "5",
+    key: "policy_or_safety_risk",
+    en: "Policy or safety risk",
+    ko: "정책/안전 기준 이슈",
+    ja: "ポリシー/安全基準の懸念",
+    fr: "Risque politique/sécurité",
+  },
+];
 
 export default function AdminUsersPage() {
   const router = useRouter();
@@ -104,11 +155,41 @@ export default function AdminUsersPage() {
     if (reviewingRequestId) return;
 
     let reviewNote: string | undefined;
+    let reviewReasonKey: VerificationReviewReasonKey | undefined;
     if (action === "rejected") {
+      const reasonMenu = REVIEW_REASON_MENU.map((r) =>
+        `${r.idx}. ${tr(r.en, r.ko, r.ja, r.fr)}`
+      ).join("\n");
+      const selectedReason = window.prompt(
+        tr(
+          `Reject reason (required). Enter a number:\n${reasonMenu}\n\nCancel to abort.`,
+          `거절 사유(필수)를 번호로 입력하세요:\n${reasonMenu}\n\n취소하면 중단됩니다.`,
+          `却下理由（必須）を番号で入力してください:\n${reasonMenu}\n\nキャンセルで中止。`,
+          `Motif du refus (obligatoire) : entrez un numéro.\n${reasonMenu}\n\nAnnuler pour arrêter.`
+        ),
+        ""
+      );
+      if (selectedReason === null) return;
+      const matchedReason = REVIEW_REASON_MENU.find(
+        (r) => r.idx === selectedReason.trim()
+      );
+      if (!matchedReason) {
+        setErr(
+          tr(
+            "Please choose a valid reject reason number.",
+            "유효한 거절 사유 번호를 선택해주세요.",
+            "有効な却下理由番号を選択してください。",
+            "Veuillez choisir un numéro de motif valide."
+          )
+        );
+        return;
+      }
+      reviewReasonKey = matchedReason.key;
+
       const prompted = window.prompt(
         tr(
-          "Reject: optional message to send to the artist by email (leave blank for default notice only). Cancel to abort.",
-          "거절: 작가에게 이메일로 보낼 안내(선택). 비우면 기본 안내만 발송합니다. 취소하면 거절하지 않습니다.",
+          "Reject: optional message to send to the artist by email (leave blank for standard guidance only). Cancel to abort.",
+          "거절: 작가에게 이메일로 보낼 안내(선택). 비우면 표준 가이드만 발송합니다. 취소하면 거절하지 않습니다.",
           "却下：アーティストへメールで送るメッセージ（任意）。空欄は定型文のみ。キャンセルで中止。",
           "Refus : message optionnel envoye par email a l'artiste. Vide = notification standard uniquement. Annuler pour abandonner."
         ),
@@ -124,7 +205,12 @@ export default function AdminUsersPage() {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
-        body: JSON.stringify({ requestId, action, ...(reviewNote ? { reviewNote } : {}) }),
+        body: JSON.stringify({
+          requestId,
+          action,
+          ...(reviewReasonKey ? { reviewReasonKey } : {}),
+          ...(reviewNote ? { reviewNote } : {}),
+        }),
       });
       const data = await res.json().catch(() => null);
       if (!res.ok || !data?.ok) throw new Error(data?.error ?? "failed");

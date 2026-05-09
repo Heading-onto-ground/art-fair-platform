@@ -30,6 +30,17 @@ type NavEntry = NavItem | { label: string; items: NavItem[] };
 
 const ME_CACHE_KEY = "afp_topbar_me_v1";
 const ME_CACHE_TTL_MS = 30_000;
+const GUIDE_PROMPT_VERSION = "v1";
+
+function guidePromptStorageKey(userId: string) {
+  return `afp_guide_prompt_seen_${GUIDE_PROMPT_VERSION}_${userId}`;
+}
+
+function guidePathForRole(role?: Role | null): string {
+  if (role === "gallery") return "/guide?role=gallery";
+  if (role === "curator") return "/guide?role=curator";
+  return "/guide?role=artist";
+}
 
 function readCachedMe(): MeResponse | null {
   if (typeof window === "undefined") return null;
@@ -97,6 +108,8 @@ export default function TopBar() {
   // Mobile menu state
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [mobileOpenGroup, setMobileOpenGroup] = useState<string | null>(null);
+  const [showGuidePrompt, setShowGuidePrompt] = useState(false);
+  const [dontShowGuideAgain, setDontShowGuideAgain] = useState(true);
 
   useEffect(() => {
     setMounted(true);
@@ -186,10 +199,39 @@ export default function TopBar() {
   }
 
   const session = me?.session;
+  const guidePath = guidePathForRole(session?.role);
 
   const trToast = (en: string, ko: string, ja: string, fr: string) =>
     lang === "ko" ? ko : lang === "ja" ? ja : lang === "fr" ? fr : en;
   const { toastOpen, dismissToast, unreadCount: supportUnread } = useUserSupportAlerts(!!session);
+
+  useEffect(() => {
+    if (!session?.userId) {
+      setShowGuidePrompt(false);
+      return;
+    }
+    if (pathname.startsWith("/guide")) {
+      setShowGuidePrompt(false);
+      return;
+    }
+    try {
+      const seen = localStorage.getItem(guidePromptStorageKey(session.userId)) === "1";
+      if (!seen) setShowGuidePrompt(true);
+    } catch {
+      // ignore localStorage access errors
+    }
+  }, [session?.userId, pathname]);
+
+  function closeGuidePrompt(markSeen: boolean) {
+    if (markSeen && session?.userId) {
+      try {
+        localStorage.setItem(guidePromptStorageKey(session.userId), "1");
+      } catch {
+        // ignore localStorage access errors
+      }
+    }
+    setShowGuidePrompt(false);
+  }
 
   // ── Grouped nav entries ──────────────────────────────────────────────────
   const artistNav = useMemo((): NavEntry[] => [
@@ -202,6 +244,7 @@ export default function TopBar() {
       ],
     },
     { path: "/open-calls", label: t("nav_open_calls", lang) },
+    { path: "/guide?role=artist", label: lang === "ko" ? "가이드" : lang === "ja" ? "ガイド" : "GUIDE" },
     { path: "/support", label: lang === "ko" ? "고객 지원" : lang === "ja" ? "サポート" : "SUPPORT" },
     {
       label: lang === "ko" ? "탐색" : lang === "ja" ? "探索" : "EXPLORE",
@@ -228,6 +271,7 @@ export default function TopBar() {
   const galleryNav = useMemo((): NavEntry[] => [
     { path: "/gallery/me", label: t("nav_my_page", lang) },
     { path: "/gallery", label: t("nav_my_calls", lang) },
+    { path: "/guide?role=gallery", label: lang === "ko" ? "가이드" : lang === "ja" ? "ガイド" : "GUIDE" },
     { path: "/artists", label: t("nav_artists", lang) },
     { path: "/support", label: lang === "ko" ? "고객 지원" : lang === "ja" ? "サポート" : "SUPPORT" },
     {
@@ -245,6 +289,7 @@ export default function TopBar() {
 
   const curatorNav = useMemo((): NavEntry[] => [
     { path: "/curator", label: t("nav_my_page", lang) },
+    { path: "/guide?role=curator", label: lang === "ko" ? "가이드" : lang === "ja" ? "ガイド" : "GUIDE" },
     { path: "/artists", label: t("nav_artists", lang) },
     { path: "/open-calls", label: t("nav_open_calls", lang) },
     { path: "/support", label: lang === "ko" ? "고객 지원" : lang === "ja" ? "サポート" : "SUPPORT" },
@@ -280,8 +325,8 @@ export default function TopBar() {
   }, [router, allNavPaths]);
 
   function isActive(path: string): boolean {
-    if (path.includes("#")) return pathname === path.split("#")[0];
-    return pathname === path || (path !== "/" && pathname.startsWith(path + "/"));
+    const base = path.split("?")[0].split("#")[0];
+    return pathname === base || (base !== "/" && pathname.startsWith(base + "/"));
   }
 
   return (
@@ -419,6 +464,12 @@ export default function TopBar() {
                 style={{ padding: "8px 12px", border: "1px solid #E8E3DB", background: "transparent", color: "#4A4A4A", fontFamily: F, fontSize: 10, fontWeight: 500, letterSpacing: "0.08em", textTransform: "uppercase", cursor: "pointer", marginRight: 8 }}
               >
                 About
+              </button>
+              <button
+                onClick={() => router.push("/guide")}
+                style={{ padding: "8px 12px", border: "1px solid #E8E3DB", background: "transparent", color: "#4A4A4A", fontFamily: F, fontSize: 10, fontWeight: 500, letterSpacing: "0.08em", textTransform: "uppercase", cursor: "pointer", marginRight: 8 }}
+              >
+                {lang === "ko" ? "가이드" : lang === "ja" ? "ガイド" : "Guide"}
               </button>
               <button
                 onClick={() => router.push("/contact")}
@@ -670,6 +721,12 @@ export default function TopBar() {
               About
             </button>
             <button
+              onClick={() => navigate("/guide")}
+              style={{ width: "100%", padding: "12px", border: "1px solid #E8E3DB", background: "transparent", color: "#4A4A4A", fontFamily: F, fontSize: 10, fontWeight: 500, letterSpacing: "0.09em", textTransform: "uppercase", cursor: "pointer", marginBottom: 8 }}
+            >
+              {lang === "ko" ? "가이드" : lang === "ja" ? "ガイド" : "Guide"}
+            </button>
+            <button
               onClick={() => navigate("/contact")}
               style={{ width: "100%", padding: "12px", border: "1px solid #E8E3DB", background: "transparent", color: "#4A4A4A", fontFamily: F, fontSize: 10, fontWeight: 500, letterSpacing: "0.09em", textTransform: "uppercase", cursor: "pointer", marginBottom: 8 }}
             >
@@ -742,6 +799,75 @@ export default function TopBar() {
             >
               {trToast("Dismiss", "닫기", "閉じる", "Fermer")}
             </button>
+          </div>
+        </div>
+      ) : null}
+
+      {showGuidePrompt && session ? (
+        <div
+          style={{
+            position: "fixed",
+            inset: 0,
+            background: "rgba(0,0,0,0.35)",
+            zIndex: 230,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            padding: 16,
+          }}
+          onClick={() => closeGuidePrompt(dontShowGuideAgain)}
+        >
+          <div
+            role="dialog"
+            aria-modal="true"
+            style={{
+              width: "100%",
+              maxWidth: 440,
+              background: "#FFFFFF",
+              border: "1px solid #E8E3DB",
+              boxShadow: "0 18px 50px rgba(0,0,0,0.18)",
+              padding: 20,
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div style={{ fontFamily: F, fontSize: 10, letterSpacing: "0.14em", textTransform: "uppercase", color: "#8B7355" }}>
+              {lang === "ko" ? "첫 사용 안내" : "Quick Start Guide"}
+            </div>
+            <h3 style={{ margin: "8px 0 10px", fontFamily: S, fontSize: 27, fontWeight: 400, color: "#1A1A1A" }}>
+              {lang === "ko" ? "역할별 사용 가이드를 확인해보세요" : "Open your role-based guide"}
+            </h3>
+            <p style={{ margin: "0 0 14px", fontFamily: F, fontSize: 12, color: "#6A6660", lineHeight: 1.6 }}>
+              {lang === "ko"
+                ? "플랫폼을 더 빠르게 사용하려면 2분 가이드를 먼저 보는 것을 추천해요."
+                : "A 2-minute role guide helps you get started quickly."}
+            </p>
+            <label style={{ display: "flex", alignItems: "center", gap: 8, fontFamily: F, fontSize: 11, color: "#8A8580", marginBottom: 16 }}>
+              <input
+                type="checkbox"
+                checked={dontShowGuideAgain}
+                onChange={(e) => setDontShowGuideAgain(e.target.checked)}
+              />
+              {lang === "ko" ? "다시 보지 않기" : "Don't show this again"}
+            </label>
+            <div style={{ display: "flex", gap: 8, justifyContent: "flex-end", flexWrap: "wrap" }}>
+              <button
+                type="button"
+                onClick={() => closeGuidePrompt(dontShowGuideAgain)}
+                style={{ padding: "8px 14px", border: "1px solid #E8E3DB", background: "transparent", color: "#6A6660", fontFamily: F, fontSize: 10, letterSpacing: "0.08em", textTransform: "uppercase", cursor: "pointer" }}
+              >
+                {lang === "ko" ? "나중에" : "Later"}
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  closeGuidePrompt(dontShowGuideAgain);
+                  router.push(guidePath);
+                }}
+                style={{ padding: "8px 14px", border: "1px solid #1A1A1A", background: "#1A1A1A", color: "#FDFBF7", fontFamily: F, fontSize: 10, letterSpacing: "0.08em", textTransform: "uppercase", cursor: "pointer" }}
+              >
+                {lang === "ko" ? "가이드 보기" : "Open Guide"}
+              </button>
+            </div>
           </div>
         </div>
       ) : null}
