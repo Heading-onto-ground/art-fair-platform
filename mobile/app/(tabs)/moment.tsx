@@ -18,7 +18,6 @@ import { useMomentsStore } from "@/lib/momentsStore";
 import { useAuth } from "@/lib/auth";
 import { createMoment } from "@/services/api/momentService";
 import { compressAndToBase64 } from "@/utils/image";
-import { isExpoGo } from "@/lib/env";
 import { MOCK_PROFILE } from "@/constants/mockData";
 import { showError, showSuccess } from "@/utils/toast";
 import { logError } from "@/utils/logger";
@@ -43,6 +42,7 @@ const MEDIA: ArtistMedium[] = [
   "drawing",
   "sculpture",
   "writing",
+  "music",
   "photography",
   "mixed media",
 ];
@@ -137,7 +137,7 @@ export default function MomentScreen() {
 
     try {
       let imageUrl = imageUri;
-      if (!isExpoGo() && imageUri.startsWith("file://")) {
+      if (imageUri.startsWith("file://")) {
         try {
           imageUrl = await compressAndToBase64(imageUri);
         } catch {
@@ -145,14 +145,14 @@ export default function MomentScreen() {
         }
       }
 
-      const apiResult = isExpoGo()
-        ? { ok: false as const }
-        : await createMoment({
-            note: note.trim() || undefined,
-            state,
-            medium,
-            imageUrl,
-          });
+      // Try server sync in both Expo Go and dev build.
+      // Even if sync fails, local save already succeeded above.
+      const apiResult = await createMoment({
+        note: note.trim() || undefined,
+        state,
+        medium,
+        imageUrl,
+      });
 
       if (apiResult.ok && apiResult.moment) {
         await replaceMoment(momentForLocal.id, apiResult.moment);

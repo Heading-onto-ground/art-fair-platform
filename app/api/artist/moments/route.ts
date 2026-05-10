@@ -125,7 +125,15 @@ export async function POST(req: Request) {
       "destroying",
       "restarting",
     ];
-    const validMedia = ["painting", "drawing", "sculpture", "writing", "photography", "mixed media"];
+    const validMedia = [
+      "painting",
+      "drawing",
+      "sculpture",
+      "writing",
+      "music",
+      "photography",
+      "mixed media",
+    ];
     if (!validStates.includes(state) || !validMedia.includes(medium)) {
       return NextResponse.json({ ok: false, error: "invalid state or medium" }, { status: 400 });
     }

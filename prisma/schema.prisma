@@ -479,7 +479,7 @@ model ArtistMoment {
   imageUrl   String   // URL or data URI
   note       String?
   state      String   // working | thinking | stuck | experimenting
-  medium     String   // painting | drawing | sculpture | writing | photography | mixed media
+  medium     String   // painting | drawing | sculpture | writing | music | photography | mixed media
   createdAt  DateTime @default(now())
   reactions MomentReaction[]
 

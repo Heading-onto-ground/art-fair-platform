@@ -13,6 +13,7 @@ export type ArtistMedium =
   | "drawing"
   | "sculpture"
   | "writing"
+  | "music"
   | "photography"
   | "mixed media";
 
