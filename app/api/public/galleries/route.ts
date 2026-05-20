@@ -405,7 +405,39 @@ export async function GET() {
       const key = finalResponseDedupeKey(g);
       if (!finalMap.has(key)) finalMap.set(key, g);
     }
-    const galleries = Array.from(finalMap.values());
+    const openCallStats = new Map<
+      string,
+      { openCallCount: number; recentActivityAt: number | null; recentOpenCallThemes: string[] }
+    >();
+    for (const oc of openCalls) {
+      const gid = String(oc.galleryId || "").trim();
+      if (!gid) continue;
+      const prev = openCallStats.get(gid) ?? {
+        openCallCount: 0,
+        recentActivityAt: null,
+        recentOpenCallThemes: [],
+      };
+      const createdAt = Number(oc.createdAt || 0) || null;
+      const themes = oc.theme ? [oc.theme, ...prev.recentOpenCallThemes] : prev.recentOpenCallThemes;
+      openCallStats.set(gid, {
+        openCallCount: prev.openCallCount + 1,
+        recentActivityAt:
+          createdAt && (!prev.recentActivityAt || createdAt > prev.recentActivityAt)
+            ? createdAt
+            : prev.recentActivityAt,
+        recentOpenCallThemes: Array.from(new Set(themes)).slice(0, 3),
+      });
+    }
+
+    const galleries = Array.from(finalMap.values()).map((g: any) => {
+      const stat = openCallStats.get(String(g.userId || "").trim());
+      return {
+        ...g,
+        openCallCount: stat?.openCallCount ?? 0,
+        recentActivityAt: stat?.recentActivityAt ?? null,
+        recentOpenCallThemes: stat?.recentOpenCallThemes ?? [],
+      };
+    });
 
     const res = NextResponse.json({ galleries }, { status: 200 });
     res.headers.set("Cache-Control", "public, s-maxage=30, stale-while-revalidate=300");
