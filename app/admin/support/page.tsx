@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import AdminTopBar from "@/app/components/AdminTopBar";
 import { F, S } from "@/lib/design";
@@ -54,10 +54,12 @@ export default function AdminSupportPage() {
   const [broadcasting, setBroadcasting] = useState(false);
   const [broadcastResult, setBroadcastResult] = useState<string | null>(null);
   const [broadcastResultTone, setBroadcastResultTone] = useState<"ok" | "error">("ok");
+  const [highlightedThreadId, setHighlightedThreadId] = useState<string | null>(null);
   /** 목록 API 실패 */
   const [threadsError, setThreadsError] = useState<string | null>(null);
   /** 스레드 열기 / 답장 실패 */
   const [detailError, setDetailError] = useState<string | null>(null);
+  const threadButtonRefs = useRef<Record<string, HTMLButtonElement | null>>({});
 
   const loadThreads = useCallback(async () => {
     setThreadsError(null);
@@ -149,6 +151,16 @@ export default function AdminSupportPage() {
     if (broadcastRoleFilter === "all") return platformUsers.length;
     return platformUsers.filter((u) => u.role === broadcastRoleFilter).length;
   }, [platformUsers, broadcastRoleFilter]);
+  const firstNeedingReplyThreadId = useMemo(
+    () => threads.find((t) => t.lastMessage && !t.lastMessage.fromAdmin)?.id ?? null,
+    [threads]
+  );
+
+  useEffect(() => {
+    if (!highlightedThreadId) return;
+    const timer = window.setTimeout(() => setHighlightedThreadId(null), 1800);
+    return () => window.clearTimeout(timer);
+  }, [highlightedThreadId]);
 
   async function openThread(id: string) {
     setSelectedId(id);
@@ -323,8 +335,20 @@ export default function AdminSupportPage() {
         )}
 
         {needingReply > 0 && (
-          <div
+          <button
+            type="button"
+            onClick={() => {
+              if (!firstNeedingReplyThreadId) return;
+              const targetButton = threadButtonRefs.current[firstNeedingReplyThreadId];
+              if (targetButton) {
+                targetButton.scrollIntoView({ behavior: "smooth", block: "center" });
+              }
+              setHighlightedThreadId(firstNeedingReplyThreadId);
+              void openThread(firstNeedingReplyThreadId);
+            }}
             style={{
+              width: "100%",
+              textAlign: "left",
               marginBottom: 16,
               padding: "10px 14px",
               background: "rgba(139,115,85,0.08)",
@@ -332,10 +356,11 @@ export default function AdminSupportPage() {
               fontFamily: F,
               fontSize: 12,
               color: "#6B5A45",
+              cursor: firstNeedingReplyThreadId ? "pointer" : "default",
             }}
           >
             {tr(`${needingReply} thread(s) need a reply`, `답변 대기 ${needingReply}건`)}
-          </div>
+          </button>
         )}
 
         <div
@@ -613,9 +638,13 @@ export default function AdminSupportPage() {
                 {threads.map((t) => {
                   const needs = t.lastMessage && !t.lastMessage.fromAdmin;
                   const active = selectedId === t.id;
+                  const highlighted = highlightedThreadId === t.id;
                   return (
                     <li key={t.id}>
                       <button
+                        ref={(el) => {
+                          threadButtonRefs.current[t.id] = el;
+                        }}
                         type="button"
                         onClick={() => openThread(t.id)}
                         style={{
@@ -624,7 +653,9 @@ export default function AdminSupportPage() {
                           padding: "12px 14px",
                           border: "none",
                           borderBottom: "1px solid #F0EBE3",
-                          background: active ? "#FAF8F4" : "#FFFFFF",
+                          background: active ? "#FAF8F4" : highlighted ? "#FFF5E8" : "#FFFFFF",
+                          boxShadow: highlighted ? "inset 0 0 0 1px rgba(196,92,74,0.35)" : "none",
+                          transition: "background 180ms ease, box-shadow 180ms ease",
                           cursor: "pointer",
                           fontFamily: F,
                         }}
