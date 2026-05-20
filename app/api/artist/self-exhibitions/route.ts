@@ -1,7 +1,6 @@
 import { NextResponse } from "next/server";
 import { getServerSession } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-import { FREE_PLAN_LIMITS } from "@/lib/freePlan";
 
 export const dynamic = "force-dynamic";
 
@@ -61,18 +60,6 @@ export async function POST(req: Request) {
   const body = await req.json().catch(() => null);
   if (!body?.title?.trim()) {
     return NextResponse.json({ error: "title_required" }, { status: 400 });
-  }
-  const exhibitionCount = await prisma.exhibition.count({
-    where: { createdBy: profileId },
-  });
-  if (exhibitionCount >= FREE_PLAN_LIMITS.maxSelfExhibitionsPerArtist) {
-    return NextResponse.json(
-      {
-        error: "free_plan_self_exhibitions_limit_reached",
-        limit: FREE_PLAN_LIMITS.maxSelfExhibitionsPerArtist,
-      },
-      { status: 403 }
-    );
   }
 
   const { title, startDate, endDate, city, country, description, isPublic,
