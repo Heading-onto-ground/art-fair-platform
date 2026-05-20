@@ -318,6 +318,15 @@ export default function ArtistMePage() {
     }, 120);
   }
 
+  function openArtEventComposer() {
+    setTab("timeline");
+    setEditingArtEventId(null);
+    setArtEventForm(emptyArtEventForm());
+    setTimeout(() => {
+      document.getElementById("art_events")?.scrollIntoView({ behavior: "smooth", block: "start" });
+    }, 120);
+  }
+
   const canSave = useMemo(() => name.trim() && artistId.trim() && startedYear.trim() && genre.trim() && country.trim() && city.trim(), [name, artistId, startedYear, genre, country, city]);
 
   const completionData = useMemo((): ProfileCompletionData => ({
@@ -348,7 +357,7 @@ export default function ArtistMePage() {
       {
         id: "portfolio",
         done: completionData.hasPortfolioUrl,
-        label: lang === "ko" ? "포트폴리오 업로드" : "Upload portfolio",
+        label: lang === "ko" ? "기록 PDF 업로드" : "Upload record PDF",
       },
       {
         id: "context",
@@ -570,7 +579,7 @@ export default function ArtistMePage() {
                         onClick={() => switchToAnchor("portfolio_upload")}
                         style={{ padding: "7px 12px", border: "1px solid #E8E3DB", background: "transparent", color: "#6A6660", fontFamily: F, fontSize: 10, letterSpacing: "0.08em", textTransform: "uppercase", cursor: "pointer" }}
                       >
-                        {lang === "ko" ? "포트폴리오 업로드" : "Upload Portfolio"}
+                        {lang === "ko" ? "기록 PDF 업로드" : "Upload Record PDF"}
                       </button>
                     )}
                     <a
@@ -684,6 +693,39 @@ export default function ArtistMePage() {
 
             {/* ── WORKS TAB ───────────────────────────── */}
             {tab === "works" && <>
+            {!adminReadOnly && (
+              <Section number="02-0" title={lang === "ko" ? "빠른 기록 시작" : "Quick Record Start"}>
+                <div style={{ border: "1px solid #E8E3DB", background: "#FFFFFF", padding: 14 }}>
+                  <p style={{ margin: "0 0 10px 0", fontFamily: F, fontSize: 12, color: "#6A6660" }}>
+                    {lang === "ko"
+                      ? "아래 3가지 중 하나만 먼저 완료해도 기록 증명 준비가 시작됩니다."
+                      : "Complete just one action below to start building record-proof evidence."}
+                  </p>
+                  <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                    <button
+                      onClick={openSeriesComposer}
+                      style={{ padding: "8px 12px", border: "1px solid #1A1A1A", background: "#1A1A1A", color: "#FDFBF7", fontFamily: F, fontSize: 10, letterSpacing: "0.08em", textTransform: "uppercase", cursor: "pointer" }}
+                    >
+                      {lang === "ko" ? "시리즈 1개 기록" : "Add a Series"}
+                    </button>
+                    <button
+                      onClick={openArtEventComposer}
+                      style={{ padding: "8px 12px", border: "1px solid #E8E3DB", background: "transparent", color: "#6A6660", fontFamily: F, fontSize: 10, letterSpacing: "0.08em", textTransform: "uppercase", cursor: "pointer" }}
+                    >
+                      {lang === "ko" ? "활동 타임라인 기록" : "Add Timeline Activity"}
+                    </button>
+                    {!completionData.hasPortfolioUrl && (
+                      <button
+                        onClick={() => switchToAnchor("portfolio_upload")}
+                        style={{ padding: "8px 12px", border: "1px solid #E8E3DB", background: "transparent", color: "#6A6660", fontFamily: F, fontSize: 10, letterSpacing: "0.08em", textTransform: "uppercase", cursor: "pointer" }}
+                      >
+                        {lang === "ko" ? "기록 PDF 업로드" : "Upload Record PDF"}
+                      </button>
+                    )}
+                  </div>
+                </div>
+              </Section>
+            )}
             {!adminReadOnly && seriesList.length === 0 && (
               <Section number="02-1" title={lang === "ko" ? "빠른 시작" : "Quick Start"}>
                 <div style={{ border: "1px solid #E8E3DB", background: "#FAF8F4", padding: 14 }}>
@@ -701,7 +743,11 @@ export default function ArtistMePage() {
                 </div>
               </Section>
             )}
-            <Section number="03" title={t("profile_portfolio", lang)} id="portfolio_upload">
+            <Section
+              number="03"
+              title={lang === "ko" ? "기록 PDF" : lang === "ja" ? "記録PDF" : "Record PDF"}
+              id="portfolio_upload"
+            >
               {profile?.portfolioUrl && (
                 <div style={{ marginBottom: 20, display: "flex", gap: 10, alignItems: "center", flexWrap: "wrap" }}>
                   <button onClick={() => { const base64 = profile.portfolioUrl!.split(",")[1]; const bytes = Uint8Array.from(atob(base64), c => c.charCodeAt(0)); const url = URL.createObjectURL(new Blob([bytes], { type: "application/pdf" })); const a = document.createElement("a"); a.href = url; a.download = `${profile.name || "portfolio"}.pdf`; a.click(); }} style={{ padding: "12px 24px", background: "#1A1A1A", color: "#FDFBF7", fontFamily: F, fontSize: 10, fontWeight: 500, letterSpacing: "0.1em", textTransform: "uppercase", border: "none", cursor: "pointer" }}>{t("profile_view_pdf", lang)}</button>
