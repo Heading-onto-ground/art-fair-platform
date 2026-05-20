@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { getServerSession } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { FREE_PLAN_LIMITS } from "@/lib/freePlan";
 
 export const dynamic = "force-dynamic";
 
@@ -60,6 +61,18 @@ export async function POST(req: Request) {
   const body = await req.json().catch(() => null);
   if (!body?.title?.trim()) {
     return NextResponse.json({ error: "title_required" }, { status: 400 });
+  }
+  const exhibitionCount = await prisma.exhibition.count({
+    where: { createdBy: profileId },
+  });
+  if (exhibitionCount >= FREE_PLAN_LIMITS.maxSelfExhibitionsPerArtist) {
+    return NextResponse.json(
+      {
+        error: "free_plan_self_exhibitions_limit_reached",
+        limit: FREE_PLAN_LIMITS.maxSelfExhibitionsPerArtist,
+      },
+      { status: 403 }
+    );
   }
 
   const { title, startDate, endDate, city, country, description, isPublic,
@@ -154,18 +167,75 @@ export async function PATCH(req: Request) {
   });
   if (!existing) return NextResponse.json({ error: "not_found" }, { status: 404 });
 
-  const { title, startDate, endDate, city, country, description, isPublic } = body;
+  const {
+    title,
+    startDate,
+    endDate,
+    city,
+    country,
+    description,
+    isPublic,
+    spaceName,
+    spaceType,
+    spaceWebsite,
+    curatorName,
+    curatorBio,
+    curatorOrganization,
+  } = body;
+
+  const hasSpaceFields =
+    spaceName !== undefined || spaceType !== undefined || spaceWebsite !== undefined || city !== undefined || country !== undefined;
+  let nextSpaceId: string | null | undefined;
+  if (hasSpaceFields) {
+    const trimmedSpaceName = String(spaceName || "").trim();
+    if (!trimmedSpaceName) {
+      nextSpaceId = null;
+    } else {
+      const nextSpace = await prisma.space.create({
+        data: {
+          name: trimmedSpaceName,
+          type: String(spaceType || "").trim() || null,
+          city: String(city || "").trim() || null,
+          country: String(country || "").trim() || null,
+          website: String(spaceWebsite || "").trim() || null,
+        },
+        select: { id: true },
+      });
+      nextSpaceId = nextSpace.id;
+    }
+  }
+
+  const hasCuratorFields = curatorName !== undefined || curatorBio !== undefined || curatorOrganization !== undefined;
+  let nextCuratorId: string | null | undefined;
+  if (hasCuratorFields) {
+    const trimmedCuratorName = String(curatorName || "").trim();
+    if (!trimmedCuratorName) {
+      nextCuratorId = null;
+    } else {
+      const nextCurator = await prisma.curator.create({
+        data: {
+          name: trimmedCuratorName,
+          bio: String(curatorBio || "").trim() || null,
+          organization: String(curatorOrganization || "").trim() || null,
+        },
+        select: { id: true },
+      });
+      nextCuratorId = nextCurator.id;
+    }
+  }
 
   const exhibition = await prisma.exhibition.update({
     where: { id: body.id },
     data: {
-      ...(title ? { title: title.trim() } : {}),
+      ...(title !== undefined ? { title: String(title).trim() } : {}),
       startDate: startDate !== undefined ? (startDate ? new Date(startDate) : null) : undefined,
       endDate: endDate !== undefined ? (endDate ? new Date(endDate) : null) : undefined,
       city: city !== undefined ? (city?.trim() || null) : undefined,
       country: country !== undefined ? (country?.trim() || null) : undefined,
       description: description !== undefined ? (description?.trim() || null) : undefined,
       isPublic: isPublic !== undefined ? !!isPublic : undefined,
+      spaceId: nextSpaceId,
+      curatorId: nextCuratorId,
     },
     include: { space: true, curator: true, artists: true },
   });
