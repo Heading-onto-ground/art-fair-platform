@@ -649,8 +649,13 @@ export default function AdminUsersPage() {
                   <div style={{ color: "#6A6A6A" }}>{new Date(u.createdAt).toLocaleDateString()}</div>
                   <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
                     {u.role === "artist" && u.profileId && (
-                      <a href={`/artist/me?adminView=1&userId=${u.id}`} target="_blank" rel="noreferrer" style={{ fontFamily: F, fontSize: 10, fontWeight: 500, letterSpacing: "0.08em", textTransform: "uppercase", color: "#8B7355", textDecoration: "none", padding: "4px 10px", border: "1px solid #E8E3DB" }}>
+                      <a href={`/api/artist-portfolio/${u.id}`} target="_blank" rel="noreferrer" style={{ fontFamily: F, fontSize: 10, fontWeight: 500, letterSpacing: "0.08em", textTransform: "uppercase", color: "#8B7355", textDecoration: "none", padding: "4px 10px", border: "1px solid #E8E3DB" }}>
                         View
+                      </a>
+                    )}
+                    {u.role === "artist" && u.profileId && (
+                      <a href={`/artist/me?adminView=1&userId=${u.id}`} target="_blank" rel="noreferrer" style={{ fontFamily: F, fontSize: 10, fontWeight: 500, letterSpacing: "0.08em", textTransform: "uppercase", color: "#6A6A6A", textDecoration: "none", padding: "4px 10px", border: "1px solid #E8E3DB" }}>
+                        {tr("Profile", "프로필", "プロフィール", "Profil")}
                       </a>
                     )}
                     {u.role === "artist" && u.hasPortfolio && (
