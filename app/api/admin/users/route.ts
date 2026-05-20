@@ -87,11 +87,15 @@ export async function GET(req: Request) {
       const isArtist = u.role === "artist";
       const p = isArtist ? u.artistProfile : u.galleryProfile;
       const portfolioRaw = String(u.artistProfile?.portfolioUrl ?? "").trim();
+      const portfolioLower = portfolioRaw.toLowerCase();
+      const isDataUriPortfolio = portfolioLower.startsWith("data:");
+      const isPdfLinkPortfolio = /\.pdf(?:$|[?#])/i.test(portfolioRaw);
       const hasPortfolio =
         isArtist &&
         portfolioRaw.length > 0 &&
-        portfolioRaw.toLowerCase() !== "null" &&
-        portfolioRaw.toLowerCase() !== "undefined";
+        portfolioLower !== "null" &&
+        portfolioLower !== "undefined" &&
+        (isDataUriPortfolio || isPdfLinkPortfolio);
       return {
         id: u.id,
         email: u.email,
