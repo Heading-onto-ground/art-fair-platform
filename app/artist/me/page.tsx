@@ -277,11 +277,11 @@ export default function ArtistMePage() {
       });
       const data = await res.json().catch(() => null);
       if (res.ok && data?.ok) {
-        toastSuccess(lang === "ko" ? "검증 요청이 접수되었습니다." : "Verification request submitted.");
+        toastSuccess(lang === "ko" ? "기록 증명 요청이 접수되었습니다." : "Record proof request submitted.");
         setVerificationNote("");
         await loadVerification();
       } else {
-        toastError(data?.error ?? "Failed to request verification");
+        toastError(data?.error ?? "Failed to submit record proof request");
       }
     } finally {
       setVerificationSubmitting(false);
@@ -289,7 +289,7 @@ export default function ArtistMePage() {
   };
 
   type Tab = "profile" | "works" | "timeline" | "applications";
-  const initialTab = (searchParams.get("tab") as Tab) || "profile";
+  const initialTab = (searchParams.get("tab") as Tab) || "works";
   const [tab, setTab] = useState<Tab>(initialTab);
 
   const anchorToTab: Record<string, Tab> = {
@@ -485,7 +485,7 @@ export default function ArtistMePage() {
             {(["profile", "works", "timeline", "applications"] as Tab[]).map((t_) => {
               const labels: Record<Tab, string> = {
                 profile: lang === "ko" ? "프로필" : lang === "ja" ? "プロフィール" : "PROFILE",
-                works: lang === "ko" ? "작업" : lang === "ja" ? "作品" : "WORKS",
+                works: lang === "ko" ? "기록" : lang === "ja" ? "記録" : "RECORDS",
                 timeline: lang === "ko" ? "타임라인" : lang === "ja" ? "タイムライン" : "TIMELINE",
                 applications: lang === "ko" ? "지원" : lang === "ja" ? "応募" : "APPLICATIONS",
               };
@@ -586,16 +586,16 @@ export default function ArtistMePage() {
                 <div style={{ marginTop: 18, border: "1px solid #E8E3DB", background: "#FAF8F4", padding: 14 }}>
                   <p style={{ fontFamily: F, fontSize: 11, color: "#6A6660", margin: "0 0 10px" }}>
                     {verification?.verified
-                      ? (lang === "ko" ? "검증 뱃지가 활성화되어 공개 프로필에 표시됩니다." : "Your verification badge is active and visible on your public profile.")
+                      ? (lang === "ko" ? "기록 증명 배지가 활성화되어 공개 프로필에 표시됩니다." : "Your record-proof badge is active and visible on your public profile.")
                       : verification?.latestRequest?.status === "pending"
-                        ? (lang === "ko" ? "검증 요청이 심사 중입니다." : "Your verification request is under review.")
+                        ? (lang === "ko" ? "기록 증명 요청이 검토 중입니다." : "Your record proof request is under review.")
                         : verification?.latestRequest?.status === "rejected"
                           ? (lang === "ko"
-                              ? "최근 검증 요청이 승인되지 않았습니다. 아래 안내를 확인한 뒤 프로필을 보완하고 다시 요청할 수 있습니다."
-                              : "Your latest verification request was not approved. Review the note below if provided, update your profile, and you may submit again.")
+                              ? "최근 기록 증명 요청이 승인되지 않았습니다. 아래 안내를 확인한 뒤 기록과 프로필을 보완하고 다시 요청할 수 있습니다."
+                              : "Your latest record proof request was not approved. Review the note below, improve your records and profile, then submit again.")
                           : lang === "ko"
-                            ? "기관/큐레이터 신뢰 강화를 위해 검증 요청을 보낼 수 있습니다."
-                            : "Submit a verification request to strengthen curator and institution trust."}
+                            ? "기관/큐레이터 신뢰 강화를 위해 기록 증명 요청을 보낼 수 있습니다."
+                            : "Submit a record proof request to strengthen curator and institution trust."}
                   </p>
                   {!verification?.verified && verification?.latestRequest?.status === "rejected" && (
                     <div
@@ -646,7 +646,7 @@ export default function ArtistMePage() {
                         style={{ ...inp, resize: "vertical", marginBottom: 10 }}
                       />
                       <button onClick={requestVerification} disabled={verificationSubmitting} style={btnStyle(verificationSubmitting)}>
-                        {verificationSubmitting ? "..." : (lang === "ko" ? "검증 요청" : "Request Verification")}
+                        {verificationSubmitting ? "..." : (lang === "ko" ? "기록 증명 요청" : "Request Record Proof")}
                       </button>
                     </>
                   )}
@@ -690,7 +690,7 @@ export default function ArtistMePage() {
                   <p style={{ margin: "0 0 10px 0", fontFamily: F, fontSize: 12, color: "#6A6660" }}>
                     {lang === "ko"
                       ? "초기 단계부터 시리즈를 기록해 두면 활동 증명과 검증 준비에 가장 큰 도움이 됩니다."
-                      : "Starting a series early helps build credible activity records and verification readiness."}
+                      : "Starting a series early helps build credible activity records and record-proof readiness."}
                   </p>
                   <button
                     onClick={openSeriesComposer}

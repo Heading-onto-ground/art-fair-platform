@@ -162,10 +162,10 @@ export default function AdminUsersPage() {
       ).join("\n");
       const selectedReason = window.prompt(
         tr(
-          `Reject reason (required). Enter a number:\n${reasonMenu}\n\nCancel to abort.`,
-          `거절 사유(필수)를 번호로 입력하세요:\n${reasonMenu}\n\n취소하면 중단됩니다.`,
-          `却下理由（必須）を番号で入力してください:\n${reasonMenu}\n\nキャンセルで中止。`,
-          `Motif du refus (obligatoire) : entrez un numéro.\n${reasonMenu}\n\nAnnuler pour arrêter.`
+          `Update reason (required). Enter a number:\n${reasonMenu}\n\nCancel to abort.`,
+          `보완 사유(필수)를 번호로 입력하세요:\n${reasonMenu}\n\n취소하면 중단됩니다.`,
+          `補完理由（必須）を番号で入力してください:\n${reasonMenu}\n\nキャンセルで中止。`,
+          `Motif de correction (obligatoire) : entrez un numéro.\n${reasonMenu}\n\nAnnuler pour arrêter.`
         ),
         ""
       );
@@ -176,9 +176,9 @@ export default function AdminUsersPage() {
       if (!matchedReason) {
         setErr(
           tr(
-            "Please choose a valid reject reason number.",
-            "유효한 거절 사유 번호를 선택해주세요.",
-            "有効な却下理由番号を選択してください。",
+            "Please choose a valid update reason number.",
+            "유효한 보완 사유 번호를 선택해주세요.",
+            "有効な補完理由番号を選択してください。",
             "Veuillez choisir un numéro de motif valide."
           )
         );
@@ -188,10 +188,10 @@ export default function AdminUsersPage() {
 
       const prompted = window.prompt(
         tr(
-          "Reject: optional message to send to the artist by email (leave blank for standard guidance only). Cancel to abort.",
-          "거절: 작가에게 이메일로 보낼 안내(선택). 비우면 표준 가이드만 발송합니다. 취소하면 거절하지 않습니다.",
-          "却下：アーティストへメールで送るメッセージ（任意）。空欄は定型文のみ。キャンセルで中止。",
-          "Refus : message optionnel envoye par email a l'artiste. Vide = notification standard uniquement. Annuler pour abandonner."
+          "Request update: optional message to send to the artist by email (leave blank for standard guidance only). Cancel to abort.",
+          "보완 요청: 작가에게 이메일로 보낼 안내(선택). 비우면 표준 가이드만 발송합니다. 취소하면 중단됩니다.",
+          "補完依頼：アーティストへメールで送るメッセージ（任意）。空欄は定型文のみ。キャンセルで中止。",
+          "Demande de correction : message optionnel envoye par email a l'artiste. Vide = notification standard uniquement. Annuler pour abandonner."
         ),
         ""
       );
@@ -216,7 +216,7 @@ export default function AdminUsersPage() {
       if (!res.ok || !data?.ok) throw new Error(data?.error ?? "failed");
       await loadUsers();
     } catch (e: unknown) {
-      setErr((e instanceof Error ? e.message : null) ?? "Failed to review verification request");
+      setErr((e instanceof Error ? e.message : null) ?? "Failed to review record proof request");
     } finally {
       setReviewingRequestId(null);
     }
@@ -515,7 +515,7 @@ export default function AdminUsersPage() {
             {verificationRequests.filter((r) => r.status === "pending").length > 0 && (
               <div style={{ border: "1px solid #E5E0DB", background: "#FFFFFF", padding: 16, marginBottom: 16 }}>
                 <div style={{ fontFamily: F, fontSize: 10, letterSpacing: "0.1em", textTransform: "uppercase", color: "#8A8580", marginBottom: 12 }}>
-                  {tr("Pending Verification Requests", "검증 요청 대기", "検証リクエスト待機", "Demandes de verification en attente")}
+                  {tr("Pending Record Proof Requests", "기록 증명 요청 대기", "記録証明リクエスト待機", "Demandes de preuve d'activite en attente")}
                 </div>
                 <div style={{ display: "grid", gap: 8 }}>
                   {verificationRequests
@@ -537,14 +537,14 @@ export default function AdminUsersPage() {
                             disabled={reviewingRequestId === r.id}
                             style={{ padding: "6px 10px", border: "1px solid #1A1A1A", background: "#1A1A1A", color: "#FFFFFF", fontFamily: F, fontSize: 10, letterSpacing: "0.06em", cursor: "pointer" }}
                           >
-                            {reviewingRequestId === r.id ? "..." : "Approve"}
+                            {reviewingRequestId === r.id ? "..." : tr("Approve proof", "증명 승인", "証明承認", "Approuver la preuve")}
                           </button>
                           <button
                             onClick={() => reviewVerification(r.id, "rejected")}
                             disabled={reviewingRequestId === r.id}
                             style={{ padding: "6px 10px", border: "1px solid #C8A0A0", background: "transparent", color: "#8B4A4A", fontFamily: F, fontSize: 10, letterSpacing: "0.06em", cursor: "pointer" }}
                           >
-                            Reject
+                            {tr("Request update", "보완 요청", "補完依頼", "Demander correction")}
                           </button>
                         </div>
                       </div>
