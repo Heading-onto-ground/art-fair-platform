@@ -8,6 +8,7 @@ import {
   tryRefreshReadReceiptsAfterUserOpen,
   validateSupportText,
 } from "@/lib/adminSupport";
+import { sendAdminSupportSmsAlert } from "@/lib/sms";
 
 export const dynamic = "force-dynamic";
 
@@ -61,6 +62,13 @@ export async function POST(req: Request) {
     }
 
     const msg = await addUserMessage(session.userId, text.trim());
+    void sendAdminSupportSmsAlert({
+      userId: session.userId,
+      userEmail: session.email,
+      messageText: msg.text,
+    }).catch((e) => {
+      console.error("Support SMS alert failed:", e);
+    });
 
     return NextResponse.json({
       ok: true,

@@ -24,6 +24,7 @@ async function ensureAdminSettingTable() {
 const PINNED_OPEN_CALL_GALLERY_ID_KEY = "pinned_open_call_gallery_id";
 const PINNED_OPEN_CALL_ID_KEY = "pinned_open_call_id";
 export const ADMIN_PASSWORD_HASH_KEY = "admin_password_hash";
+const ADMIN_SUPPORT_SMS_TO_KEY = "admin_support_sms_to";
 
 export async function getAdminPasswordHash(): Promise<string | null> {
   await ensureAdminSettingTable();
@@ -119,6 +120,39 @@ export async function setPinnedOpenCallId(openCallId: string | null): Promise<vo
   await prisma.adminSetting.upsert({
     where: { key: PINNED_OPEN_CALL_ID_KEY },
     create: { key: PINNED_OPEN_CALL_ID_KEY, value: v },
+    update: { value: v },
+  });
+}
+
+export async function getAdminSupportSmsTo(): Promise<string | null> {
+  await ensureAdminSettingTable();
+  try {
+    const row = await prisma.adminSetting.findUnique({
+      where: { key: ADMIN_SUPPORT_SMS_TO_KEY },
+    });
+    const v = String(row?.value || "").trim();
+    return v ? v : null;
+  } catch (e) {
+    console.error("getAdminSupportSmsTo failed (non-fatal):", e);
+    return null;
+  }
+}
+
+export async function setAdminSupportSmsTo(phone: string | null): Promise<void> {
+  await ensureAdminSettingTable();
+  const v = String(phone || "").trim();
+  if (!v) {
+    try {
+      await prisma.adminSetting.delete({ where: { key: ADMIN_SUPPORT_SMS_TO_KEY } });
+    } catch {
+      // ignore if missing
+    }
+    return;
+  }
+
+  await prisma.adminSetting.upsert({
+    where: { key: ADMIN_SUPPORT_SMS_TO_KEY },
+    create: { key: ADMIN_SUPPORT_SMS_TO_KEY, value: v },
     update: { value: v },
   });
 }

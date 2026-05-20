@@ -22,6 +22,8 @@ export default function AdminCredentialsPage() {
   const [confirmPassword, setConfirmPassword] = useState("");
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [smsSaving, setSmsSaving] = useState(false);
+  const [smsTo, setSmsTo] = useState("");
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
@@ -47,6 +49,15 @@ export default function AdminCredentialsPage() {
             adminEmail: infoData.adminEmail,
             message: infoData.message,
           });
+        }
+
+        const smsRes = await fetch("/api/admin/support/sms-settings", {
+          credentials: "include",
+          cache: "no-store",
+        });
+        const smsData = await smsRes.json().catch(() => null);
+        if (smsRes.ok && smsData?.ok) {
+          setSmsTo(String(smsData.smsTo || ""));
         }
       } catch (e) {
         setError(tr("Failed to load", "로딩에 실패했습니다"));
@@ -99,6 +110,39 @@ export default function AdminCredentialsPage() {
     }
   }
 
+  async function handleSaveSms() {
+    setError(null);
+    setMessage(null);
+    setSmsSaving(true);
+    try {
+      const res = await fetch("/api/admin/support/sms-settings", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ smsTo: smsTo.trim() }),
+      });
+      const data = await res.json().catch(() => null);
+      if (!res.ok || !data?.ok) {
+        setError(
+          data?.error === "invalid_phone_format"
+            ? tr("Enter phone in E.164 format (e.g. +821012345678).", "전화번호를 E.164 형식(+821012345678)으로 입력하세요.")
+            : data?.message || data?.error || tr("Failed to save phone number", "번호 저장에 실패했습니다")
+        );
+        return;
+      }
+      setSmsTo(String(data.smsTo || ""));
+      setMessage(
+        data.smsTo
+          ? tr("SMS alert number saved.", "문자 알림 번호가 저장되었습니다.")
+          : tr("SMS alert number removed.", "문자 알림 번호가 제거되었습니다.")
+      );
+    } catch {
+      setError(tr("Server error", "서버 오류"));
+    } finally {
+      setSmsSaving(false);
+    }
+  }
+
   if (authenticated === null || loading) {
     return (
       <>
@@ -129,6 +173,75 @@ export default function AdminCredentialsPage() {
           <h1 style={{ fontFamily: S, fontSize: 36, fontWeight: 300, color: "#1A1A1A", marginTop: 8 }}>
             {tr("Admin Credentials", "관리자 계정")}
           </h1>
+        </div>
+
+        <div
+          style={{
+            border: "1px solid #E8E3DB",
+            background: "#FFFFFF",
+            padding: "22px 24px",
+            marginBottom: 24,
+          }}
+        >
+          <h2 style={{ fontFamily: S, fontSize: 18, fontWeight: 400, color: "#1A1A1A", marginTop: 0, marginBottom: 12 }}>
+            {tr("Support SMS alerts", "가입자 쪽지 문자 알림")}
+          </h2>
+          <p style={{ fontFamily: F, fontSize: 12, color: "#8A8580", margin: "0 0 12px", lineHeight: 1.6 }}>
+            {tr(
+              "Register one phone number to receive SMS when a user sends a support message. Use E.164 format.",
+              "가입자가 쪽지를 보내면 받을 휴대폰 번호 1개를 등록하세요. E.164 형식으로 입력합니다."
+            )}
+          </p>
+          <div style={{ display: "flex", gap: 10, alignItems: "flex-end", flexWrap: "wrap" }}>
+            <div>
+              <label
+                style={{
+                  display: "block",
+                  fontFamily: F,
+                  fontSize: 10,
+                  fontWeight: 500,
+                  letterSpacing: "0.1em",
+                  textTransform: "uppercase",
+                  color: "#8A8580",
+                  marginBottom: 6,
+                }}
+              >
+                {tr("Phone number", "휴대폰 번호")}
+              </label>
+              <input
+                value={smsTo}
+                onChange={(e) => setSmsTo(e.target.value)}
+                placeholder="+821012345678"
+                style={{
+                  width: 260,
+                  padding: "12px 14px",
+                  border: "1px solid #E8E3DB",
+                  background: "#FDFBF7",
+                  fontFamily: F,
+                  fontSize: 13,
+                }}
+              />
+            </div>
+            <button
+              type="button"
+              onClick={handleSaveSms}
+              disabled={smsSaving}
+              style={{
+                padding: "12px 20px",
+                border: "1px solid #1A1A1A",
+                background: "#1A1A1A",
+                color: "#FFFFFF",
+                fontFamily: F,
+                fontSize: 10,
+                letterSpacing: "0.1em",
+                textTransform: "uppercase",
+                cursor: smsSaving ? "wait" : "pointer",
+                opacity: smsSaving ? 0.7 : 1,
+              }}
+            >
+              {smsSaving ? tr("Saving...", "저장 중...") : tr("Save Number", "번호 저장")}
+            </button>
+          </div>
         </div>
 
         <div
