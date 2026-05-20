@@ -86,6 +86,12 @@ export async function GET(req: Request) {
     let users: AdminUserRow[] = rows.map((u: UserWithProfiles) => {
       const isArtist = u.role === "artist";
       const p = isArtist ? u.artistProfile : u.galleryProfile;
+      const portfolioRaw = String(u.artistProfile?.portfolioUrl ?? "").trim();
+      const hasPortfolio =
+        isArtist &&
+        portfolioRaw.length > 0 &&
+        portfolioRaw.toLowerCase() !== "null" &&
+        portfolioRaw.toLowerCase() !== "undefined";
       return {
         id: u.id,
         email: u.email,
@@ -97,7 +103,7 @@ export async function GET(req: Request) {
         profileId: isArtist
           ? (u.artistProfile?.artistId ?? "")
           : (u.galleryProfile?.galleryId ?? ""),
-        hasPortfolio: isArtist ? !!u.artistProfile?.portfolioUrl : false,
+        hasPortfolio,
       };
     });
 
