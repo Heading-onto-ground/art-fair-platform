@@ -12,6 +12,9 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
+    // Monorepo: mobile has its own ESLint in mobile/ (see CI mobile job).
+    "mobile/**",
+    "coverage/**",
   ]),
 ]);
 

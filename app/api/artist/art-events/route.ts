@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { getServerSession } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { FREE_PLAN_LIMITS } from "@/lib/freePlan";
 
 export const dynamic = "force-dynamic";
 
@@ -30,6 +31,17 @@ export async function POST(req: Request) {
   if (!body?.title?.trim() || !body?.eventType || !body?.year) {
     return NextResponse.json({ error: "title_eventType_year_required" }, { status: 400 });
   }
+  const artEventCount = await prisma.artEvent.count({ where: { artistId: profileId } });
+  if (artEventCount >= FREE_PLAN_LIMITS.maxArtEventsPerArtist) {
+    return NextResponse.json(
+      {
+        error: "free_plan_art_events_limit_reached",
+        limit: FREE_PLAN_LIMITS.maxArtEventsPerArtist,
+      },
+      { status: 403 }
+    );
+  }
+
   const artEvent = await prisma.artEvent.create({
     data: {
       artistId: profileId,

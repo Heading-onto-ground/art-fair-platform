@@ -108,6 +108,42 @@ export default function CommunityPage() {
       .catch(() => {});
   }, []);
 
+  function applyRejectedArtistsTemplate() {
+    const title = lang === "ko"
+      ? "증명되지 못한 예술가들: [사례 제목]"
+      : "Rejected Artists: [Case Title]";
+    const content = lang === "ko"
+      ? [
+          "작품/활동 링크:",
+          "",
+          "무엇이 거절되었나:",
+          "",
+          "그때 감정:",
+          "",
+          "구조 비판:",
+          "개인을 비난하기보다, 문서 중심 시스템이 실제 창작을 놓치고 있다는 점을 이야기해 주세요.",
+          "",
+          "Can you prove you're an artist?",
+        ].join("\n")
+      : [
+          "Work / activity links:",
+          "",
+          "What was rejected:",
+          "",
+          "How it felt:",
+          "",
+          "Structural critique:",
+          "Focus on how document-centered systems miss real creation, not personal attacks.",
+          "",
+          "Can you prove you're an artist?",
+        ].join("\n");
+    setNewCategory("art_chat");
+    setNewTitle(title);
+    setNewContent(content);
+    setShowNewPost(true);
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  }
+
   async function handleCreatePost() {
     if (!newTitle.trim() || !newContent.trim()) return;
     setPosting(true);
@@ -415,6 +451,52 @@ export default function CommunityPage() {
               </div>
             </div>
           )}
+        </section>
+
+        <section style={{ background: "#FFFFFF", border: "1px solid #E8E3DB", padding: 24, marginBottom: 28 }}>
+          <div style={{ fontFamily: F, fontSize: 10, fontWeight: 600, letterSpacing: "0.12em", textTransform: "uppercase", color: "#8B7355", marginBottom: 8 }}>
+            Rejected Artists / 증명되지 못한 예술가들
+          </div>
+          <p style={{ fontFamily: F, fontSize: 12, color: "#8A8580", margin: "0 0 12px", lineHeight: 1.7 }}>
+            작품 이미지 + 짧은 감정 문장 + 구조 비판 포맷으로 사례를 모읍니다. 개인/기관 비난보다, 창작 현실을 놓치는 시스템 문제를 기록해 주세요.
+          </p>
+          <div style={{ display: "flex", flexWrap: "wrap", gap: 10, marginBottom: 10 }}>
+            <button
+              onClick={applyRejectedArtistsTemplate}
+              style={{ padding: "10px 14px", border: "1px solid #1A1A1A", background: "#1A1A1A", color: "#FDFBF7", fontFamily: F, fontSize: 10, letterSpacing: "0.08em", textTransform: "uppercase", cursor: "pointer" }}
+            >
+              연재 템플릿으로 글쓰기
+            </button>
+            <a
+              href="/rejected-artists/submit"
+              style={{ padding: "10px 14px", border: "1px solid #E8E3DB", background: "#FFFFFF", color: "#6E655B", fontFamily: F, fontSize: 10, letterSpacing: "0.08em", textTransform: "uppercase", textDecoration: "none" }}
+            >
+              익명 제보 작성하기
+            </a>
+            <a
+              href="/rejected-artists"
+              style={{ padding: "10px 14px", border: "1px solid #E8E3DB", background: "#FFFFFF", color: "#6E655B", fontFamily: F, fontSize: 10, letterSpacing: "0.08em", textTransform: "uppercase", textDecoration: "none" }}
+            >
+              사례 아카이브 보기
+            </a>
+            <a
+              href="/contact"
+              style={{ padding: "10px 14px", border: "1px solid #E8E3DB", background: "#FFFFFF", color: "#6E655B", fontFamily: F, fontSize: 10, letterSpacing: "0.08em", textTransform: "uppercase", textDecoration: "none" }}
+            >
+              운영팀에 사례 보내기
+            </a>
+            <a
+              href="https://www.threads.net/@noas_no_art_special"
+              target="_blank"
+              rel="noreferrer"
+              style={{ padding: "10px 14px", border: "1px solid #E8E3DB", background: "#FFFFFF", color: "#6E655B", fontFamily: F, fontSize: 10, letterSpacing: "0.08em", textTransform: "uppercase", textDecoration: "none" }}
+            >
+              Threads에서 연재 보기
+            </a>
+          </div>
+          <p style={{ fontFamily: F, fontSize: 11, color: "#B0AAA2", margin: 0 }}>
+            Core line: "You can reject paperwork. Not creation."
+          </p>
         </section>
 
         {/* Category Tabs */}

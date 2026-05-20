@@ -321,6 +321,9 @@ export default function ArtistProfileV2() {
                   </Link>
                 )}
               </div>
+              <p className="mt-4 text-xs sm:text-sm text-[#6B7280] max-w-[560px] leading-relaxed">
+                Creation before certification. This page is a living record of the artist's practice.
+              </p>
             </div>
           </div>
         </section>
@@ -481,7 +484,10 @@ export default function ArtistProfileV2() {
           <div className="flex flex-col lg:flex-row lg:items-start gap-6 lg:gap-8">
             <div className="flex-1 min-w-0">
               <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
-                <h2 className="text-xl font-semibold text-[#1A1A1A]">Activity Timeline</h2>
+                <div>
+                  <h2 className="text-xl font-semibold text-[#1A1A1A]">Proof of Practice</h2>
+                  <p className="text-sm text-[#6B7280] mt-1">작품/전시/활동의 축적 자체가 작가의 증거입니다.</p>
+                </div>
                 {isOwner && (
                   <button
                     onClick={() => setShowAddModal(true)}
@@ -509,12 +515,12 @@ export default function ArtistProfileV2() {
                       </svg>
                     </div>
                     <h3 className="text-lg font-semibold text-[#1A1A1A] mb-2">
-                      아직 기록된 활동이 없어요
+                      아직 공개된 창작 기록이 없어요
                     </h3>
                     <p className="text-sm text-[#6B7280] max-w-md mx-auto leading-relaxed mb-6">
-                      첫 전시를 추가하면 타임라인이 자동으로 쌓여요.
+                      전시/활동을 추가하면 "실제 작업의 흔적"이 타임라인으로 축적됩니다.
                       <br />
-                      CV도 한 번에 정리되고, 큐레이터가 더 쉽게 발견할 수 있어요.
+                      서류보다 먼저, 작업 자체가 당신을 설명하게 만드세요.
                     </p>
                     {isOwner && (
                       <div>
@@ -615,7 +621,7 @@ export default function ArtistProfileV2() {
         {/* ─── 3. Works Grid ─── */}
         {data.series && data.series.length > 0 && (
           <section className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-10 sm:py-12">
-            <h2 className="text-xl font-semibold text-[#1A1A1A] mb-6">Works</h2>
+            <h2 className="text-xl font-semibold text-[#1A1A1A] mb-6">Creative Series</h2>
             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
               {data.series.map((s) => (
                 <div
@@ -646,7 +652,7 @@ export default function ArtistProfileV2() {
         {data.exhibitions.length > 0 && (
           <section className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-10 sm:py-12">
             <h2 className="text-xl font-semibold text-[#1A1A1A] mb-6">
-              Exhibitions & Collaborations
+              Public Activity Evidence
             </h2>
             <div className="grid gap-3 sm:grid-cols-2">
               {data.exhibitions.map((ex, i) => (
@@ -821,7 +827,7 @@ export default function ArtistProfileV2() {
             }}
             className="px-6 py-3 border border-[#E5E7EB] bg-white hover:bg-[#F8F9FA] text-[#1A1A1A] text-sm font-medium rounded-lg transition-colors"
           >
-            Share this profile
+            Share this practice record
           </button>
         </section>
       </main>

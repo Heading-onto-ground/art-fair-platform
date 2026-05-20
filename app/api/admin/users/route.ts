@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getAdminSession } from "@/lib/adminAuth";
 
+export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 type AdminUserRow = {
@@ -114,7 +115,8 @@ export async function GET(req: Request) {
 
     return NextResponse.json({ users, stats }, { status: 200 });
   } catch (e) {
-    console.error("GET /api/admin/users failed:", e);
+    const detail = e instanceof Error ? e.message : String(e);
+    console.error("GET /api/admin/users failed:", detail, e);
     return NextResponse.json({ error: "server error" }, { status: 500 });
   }
 }

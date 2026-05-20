@@ -36,6 +36,14 @@ export default function Home() {
           Role of Bridge
         </h1>
 
+        <p style={{ fontFamily: F, fontSize: 12, fontWeight: 400, color: "#6F6861", maxWidth: 780, margin: "0 auto 18px", lineHeight: 1.8, whiteSpace: "pre-line", padding: "0 16px" }}>
+          {lang === "ko"
+            ? "아티스트의 활동 기록을 신뢰 가능한 프로필로 만들고,\n갤러리의 발굴-검증-연결 비용을 줄여 실제 협업 기회를 높입니다."
+            : lang === "ja"
+              ? "アーティストの活動記録を信頼できるプロフィールへ変え、\nギャラリーの発掘・検証・接点づくりのコストを下げて実際の協業機会を増やします。"
+              : "Turn artist activity into a trusted profile, and reduce gallery discovery-validation-outreach cost to create real collaboration opportunities."}
+        </p>
+
         <p style={{ fontFamily: F, fontSize: 14, fontWeight: 300, color: "#8A8580", maxWidth: 420, margin: "0 auto 56px", lineHeight: 1.8, whiteSpace: "pre-line", padding: "0 16px" }}>
           {t("home_subtitle", lang)}
         </p>

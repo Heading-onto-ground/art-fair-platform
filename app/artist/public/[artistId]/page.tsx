@@ -22,9 +22,9 @@ export async function generateMetadata(
 ): Promise<Metadata> {
   const name = await getArtistName(params.artistId);
   const title = name
-    ? `${name} | Exhibition History | ROB`
-    : "Exhibition History | ROB";
-  const description = "Verified exhibitions on Role of Bridge (ROB).";
+    ? `${name} | Practice Record | ROB`
+    : "Practice Record | ROB";
+  const description = "A living record of artistic practice on Role of Bridge (ROB).";
   const url = `${BASE_URL}/artist/public/${params.artistId}`;
 
   return {

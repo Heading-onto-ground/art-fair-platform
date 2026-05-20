@@ -313,6 +313,16 @@ export default function AdminHomePage() {
       ),
       href: "/admin/community",
     },
+    {
+      title: tr("Rejected Artists", "거절 사례 검수", "却下事例レビュー", "Revue des cas refuses"),
+      description: tr(
+        "Review anonymous artist rejection testimonies and publish selected stories.",
+        "작가 익명 제보를 검수하고 공개할 사례를 선별합니다.",
+        "アーティスト匿名投稿を審査し、公開する事例を選びます。",
+        "Examinez les temoignages anonymes et publiez les cas selectionnes."
+      ),
+      href: "/admin/rejected-artists",
+    },
   ];
 
   return (

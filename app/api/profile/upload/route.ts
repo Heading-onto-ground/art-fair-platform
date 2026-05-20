@@ -1,6 +1,8 @@
 // app/api/profile/upload/route.ts
 import { NextResponse } from "next/server";
 import { getServerSession, upsertArtistProfile } from "@/lib/auth";
+import { consumeRateLimit } from "@/lib/rateLimit";
+import { FREE_PLAN_LIMITS } from "@/lib/freePlan";
 
 export async function POST(req: Request) {
   try {
@@ -26,10 +28,33 @@ export async function POST(req: Request) {
       return NextResponse.json({ ok: false, error: "only pdf allowed" }, { status: 400 });
     }
 
-    // Keep upload size conservative to prevent oversized DB payloads.
-    const maxBytes = 5 * 1024 * 1024;
+    const uploadRate = consumeRateLimit({
+      key: `free-plan:portfolio-upload:${session.userId}`,
+      max: FREE_PLAN_LIMITS.maxPortfolioUploadsPerDay,
+      windowMs: 24 * 60 * 60 * 1000,
+    });
+    if (!uploadRate.allowed) {
+      return NextResponse.json(
+        {
+          ok: false,
+          error: "free_plan_portfolio_upload_daily_limit_reached",
+          limit: FREE_PLAN_LIMITS.maxPortfolioUploadsPerDay,
+          resetAt: uploadRate.resetAt,
+        },
+        { status: 429 }
+      );
+    }
+
+    const maxBytes = FREE_PLAN_LIMITS.maxPortfolioUploadBytes;
     if (file.size > maxBytes) {
-      return NextResponse.json({ ok: false, error: "file too large (max 5MB)" }, { status: 400 });
+      return NextResponse.json(
+        {
+          ok: false,
+          error: "file_too_large",
+          maxBytes,
+        },
+        { status: 400 }
+      );
     }
 
     const bytes = await file.arrayBuffer();

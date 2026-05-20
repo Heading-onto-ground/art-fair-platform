@@ -30,6 +30,9 @@ jobs:
       - name: Lint (web)
         run: npm run lint:web
 
+      - name: Typecheck (web)
+        run: npm run typecheck
+
       - name: Unit tests
         run: npm run test
 

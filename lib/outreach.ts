@@ -3,9 +3,11 @@
 
 import type { OutreachRecord as OutreachRecordModel } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
+import { createOutreachUnsubscribeToken } from "@/lib/outreachUnsubscribe";
 
 const RESEND_API_KEY = process.env.RESEND_API_KEY || "";
 const FROM_EMAIL = process.env.FROM_EMAIL || "onboarding@resend.dev";
+const PLATFORM_URL = process.env.NEXT_PUBLIC_APP_URL || "https://rob-roleofbridge.com";
 
 export type OutreachEmail = {
   to: string;
@@ -54,46 +56,43 @@ async function createOutreachRecord(
 // Localized email templates
 const TEMPLATES: Record<string, { subject: string; body: string }> = {
   en: {
-    subject: "Invitation to ROB — Reach Global Artists for Your Gallery",
-    body: `Dear {{galleryName}},
+    subject: "NOAS n( )as × ROB — Korean Artist Portfolio Curation",
+    body: `Hello, this is NOAS n( )as, a global art and culture community with chapters in Seoul, Busan, London, and Tokyo.
 
-We are writing to introduce ROB (Role of Bridge), a global art platform connecting galleries with talented artists worldwide.
+Our headquarters is based in Seoul, and we currently have a network of 200 Korean artists.
 
-What ROB offers your gallery:
-• Publish open calls and receive applications from international artists
-• Browse curated artist portfolios with verified credentials
-• Manage applications, chat with artists, and coordinate logistics — all in one place
-• Completely free for galleries
+We are curating artists' portfolios on our platform, rob-roleofbridge.com.
+At the moment, around 100 artists have joined the platform, though fewer have completed their portfolios.
 
-Galleries from 10+ countries already use ROB to discover emerging talent. Your gallery would be a wonderful addition to our network.
+We are looking to connect with galleries interested in exhibiting Korean artists.
+If you could share your preferred themes, genres, or mediums, we would be delighted to send you a selection of relevant artist portfolios.
 
-Get started in 2 minutes: {{signupUrl}}
+Platform:
+{{signupUrl}}
 
-We'd love to have you on board.
+Unsubscribe:
+{{unsubscribeUrl}}
 
-Best regards,
-The ROB Team
-Role of Bridge — Global Art Network`,
+Thank you.`,
   },
   ko: {
-    subject: "ROB 플랫폼 초대 — 전 세계 아티스트와 갤러리를 연결합니다",
-    body: `{{galleryName}} 관계자님께,
+    subject: "노아스 n( )as × ROB — 한국 작가 포트폴리오 큐레이션 제안",
+    body: `안녕하세요 서울 부산 런던 도쿄 지부가 있는 글로벌 아트 컬쳐 커뮤니티 '노아스 n( )as' 입니다.
+헤드 쿼터는 서울이고, 현재 200명의 한국 아티스트들이 모여 있습니다.
 
-안녕하세요, 글로벌 아트 플랫폼 ROB(Role of Bridge)입니다.
+rob-roleofbridge.com 이라는 플랫폼에 아티스트들의 포트폴리오를 모으고 있습니다.
+아직은 플랫폼에 가입한 작가들 숫자가 100명이고, 그 중 포트폴리오 작성 작가들은 더 적습니다.
 
-ROB는 전 세계 갤러리와 아티스트를 연결하는 플랫폼으로, 갤러리에 다음과 같은 기능을 제공합니다:
+한국 작가 전시를 원하는 갤러리들을 찾고 있습니다.
+원하시는 주제, 장르, 매체 등을 말씀해주시면 관련된 작가들의 포트폴리오를 전달드리고 싶습니다.
 
-• 오픈콜 게시 후 국제 아티스트의 지원서를 받으세요
-• 검증된 아티스트 포트폴리오를 직접 열람하세요
-• 지원 관리, 아티스트 채팅, 물류 조율까지 한 곳에서 처리하세요
-• 갤러리 이용은 완전 무료입니다
+플랫폼:
+{{signupUrl}}
 
-이미 10개국 이상의 갤러리가 ROB를 통해 신진 작가를 발굴하고 있습니다.
+수신거부:
+{{unsubscribeUrl}}
 
-지금 바로 시작하세요: {{signupUrl}}
-
-감사합니다.
-ROB 팀 드림`,
+감사합니다.`,
   },
   ja: {
     subject: "ROBプラットフォームへのご招待 — 世界中のアーティストとつながりましょう",
@@ -159,12 +158,15 @@ function getTemplate(lang: string): { subject: string; body: string } {
 
 export async function sendOutreachEmail(data: OutreachEmail): Promise<{ ok: boolean; record?: OutreachRecord; error?: string }> {
   const template = getTemplate(data.language);
-  const signupUrl = `https://rob-platform.vercel.app/login?role=gallery&ref=outreach`;
+  const signupUrl = `${PLATFORM_URL}/login?role=gallery&ref=outreach`;
+  const unsubscribeToken = createOutreachUnsubscribeToken(data.to);
+  const unsubscribeUrl = unsubscribeToken ? `${PLATFORM_URL}/api/outreach/unsubscribe?token=${encodeURIComponent(unsubscribeToken)}` : "";
 
   const subject = template.subject;
   const body = template.body
     .replace(/\{\{galleryName\}\}/g, data.galleryName)
-    .replace(/\{\{signupUrl\}\}/g, signupUrl);
+    .replace(/\{\{signupUrl\}\}/g, signupUrl)
+    .replace(/\{\{unsubscribeUrl\}\}/g, unsubscribeUrl);
 
   if (!RESEND_API_KEY) {
     console.log("═══════════════════════════════════════════════");

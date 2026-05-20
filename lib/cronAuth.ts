@@ -1,4 +1,5 @@
 import { verifySession } from "@/lib/session";
+import crypto from "crypto";
 
 type CronAuthOptions = {
   allowDevWithoutSecret?: boolean;
@@ -34,6 +35,14 @@ function hasValidAdminSession(req: Request): boolean {
   }
 }
 
+function safeEqual(a: string, b: string): boolean {
+  if (!a || !b) return false;
+  const aa = Buffer.from(a);
+  const bb = Buffer.from(b);
+  if (aa.length !== bb.length) return false;
+  return crypto.timingSafeEqual(aa, bb);
+}
+
 export function isCronAuthorized(req: Request, options?: CronAuthOptions): boolean {
   const expected = String(process.env.CRON_SECRET || "").trim();
   const allowDevWithoutSecret = options?.allowDevWithoutSecret ?? true;
@@ -50,5 +59,5 @@ export function isCronAuthorized(req: Request, options?: CronAuthOptions): boole
   const bearer = extractBearerToken(req);
   const headerSecret = String(req.headers.get("x-cron-secret") || "").trim();
 
-  return bearer === expected || headerSecret === expected;
+  return safeEqual(bearer, expected) || safeEqual(headerSecret, expected);
 }

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { FREE_PLAN_LIMITS } from "@/lib/freePlan";
 
 export const dynamic = "force-dynamic";
 
@@ -29,6 +30,19 @@ export async function POST(req: NextRequest) {
 
   const { title, description, startYear, endYear, works, isPublic } = await req.json().catch(() => ({}));
   if (!title?.trim()) return NextResponse.json({ error: "title required" }, { status: 400 });
+
+  const seriesCount = await prisma.artworkSeries.count({
+    where: { artistId: profile.id },
+  });
+  if (seriesCount >= FREE_PLAN_LIMITS.maxSeriesPerArtist) {
+    return NextResponse.json(
+      {
+        error: "free_plan_series_limit_reached",
+        limit: FREE_PLAN_LIMITS.maxSeriesPerArtist,
+      },
+      { status: 403 }
+    );
+  }
 
   const series = await prisma.artworkSeries.create({
     data: {
