@@ -35,7 +35,9 @@ export function pageMetadata(input: {
   const images = image ? [{ url: image }] : undefined;
 
   return {
-    title: input.title,
+    // Titles passed here already end with "| ROB"; bypass the root layout's
+    // "%s | ROB" template to avoid a doubled suffix.
+    title: { absolute: input.title },
     description,
     alternates: { canonical: url },
     robots: input.index === false ? { index: false, follow: true } : undefined,
