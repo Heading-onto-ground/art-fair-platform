@@ -1,17 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-
-// Routes that require a logged-in user session
-const PROTECTED_PREFIXES = [
-  "/artist/me",
-  "/gallery/me",
-  "/curator/me",
-  "/chat",
-  "/shipments",
-  "/feed",
-  "/network",
-  "/discover",
-  "/exhibitions/new",
-];
+import { PROTECTED_PREFIXES } from "@/lib/routes";
 
 // Admin routes (require admin session cookie)
 const ADMIN_PREFIX = "/admin";
@@ -22,8 +10,14 @@ const ADMIN_LOGIN = "/admin/login";
 // and strict redirect here can lock users out of the login screen.
 const AUTH_PATHS = ["/login", "/forgot-password", "/reset-password"];
 
-function applySecurityHeaders(res: NextResponse, isProduction: boolean) {
-  res.headers.set("X-Frame-Options", "SAMEORIGIN");
+function applySecurityHeaders(res: NextResponse, isProduction: boolean, allowFraming = false) {
+  if (allowFraming) {
+    // Embed widget pages must be iframe-able from any site.
+    // CSP frame-ancestors takes precedence over X-Frame-Options in modern browsers.
+    res.headers.set("Content-Security-Policy", "frame-ancestors *");
+  } else {
+    res.headers.set("X-Frame-Options", "SAMEORIGIN");
+  }
   res.headers.set("X-Content-Type-Options", "nosniff");
   res.headers.set("Referrer-Policy", "strict-origin-when-cross-origin");
   res.headers.set("Permissions-Policy", "camera=(), microphone=(), geolocation=()");
@@ -40,6 +34,11 @@ function applySecurityHeaders(res: NextResponse, isProduction: boolean) {
 export function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl;
   const isProduction = process.env.NODE_ENV === "production";
+
+  // ── Embeddable widget routes (public, iframe-able) ────────────────────────
+  if (pathname.startsWith("/embed/")) {
+    return applySecurityHeaders(NextResponse.next(), isProduction, true);
+  }
 
   const hasSession = req.cookies.has("afp_session");
   const hasAdminSession = req.cookies.has("afp_admin_session");

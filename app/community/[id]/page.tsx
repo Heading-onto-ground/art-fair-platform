@@ -2,8 +2,7 @@ import { Metadata } from "next";
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import { getPost } from "@/app/data/community";
-
-const SITE = "https://www.rob-roleofbridge.com";
+import { SITE_URL as SITE } from "@/lib/seo";
 
 export async function generateMetadata({ params }: { params: { id: string } }): Promise<Metadata> {
   const post = await getPost(params.id);

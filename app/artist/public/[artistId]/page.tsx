@@ -1,8 +1,7 @@
 import type { Metadata } from "next";
 import { prisma } from "@/lib/prisma";
 import ArtistProfileV2 from "./components/ArtistProfileV2";
-
-const BASE_URL = "https://rob-roleofbridge.com";
+import { SITE_URL as BASE_URL } from "@/lib/seo";
 
 async function getArtistName(artistId: string): Promise<string | null> {
   try {

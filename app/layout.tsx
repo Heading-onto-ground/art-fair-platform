@@ -21,7 +21,7 @@ const cormorant = Cormorant_Garamond({
 
 // ── Enhanced SEO Metadata ──
 export const metadata: Metadata = {
-  metadataBase: new URL("https://art-fair-platform.vercel.app"),
+  metadataBase: new URL(process.env.NEXT_PUBLIC_APP_URL || "https://rob-roleofbridge.com"),
   title: {
     default: "ROB — Role of Bridge | Global Art Platform",
     template: "%s | ROB",

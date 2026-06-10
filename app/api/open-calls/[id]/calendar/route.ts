@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { getOpenCallById } from "@/app/data/openCalls";
+import { SITE_URL } from "@/lib/seo";
 
 function escapeIcs(value: string) {
   return String(value || "")
@@ -48,7 +49,7 @@ export async function GET(
   const uid = `open-call-${openCall.id}@rob-roleofbridge.com`;
   const summary = `${openCall.gallery} — ${openCall.theme} (Application Deadline)`;
   const description = `Open call deadline for ${openCall.gallery} in ${openCall.city}, ${openCall.country}.`;
-  const url = `https://www.rob-roleofbridge.com/open-calls/${encodeURIComponent(openCall.id)}`;
+  const url = `${SITE_URL}/open-calls/${encodeURIComponent(openCall.id)}`;
 
   const ics = [
     "BEGIN:VCALENDAR",
