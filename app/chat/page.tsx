@@ -28,11 +28,15 @@ export default function ChatListPage() {
     try {
       setError(null);
       setLoading(true);
-      const m = await fetchMe();
+      // /api/chats authenticates via the session cookie, so it does not need
+      // the fetchMe result; run both requests in parallel.
+      const [m, res] = await Promise.all([
+        fetchMe(),
+        fetch("/api/chats", { cache: "no-store", credentials: "include" }),
+      ]);
       const s = m?.session;
       if (!s) { router.replace("/login"); return; }
       setMe(m);
-      const res = await fetch("/api/chats", { headers: { "x-user-id": s.userId, "x-user-role": s.role }, cache: "no-store" });
       const data = await res.json().catch(() => null);
       if (!res.ok) throw new Error(data?.error ?? `HTTP ${res.status}`);
       setRooms(Array.isArray(data?.rooms) ? data.rooms : []);

@@ -31,9 +31,12 @@ export default function ArtistExhibitionsPage() {
   useEffect(() => {
     (async () => {
       try {
-        const me = await fetch("/api/auth/me?lite=1", { credentials: "include" }).then(r => r.json()).catch(() => null);
+        // Both endpoints are cookie-authed; fetch in parallel to cut a round trip.
+        const [me, res] = await Promise.all([
+          fetch("/api/auth/me?lite=1", { credentials: "include" }).then(r => r.json()).catch(() => null),
+          fetch("/api/artist/exhibitions", { credentials: "include" }),
+        ]);
         if (!me?.session || me.session.role !== "artist") { router.replace("/login"); return; }
-        const res = await fetch("/api/artist/exhibitions", { credentials: "include" });
         const data = await res.json().catch(() => null);
         setExhibitions(Array.isArray(data?.exhibitions) ? data.exhibitions : []);
         setArtistId(data?.artistId ?? null);

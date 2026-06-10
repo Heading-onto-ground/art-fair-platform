@@ -70,10 +70,14 @@ export default function ChatRoomPage({ params }: { params: { roomId: string } })
     try {
       setError(null);
       setLoading(true);
-      const m = await fetchMe();
+      // Session check and room fetch are independent (room API is cookie-authed);
+      // run them in parallel to avoid a sequential round-trip waterfall.
+      const [m, res] = await Promise.all([
+        fetchMe(),
+        fetch(`/api/chat/${params.roomId}`, { cache: "no-store", credentials: "include" }),
+      ]);
       if (!m?.session) { router.replace("/login"); return; }
       setMe(m);
-      const res = await fetch(`/api/chat/${params.roomId}`, { cache: "no-store", credentials: "include" });
       const data = await res.json().catch(() => null);
       if (!res.ok) throw new Error(data?.error ?? `HTTP ${res.status}`);
       const r = (data?.room ?? null) as RoomInfo | null;

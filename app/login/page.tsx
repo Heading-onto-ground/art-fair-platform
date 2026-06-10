@@ -73,11 +73,8 @@ export default function LoginPage() {
     }
   }, [searchParams, lang]);
 
-  const gotoByServerSession = async () => {
+  const gotoByRole = (realRole: string | null | undefined) => {
     const redirectTo = searchParams.get("redirect");
-    const meRes = await fetch("/api/auth/me", { cache: "no-store" });
-    const me = (await meRes.json().catch(() => null)) as MeResponse | null;
-    const realRole = me?.session?.role;
     // Use redirect param if it's a valid path and role matches
     if (redirectTo && redirectTo.startsWith("/") && !redirectTo.startsWith("//")) {
       if (realRole === "artist" && (redirectTo.startsWith("/exhibitions") || redirectTo.startsWith("/artist"))) {
@@ -97,6 +94,12 @@ export default function LoginPage() {
     else if (realRole === "gallery") router.push("/gallery");
     else if (realRole === "curator") router.push("/curator");
     else router.push("/login");
+  };
+
+  const gotoByServerSession = async () => {
+    const meRes = await fetch("/api/auth/me", { cache: "no-store" });
+    const me = (await meRes.json().catch(() => null)) as MeResponse | null;
+    gotoByRole(me?.session?.role);
   };
 
   const onLogin = async () => {
@@ -137,7 +140,11 @@ export default function LoginPage() {
         }
         return;
       }
-      await gotoByServerSession();
+      // The login response already includes the session role; redirect
+      // immediately instead of paying another /api/auth/me round trip.
+      const sessionRole = data?.session?.role;
+      if (sessionRole) gotoByRole(sessionRole);
+      else await gotoByServerSession();
     } catch { setErr(t("login_server_error", lang)); }
     finally { setLoading(false); }
   };
