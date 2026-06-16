@@ -102,36 +102,25 @@ function GuestIntro({ lang }: { lang: string }) {
             Role of Bridge
           </div>
           <div style={{ fontFamily: F, fontSize: 11, color: colors.accent, marginBottom: 10 }}>rob-roleofbridge.com</div>
-          <p style={{ fontFamily: F, fontSize: 12, color: colors.textSecondary, margin: "0 0 14px", lineHeight: 1.7 }}>
+          <p style={{ fontFamily: F, fontSize: 12, color: colors.textSecondary, margin: "0 0 12px", lineHeight: 1.7 }}>
             {ko
               ? "작가가 작업을 올리고, #해시태그로 발견되며, 갤러리·큐레이터와 연결되는 예술 플랫폼입니다."
               : "Artists share work, get discovered via #hashtags, and connect with galleries & curators."}
           </p>
-          <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-            <Link
-              href="/login?role=artist&redirect=/"
-              style={{ padding: "8px 14px", background: colors.textPrimary, color: colors.bgPrimary, fontFamily: F, fontSize: 10, fontWeight: 600, letterSpacing: "0.08em", textTransform: "uppercase", textDecoration: "none" }}
-            >
-              {ko ? "작가로 시작" : "Join as artist"}
-            </Link>
-            <Link
-              href="/login?role=gallery&redirect=/gallery"
-              style={{ padding: "7px 14px", border: `1px solid ${colors.textPrimary}`, color: colors.textPrimary, fontFamily: F, fontSize: 10, fontWeight: 500, letterSpacing: "0.08em", textTransform: "uppercase", textDecoration: "none" }}
-            >
-              {ko ? "갤러리" : "Gallery"}
-            </Link>
-            <Link
-              href="/login?role=curator&redirect=/curator"
-              style={{ padding: "7px 14px", border: `1px solid ${colors.accent}`, color: colors.accent, fontFamily: F, fontSize: 10, fontWeight: 500, letterSpacing: "0.08em", textTransform: "uppercase", textDecoration: "none" }}
-            >
-              {ko ? "큐레이터" : "Curator"}
-            </Link>
-            <Link
-              href="/about"
-              style={{ padding: "7px 14px", border: `1px solid ${colors.border}`, color: colors.textSecondary, fontFamily: F, fontSize: 10, fontWeight: 500, letterSpacing: "0.08em", textTransform: "uppercase", textDecoration: "none" }}
-            >
-              {ko ? "소개" : "About"}
-            </Link>
+          <div style={{ padding: "12px 14px", background: colors.bgAccent, border: `1px solid ${colors.borderLight}` }}>
+            <p style={{ fontFamily: F, fontSize: 9, fontWeight: 600, letterSpacing: "0.14em", textTransform: "uppercase", color: colors.accent, margin: "0 0 8px" }}>
+              {ko ? "기여 포인트" : "Contribution Points"}
+            </p>
+            <p style={{ fontFamily: F, fontSize: 11, color: colors.textSecondary, margin: "0 0 8px", lineHeight: 1.65 }}>
+              {ko
+                ? "프로필을 채우고, 작업을 올리고, 전시·활동을 기록할수록 포인트가 쌓입니다."
+                : "Earn points by completing your profile, sharing work, and recording exhibitions & activities."}
+            </p>
+            <p style={{ fontFamily: F, fontSize: 11, color: colors.textSecondary, margin: 0, lineHeight: 1.65 }}>
+              {ko
+                ? "포인트로 물감·캔버스 등 작업 재료 할인 혜택을 받을 수 있습니다. 제휴 온라인 샵을 준비 중입니다."
+                : "Redeem points for discounts on paints, canvas, and art supplies. Partner shops coming soon."}
+            </p>
           </div>
         </div>
       </div>
@@ -281,7 +270,7 @@ export default function ArtistFeed({ lang }: Props) {
             {feedMode === "mine" && myProfile ? `@${myProfile.artistId}` : "ROB"}
           </span>
           {!isLoggedIn && (
-            <Link href="/login?role=artist&redirect=/" style={{ fontFamily: F, fontSize: 10, fontWeight: 600, letterSpacing: "0.1em", textTransform: "uppercase", color: colors.accent, textDecoration: "none" }}>
+            <Link href="/login?redirect=/" style={{ fontFamily: F, fontSize: 10, fontWeight: 600, letterSpacing: "0.1em", textTransform: "uppercase", color: colors.accent, textDecoration: "none" }}>
               {ko ? "로그인" : "Log in"}
             </Link>
           )}
@@ -315,9 +304,9 @@ export default function ArtistFeed({ lang }: Props) {
                 + {ko ? "작업 올리기" : "Share"}
               </button>
             ) : (
-              <Link href="/login?role=artist&redirect=/" style={{ display: "inline-block", padding: "10px 24px", background: colors.textPrimary, color: colors.bgPrimary, fontFamily: F, fontSize: 10, fontWeight: 600, letterSpacing: "0.1em", textTransform: "uppercase", textDecoration: "none" }}>
-                {ko ? "작가로 시작" : "Join"}
-              </Link>
+              <p style={{ fontFamily: F, fontSize: 12, color: colors.textMuted, margin: 0, lineHeight: 1.6 }}>
+                {ko ? "로그인하고 첫 작업을 올려보세요." : "Log in to share the first post."}
+              </p>
             )}
           </div>
         ) : (
