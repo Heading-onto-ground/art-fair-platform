@@ -110,9 +110,21 @@ function GuestIntro({ lang }: { lang: string }) {
           <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
             <Link
               href="/login?role=artist&redirect=/"
-              style={{ padding: "8px 16px", background: colors.textPrimary, color: colors.bgPrimary, fontFamily: F, fontSize: 10, fontWeight: 600, letterSpacing: "0.08em", textTransform: "uppercase", textDecoration: "none" }}
+              style={{ padding: "8px 14px", background: colors.textPrimary, color: colors.bgPrimary, fontFamily: F, fontSize: 10, fontWeight: 600, letterSpacing: "0.08em", textTransform: "uppercase", textDecoration: "none" }}
             >
               {ko ? "작가로 시작" : "Join as artist"}
+            </Link>
+            <Link
+              href="/login?role=gallery&redirect=/gallery"
+              style={{ padding: "7px 14px", border: `1px solid ${colors.textPrimary}`, color: colors.textPrimary, fontFamily: F, fontSize: 10, fontWeight: 500, letterSpacing: "0.08em", textTransform: "uppercase", textDecoration: "none" }}
+            >
+              {ko ? "갤러리" : "Gallery"}
+            </Link>
+            <Link
+              href="/login?role=curator&redirect=/curator"
+              style={{ padding: "7px 14px", border: `1px solid ${colors.accent}`, color: colors.accent, fontFamily: F, fontSize: 10, fontWeight: 500, letterSpacing: "0.08em", textTransform: "uppercase", textDecoration: "none" }}
+            >
+              {ko ? "큐레이터" : "Curator"}
             </Link>
             <Link
               href="/about"
