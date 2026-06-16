@@ -6,6 +6,9 @@ import { useRouter, useSearchParams } from "next/navigation";
 import TopBar from "@/app/components/TopBar";
 import ProfileImageUpload from "@/app/components/ProfileImageUpload";
 import ProfileCompletion, { type ProfileCompletionData } from "@/app/components/ProfileCompletion";
+import ContributionPoints from "@/app/components/ContributionPoints";
+import ArtworkStudio from "@/app/components/ArtworkStudio";
+import type { ContributionResult } from "@/lib/contributionPoints";
 import { useLanguage } from "@/lib/useLanguage";
 import { t } from "@/lib/translate";
 import { F, S } from "@/lib/design";
@@ -162,6 +165,9 @@ export default function ArtistMePage() {
   const [editingArtEventId, setEditingArtEventId] = useState<string | null>(null);
   const [artEventSaving, setArtEventSaving] = useState(false);
 
+  const [contribution, setContribution] = useState<ContributionResult | null>(null);
+  const [loadingContribution, setLoadingContribution] = useState(false);
+
   const loadMe = async () => {
     setLoadingMe(true);
     try {
@@ -224,7 +230,18 @@ export default function ArtistMePage() {
       timeline: !exPublic || !exArtistId,
     }));
   }, [loadingMe, exPublic, exArtistId]);
-  useEffect(() => { if (!me?.session || adminReadOnly) return; loadApplications(); loadInvites(); loadExhibitions(); loadSeries(); loadSelfExhibitions(); loadArtEvents(); loadVerification(); }, [me?.session?.userId, adminReadOnly]);
+  useEffect(() => { if (!me?.session || adminReadOnly) return; loadApplications(); loadInvites(); loadExhibitions(); loadSeries(); loadSelfExhibitions(); loadArtEvents(); loadVerification(); loadContribution(); }, [me?.session?.userId, adminReadOnly]);
+
+  const loadContribution = async () => {
+    setLoadingContribution(true);
+    try {
+      const res = await fetch("/api/artist/contribution", { cache: "no-store", credentials: "include" });
+      const data = await res.json().catch(() => null);
+      if (res.ok && data?.contribution) setContribution(data.contribution as ContributionResult);
+    } finally {
+      setLoadingContribution(false);
+    }
+  };
 
   const loadApplications = async () => { const [appsRes, ocRes] = await Promise.all([fetch("/api/applications", { cache: "default", credentials: "include" }), fetch("/api/open-calls", { cache: "default" })]); const appsJson = await appsRes.json().catch(() => null); const ocJson = await ocRes.json().catch(() => null); const map: Record<string, OpenCall> = {}; for (const oc of ocJson?.openCalls ?? []) map[oc.id] = oc; setOpenCallMap(map); setApplications(appsJson?.applications ?? []); };
   const loadVerification = async () => {
@@ -252,17 +269,17 @@ export default function ArtistMePage() {
   };
   const loadExhibitions = async () => { const res = await fetch("/api/artist/exhibitions", { credentials: "include" }); const data = await res.json().catch(() => null); if (data) { setExhibitions(data.exhibitions ?? []); setExPublic(!!data.exhibitionsPublic); setExArtistId(data.artistId ?? null); } };
   const loadSelfExhibitions = async () => { const res = await fetch("/api/artist/self-exhibitions", { credentials: "include" }); const data = await res.json().catch(() => null); if (data?.exhibitions) setSelfExhibitions(data.exhibitions); };
-  const saveSelfEx = async () => { if (selfExSaving || !selfExForm?.title?.trim()) return; setSelfExSaving(true); const method = editingSelfExId ? "PATCH" : "POST"; const body = { ...(editingSelfExId ? { id: editingSelfExId } : {}), ...selfExForm }; const res = await fetch("/api/artist/self-exhibitions", { method, headers: { "Content-Type": "application/json" }, credentials: "include", body: JSON.stringify(body) }); const data = await res.json().catch(() => null); if (data?.ok) { setSelfExForm(null); setEditingSelfExId(null); toastSuccess(editingSelfExId ? "수정됨" : "전시 등록됨"); await loadSelfExhibitions(); } else { toastError(formatApiError(data?.error, lang)); } setSelfExSaving(false); };
-  const deleteSelfEx = async (id: string) => { if (!window.confirm("이 전시를 삭제하시겠습니까?")) return; const res = await fetch("/api/artist/self-exhibitions", { method: "DELETE", headers: { "Content-Type": "application/json" }, credentials: "include", body: JSON.stringify({ id }) }); if ((await res.json().catch(() => null))?.ok) { toastSuccess("삭제됨"); await loadSelfExhibitions(); } };
+  const saveSelfEx = async () => { if (selfExSaving || !selfExForm?.title?.trim()) return; setSelfExSaving(true); const method = editingSelfExId ? "PATCH" : "POST"; const body = { ...(editingSelfExId ? { id: editingSelfExId } : {}), ...selfExForm }; const res = await fetch("/api/artist/self-exhibitions", { method, headers: { "Content-Type": "application/json" }, credentials: "include", body: JSON.stringify(body) }); const data = await res.json().catch(() => null); if (data?.ok) { setSelfExForm(null); setEditingSelfExId(null); toastSuccess(editingSelfExId ? "수정됨" : "전시 등록됨"); await loadSelfExhibitions(); await loadContribution(); } else { toastError(formatApiError(data?.error, lang)); } setSelfExSaving(false); };
+  const deleteSelfEx = async (id: string) => { if (!window.confirm("이 전시를 삭제하시겠습니까?")) return; const res = await fetch("/api/artist/self-exhibitions", { method: "DELETE", headers: { "Content-Type": "application/json" }, credentials: "include", body: JSON.stringify({ id }) }); if ((await res.json().catch(() => null))?.ok) { toastSuccess("삭제됨"); await loadSelfExhibitions(); await loadContribution(); } };
   const inviteArtist = async (exhibitionId: string) => { if (!inviteArtistId.trim()) return; const res = await fetch(`/api/artist/self-exhibitions/${exhibitionId}`, { method: "POST", headers: { "Content-Type": "application/json" }, credentials: "include", body: JSON.stringify({ inviteArtistId: inviteArtistId.trim() }) }); const data = await res.json().catch(() => null); if (data?.ok) { setInviteArtistId(""); setInvitingExId(null); toastSuccess("초대 완료"); await loadSelfExhibitions(); } else { toastError(data?.error === "artist_not_found" ? "작가를 찾을 수 없습니다" : data?.error === "already_invited" ? "이미 초대됨" : "초대 실패"); } };
   const loadSeries = async () => { const res = await fetch("/api/artist/series", { credentials: "include" }); const data = await res.json().catch(() => null); if (data?.series) setSeriesList(data.series); };
   const loadArtEvents = async () => { const res = await fetch("/api/artist/art-events", { credentials: "include" }); const data = await res.json().catch(() => null); if (data?.artEvents) setArtEvents(data.artEvents); };
-  const saveArtEvent = async () => { if (artEventSaving || !artEventForm?.title?.trim() || !artEventForm.year) return; setArtEventSaving(true); const method = editingArtEventId ? "PATCH" : "POST"; const body = { ...(editingArtEventId ? { id: editingArtEventId } : {}), ...artEventForm, year: Number(artEventForm.year) }; const res = await fetch("/api/artist/art-events", { method, headers: { "Content-Type": "application/json" }, credentials: "include", body: JSON.stringify(body) }); const data = await res.json().catch(() => null); if (data?.ok) { setArtEventForm(null); setEditingArtEventId(null); toastSuccess(editingArtEventId ? "수정됨" : "추가됨"); await loadArtEvents(); } else { toastError(formatApiError(data?.error, lang)); } setArtEventSaving(false); };
-  const deleteArtEvent = async (id: string) => { if (!window.confirm("이 활동을 삭제하시겠습니까?")) return; const res = await fetch("/api/artist/art-events", { method: "DELETE", headers: { "Content-Type": "application/json" }, credentials: "include", body: JSON.stringify({ id }) }); if ((await res.json().catch(() => null))?.ok) { toastSuccess("삭제됨"); await loadArtEvents(); } };
-  const saveWorkNote = async () => { setWorkNoteSaving(true); const res = await fetch("/api/profile/save", { method: "POST", headers: { "Content-Type": "application/json" }, credentials: "include", body: JSON.stringify({ workNote }) }); if (res.ok) { toastSuccess("저장됨"); } else { toastError("저장 실패"); } setWorkNoteSaving(false); };
+  const saveArtEvent = async () => { if (artEventSaving || !artEventForm?.title?.trim() || !artEventForm.year) return; setArtEventSaving(true); const method = editingArtEventId ? "PATCH" : "POST"; const body = { ...(editingArtEventId ? { id: editingArtEventId } : {}), ...artEventForm, year: Number(artEventForm.year) }; const res = await fetch("/api/artist/art-events", { method, headers: { "Content-Type": "application/json" }, credentials: "include", body: JSON.stringify(body) }); const data = await res.json().catch(() => null);     if (data?.ok) { setArtEventForm(null); setEditingArtEventId(null); toastSuccess(editingArtEventId ? "수정됨" : "추가됨"); await loadArtEvents(); await loadContribution(); } else { toastError(formatApiError(data?.error, lang)); } setArtEventSaving(false); };
+  const deleteArtEvent = async (id: string) => { if (!window.confirm("이 활동을 삭제하시겠습니까?")) return; const res = await fetch("/api/artist/art-events", { method: "DELETE", headers: { "Content-Type": "application/json" }, credentials: "include", body: JSON.stringify({ id }) }); if ((await res.json().catch(() => null))?.ok) { toastSuccess("삭제됨"); await loadArtEvents(); await loadContribution(); } };
+  const saveWorkNote = async () => { setWorkNoteSaving(true); const res = await fetch("/api/profile/save", { method: "POST", headers: { "Content-Type": "application/json" }, credentials: "include", body: JSON.stringify({ workNote }) }); if (res.ok) { toastSuccess("저장됨"); await loadContribution(); } else { toastError("저장 실패"); } setWorkNoteSaving(false); };
   const emptySeriesForm = () => ({ title: "", description: "", startYear: "", endYear: "", works: "", isPublic: true });
-  const saveSeries = async () => { if (seriesSaving || !seriesForm?.title?.trim()) return; setSeriesSaving(true); const method = editingSeriesId ? "PATCH" : "POST"; const body = { ...seriesForm, ...(editingSeriesId ? { id: editingSeriesId } : {}), startYear: seriesForm.startYear ? Number(seriesForm.startYear) : null, endYear: seriesForm.endYear ? Number(seriesForm.endYear) : null }; const res = await fetch("/api/artist/series", { method, headers: { "Content-Type": "application/json" }, credentials: "include", body: JSON.stringify(body) }); const data = await res.json().catch(() => null); if (data?.ok) { setSeriesForm(null); setEditingSeriesId(null); toastSuccess(editingSeriesId ? "수정됨" : "시리즈 추가됨"); await loadSeries(); } else { toastError(formatApiError(data?.error, lang)); } setSeriesSaving(false); };
-  const deleteSeries = async (id: string) => { if (!window.confirm("이 시리즈를 삭제하시겠습니까?")) return; const res = await fetch("/api/artist/series", { method: "DELETE", headers: { "Content-Type": "application/json" }, credentials: "include", body: JSON.stringify({ id }) }); if ((await res.json().catch(() => null))?.ok) { toastSuccess("삭제됨"); await loadSeries(); } };
+  const saveSeries = async () => { if (seriesSaving || !seriesForm?.title?.trim()) return; setSeriesSaving(true); const method = editingSeriesId ? "PATCH" : "POST"; const body = { ...seriesForm, ...(editingSeriesId ? { id: editingSeriesId } : {}), startYear: seriesForm.startYear ? Number(seriesForm.startYear) : null, endYear: seriesForm.endYear ? Number(seriesForm.endYear) : null }; const res = await fetch("/api/artist/series", { method, headers: { "Content-Type": "application/json" }, credentials: "include", body: JSON.stringify(body) }); const data = await res.json().catch(() => null);     if (data?.ok) { setSeriesForm(null); setEditingSeriesId(null); toastSuccess(editingSeriesId ? "수정됨" : "시리즈 추가됨"); await loadSeries(); await loadContribution(); } else { toastError(formatApiError(data?.error, lang)); } setSeriesSaving(false); };
+  const deleteSeries = async (id: string) => { if (!window.confirm("이 시리즈를 삭제하시겠습니까?")) return; const res = await fetch("/api/artist/series", { method: "DELETE", headers: { "Content-Type": "application/json" }, credentials: "include", body: JSON.stringify({ id }) }); if ((await res.json().catch(() => null))?.ok) { toastSuccess("삭제됨"); await loadSeries(); await loadContribution(); } };
   const toggleExPublic = async () => { if (exToggling) return; setExToggling(true); const next = !exPublic; setExPublic(next); await fetch("/api/artist/exhibitions", { method: "PATCH", headers: { "Content-Type": "application/json" }, credentials: "include", body: JSON.stringify({ exhibitionsPublic: next }) }).catch(() => setExPublic(!next)); setExToggling(false); };
   const updateInviteStatus = async (id: string, status: string) => { if (adminReadOnly) return; const res = await fetch("/api/artist/invites", { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ id, status }) }); const data = await res.json().catch(() => null); if (res.ok && data?.invite) setInvites((p) => p.map((i) => (i.id === id ? data.invite : i))); };
   const requestVerification = async () => {
@@ -386,6 +403,7 @@ export default function ArtistMePage() {
       if (!res.ok || !data?.ok) { toastError(data?.error ?? "Save failed"); return; }
       toastSuccess(lang === "ko" ? "프로필이 저장되었습니다." : "Profile saved");
       await loadMe();
+      await loadContribution();
     } finally { setSaving(false); }
   };
   const onUploadPdf = async () => {
@@ -398,7 +416,7 @@ export default function ArtistMePage() {
       const data = await res.json().catch(() => null);
       if (!res.ok || !data?.ok) { toastError(formatApiError(data?.error, lang)); return; }
       toastSuccess(lang === "ko" ? "포트폴리오가 업로드되었습니다." : "Portfolio uploaded");
-      setFile(null); await loadMe();
+      setFile(null); await loadMe(); await loadContribution();
     } finally { setUploading(false); }
   };
 
@@ -421,6 +439,28 @@ export default function ArtistMePage() {
           </div>
           <span style={{ fontFamily: F, fontSize: 10, fontWeight: 500, letterSpacing: "0.1em", textTransform: "uppercase", color: "#8A8580", padding: "8px 16px", border: "1px solid #E8E3DB" }}>Artist</span>
         </div>
+
+        {/* Contribution Points */}
+        {!loadingMe && !adminReadOnly && contribution && (
+          <ContributionPoints contribution={contribution} lang={lang} loading={loadingContribution} />
+        )}
+        {!loadingMe && !adminReadOnly && !contribution && loadingContribution && (
+          <ContributionPoints
+            contribution={{
+              total: 0,
+              level: 1,
+              levelLabelKo: "입문",
+              levelLabelEn: "Beginner",
+              nextMilestone: 50,
+              progressToNext: 0,
+              materialBenefitEligible: false,
+              items: [],
+              summary: { profile: 0, series: 0, activity: 0, exhibition: 0, ritual: 0, artwork: 0 },
+            }}
+            lang={lang}
+            loading
+          />
+        )}
 
         {/* Profile Completion Widget */}
         {!loadingMe && !adminReadOnly && (
@@ -693,6 +733,17 @@ export default function ArtistMePage() {
 
             {/* ── WORKS TAB ───────────────────────────── */}
             {tab === "works" && <>
+            {!adminReadOnly && (
+              <Section number="01" title={lang === "ko" ? "작업 스튜디오" : "Work Studio"} id="artwork_studio">
+                <ArtworkStudio
+                  lang={lang}
+                  onChanged={() => {
+                    loadContribution();
+                    loadSeries();
+                  }}
+                />
+              </Section>
+            )}
             {!adminReadOnly && (
               <Section number="02-0" title={lang === "ko" ? "빠른 기록 시작" : "Quick Record Start"}>
                 <div style={{ border: "1px solid #E8E3DB", background: "#FFFFFF", padding: 14 }}>

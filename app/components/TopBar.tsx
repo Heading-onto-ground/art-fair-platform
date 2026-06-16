@@ -249,6 +249,7 @@ export default function TopBar() {
     {
       label: lang === "ko" ? "탐색" : lang === "ja" ? "探索" : "EXPLORE",
       items: [
+        { path: "/explore", label: lang === "ko" ? "해시태그" : lang === "ja" ? "ハッシュタグ" : "HASHTAGS" },
         { path: "/discover", label: lang === "ko" ? "발견" : lang === "ja" ? "発見" : "DISCOVER" },
         { path: "/artists", label: t("nav_artists", lang) },
         { path: "/galleries", label: t("nav_galleries", lang) },
@@ -278,6 +279,7 @@ export default function TopBar() {
       label: lang === "ko" ? "더 보기" : lang === "ja" ? "もっと見る" : "MORE",
       items: [
         { path: "/open-calls", label: t("nav_open_calls", lang) },
+        { path: "/explore", label: lang === "ko" ? "해시태그" : "HASHTAGS" },
         { path: "/galleries", label: t("nav_galleries", lang) },
         { path: "/community", label: t("nav_community", lang) },
         { path: "/admin/outreach", label: t("nav_growth", lang) },
@@ -291,6 +293,7 @@ export default function TopBar() {
     { path: "/curator", label: t("nav_my_page", lang) },
     { path: "/guide?role=curator", label: lang === "ko" ? "가이드" : lang === "ja" ? "ガイド" : "GUIDE" },
     { path: "/artists", label: t("nav_artists", lang) },
+    { path: "/explore", label: lang === "ko" ? "해시태그" : "HASHTAGS" },
     { path: "/open-calls", label: t("nav_open_calls", lang) },
     { path: "/support", label: lang === "ko" ? "고객 지원" : lang === "ja" ? "サポート" : "SUPPORT" },
     {

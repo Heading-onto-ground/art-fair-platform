@@ -156,6 +156,16 @@ const dict: Record<string, Record<Lang, string>> = {
   openWebProfileCancel: { en: "Cancel", ko: "취소" },
   translate: { en: "Translate", ko: "번역" },
   alreadyInYourLang: { en: "Already in your language", ko: "이미 사용 중인 언어입니다" },
+  contributionPoints: { en: "ROB Points", ko: "ROB 활동 포인트" },
+  contributionLevel: { en: "Level", ko: "레벨" },
+  contributionPts: { en: "pts", ko: "포인트" },
+  contributionBenefitsEligible: { en: "Benefits eligible", ko: "혜택 신청 가능" },
+  contributionNextGoal: { en: "Next goal", ko: "다음 목표" },
+  contributionLoading: { en: "Loading points…", ko: "포인트 불러오는 중…" },
+  contributionEmpty: {
+    en: "Record practice and complete your web profile to earn points.",
+    ko: "작업을 기록하고 웹 프로필을 채우면 포인트가 쌓입니다.",
+  },
 };
 
 export function t(key: string, lang: Lang, vars?: Record<string, string>): string {

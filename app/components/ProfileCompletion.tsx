@@ -1,44 +1,36 @@
 "use client";
 
 import { F, S, colors } from "@/lib/design";
+import {
+  PROFILE_STEPS,
+  calcProfileScore,
+  type ProfileCompletionData,
+} from "@/lib/contributionPoints";
 
-export type ProfileCompletionData = {
-  // 기본 정보
-  hasName: boolean;
-  hasProfileImage: boolean;
-  hasGenre: boolean;
-  hasLocation: boolean; // country + city
-  hasBio: boolean;
-  hasSocialOrWebsite: boolean; // instagram or website
-  // 포트폴리오
-  hasWorkNote: boolean;
-  hasSeries: boolean; // >= 1 ArtworkSeries
-  hasArtEvents: boolean; // >= 1 ArtEvent
-  hasPortfolioUrl: boolean;
-};
+export type { ProfileCompletionData };
 
 type Step = {
   key: keyof ProfileCompletionData;
   label: { ko: string; en: string };
   points: number;
-  anchor?: string; // page section hash
+  anchor?: string;
 };
 
 const STEPS: Step[] = [
-  { key: "hasName", label: { ko: "이름 입력", en: "Add your name" }, points: 10 },
-  { key: "hasProfileImage", label: { ko: "프로필 사진 등록", en: "Upload profile photo" }, points: 15, anchor: "profile-image" },
-  { key: "hasGenre", label: { ko: "장르/매체 입력", en: "Set your genre/medium" }, points: 10 },
-  { key: "hasLocation", label: { ko: "국가·도시 설정", en: "Set country & city" }, points: 10 },
-  { key: "hasBio", label: { ko: "소개글 작성", en: "Write a bio" }, points: 15, anchor: "bio" },
-  { key: "hasSocialOrWebsite", label: { ko: "인스타그램 또는 웹사이트 연결", en: "Link Instagram or website" }, points: 5 },
-  { key: "hasWorkNote", label: { ko: "작업 노트 작성", en: "Write a work note" }, points: 10, anchor: "work-note" },
-  { key: "hasSeries", label: { ko: "시리즈(작품) 1개 이상 등록", en: "Add at least one series" }, points: 10, anchor: "series" },
-  { key: "hasArtEvents", label: { ko: "활동 기록 1개 이상 추가", en: "Add at least one activity" }, points: 10, anchor: "timeline" },
-  { key: "hasPortfolioUrl", label: { ko: "포트폴리오 URL 등록", en: "Add portfolio URL" }, points: 5 },
+  { key: "hasName", label: { ko: PROFILE_STEPS[0].labelKo, en: PROFILE_STEPS[0].labelEn }, points: PROFILE_STEPS[0].points },
+  { key: "hasProfileImage", label: { ko: PROFILE_STEPS[1].labelKo, en: PROFILE_STEPS[1].labelEn }, points: PROFILE_STEPS[1].points, anchor: "profile-image" },
+  { key: "hasGenre", label: { ko: PROFILE_STEPS[2].labelKo, en: PROFILE_STEPS[2].labelEn }, points: PROFILE_STEPS[2].points },
+  { key: "hasLocation", label: { ko: PROFILE_STEPS[3].labelKo, en: PROFILE_STEPS[3].labelEn }, points: PROFILE_STEPS[3].points },
+  { key: "hasBio", label: { ko: PROFILE_STEPS[4].labelKo, en: PROFILE_STEPS[4].labelEn }, points: PROFILE_STEPS[4].points, anchor: "bio" },
+  { key: "hasSocialOrWebsite", label: { ko: PROFILE_STEPS[5].labelKo, en: PROFILE_STEPS[5].labelEn }, points: PROFILE_STEPS[5].points },
+  { key: "hasWorkNote", label: { ko: PROFILE_STEPS[6].labelKo, en: PROFILE_STEPS[6].labelEn }, points: PROFILE_STEPS[6].points, anchor: "work-note" },
+  { key: "hasSeries", label: { ko: PROFILE_STEPS[7].labelKo, en: PROFILE_STEPS[7].labelEn }, points: PROFILE_STEPS[7].points, anchor: "series" },
+  { key: "hasArtEvents", label: { ko: PROFILE_STEPS[8].labelKo, en: PROFILE_STEPS[8].labelEn }, points: PROFILE_STEPS[8].points, anchor: "timeline" },
+  { key: "hasPortfolioUrl", label: { ko: PROFILE_STEPS[9].labelKo, en: PROFILE_STEPS[9].labelEn }, points: PROFILE_STEPS[9].points },
 ];
 
 function calcScore(data: ProfileCompletionData): number {
-  return STEPS.reduce((acc, s) => acc + (data[s.key] ? s.points : 0), 0);
+  return calcProfileScore(data);
 }
 
 function scoreLabel(score: number, lang: string): string {

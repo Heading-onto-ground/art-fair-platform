@@ -1,8 +1,8 @@
 /**
  * Auth store.
  * Uses ROB backend: POST /api/auth/login
- * In __DEV__ or EXPO_PUBLIC_BETA: accepts any email+password (beta testing).
- * When API fails: falls back to mock session.
+ * In EXPO_PUBLIC_BETA: accepts any email+password (beta testing).
+ * When API fails, mock fallback is allowed only in beta mode.
  */
 
 import { create } from "zustand";
@@ -34,8 +34,8 @@ export const useAuth = create<AuthState>((set, get) => ({
     const p = password.trim();
     if (!e || !p) return false;
 
-    // Beta/dev: accept any email+password (skip API)
-    if (__DEV__ || IS_BETA) {
+    // Beta mode: accept any email+password (skip API)
+    if (IS_BETA) {
       const mockSession = { userId: "artist-1", role: "artist", email: e };
       set({
         isLoggedIn: true,
@@ -58,19 +58,27 @@ export const useAuth = create<AuthState>((set, get) => ({
       return true;
     }
     // Beta fallback: when API fails, accept for dev/testing
-    const mockSession = { userId: "artist-1", role: "artist", email: e };
-    set({
-      isLoggedIn: true,
-      userId: mockSession.userId,
-      userName: null,
-      userEmail: e,
-    });
-    await AsyncStorage.setItem(SESSION_KEY, JSON.stringify(mockSession));
-    return true;
+    if (IS_BETA) {
+      const mockSession = { userId: "artist-1", role: "artist", email: e };
+      set({
+        isLoggedIn: true,
+        userId: mockSession.userId,
+        userName: null,
+        userEmail: e,
+      });
+      await AsyncStorage.setItem(SESSION_KEY, JSON.stringify(mockSession));
+      return true;
+    }
+
+    return false;
   },
   logout: async () => {
-    await clearSession();
-    set({ isLoggedIn: false, userId: null, userName: null, userEmail: null });
+    try {
+      await clearSession();
+    } finally {
+      // Always reset in-memory auth state even if storage removal fails.
+      set({ isLoggedIn: false, userId: null, userName: null, userEmail: null });
+    }
   },
   initFromStorage: async () => {
     const session = await getStoredSession();

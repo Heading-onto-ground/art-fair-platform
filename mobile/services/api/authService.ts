@@ -26,10 +26,11 @@ export async function login(
   role: "artist" | "gallery" | "curator" = "artist"
 ): Promise<{ ok: boolean; session?: Session; error?: string }> {
   try {
+    const normalizedEmail = email.trim();
     const res = await fetch(`${API_BASE_URL}/api/auth/login`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ role, email: email.trim(), password }),
+      body: JSON.stringify({ role, email: normalizedEmail, password }),
       credentials: "include",
     });
 
@@ -43,8 +44,12 @@ export async function login(
     }
 
     if (data.session) {
-      await AsyncStorage.setItem(SESSION_KEY, JSON.stringify(data.session));
-      return { ok: true, session: data.session };
+      const normalizedSession: Session = {
+        ...data.session,
+        email: data.session.email ?? normalizedEmail,
+      };
+      await AsyncStorage.setItem(SESSION_KEY, JSON.stringify(normalizedSession));
+      return { ok: true, session: normalizedSession };
     }
 
     return { ok: false, error: "No session in response" };

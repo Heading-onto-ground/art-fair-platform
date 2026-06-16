@@ -50,6 +50,17 @@ type ArtEvent = {
   isPublic: boolean;
 };
 
+type Artwork = {
+  id: string;
+  title: string | null;
+  caption: string | null;
+  imageUrl: string;
+  seriesId: string | null;
+  seriesTitle: string | null;
+  inPortfolio?: boolean;
+  createdAt: string;
+};
+
 const EVENT_LABEL: Record<string, string> = {
   exhibition: "Exhibition",
   collaboration: "Collaboration",
@@ -81,6 +92,7 @@ export default function ArtistPortfolioPage() {
   const [series, setSeries] = useState<SeriesItem[]>([]);
   const [exhibitions, setExhibitions] = useState<Exhibition[]>([]);
   const [artEvents, setArtEvents] = useState<ArtEvent[]>([]);
+  const [artworks, setArtworks] = useState<Artwork[]>([]);
   const [artistId, setArtistId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [activeCategory, setActiveCategory] = useState<string>("ALL");
@@ -108,20 +120,27 @@ export default function ArtistPortfolioPage() {
 
       setProfile(me.profile ?? null);
 
-      const [seriesRes, exRes, evRes] = await Promise.all([
+      const [seriesRes, exRes, evRes, artRes] = await Promise.all([
         fetch("/api/artist/series", { credentials: "include" }),
         fetch("/api/artist/exhibitions", { credentials: "include" }),
         fetch("/api/artist/art-events", { credentials: "include" }),
+        fetch("/api/artist/artworks", { credentials: "include" }),
       ]);
-      const [seriesData, exData, evData] = await Promise.all([
+      const [seriesData, exData, evData, artData] = await Promise.all([
         seriesRes.json().catch(() => null),
         exRes.json().catch(() => null),
         evRes.json().catch(() => null),
+        artRes.json().catch(() => null),
       ]);
 
       if (seriesData?.series) setSeries(seriesData.series);
       if (exData?.exhibitions) setExhibitions(exData.exhibitions);
       if (evData?.artEvents) setArtEvents(evData.artEvents);
+      if (artData?.artworks) {
+        setArtworks(
+          (artData.artworks as Artwork[]).filter((a) => a.inPortfolio !== false),
+        );
+      }
       if (exData?.artistId) setArtistId(exData.artistId);
 
       setLoading(false);
@@ -334,36 +353,36 @@ export default function ArtistPortfolioPage() {
         })()}
 
         {/* ── Welcome Banner (신규 사용자 / 데이터 없음) ── */}
-        {series.length === 0 && exhibitions.length === 0 && artEvents.length === 0 && (
+        {series.length === 0 && exhibitions.length === 0 && artEvents.length === 0 && artworks.length === 0 && (
           <div style={{ marginBottom: 40, padding: "32px 36px", background: "#FAF8F4", border: "1px solid #E8E3DB" }}>
             <p style={{ fontFamily: F, fontSize: 9, fontWeight: 600, letterSpacing: "0.2em", textTransform: "uppercase", color: "#8B7355", margin: "0 0 12px" }}>
               {tr("시작하기", "GET STARTED")}
             </p>
             <p style={{ fontFamily: S, fontSize: "clamp(18px, 3vw, 24px)", fontWeight: 300, color: "#1A1A1A", margin: "0 0 8px" }}>
-              {tr("첫 번째 활동을 기록해보세요", "Record your first activity")}
+              {tr("첫 작업을 올려보세요", "Share your first work")}
             </p>
             <p style={{ fontFamily: F, fontSize: 12, color: "#8A8580", margin: "0 0 24px", lineHeight: 1.7 }}>
               {tr(
-                "전시, 레지던시, 수상 등 활동을 기록하면 공개 포트폴리오가 완성됩니다.",
-                "Add your exhibitions, residencies, and awards to build your public portfolio."
+                "인스타처럼 사진과 #해시태그만 올려도 포트폴리오가 완성됩니다.",
+                "Post a photo with #hashtags — your portfolio builds automatically."
               )}
             </p>
             <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
               <button
-                onClick={() => router.push("/artist/me#art_events")}
+                onClick={() => router.push("/artist/me?tab=works#artwork_studio")}
                 style={{ padding: "12px 28px", border: "none", background: "#1A1A1A", color: "#FDFBF7", fontFamily: F, fontSize: 10, fontWeight: 600, letterSpacing: "0.12em", textTransform: "uppercase", cursor: "pointer" }}
                 onMouseEnter={(e) => { e.currentTarget.style.background = "#8B7355"; }}
                 onMouseLeave={(e) => { e.currentTarget.style.background = "#1A1A1A"; }}
               >
-                + {tr("활동 추가하기", "Add Activity")}
+                + {tr("작업 올리기", "Share work")}
               </button>
               <button
-                onClick={() => router.push("/exhibitions/new")}
+                onClick={() => router.push("/explore")}
                 style={{ padding: "11px 24px", border: "1px solid #1A1A1A", background: "transparent", color: "#1A1A1A", fontFamily: F, fontSize: 10, fontWeight: 500, letterSpacing: "0.1em", textTransform: "uppercase", cursor: "pointer" }}
                 onMouseEnter={(e) => { e.currentTarget.style.background = "#F5F1EB"; }}
                 onMouseLeave={(e) => { e.currentTarget.style.background = "transparent"; }}
               >
-                + {tr("전시 기록 추가", "Add Exhibition")}
+                {tr("해시태그 탐색", "Explore hashtags")}
               </button>
             </div>
           </div>
@@ -414,6 +433,43 @@ export default function ArtistPortfolioPage() {
               </div>
           )}
         </div>
+
+        {/* ── Artworks (auto from uploads) ── */}
+        {artworks.length > 0 && (
+          <div style={{ marginBottom: 56 }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: 20, flexWrap: "wrap", gap: 10 }}>
+              <div>
+                <span style={{ fontFamily: F, fontSize: 10, fontWeight: 600, letterSpacing: "0.2em", textTransform: "uppercase", color: "#8B7355" }}>
+                  {tr("작업", "Works")}
+                </span>
+                <span style={{ fontFamily: F, fontSize: 10, color: "#B0AAA2", marginLeft: 10 }}>
+                  {artworks.length}
+                </span>
+              </div>
+              <button
+                onClick={() => router.push("/artist/me?tab=works#artwork_studio")}
+                style={{ padding: "7px 14px", border: "1px solid #E8E3DB", background: "transparent", color: "#8A8580", fontFamily: F, fontSize: 9, letterSpacing: "0.1em", textTransform: "uppercase", cursor: "pointer" }}
+              >
+                + {tr("작업 올리기", "Add Work")}
+              </button>
+            </div>
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(200px, 1fr))", gap: 12 }}>
+              {artworks.map((a) => (
+                <div key={a.id} style={{ border: "1px solid #E8E3DB", background: "#FFFFFF", overflow: "hidden" }}>
+                  <div style={{ aspectRatio: "1", overflow: "hidden", background: "#F5F1EB" }}>
+                    <img src={a.imageUrl} alt={a.title || ""} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                  </div>
+                  {(a.title || a.seriesTitle) && (
+                    <div style={{ padding: "10px 12px" }}>
+                      {a.title && <div style={{ fontFamily: S, fontSize: 14, color: "#1A1A1A", marginBottom: 4 }}>{a.title}</div>}
+                      {a.seriesTitle && <div style={{ fontFamily: F, fontSize: 10, color: "#8B7355" }}>{a.seriesTitle}</div>}
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
 
         {/* ── Series (카테고리별) ── */}
         <div style={{ marginBottom: 56 }}>

@@ -30,10 +30,16 @@ import {
 import Constants from "expo-constants";
 import { colors, spacing, typography } from "@/constants/theme";
 import { getArtistProfileUrl } from "@/constants/api";
+import {
+  fetchContribution,
+  type ContributionResult,
+} from "@/services/api/contributionService";
 
 export default function ProfileScreen() {
   const logout = useAuth((s) => s.logout);
   const userId = useAuth((s) => s.userId);
+  const userEmail = useAuth((s) => s.userEmail);
+  const userName = useAuth((s) => s.userName);
   const lang = useLanguage((s) => s.lang);
   const setLang = useLanguage((s) => s.setLang);
   const loadMoments = useMomentsStore((s) => s.load);
@@ -43,11 +49,26 @@ export default function ProfileScreen() {
   const [notifLoaded, setNotifLoaded] = useState(false);
   const [testScheduled, setTestScheduled] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
+  const [contribution, setContribution] = useState<ContributionResult | null>(null);
+  const [contributionLoading, setContributionLoading] = useState(false);
+
+  const loadContribution = async () => {
+    if (!userId) return;
+    setContributionLoading(true);
+    try {
+      const result = await fetchContribution();
+      if (result.ok && result.contribution) {
+        setContribution(result.contribution);
+      }
+    } finally {
+      setContributionLoading(false);
+    }
+  };
 
   const onRefresh = async () => {
     setRefreshing(true);
     try {
-      await loadMoments();
+      await Promise.all([loadMoments(), loadContribution()]);
     } finally {
       setRefreshing(false);
     }
@@ -56,6 +77,10 @@ export default function ProfileScreen() {
   useEffect(() => {
     loadMoments();
   }, [loadMoments]);
+
+  useEffect(() => {
+    if (userId) loadContribution();
+  }, [userId]);
 
   useEffect(() => {
     getNotificationPreference().then(async (v) => {
@@ -73,6 +98,12 @@ export default function ProfileScreen() {
   const ritualCount = moments.length;
   const displayRitualPosts = ritualCount > 0 ? ritualCount : MOCK_PROFILE.ritualPosts;
   const displayStreak = ritualCount > 0 ? calculateStreak(moments) : 0;
+  const displayName =
+    userName ||
+    (userEmail ? userEmail.split("@")[0] : null) ||
+    (userId ? `artist ${userId}` : null) ||
+    MOCK_PROFILE.name;
+  const displayBio = userEmail ?? MOCK_PROFILE.bio;
 
   const onTestNotification = async () => {
     const granted = await requestNotificationPermission();
@@ -136,11 +167,52 @@ export default function ProfileScreen() {
         <View style={styles.headerTop}>
           <View style={styles.avatar} />
         </View>
-        <Text style={styles.name}>{MOCK_PROFILE.name}</Text>
-        {MOCK_PROFILE.bio && (
-          <Text style={styles.bio}>{MOCK_PROFILE.bio}</Text>
+        <Text style={styles.name}>{displayName}</Text>
+        {displayBio && (
+          <Text style={styles.bio}>{displayBio}</Text>
         )}
       </View>
+
+      {userId && (
+        <View style={styles.contributionCard}>
+          <Text style={styles.contributionLabel}>{t("contributionPoints", lang)}</Text>
+          {contributionLoading && !contribution ? (
+            <Text style={styles.contributionLoading}>{t("contributionLoading", lang)}</Text>
+          ) : contribution ? (
+            <>
+              <View style={styles.contributionRow}>
+                <Text style={styles.contributionValue}>{contribution.total}</Text>
+                <Text style={styles.contributionUnit}>{t("contributionPts", lang)}</Text>
+              </View>
+              <Text style={styles.contributionMeta}>
+                {t("contributionLevel", lang)} {contribution.level} ·{" "}
+                {lang === "ko" ? contribution.levelLabelKo : contribution.levelLabelEn}
+              </Text>
+              {contribution.materialBenefitEligible && (
+                <Text style={styles.contributionBadge}>{t("contributionBenefitsEligible", lang)}</Text>
+              )}
+              {contribution.nextMilestone !== null && (
+                <View style={styles.contributionProgressWrap}>
+                  <Text style={styles.contributionProgressLabel}>
+                    {t("contributionNextGoal", lang)}: {contribution.nextMilestone}{" "}
+                    {t("contributionPts", lang)} ({contribution.progressToNext}%)
+                  </Text>
+                  <View style={styles.contributionProgressBar}>
+                    <View
+                      style={[
+                        styles.contributionProgressFill,
+                        { width: `${contribution.progressToNext}%` },
+                      ]}
+                    />
+                  </View>
+                </View>
+              )}
+            </>
+          ) : (
+            <Text style={styles.contributionEmpty}>{t("contributionEmpty", lang)}</Text>
+          )}
+        </View>
+      )}
 
       <View style={styles.stats} collapsable={false}>
         <Link href="/(tabs)/moment" asChild>
@@ -392,6 +464,81 @@ const styles = StyleSheet.create({
     textAlign: "center",
     lineHeight: 1.6,
     maxWidth: 280,
+  },
+  contributionCard: {
+    marginBottom: spacing.xxl,
+    padding: spacing.lg,
+    backgroundColor: colors.bgCard,
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: 4,
+  },
+  contributionLabel: {
+    fontSize: typography.label.fontSize,
+    fontWeight: "500",
+    letterSpacing: 1.2,
+    color: colors.accent,
+    textTransform: "uppercase",
+    marginBottom: spacing.sm,
+  },
+  contributionRow: {
+    flexDirection: "row",
+    alignItems: "baseline",
+    gap: spacing.sm,
+  },
+  contributionValue: {
+    fontSize: 36,
+    fontWeight: "300",
+    color: colors.textPrimary,
+  },
+  contributionUnit: {
+    fontSize: typography.bodySmall.fontSize,
+    color: colors.textMuted,
+  },
+  contributionMeta: {
+    fontSize: typography.bodySmall.fontSize,
+    color: colors.textSecondary,
+    marginTop: spacing.xs,
+  },
+  contributionBadge: {
+    marginTop: spacing.sm,
+    fontSize: 10,
+    fontWeight: "500",
+    letterSpacing: 0.8,
+    textTransform: "uppercase",
+    color: colors.success,
+    alignSelf: "flex-start",
+    borderWidth: 1,
+    borderColor: colors.success,
+    paddingVertical: 4,
+    paddingHorizontal: 10,
+  },
+  contributionProgressWrap: {
+    marginTop: spacing.md,
+  },
+  contributionProgressLabel: {
+    fontSize: 10,
+    color: colors.textMuted,
+    marginBottom: spacing.xs,
+  },
+  contributionProgressBar: {
+    height: 4,
+    backgroundColor: colors.borderLight,
+    borderRadius: 2,
+    overflow: "hidden",
+  },
+  contributionProgressFill: {
+    height: "100%",
+    backgroundColor: colors.accent,
+  },
+  contributionLoading: {
+    fontSize: typography.bodySmall.fontSize,
+    color: colors.textMuted,
+  },
+  contributionEmpty: {
+    fontSize: typography.bodySmall.fontSize,
+    color: colors.textMuted,
+    lineHeight: 1.5,
   },
   stats: {
     flexDirection: "row",

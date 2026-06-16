@@ -31,6 +31,15 @@ type ArtEventItem = {
   description?: string | null;
 };
 
+type ArtworkItem = {
+  id: string;
+  title: string | null;
+  caption: string | null;
+  imageUrl: string;
+  postType?: "work" | "exhibition";
+  seriesTitle: string | null;
+};
+
 const EVENT_LABEL: Record<string, string> = {
   exhibition: "Exhibition",
   collaboration: "Collaboration",
@@ -67,6 +76,7 @@ export default function ArtistPublicClient() {
     exhibitions: Exhibition[];
     series: SeriesItem[];
     artEvents: ArtEventItem[];
+    artworks?: ArtworkItem[];
   } | null>(null);
   const [me, setMe] = useState<{ session?: { userId: string; role: string } } | null>(null);
   const [notFound, setNotFound] = useState(false);
@@ -281,6 +291,27 @@ export default function ArtistPublicClient() {
                 </div>
                 <p style={{ fontFamily: S, fontSize: 18, fontWeight: 400, color: "#1A1A1A", margin: "4px 0 2px" }}>{ev.title}</p>
                 {ev.description && <p style={{ fontFamily: F, fontSize: 12, color: "#6A6660", margin: 0, lineHeight: 1.6 }}>{ev.description}</p>}
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {data.artworks && data.artworks.length > 0 && (
+        <div style={{ marginTop: 48 }}>
+          <p style={{ fontFamily: F, fontSize: 10, fontWeight: 600, letterSpacing: "0.14em", textTransform: "uppercase", color: "#8B7355", marginBottom: 16 }}>Works</p>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(180px, 1fr))", gap: 10 }}>
+            {data.artworks.map((a) => (
+              <div key={a.id} style={{ border: "1px solid #E8E3DB", background: "#FFFFFF", overflow: "hidden" }}>
+                <div style={{ aspectRatio: "1", background: "#F5F1EB" }}>
+                  <img src={a.imageUrl} alt={a.title || "work"} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                </div>
+                {(a.title || a.seriesTitle) && (
+                  <div style={{ padding: "8px 10px" }}>
+                    {a.title && <p style={{ fontFamily: S, fontSize: 13, margin: "0 0 2px", color: "#1A1A1A" }}>{a.title}</p>}
+                    {a.seriesTitle && <p style={{ fontFamily: F, fontSize: 9, margin: 0, color: "#8B7355" }}>{a.seriesTitle}</p>}
+                  </div>
+                )}
               </div>
             ))}
           </div>

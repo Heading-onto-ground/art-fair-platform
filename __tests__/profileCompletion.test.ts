@@ -1,23 +1,16 @@
 import { describe, it, expect } from "vitest";
-import type { ProfileCompletionData } from "../app/components/ProfileCompletion";
+import {
+  calcProfileScore,
+  PROFILE_STEPS,
+  type ProfileCompletionData,
+} from "../lib/contributionPoints";
 
-// ProfileCompletion 컴포넌트의 scoreCalc 로직 테스트
-const STEPS_POINTS: Record<keyof ProfileCompletionData, number> = {
-  hasName: 10,
-  hasProfileImage: 15,
-  hasGenre: 10,
-  hasLocation: 10,
-  hasBio: 15,
-  hasSocialOrWebsite: 5,
-  hasWorkNote: 10,
-  hasSeries: 10,
-  hasArtEvents: 10,
-  hasPortfolioUrl: 5,
-};
+const STEPS_POINTS: Record<keyof ProfileCompletionData, number> = Object.fromEntries(
+  PROFILE_STEPS.map((s) => [s.key, s.points]),
+) as Record<keyof ProfileCompletionData, number>;
 
 function calcScore(data: ProfileCompletionData): number {
-  return (Object.keys(STEPS_POINTS) as (keyof ProfileCompletionData)[])
-    .reduce((acc, key) => acc + (data[key] ? STEPS_POINTS[key] : 0), 0);
+  return calcProfileScore(data);
 }
 
 const emptyProfile: ProfileCompletionData = {

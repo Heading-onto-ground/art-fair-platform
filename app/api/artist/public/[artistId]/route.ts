@@ -62,6 +62,15 @@ export async function GET(_req: Request, { params }: { params: { artistId: strin
     select: { id: true, eventType: true, title: true, year: true, description: true },
   }).catch(() => []);
 
+  const artworks = await prisma.artwork.findMany({
+    where: { artistId: profile.id, isPublic: true, inPortfolio: true },
+    orderBy: { createdAt: "desc" },
+    include: { series: { select: { id: true, title: true } } },
+  }).catch(() => []);
+
+  const { loadHashtagsForArtworks } = await import("@/lib/artworkHashtags");
+  const tagMap = await loadHashtagsForArtworks(artworks.map((a: { id: string }) => a.id)).catch(() => new Map<string, string[]>());
+
   const selfExhibitions = await prisma.exhibition.findMany({
     where: {
       isPublic: true,
@@ -113,6 +122,18 @@ export async function GET(_req: Request, { params }: { params: { artistId: strin
     selfExhibitions,
     series,
     artEvents,
+    artworks: artworks.map((a: (typeof artworks)[number]) => ({
+      id: a.id,
+      title: a.title,
+      caption: a.caption,
+      imageUrl: a.imageUrl,
+      medium: a.medium,
+      postType: a.postType === "exhibition" ? "exhibition" : "work",
+      seriesId: a.seriesId,
+      seriesTitle: a.series?.title ?? null,
+      hashtags: tagMap.get(a.id) ?? [],
+      createdAt: a.createdAt.toISOString(),
+    })),
     trustScore: trust.score,
     trustLevel: trust.level,
     trustSignals: trust.signals,

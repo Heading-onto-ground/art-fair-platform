@@ -77,6 +77,7 @@ model ArtistProfile {
   updatedAt    DateTime @updatedAt
   series       ArtworkSeries[]
   artEvents    ArtEvent[]
+  artworks     Artwork[]
 }
 
 // ========== 맥락 저장 ==========
@@ -93,8 +94,53 @@ model ArtworkSeries {
   isPublic    Boolean  @default(true)
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
+  artworks    Artwork[]
 
   @@index([artistId])
+}
+
+model Artwork {
+  id          String         @id @default(cuid())
+  artistId    String
+  artist      ArtistProfile  @relation(fields: [artistId], references: [id], onDelete: Cascade)
+  seriesId    String?
+  series      ArtworkSeries? @relation(fields: [seriesId], references: [id], onDelete: SetNull)
+  postType    String         @default("work") // work | exhibition
+  title       String?
+  caption     String?
+  imageUrl    String
+  medium      String?
+  isPublic    Boolean        @default(true)
+  inPortfolio Boolean        @default(true)
+  createdAt   DateTime       @default(now())
+  updatedAt   DateTime       @updatedAt
+  hashtags    ArtworkHashtag[]
+
+  @@index([artistId])
+  @@index([seriesId])
+  @@index([artistId, createdAt])
+  @@index([postType])
+  @@index([createdAt])
+}
+
+model Hashtag {
+  id        String           @id @default(cuid())
+  tag       String           @unique
+  createdAt DateTime         @default(now())
+  artworks  ArtworkHashtag[]
+
+  @@index([tag])
+}
+
+model ArtworkHashtag {
+  artworkId String
+  hashtagId String
+  artwork   Artwork  @relation(fields: [artworkId], references: [id], onDelete: Cascade)
+  hashtag   Hashtag  @relation(fields: [hashtagId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+
+  @@id([artworkId, hashtagId])
+  @@index([hashtagId])
 }
 
 model GalleryProfile {

@@ -4,6 +4,8 @@ export const FREE_PLAN_LIMITS = {
   maxSeriesPerArtist: 30,
   maxArtEventsPerArtist: 200,
   maxSelfExhibitionsPerArtist: 50,
+  maxArtworksPerArtist: 500,
+  maxArtworkUploadsPerDay: 30,
 } as const;
 
 export type FreePlanLimitKey = keyof typeof FREE_PLAN_LIMITS;
