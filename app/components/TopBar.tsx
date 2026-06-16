@@ -235,33 +235,20 @@ export default function TopBar() {
 
   // ── Grouped nav entries ──────────────────────────────────────────────────
   const artistNav = useMemo((): NavEntry[] => [
-    {
-      label: lang === "ko" ? "내 페이지" : lang === "ja" ? "マイページ" : "MY PAGE",
-      items: [
-        { path: "/artist/me", label: lang === "ko" ? "내 페이지" : lang === "ja" ? "マイページ" : "MY PAGE" },
-        { path: "/artist/portfolio", label: lang === "ko" ? "홈" : lang === "ja" ? "ホーム" : "HOME" },
-        { path: "/artist/me#applications", label: t("nav_my_calls", lang) },
-      ],
-    },
+    { path: "/", label: lang === "ko" ? "홈" : lang === "ja" ? "ホーム" : "HOME" },
+    { path: "/explore", label: lang === "ko" ? "탐색" : lang === "ja" ? "探索" : "EXPLORE" },
     { path: "/open-calls", label: t("nav_open_calls", lang) },
+    { path: "/artist/me", label: lang === "ko" ? "마이페이지" : lang === "ja" ? "マイページ" : "MY PAGE" },
     { path: "/guide?role=artist", label: lang === "ko" ? "가이드" : lang === "ja" ? "ガイド" : "GUIDE" },
     { path: "/support", label: lang === "ko" ? "고객 지원" : lang === "ja" ? "サポート" : "SUPPORT" },
     {
-      label: lang === "ko" ? "탐색" : lang === "ja" ? "探索" : "EXPLORE",
+      label: lang === "ko" ? "더 보기" : lang === "ja" ? "もっと見る" : "MORE",
       items: [
-        { path: "/explore", label: lang === "ko" ? "해시태그" : lang === "ja" ? "ハッシュタグ" : "HASHTAGS" },
+        { path: "/artist/me#applications", label: t("nav_my_calls", lang) },
         { path: "/discover", label: lang === "ko" ? "발견" : lang === "ja" ? "発見" : "DISCOVER" },
         { path: "/artists", label: t("nav_artists", lang) },
         { path: "/galleries", label: t("nav_galleries", lang) },
         { path: "/curators", label: lang === "ko" ? "큐레이터" : lang === "ja" ? "キュレーター" : "CURATORS" },
-        { path: "/spaces", label: lang === "ko" ? "공간" : lang === "ja" ? "スペース" : "SPACES" },
-      ],
-    },
-    {
-      label: lang === "ko" ? "커뮤니티" : lang === "ja" ? "コミュニティ" : "COMMUNITY",
-      items: [
-        { path: "/feed", label: lang === "ko" ? "피드" : "FEED" },
-        { path: "/network", label: lang === "ko" ? "네트워크" : "NETWORK" },
         { path: "/community", label: t("nav_community", lang) },
         { path: "/contact", label: lang === "ko" ? "문의" : lang === "ja" ? "お問い合わせ" : "CONTACT" },
       ],
@@ -462,6 +449,12 @@ export default function TopBar() {
                   <option key={l.code} value={l.code}>{l.name}</option>
                 ))}
               </select>
+              <button
+                onClick={() => router.push("/")}
+                style={{ padding: "8px 12px", border: "1px solid #E8E3DB", background: "transparent", color: "#4A4A4A", fontFamily: F, fontSize: 10, fontWeight: 500, letterSpacing: "0.08em", textTransform: "uppercase", cursor: "pointer", marginRight: 8 }}
+              >
+                {lang === "ko" ? "홈" : lang === "ja" ? "ホーム" : "Home"}
+              </button>
               <button
                 onClick={() => router.push("/about")}
                 style={{ padding: "8px 12px", border: "1px solid #E8E3DB", background: "transparent", color: "#4A4A4A", fontFamily: F, fontSize: 10, fontWeight: 500, letterSpacing: "0.08em", textTransform: "uppercase", cursor: "pointer", marginRight: 8 }}

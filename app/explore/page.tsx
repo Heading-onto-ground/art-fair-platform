@@ -1,9 +1,10 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { useSearchParams } from "next/navigation";
+import { useSearchParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import TopBar from "@/app/components/TopBar";
+import ArtistBottomNav from "@/app/components/ArtistBottomNav";
 import HashtagText from "@/app/components/HashtagText";
 import { F, S, colors } from "@/lib/design";
 import { useLanguage } from "@/lib/useLanguage";
@@ -42,6 +43,7 @@ function timeAgo(iso: string, lang: string) {
 
 export default function ExplorePage() {
   const { lang } = useLanguage();
+  const router = useRouter();
   const ko = lang === "ko";
   const searchParams = useSearchParams();
   const initialTag = searchParams.get("tag") || "";
@@ -267,6 +269,7 @@ export default function ExplorePage() {
           ))}
         </div>
       </main>
+      <ArtistBottomNav lang={lang} activeTab="explore" onCreate={() => router.push("/")} />
     </>
   );
 }

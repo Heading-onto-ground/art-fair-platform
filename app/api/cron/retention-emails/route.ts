@@ -17,7 +17,7 @@ function buildHtml(name?: string | null): string {
   <p style="font-size:14px;line-height:1.8;color:#4A4540;margin:0 0 16px;">ROB 포트폴리오에 전시, 레지던시, 수상 등 활동을 기록하면 갤러리와 큐레이터가 작가님을 발견할 수 있습니다.</p>
   <p style="font-size:14px;line-height:1.8;color:#4A4540;margin:0 0 24px;">활동 1개만 추가해도 공개 포트폴리오가 완성됩니다.</p>
   <div style="margin-bottom:16px;">
-    <a href="${PLATFORM_URL}/artist/portfolio" style="display:inline-block;padding:12px 28px;background:#1A1A1A;color:#fff;text-decoration:none;font-size:11px;letter-spacing:0.1em;text-transform:uppercase;margin-right:12px;">활동 기록하기 →</a>
+    <a href="${PLATFORM_URL}/" style="display:inline-block;padding:12px 28px;background:#1A1A1A;color:#fff;text-decoration:none;font-size:11px;letter-spacing:0.1em;text-transform:uppercase;margin-right:12px;">활동 기록하기 →</a>
     <a href="${PLATFORM_URL}/artist" style="display:inline-block;padding:11px 20px;border:1px solid #1A1A1A;color:#1A1A1A;text-decoration:none;font-size:11px;letter-spacing:0.1em;text-transform:uppercase;">오픈콜 탐색</a>
   </div>
   <p style="margin-top:40px;font-size:10px;color:#C8C0B8;">ROB — Role of Bridge · <a href="${PLATFORM_URL}" style="color:#8B7355;">rob-roleofbridge.com</a></p>
@@ -61,7 +61,7 @@ export async function GET(req: Request) {
       emailType,
       to: user.email,
       subject: "ROB — 포트폴리오에 첫 활동을 기록해보세요",
-      text: `${name ? `${name}님,\n\n` : ""}ROB 포트폴리오에 전시, 레지던시, 수상 등 활동을 기록하면 갤러리와 큐레이터가 찾아올 수 있습니다.\n\n${PLATFORM_URL}/artist/portfolio\n\nROB 팀`,
+      text: `${name ? `${name}님,\n\n` : ""}ROB 포트폴리오에 전시, 레지던시, 수상 등 활동을 기록하면 갤러리와 큐레이터가 찾아올 수 있습니다.\n\n${PLATFORM_URL}/\n\nROB 팀`,
       html: buildHtml(name),
     });
     sent++;

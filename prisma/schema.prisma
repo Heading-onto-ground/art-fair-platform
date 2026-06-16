@@ -115,6 +115,9 @@ model Artwork {
   createdAt   DateTime       @default(now())
   updatedAt   DateTime       @updatedAt
   hashtags    ArtworkHashtag[]
+  likes       ArtworkLike[]
+  collabInterests ArtworkCollabInterest[]
+  comments    ArtworkComment[]
 
   @@index([artistId])
   @@index([seriesId])
@@ -141,6 +144,38 @@ model ArtworkHashtag {
 
   @@id([artworkId, hashtagId])
   @@index([hashtagId])
+}
+
+model ArtworkLike {
+  artworkId String
+  userId    String
+  createdAt DateTime @default(now())
+  artwork   Artwork  @relation(fields: [artworkId], references: [id], onDelete: Cascade)
+
+  @@id([artworkId, userId])
+  @@index([userId])
+}
+
+model ArtworkCollabInterest {
+  artworkId String
+  userId    String
+  createdAt DateTime @default(now())
+  artwork   Artwork  @relation(fields: [artworkId], references: [id], onDelete: Cascade)
+
+  @@id([artworkId, userId])
+  @@index([userId])
+}
+
+model ArtworkComment {
+  id        String   @id @default(cuid())
+  artworkId String
+  userId    String
+  body      String
+  createdAt DateTime @default(now())
+  artwork   Artwork  @relation(fields: [artworkId], references: [id], onDelete: Cascade)
+
+  @@index([artworkId, createdAt])
+  @@index([userId])
 }
 
 model GalleryProfile {

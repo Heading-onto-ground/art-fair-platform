@@ -90,7 +90,7 @@ export default function LoginPage() {
         return;
       }
     }
-    if (realRole === "artist") router.push("/artist/portfolio");
+    if (realRole === "artist") router.push("/");
     else if (realRole === "gallery") router.push("/gallery");
     else if (realRole === "curator") router.push("/curator");
     else router.push("/login");

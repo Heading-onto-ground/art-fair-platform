@@ -33,15 +33,15 @@ function buildText(days: number, name?: string | null, country?: string | null):
   const guide = getLocalizedOnboardingGuide(String(country || ""));
   const guideText = `\n\nRecommended path:\n- ${guide.checklist.join("\n- ")}`;
   if (days === 1)
-    return `${g}\n\nROB에 오신 걸 환영합니다.\n전시, 레지던시, 수상 등 활동을 1개만 기록하면 공개 포트폴리오가 완성됩니다.\n갤러리와 큐레이터가 작가님을 발견할 수 있어요.${guideText}\n\n${PLATFORM_URL}/artist/portfolio\n\nROB 팀`;
+    return `${g}\n\nROB에 오신 걸 환영합니다.\n전시, 레지던시, 수상 등 활동을 1개만 기록하면 공개 포트폴리오가 완성됩니다.\n갤러리와 큐레이터가 작가님을 발견할 수 있어요.${guideText}\n\n${PLATFORM_URL}/\n\nROB 팀`;
   if (days === 3)
-    return `${g}\n\n프로필을 완성해보세요.\n프로필 사진, 소개(Bio), 작업 노트, 활동 타임라인을 추가하면 훨씬 인상적으로 보입니다.${guideText}\n\n${PLATFORM_URL}/artist/portfolio\n\nROB 팀`;
+    return `${g}\n\n프로필을 완성해보세요.\n프로필 사진, 소개(Bio), 작업 노트, 활동 타임라인을 추가하면 훨씬 인상적으로 보입니다.${guideText}\n\n${PLATFORM_URL}/\n\nROB 팀`;
   return `${g}\n\nROB의 오픈콜에서 글로벌 기회를 찾아보세요.\n합격하면 전시 이력이 포트폴리오에 자동으로 추가됩니다.${guideText}\n\n${PLATFORM_URL}/artist\n\nROB 팀`;
 }
 
 function buildHtml(days: number, name?: string | null): string {
   const g = name ? `안녕하세요, ${name}님.` : "안녕하세요.";
-  const ctaUrl = days === 7 ? `${PLATFORM_URL}/artist` : `${PLATFORM_URL}/artist/portfolio`;
+  const ctaUrl = days === 7 ? `${PLATFORM_URL}/artist` : `${PLATFORM_URL}/`;
   const ctaLabel = days === 7 ? "오픈콜 탐색하기 →" : days === 3 ? "프로필 완성하기 →" : "포트폴리오 작성하기 →";
 
   const bodyTexts: Record<number, string> = {
