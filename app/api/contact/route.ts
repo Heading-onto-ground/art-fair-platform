@@ -1,13 +1,19 @@
 import { NextRequest, NextResponse } from "next/server";
 import { isValidEmail, sanitizeEmail, sanitizeText } from "@/lib/sanitize";
 import { sendPlatformEmail } from "@/lib/email";
+import { enforceRateLimit } from "@/lib/apiGuards";
 
 export const dynamic = "force-dynamic";
 
 const CONTACT_EMAIL = process.env.CONTACT_EMAIL || "contact@rob-roleofbridge.com";
+const CONTACT_MAX = 5;
+const CONTACT_WINDOW_MS = 60 * 60 * 1000;
 
 export async function POST(req: NextRequest) {
   try {
+    const limited = enforceRateLimit(req, "contact-form", CONTACT_MAX, CONTACT_WINDOW_MS);
+    if (limited) return limited;
+
     const body = await req.json().catch(() => ({}));
     const name = sanitizeText(String(body?.name || ""), 120);
     const email = sanitizeEmail(String(body?.email || ""));
@@ -62,4 +68,3 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "server error" }, { status: 500 });
   }
 }
-

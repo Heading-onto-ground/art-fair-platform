@@ -1,16 +1,16 @@
 import { NextResponse } from "next/server";
-import { getServerSession } from "@/lib/auth";
 import { sendOutreachEmail, sendBatchOutreach, listOutreachRecords, getOutreachStats } from "@/lib/outreach";
+import { requireAdminSession } from "@/lib/apiGuards";
 
 export const dynamic = "force-dynamic";
 
-// GET: Fetch outreach records and stats
+const MAX_BATCH_SIZE = 50;
+
+// GET: Fetch outreach records and stats (admin only)
 export async function GET() {
   try {
-    const session = getServerSession();
-    if (!session) {
-      return NextResponse.json({ error: "unauthorized" }, { status: 401 });
-    }
+    const { admin, error } = requireAdminSession();
+    if (error || !admin) return error!;
 
     const records = await listOutreachRecords();
     const stats = await getOutreachStats();
@@ -22,13 +22,11 @@ export async function GET() {
   }
 }
 
-// POST: Send outreach emails
+// POST: Send outreach emails (admin only)
 export async function POST(req: Request) {
   try {
-    const session = getServerSession();
-    if (!session) {
-      return NextResponse.json({ error: "unauthorized" }, { status: 401 });
-    }
+    const { admin, error } = requireAdminSession();
+    if (error || !admin) return error!;
 
     const body = await req.json().catch(() => ({}));
     const { action } = body;
@@ -53,6 +51,9 @@ export async function POST(req: Request) {
       const { galleries } = body;
       if (!Array.isArray(galleries) || galleries.length === 0) {
         return NextResponse.json({ error: "No galleries provided" }, { status: 400 });
+      }
+      if (galleries.length > MAX_BATCH_SIZE) {
+        return NextResponse.json({ error: `Batch limit is ${MAX_BATCH_SIZE}` }, { status: 400 });
       }
 
       const result = await sendBatchOutreach(galleries);
