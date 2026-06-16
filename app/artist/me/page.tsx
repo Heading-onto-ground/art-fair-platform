@@ -863,6 +863,22 @@ export default function ArtistMePage() {
 
             {/* ── TIMELINE TAB ────────────────────────── */}
             {tab === "timeline" && <>
+            {!adminReadOnly && (
+              <div style={{ marginBottom: 28, padding: "16px 18px", background: "#FAF8F4", border: "1px solid #E8E3DB" }}>
+                <p style={{ fontFamily: F, fontSize: 12, color: "#4A4540", margin: "0 0 10px", lineHeight: 1.65 }}>
+                  {lang === "ko"
+                    ? "피드에서 「전시」로 올리면 사진과 함께 타임라인에 반영됩니다. 공간·기간·큐레이터까지 정식으로 남기려면 아래에서 등록하세요."
+                    : "Post as Exhibition on the home feed for a quick timeline entry. Use the form below for venue, dates, and curator details."}
+                </p>
+                <button
+                  type="button"
+                  onClick={() => router.push("/exhibitions/new")}
+                  style={{ padding: "8px 16px", border: "1px solid #E8E3DB", background: "#FFFFFF", color: "#4A4540", fontFamily: F, fontSize: 10, fontWeight: 500, letterSpacing: "0.08em", textTransform: "uppercase", cursor: "pointer" }}
+                >
+                  {lang === "ko" ? "상세 전시 기록 추가" : "Add detailed exhibition record"}
+                </button>
+              </div>
+            )}
             <Section number="05" title={lang === "ko" ? "전시 이력" : lang === "ja" ? "展示履歴" : "Exhibition History"} id="exhibitions">
               {exhibitions.length === 0 ? (
                 <p style={{ fontFamily: F, fontSize: 13, color: "#B0AAA2" }}>
