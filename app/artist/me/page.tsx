@@ -588,6 +588,7 @@ export default function ArtistMePage() {
               <div style={{ display: "flex", justifyContent: "center", marginBottom: 24 }}>
                 <ProfileImageUpload
                   currentImage={profile?.profileImage}
+                  lang={lang}
                   onUploaded={async () => {
                     await loadMe();
                   }}
@@ -738,7 +739,7 @@ export default function ArtistMePage() {
                 <Lbl label="Instagram"><input value={instagram} onChange={(e) => setInstagram(e.target.value)} placeholder="@username" style={inp} /></Lbl>
                 <Lbl label="Website"><input value={website} onChange={(e) => setWebsite(e.target.value)} placeholder="https://..." style={inp} /></Lbl>
               </div>
-              <Lbl label="Bio" style={{ marginTop: 18 }}><textarea value={bio} onChange={(e) => setBio(e.target.value)} placeholder="Write a short bio..." rows={4} style={{ ...(focusImprove ? inpHighlight : inp), width: "100%", resize: "vertical" }} /></Lbl>
+              <Lbl label={lang === "ko" ? "자기소개" : "Bio"} style={{ marginTop: 18 }}><textarea value={bio} onChange={(e) => setBio(e.target.value)} placeholder={lang === "ko" ? "작업 방향, 관심사, 한 줄 소개를 적어주세요." : "Write a short bio..."} rows={4} maxLength={300} style={{ ...(focusImprove ? inpHighlight : inp), width: "100%", resize: "vertical" }} /></Lbl>
               <div style={{ marginTop: 20, display: "flex", gap: 16, alignItems: "center" }}>
                 <button onClick={onSaveProfile} disabled={saving} style={btnStyle(saving)}>{saving ? t("profile_saving", lang) : t("profile_save", lang)}</button>
               </div>

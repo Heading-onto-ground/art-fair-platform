@@ -8,6 +8,7 @@ import HashtagText from "@/app/components/HashtagText";
 import ArtworkUploadModal from "@/app/components/ArtworkUploadModal";
 import ArtworkEngagementPanel from "@/app/components/ArtworkEngagementPanel";
 import ArtistBottomNav from "@/app/components/ArtistBottomNav";
+import ProfileEditModal from "@/app/components/ProfileEditModal";
 import { artworkTimeAgo } from "@/lib/artworkImageUtils";
 import { POST_TYPE_LABELS } from "@/lib/artworkTypes";
 import type { ArtworkPostType } from "@/lib/artworkTypes";
@@ -136,15 +137,21 @@ function ProfileHeader({ profile, postCount, lang, onEdit }: { profile: MyProfil
   return (
     <div style={{ padding: "20px 4px 16px", borderBottom: `1px solid ${colors.border}` }}>
       <div style={{ display: "flex", gap: 20, alignItems: "flex-start", marginBottom: 16 }}>
-        <div style={{ width: 80, height: 80, borderRadius: "50%", overflow: "hidden", border: `1px solid ${colors.border}`, background: colors.bgAccent, flexShrink: 0 }}>
+        <button
+          type="button"
+          onClick={onEdit}
+          aria-label={ko ? "프로필 사진 변경" : "Change profile photo"}
+          style={{ width: 80, height: 80, borderRadius: "50%", overflow: "hidden", border: `1px solid ${colors.border}`, background: colors.bgAccent, flexShrink: 0, padding: 0, cursor: "pointer", position: "relative" }}
+        >
           {profile.profileImage ? (
-            <img src={profile.profileImage} alt={profile.name} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+            <img src={profile.profileImage} alt={profile.name} style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} />
           ) : (
-            <span style={{ display: "flex", alignItems: "center", justifyContent: "center", width: "100%", height: "100%", fontFamily: S, fontSize: 28, color: colors.textLight }}>
-              {profile.name.charAt(0)}
+            <span style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", width: "100%", height: "100%", fontFamily: F, fontSize: 10, color: colors.textMuted, gap: 2 }}>
+              <span style={{ fontFamily: S, fontSize: 28, color: colors.textLight, lineHeight: 1 }}>{profile.name.charAt(0)}</span>
+              <span style={{ fontSize: 9 }}>{ko ? "+ 사진" : "+ Photo"}</span>
             </span>
           )}
-        </div>
+        </button>
         <div style={{ flex: 1, display: "flex", justifyContent: "space-around", textAlign: "center", paddingTop: 8 }}>
           <div>
             <div style={{ fontFamily: F, fontSize: 16, fontWeight: 600, color: colors.textPrimary }}>{postCount}</div>
@@ -169,8 +176,16 @@ function ProfileHeader({ profile, postCount, lang, onEdit }: { profile: MyProfil
         <div style={{ fontFamily: F, fontSize: 14, fontWeight: 600, color: colors.textPrimary }}>{profile.name}</div>
         <div style={{ fontFamily: F, fontSize: 12, color: colors.textMuted }}>@{profile.artistId}</div>
         {location && <div style={{ fontFamily: F, fontSize: 11, color: colors.textSecondary, marginTop: 4 }}>{location}</div>}
-        {profile.bio && (
+        {profile.bio ? (
           <p style={{ fontFamily: F, fontSize: 12, color: colors.textSecondary, margin: "8px 0 0", lineHeight: 1.6, whiteSpace: "pre-wrap" }}>{profile.bio}</p>
+        ) : (
+          <button
+            type="button"
+            onClick={onEdit}
+            style={{ marginTop: 8, padding: 0, border: "none", background: "none", fontFamily: F, fontSize: 12, color: colors.accent, cursor: "pointer", textAlign: "left" }}
+          >
+            {ko ? "+ 자기소개 추가하기" : "+ Add bio"}
+          </button>
         )}
       </div>
 
@@ -204,6 +219,7 @@ export default function ArtistFeed({ lang }: Props) {
   const [myProfile, setMyProfile] = useState<MyProfile | null>(null);
   const [feedMode, setFeedMode] = useState<"global" | "mine">("global");
   const [selected, setSelected] = useState<FeedPost | null>(null);
+  const [profileEditOpen, setProfileEditOpen] = useState(false);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -279,7 +295,7 @@ export default function ArtistFeed({ lang }: Props) {
         {feedMode === "global" ? (
           <GuestIntro lang={lang} />
         ) : myProfile ? (
-          <ProfileHeader profile={myProfile} postCount={posts.length} lang={lang} onEdit={() => router.push("/artist/me#profile_edit")} />
+          <ProfileHeader profile={myProfile} postCount={posts.length} lang={lang} onEdit={() => setProfileEditOpen(true)} />
         ) : null}
 
         <div style={{ display: "flex", justifyContent: "center", gap: 0, borderBottom: `1px solid ${colors.border}`, marginBottom: 2 }}>
@@ -365,6 +381,18 @@ export default function ArtistFeed({ lang }: Props) {
       )}
 
       <ArtworkUploadModal lang={lang} open={uploadOpen} onClose={() => setUploadOpen(false)} onPosted={load} />
+      {myProfile && (
+        <ProfileEditModal
+          open={profileEditOpen}
+          onClose={() => setProfileEditOpen(false)}
+          lang={lang}
+          profileImage={myProfile.profileImage}
+          bio={myProfile.bio}
+          onSaved={(data) => {
+            setMyProfile((prev) => (prev ? { ...prev, ...data } : prev));
+          }}
+        />
+      )}
       <ArtistBottomNav lang={lang} activeTab="home" onCreate={() => setUploadOpen(true)} />
     </>
   );

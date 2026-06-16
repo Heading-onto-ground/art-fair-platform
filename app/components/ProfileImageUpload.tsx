@@ -1,19 +1,25 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { F, colors } from "@/lib/design";
 
 type Props = {
   currentImage?: string | null;
   onUploaded: (url: string) => void;
   size?: number;
+  lang?: string;
 };
 
-export default function ProfileImageUpload({ currentImage, onUploaded, size = 120 }: Props) {
+export default function ProfileImageUpload({ currentImage, onUploaded, size = 120, lang = "en" }: Props) {
+  const ko = lang === "ko";
   const inputRef = useRef<HTMLInputElement>(null);
   const [uploading, setUploading] = useState(false);
   const [preview, setPreview] = useState<string | null>(currentImage ?? null);
   const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    setPreview(currentImage ?? null);
+  }, [currentImage]);
 
   async function handleFile(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
@@ -22,12 +28,12 @@ export default function ProfileImageUpload({ currentImage, onUploaded, size = 12
     setError(null);
 
     if (!file.type.startsWith("image/")) {
-      setError("Please select an image file");
+      setError(ko ? "이미지 파일을 선택해주세요." : "Please select an image file");
       return;
     }
 
     if (file.size > 5 * 1024 * 1024) {
-      setError("Image too large (max 5MB)");
+      setError(ko ? "이미지가 너무 큽니다 (최대 5MB)." : "Image too large (max 5MB)");
       return;
     }
 
@@ -120,7 +126,7 @@ export default function ProfileImageUpload({ currentImage, onUploaded, size = 12
           <div style={{ textAlign: "center" }}>
             <div style={{ fontSize: 28, color: colors.borderDark, marginBottom: 4 }}>+</div>
             <div style={{ fontFamily: F, fontSize: 8, fontWeight: 500, letterSpacing: "0.1em", textTransform: "uppercase", color: colors.textLight }}>
-              Photo
+              {ko ? "사진" : "Photo"}
             </div>
           </div>
         )}
@@ -156,7 +162,7 @@ export default function ProfileImageUpload({ currentImage, onUploaded, size = 12
           cursor: uploading ? "wait" : "pointer",
         }}
       >
-        {uploading ? "Uploading..." : preview ? "Change Photo" : "Upload Photo"}
+        {uploading ? (ko ? "업로드 중…" : "Uploading…") : preview ? (ko ? "사진 변경" : "Change Photo") : ko ? "사진 추가" : "Upload Photo"}
       </button>
 
       {error && (
