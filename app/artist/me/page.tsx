@@ -7,7 +7,7 @@ import TopBar from "@/app/components/TopBar";
 import ProfileImageUpload from "@/app/components/ProfileImageUpload";
 import ProfileCompletion, { type ProfileCompletionData } from "@/app/components/ProfileCompletion";
 import ContributionPoints from "@/app/components/ContributionPoints";
-import ArtworkStudio from "@/app/components/ArtworkStudio";
+import ArtworkPortfolioPicker from "@/app/components/ArtworkPortfolioPicker";
 import type { ContributionResult } from "@/lib/contributionPoints";
 import { useLanguage } from "@/lib/useLanguage";
 import { t } from "@/lib/translate";
@@ -462,6 +462,19 @@ export default function ArtistMePage() {
           />
         )}
 
+        {/* My posts — portfolio curation */}
+        {!loadingMe && !adminReadOnly && (
+          <div id="artwork_studio" style={{ marginBottom: 40 }}>
+            <ArtworkPortfolioPicker
+              lang={lang}
+              onChanged={() => {
+                loadContribution();
+                loadSeries();
+              }}
+            />
+          </div>
+        )}
+
         {/* Profile Completion Widget */}
         {!loadingMe && !adminReadOnly && (
           <ProfileCompletion
@@ -733,17 +746,6 @@ export default function ArtistMePage() {
 
             {/* ── WORKS TAB ───────────────────────────── */}
             {tab === "works" && <>
-            {!adminReadOnly && (
-              <Section number="01" title={lang === "ko" ? "작업 스튜디오" : "Work Studio"} id="artwork_studio">
-                <ArtworkStudio
-                  lang={lang}
-                  onChanged={() => {
-                    loadContribution();
-                    loadSeries();
-                  }}
-                />
-              </Section>
-            )}
             {!adminReadOnly && (
               <Section number="02-0" title={lang === "ko" ? "빠른 기록 시작" : "Quick Record Start"}>
                 <div style={{ border: "1px solid #E8E3DB", background: "#FFFFFF", padding: 14 }}>

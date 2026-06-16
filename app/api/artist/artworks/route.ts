@@ -133,7 +133,7 @@ export async function POST(req: NextRequest) {
       imageUrl: stored.url,
       medium,
       isPublic: true,
-      inPortfolio: true,
+      inPortfolio: false,
     },
     include: { series: { select: { id: true, title: true } } },
   });

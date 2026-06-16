@@ -239,7 +239,7 @@ export default function TopBar() {
       label: lang === "ko" ? "내 페이지" : lang === "ja" ? "マイページ" : "MY PAGE",
       items: [
         { path: "/artist/me", label: lang === "ko" ? "내 페이지" : lang === "ja" ? "マイページ" : "MY PAGE" },
-        { path: "/artist/portfolio", label: lang === "ko" ? "내 작업" : lang === "ja" ? "マイ作品" : "MY WORKS" },
+        { path: "/artist/portfolio", label: lang === "ko" ? "홈" : lang === "ja" ? "ホーム" : "HOME" },
         { path: "/artist/me#applications", label: t("nav_my_calls", lang) },
       ],
     },
