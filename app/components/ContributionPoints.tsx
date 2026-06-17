@@ -18,25 +18,75 @@ type Props = {
   contribution: ContributionResult;
   lang: string;
   loading?: boolean;
+  error?: boolean;
+  onRetry?: () => void;
 };
 
-export default function ContributionPoints({ contribution, lang, loading }: Props) {
+export default function ContributionPoints({
+  contribution,
+  lang,
+  loading,
+  error,
+  onRetry,
+}: Props) {
   const [expanded, setExpanded] = useState(false);
   const ko = lang === "ko";
 
+  const shellStyle = {
+    border: `1px solid ${colors.border}`,
+    background: colors.bgCard,
+    padding: "24px 28px",
+    marginBottom: 32,
+  } as const;
+
   if (loading) {
     return (
-      <div
-        style={{
-          border: `1px solid ${colors.border}`,
-          background: colors.bgCard,
-          padding: "24px 28px",
-          marginBottom: 32,
-        }}
-      >
+      <div style={shellStyle}>
         <div style={{ fontFamily: F, fontSize: 11, color: colors.textMuted }}>
           {ko ? "활동 포인트 불러오는 중…" : "Loading contribution points…"}
         </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div style={shellStyle}>
+        <div
+          style={{
+            fontFamily: F,
+            fontSize: 10,
+            fontWeight: 500,
+            letterSpacing: "0.12em",
+            textTransform: "uppercase",
+            color: colors.accent,
+            marginBottom: 6,
+          }}
+        >
+          {ko ? "ROB 활동 포인트" : "ROB Contribution"}
+        </div>
+        <p style={{ fontFamily: F, fontSize: 12, color: colors.textMuted, margin: "0 0 12px", lineHeight: 1.6 }}>
+          {ko
+            ? "활동 포인트를 불러오지 못했습니다. 잠시 후 다시 시도해 주세요."
+            : "Could not load contribution points. Please try again."}
+        </p>
+        {onRetry && (
+          <button
+            type="button"
+            onClick={onRetry}
+            style={{
+              padding: "8px 14px",
+              border: `1px solid ${colors.border}`,
+              background: colors.bgPrimary,
+              fontFamily: F,
+              fontSize: 11,
+              color: colors.accent,
+              cursor: "pointer",
+            }}
+          >
+            {ko ? "다시 시도" : "Retry"}
+          </button>
+        )}
       </div>
     );
   }

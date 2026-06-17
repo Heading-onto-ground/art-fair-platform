@@ -168,6 +168,7 @@ export default function ArtistMePage() {
 
   const [contribution, setContribution] = useState<ContributionResult | null>(null);
   const [loadingContribution, setLoadingContribution] = useState(false);
+  const [contributionError, setContributionError] = useState(false);
 
   const loadMe = async () => {
     setLoadingMe(true);
@@ -235,10 +236,17 @@ export default function ArtistMePage() {
 
   const loadContribution = async () => {
     setLoadingContribution(true);
+    setContributionError(false);
     try {
       const res = await fetch("/api/artist/contribution", { cache: "no-store", credentials: "include" });
       const data = await res.json().catch(() => null);
-      if (res.ok && data?.contribution) setContribution(data.contribution as ContributionResult);
+      if (res.ok && data?.contribution) {
+        setContribution(data.contribution as ContributionResult);
+      } else {
+        setContributionError(true);
+      }
+    } catch {
+      setContributionError(true);
     } finally {
       setLoadingContribution(false);
     }
@@ -442,24 +450,25 @@ export default function ArtistMePage() {
         </div>
 
         {/* Contribution Points */}
-        {!loadingMe && !adminReadOnly && contribution && (
-          <ContributionPoints contribution={contribution} lang={lang} loading={loadingContribution} />
-        )}
-        {!loadingMe && !adminReadOnly && !contribution && loadingContribution && (
+        {!loadingMe && !adminReadOnly && (
           <ContributionPoints
-            contribution={{
-              total: 0,
-              level: 1,
-              levelLabelKo: "입문",
-              levelLabelEn: "Beginner",
-              nextMilestone: 50,
-              progressToNext: 0,
-              materialBenefitEligible: false,
-              items: [],
-              summary: { profile: 0, series: 0, activity: 0, exhibition: 0, ritual: 0, artwork: 0 },
-            }}
+            contribution={
+              contribution ?? {
+                total: 0,
+                level: 1,
+                levelLabelKo: "입문",
+                levelLabelEn: "Beginner",
+                nextMilestone: 50,
+                progressToNext: 0,
+                materialBenefitEligible: false,
+                items: [],
+                summary: { profile: 0, series: 0, activity: 0, exhibition: 0, ritual: 0, artwork: 0 },
+              }
+            }
             lang={lang}
-            loading
+            loading={loadingContribution && !contribution}
+            error={contributionError}
+            onRetry={loadContribution}
           />
         )}
 
