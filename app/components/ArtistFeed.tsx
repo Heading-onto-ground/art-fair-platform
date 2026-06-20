@@ -10,6 +10,8 @@ import ArtistBottomNav from "@/app/components/ArtistBottomNav";
 import ProfileEditModal from "@/app/components/ProfileEditModal";
 import RitualStrip from "@/app/components/RitualStrip";
 import RitualComposerModal from "@/app/components/RitualComposerModal";
+import CreateChoiceModal from "@/app/components/CreateChoiceModal";
+import PracticeRecordsPanel from "@/app/components/PracticeRecordsPanel";
 import FeedPostCard, { type FeedPost } from "@/app/components/FeedPostCard";
 import NotificationsBell from "@/app/components/NotificationsBell";
 import { artworkTimeAgo } from "@/lib/artworkImageUtils";
@@ -31,7 +33,7 @@ type Props = {
   lang: string;
 };
 
-type HomeTab = "feed" | "mine";
+type HomeTab = "feed" | "mine" | "practice";
 type FeedScope = "following" | "all";
 
 function PostGrid({ posts, onSelect }: { posts: FeedPost[]; onSelect: (post: FeedPost) => void }) {
@@ -189,6 +191,7 @@ export default function ArtistFeed({ lang }: Props) {
 
   const [selected, setSelected] = useState<FeedPost | null>(null);
   const [uploadOpen, setUploadOpen] = useState(false);
+  const [createChoiceOpen, setCreateChoiceOpen] = useState(false);
   const [profileEditOpen, setProfileEditOpen] = useState(false);
   const [ritualOpen, setRitualOpen] = useState(false);
   const [ritualRefresh, setRitualRefresh] = useState(0);
@@ -272,7 +275,18 @@ export default function ArtistFeed({ lang }: Props) {
     loadFeed(feedScope, isArtist);
   }
 
-  const headerTitle = homeTab === "mine" && myProfile ? `@${myProfile.artistId}` : "ROB";
+  function openCreateChoice() {
+    setCreateChoiceOpen(true);
+  }
+
+  function onRitualPosted() {
+    setRitualRefresh((n) => n + 1);
+  }
+
+  const headerTitle =
+    homeTab === "mine" && myProfile ? `@${myProfile.artistId}`
+    : homeTab === "practice" ? (ko ? "작업 기록" : "Practice")
+    : "ROB";
 
   return (
     <>
@@ -289,40 +303,50 @@ export default function ArtistFeed({ lang }: Props) {
         </div>
 
         {/* Ritual stories strip — artists + anyone when moments exist */}
-        <RitualStrip lang={lang} isArtist={isArtist} onCompose={() => setRitualOpen(true)} refreshKey={ritualRefresh} />
+        <RitualStrip
+          lang={lang}
+          isArtist={isArtist}
+          onViewPractice={isArtist ? () => setHomeTab("practice") : undefined}
+          refreshKey={ritualRefresh}
+        />
 
         {!isLoggedIn && <GuestIntro lang={lang} />}
 
         {/* Tabs for logged-in artists */}
         {isArtist && myProfile && (
           <div style={{ display: "flex", borderBottom: `1px solid ${colors.border}` }}>
-            <button
-              type="button"
-              onClick={() => setHomeTab("feed")}
-              style={{ flex: 1, padding: "12px 0", border: "none", borderBottom: `2px solid ${homeTab === "feed" ? colors.textPrimary : "transparent"}`, background: "none", fontFamily: F, fontSize: 11, fontWeight: 600, letterSpacing: "0.08em", textTransform: "uppercase", color: homeTab === "feed" ? colors.textPrimary : colors.textMuted, cursor: "pointer" }}
-            >
-              {ko ? "둘러보기" : "Feed"}
-            </button>
-            <button
-              type="button"
-              onClick={() => setHomeTab("mine")}
-              style={{ flex: 1, padding: "12px 0", border: "none", borderBottom: `2px solid ${homeTab === "mine" ? colors.textPrimary : "transparent"}`, background: "none", fontFamily: F, fontSize: 11, fontWeight: 600, letterSpacing: "0.08em", textTransform: "uppercase", color: homeTab === "mine" ? colors.textPrimary : colors.textMuted, cursor: "pointer" }}
-            >
-              {ko ? "내 작업" : "Mine"}
-            </button>
+            {([
+              { id: "feed" as const, ko: "둘러보기", en: "Feed" },
+              { id: "practice" as const, ko: "작업 기록", en: "Practice" },
+              { id: "mine" as const, ko: "내 작업", en: "Mine" },
+            ]).map((tab) => (
+              <button
+                key={tab.id}
+                type="button"
+                onClick={() => setHomeTab(tab.id)}
+                style={{ flex: 1, padding: "12px 0", border: "none", borderBottom: `2px solid ${homeTab === tab.id ? colors.textPrimary : "transparent"}`, background: "none", fontFamily: F, fontSize: 10, fontWeight: 600, letterSpacing: "0.06em", textTransform: "uppercase", color: homeTab === tab.id ? colors.textPrimary : colors.textMuted, cursor: "pointer" }}
+              >
+                {ko ? tab.ko : tab.en}
+              </button>
+            ))}
           </div>
         )}
 
-        {/* MINE tab: profile + own grid */}
-        {isArtist && myProfile && homeTab === "mine" ? (
+        {isArtist && myProfile && homeTab === "practice" ? (
+          <PracticeRecordsPanel
+            lang={lang}
+            refreshKey={ritualRefresh}
+            onRecord={() => setRitualOpen(true)}
+          />
+        ) : isArtist && myProfile && homeTab === "mine" ? (
           <>
             <ProfileHeader profile={myProfile} postCount={minePosts.length} lang={lang} onEdit={() => setProfileEditOpen(true)} />
             {minePosts.length === 0 ? (
               <div style={{ textAlign: "center", padding: "48px 20px" }}>
                 <p style={{ fontFamily: F, fontSize: 13, color: colors.textMuted, margin: "0 0 16px", lineHeight: 1.6 }}>
-                  {ko ? "아직 올린 작업이 없어요. + 버튼으로 첫 작업을 올려보세요." : "No posts yet. Tap + to share your first work."}
+                  {ko ? "아직 올린 작업이 없어요. + 버튼으로 완료작업을 올려보세요." : "No posts yet. Tap + to upload finished work."}
                 </p>
-                <button type="button" onClick={() => setUploadOpen(true)} style={{ padding: "10px 24px", border: "none", background: colors.textPrimary, color: colors.bgPrimary, fontFamily: F, fontSize: 10, fontWeight: 600, letterSpacing: "0.1em", textTransform: "uppercase", cursor: "pointer" }}>
+                <button type="button" onClick={openCreateChoice} style={{ padding: "10px 24px", border: "none", background: colors.textPrimary, color: colors.bgPrimary, fontFamily: F, fontSize: 10, fontWeight: 600, letterSpacing: "0.1em", textTransform: "uppercase", cursor: "pointer" }}>
                   + {ko ? "작업 올리기" : "Share"}
                 </button>
               </div>
@@ -414,12 +438,19 @@ export default function ArtistFeed({ lang }: Props) {
         </div>
       )}
 
+      <CreateChoiceModal
+        lang={lang}
+        open={createChoiceOpen}
+        onClose={() => setCreateChoiceOpen(false)}
+        onChooseRitual={() => setRitualOpen(true)}
+        onChooseArtwork={() => setUploadOpen(true)}
+      />
       <ArtworkUploadModal lang={lang} open={uploadOpen} onClose={() => setUploadOpen(false)} onPosted={onUploaded} />
       <RitualComposerModal
         lang={lang}
         open={ritualOpen}
         onClose={() => setRitualOpen(false)}
-        onPosted={() => setRitualRefresh((n) => n + 1)}
+        onPosted={onRitualPosted}
       />
       {myProfile && (
         <ProfileEditModal
@@ -431,7 +462,7 @@ export default function ArtistFeed({ lang }: Props) {
           onSaved={(data) => setMyProfile((prev) => (prev ? { ...prev, ...data } : prev))}
         />
       )}
-      <ArtistBottomNav lang={lang} activeTab="home" onCreate={() => setUploadOpen(true)} />
+      <ArtistBottomNav lang={lang} activeTab="home" onCreate={openCreateChoice} />
     </>
   );
 }

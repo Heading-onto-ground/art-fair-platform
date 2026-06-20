@@ -132,7 +132,7 @@ export default function ArtistRitualPage() {
             <h2 style={{ fontFamily: F, fontSize: 11, fontWeight: 600, letterSpacing: "0.1em", textTransform: "uppercase", color: colors.textMuted, margin: "8px 0" }}>
               {ko ? "작업 중인 작가들" : "Artists working now"}
             </h2>
-            <RitualStrip lang={lang} isArtist={isArtist} onCompose={() => setComposerOpen(true)} refreshKey={stripKey} />
+            <RitualStrip lang={lang} isArtist={isArtist} refreshKey={stripKey} />
 
             {isArtist && (
               <>

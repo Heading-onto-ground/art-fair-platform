@@ -23,7 +23,7 @@ type RitualSummary = { streak: number; totalMoments: number; postedToday: boolea
 type Props = {
   lang: string;
   isArtist: boolean;
-  onCompose: () => void;
+  onViewPractice?: () => void;
   refreshKey?: number;
 };
 
@@ -41,7 +41,7 @@ function mediumLabel(m: string, ko: boolean) {
   return MEDIUM_LABELS[m] ? (ko ? MEDIUM_LABELS[m].ko : MEDIUM_LABELS[m].en) : m;
 }
 
-export default function RitualStrip({ lang, isArtist, onCompose, refreshKey }: Props) {
+export default function RitualStrip({ lang, isArtist, onViewPractice, refreshKey }: Props) {
   const ko = lang === "ko";
   const [moments, setMoments] = useState<Moment[]>([]);
   const [summary, setSummary] = useState<RitualSummary | null>(null);
@@ -100,40 +100,21 @@ export default function RitualStrip({ lang, isArtist, onCompose, refreshKey }: P
 
   return (
     <div style={{ borderBottom: `1px solid ${colors.border}`, padding: "12px 0" }}>
-      <div style={{ display: "flex", gap: 14, overflowX: "auto", padding: "0 4px", scrollbarWidth: "none" }}>
-        {isArtist && (
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "0 4px 8px" }}>
+        <span style={{ fontFamily: F, fontSize: 10, fontWeight: 600, letterSpacing: "0.08em", textTransform: "uppercase", color: colors.textMuted }}>
+          {ko ? "지금 작업 중" : "Working now"}
+        </span>
+        {isArtist && onViewPractice && (
           <button
             type="button"
-            onClick={onCompose}
-            style={{ flex: "0 0 auto", display: "flex", flexDirection: "column", alignItems: "center", gap: 6, border: "none", background: "none", cursor: "pointer", width: 64 }}
+            onClick={onViewPractice}
+            style={{ border: "none", background: "none", fontFamily: F, fontSize: 10, color: colors.accent, cursor: "pointer", padding: 0 }}
           >
-            <span
-              style={{
-                width: 60,
-                height: 60,
-                borderRadius: "50%",
-                border: `2px dashed ${summary?.postedToday ? colors.accent : colors.border}`,
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                fontSize: 24,
-                color: colors.accent,
-                position: "relative",
-              }}
-            >
-              +
-              {summary && summary.streak > 0 && (
-                <span style={{ position: "absolute", bottom: -2, right: -2, background: colors.accent, color: "#fff", fontFamily: F, fontSize: 9, fontWeight: 700, minWidth: 18, height: 18, borderRadius: 999, display: "flex", alignItems: "center", justifyContent: "center", padding: "0 4px" }}>
-                  🔥{summary.streak}
-                </span>
-              )}
-            </span>
-            <span style={{ fontFamily: F, fontSize: 10, color: colors.textSecondary, textAlign: "center", lineHeight: 1.2 }}>
-              {summary?.postedToday ? (ko ? "오늘 완료" : "Done today") : ko ? "오늘 기록" : "Record"}
-            </span>
+            {ko ? "내 작업 기록 →" : "My practice logs →"}
           </button>
         )}
-
+      </div>
+      <div style={{ display: "flex", gap: 14, overflowX: "auto", padding: "0 4px", scrollbarWidth: "none" }}>
         {moments.map((m) => (
           <button
             key={m.id}
@@ -152,7 +133,12 @@ export default function RitualStrip({ lang, isArtist, onCompose, refreshKey }: P
 
         {isArtist && moments.length === 0 && (
           <div style={{ display: "flex", alignItems: "center", fontFamily: F, fontSize: 11, color: colors.textMuted, paddingLeft: 4 }}>
-            {ko ? "지금 작업 중인 작가가 없어요. 첫 기록을 남겨보세요." : "No one working right now. Be the first."}
+            {ko ? "지금 작업 중인 작가가 없어요. + 버튼으로 첫 기록을 남겨보세요." : "No one working right now. Tap + to record your first practice log."}
+          </div>
+        )}
+        {isArtist && summary && summary.streak > 0 && (
+          <div style={{ flex: "0 0 auto", display: "flex", alignItems: "center", paddingRight: 8 }}>
+            <span style={{ fontFamily: F, fontSize: 11, color: colors.accent, whiteSpace: "nowrap" }}>🔥 {summary.streak}{ko ? "일 연속" : " day streak"}</span>
           </div>
         )}
       </div>

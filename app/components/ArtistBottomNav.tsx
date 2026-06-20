@@ -104,7 +104,7 @@ export default function ArtistBottomNav({ lang, activeTab, onCreate }: Props) {
           background: "transparent",
           cursor: "pointer",
         }}
-        aria-label={ko ? "작업 올리기" : "New post"}
+        aria-label={ko ? "새로 올리기" : "Create"}
       >
         <span
           style={{
