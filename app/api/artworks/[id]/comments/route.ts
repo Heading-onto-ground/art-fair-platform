@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { addArtworkComment, listArtworkComments } from "@/lib/artworkEngagement";
+import { notifyArtworkOwner } from "@/lib/engagementNotifications";
 
 export const dynamic = "force-dynamic";
 
@@ -42,6 +43,12 @@ export async function POST(req: NextRequest, { params }: Ctx) {
 
   try {
     const comment = await addArtworkComment(params.id, session.userId, text);
+    await notifyArtworkOwner({
+      artworkId: params.id,
+      actorUserId: session.userId,
+      kind: "comment",
+      commentPreview: comment.body,
+    });
     return NextResponse.json({ ok: true, comment });
   } catch (e) {
     const msg = e instanceof Error ? e.message : "failed";

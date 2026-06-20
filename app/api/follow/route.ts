@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { notifyNewFollower } from "@/lib/engagementNotifications";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -57,11 +58,18 @@ export async function POST(req: NextRequest) {
   const profile = await prisma.artistProfile.findUnique({ where: { artistId }, select: { id: true } });
   if (!profile) return NextResponse.json({ error: "not found" }, { status: 404 });
 
+  const existing = await prisma.follow.findFirst({
+    where: { followerId: session.userId, followingId: profile.id },
+    select: { id: true },
+  });
   await prisma.follow.upsert({
     where: { followerId_followingId: { followerId: session.userId, followingId: profile.id } },
     create: { followerId: session.userId, followingId: profile.id },
     update: {},
   });
+  if (!existing) {
+    await notifyNewFollower({ followingProfileId: profile.id, actorUserId: session.userId });
+  }
   const count = await prisma.follow.count({ where: { followingId: profile.id } });
   return NextResponse.json({ following: true, count });
 }

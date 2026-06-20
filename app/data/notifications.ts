@@ -8,7 +8,13 @@ export type NotificationType =
   | "shipment_update"
   | "recommendation"
   | "deadline_reminder"
-  | "gallery_outreach";
+  | "gallery_outreach"
+  | "artwork_like"
+  | "artwork_collab"
+  | "artwork_comment"
+  | "new_follower"
+  | "moment_reaction"
+  | "ritual_reminder";
 
 export type Notification = {
   id: string;

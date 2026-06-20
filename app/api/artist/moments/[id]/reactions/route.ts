@@ -6,8 +6,9 @@
  */
 
 import { NextResponse } from "next/server";
-import { getServerSession, getProfileByUserId } from "@/lib/auth";
+import { getServerSession } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { notifyMomentReaction } from "@/lib/engagementNotifications";
 
 const VALID_TYPES = ["fire", "mind_blown", "eyes", "brain"] as const;
 
@@ -81,6 +82,15 @@ export async function POST(
 
     const wasRemoved =
       existing?.reactionType === reactionType;
+
+    if (!wasRemoved) {
+      await notifyMomentReaction({
+        momentOwnerUserId: moment.userId,
+        actorUserId: session.userId,
+        reactionType,
+      });
+    }
+
     return NextResponse.json({
       ok: true,
       action: wasRemoved ? "removed" : existing ? "updated" : "added",

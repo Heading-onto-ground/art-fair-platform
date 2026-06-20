@@ -6,6 +6,7 @@ import {
   toggleArtworkLike,
   toggleArtworkCollabInterest,
 } from "@/lib/artworkEngagement";
+import { notifyArtworkOwner } from "@/lib/engagementNotifications";
 
 export const dynamic = "force-dynamic";
 
@@ -45,10 +46,16 @@ export async function POST(req: NextRequest, { params }: Ctx) {
   try {
     if (action === "like") {
       const engagement = await toggleArtworkLike(params.id, session.userId);
+      if (engagement.liked) {
+        await notifyArtworkOwner({ artworkId: params.id, actorUserId: session.userId, kind: "like" });
+      }
       return NextResponse.json({ ok: true, engagement });
     }
     if (action === "collab") {
       const engagement = await toggleArtworkCollabInterest(params.id, session.userId);
+      if (engagement.collabInterested) {
+        await notifyArtworkOwner({ artworkId: params.id, actorUserId: session.userId, kind: "collab" });
+      }
       return NextResponse.json({ ok: true, engagement });
     }
     return NextResponse.json({ error: "invalid action" }, { status: 400 });

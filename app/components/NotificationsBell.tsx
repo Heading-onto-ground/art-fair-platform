@@ -3,7 +3,15 @@
 import { useEffect, useRef, useState } from "react";
 import { F } from "@/lib/design";
 
-type NotifItem = { id: string; type: string; payload: any; createdAt: number };
+type NotifItem = {
+  id: string;
+  type: string;
+  title?: string;
+  message?: string;
+  link?: string;
+  payload?: { title?: string; message?: string } | null;
+  createdAt: number;
+};
 
 const TYPE_TITLES: Record<string, string> = {
   "community.post.like": "New like on your post",
@@ -11,12 +19,18 @@ const TYPE_TITLES: Record<string, string> = {
   "community.post.new": "New community post",
   "community_new_post": "New community post",
   "admin_action": "관리자 알림",
+  artwork_like: "새 좋아요",
+  artwork_collab: "콜라보 관심",
+  artwork_comment: "새 댓글",
+  new_follower: "새 팔로워",
+  moment_reaction: "작업 기록 반응",
+  ritual_reminder: "연속 기록 알림",
 };
 function notifTitle(n: NotifItem) {
-  return n.payload?.title ?? TYPE_TITLES[n.type] ?? n.type;
+  return n.title ?? n.payload?.title ?? TYPE_TITLES[n.type] ?? n.type;
 }
 function notifMessage(n: NotifItem) {
-  return n.payload?.message ?? "";
+  return n.message ?? n.payload?.message ?? "";
 }
 
 export default function NotificationsBell() {
@@ -78,13 +92,21 @@ export default function NotificationsBell() {
         <div role="listbox" aria-label="Notifications" style={{ position: "absolute", top: "100%", right: 0, marginTop: 8, width: 300, maxHeight: 360, overflowY: "auto", background: "#FFFFFF", border: "1px solid #E8E3DB", boxShadow: "0 8px 32px rgba(0,0,0,0.08)", zIndex: 100 }}>
           {items.length === 0 ? (
             <div style={{ padding: "24px 18px", textAlign: "center", color: "#B0AAA2", fontFamily: F, fontSize: 12 }}>알림 없음</div>
-          ) : items.map((n) => (
-            <div key={n.id} style={{ padding: "12px 16px", borderBottom: "1px solid #F0EBE3", background: n.type === "admin_action" ? "#FDF8F5" : "#FFFFFF" }}>
-              <p style={{ fontFamily: F, fontSize: 12, fontWeight: 600, color: n.type === "admin_action" ? "#8B3A3A" : "#1A1A1A", marginBottom: 4 }}>{notifTitle(n)}</p>
-              {notifMessage(n) && <p style={{ fontFamily: F, fontSize: 11, color: "#4A4A4A", marginBottom: 4 }}>{notifMessage(n)}</p>}
-              <span style={{ fontFamily: F, fontSize: 10, color: "#B0AAA2" }}>{new Date(n.createdAt).toLocaleString()}</span>
-            </div>
-          ))}
+          ) : items.map((n) => {
+            const inner = (
+              <>
+                <p style={{ fontFamily: F, fontSize: 12, fontWeight: 600, color: n.type === "admin_action" ? "#8B3A3A" : "#1A1A1A", marginBottom: 4 }}>{notifTitle(n)}</p>
+                {notifMessage(n) && <p style={{ fontFamily: F, fontSize: 11, color: "#4A4A4A", marginBottom: 4 }}>{notifMessage(n)}</p>}
+                <span style={{ fontFamily: F, fontSize: 10, color: "#B0AAA2" }}>{new Date(n.createdAt).toLocaleString()}</span>
+              </>
+            );
+            const boxStyle: React.CSSProperties = { display: "block", padding: "12px 16px", borderBottom: "1px solid #F0EBE3", background: n.type === "admin_action" ? "#FDF8F5" : "#FFFFFF", textDecoration: "none" };
+            return n.link ? (
+              <a key={n.id} href={n.link} style={boxStyle}>{inner}</a>
+            ) : (
+              <div key={n.id} style={boxStyle}>{inner}</div>
+            );
+          })}
         </div>
       )}
     </div>

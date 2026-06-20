@@ -1,7 +1,6 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { F, S, colors } from "@/lib/design";
 import HashtagText from "@/app/components/HashtagText";
@@ -9,27 +8,12 @@ import ArtworkUploadModal from "@/app/components/ArtworkUploadModal";
 import ArtworkEngagementPanel from "@/app/components/ArtworkEngagementPanel";
 import ArtistBottomNav from "@/app/components/ArtistBottomNav";
 import ProfileEditModal from "@/app/components/ProfileEditModal";
+import RitualStrip from "@/app/components/RitualStrip";
+import RitualComposerModal from "@/app/components/RitualComposerModal";
+import FeedPostCard, { type FeedPost } from "@/app/components/FeedPostCard";
+import NotificationsBell from "@/app/components/NotificationsBell";
 import { artworkTimeAgo } from "@/lib/artworkImageUtils";
 import { POST_TYPE_LABELS } from "@/lib/artworkTypes";
-import type { ArtworkPostType } from "@/lib/artworkTypes";
-
-type FeedPost = {
-  id: string;
-  title: string | null;
-  caption: string | null;
-  imageUrl: string;
-  postType: ArtworkPostType;
-  hashtags: string[];
-  createdAt: string;
-  artist: {
-    artistId: string;
-    name: string;
-    profileImage: string | null;
-    genre: string | null;
-    city?: string | null;
-    country?: string | null;
-  } | null;
-};
 
 type MyProfile = {
   name: string;
@@ -47,13 +31,10 @@ type Props = {
   lang: string;
 };
 
-function PostGrid({
-  posts,
-  onSelect,
-}: {
-  posts: FeedPost[];
-  onSelect: (post: FeedPost) => void;
-}) {
+type HomeTab = "feed" | "mine";
+type FeedScope = "following" | "all";
+
+function PostGrid({ posts, onSelect }: { posts: FeedPost[]; onSelect: (post: FeedPost) => void }) {
   if (posts.length === 0) return null;
   return (
     <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 2 }}>
@@ -80,28 +61,12 @@ function GuestIntro({ lang }: { lang: string }) {
     <div style={{ padding: "20px 4px 24px", borderBottom: `1px solid ${colors.border}` }}>
       <div style={{ display: "flex", gap: 16, alignItems: "flex-start" }}>
         <div
-          style={{
-            width: 72,
-            height: 72,
-            borderRadius: "50%",
-            border: `1px solid ${colors.border}`,
-            background: colors.bgAccent,
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            flexShrink: 0,
-            fontFamily: S,
-            fontSize: 22,
-            fontWeight: 600,
-            color: colors.accent,
-          }}
+          style={{ width: 72, height: 72, borderRadius: "50%", border: `1px solid ${colors.border}`, background: colors.bgAccent, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, fontFamily: S, fontSize: 22, fontWeight: 600, color: colors.accent }}
         >
           R
         </div>
         <div style={{ flex: 1, minWidth: 0 }}>
-          <div style={{ fontFamily: S, fontSize: 20, fontWeight: 400, color: colors.textPrimary, marginBottom: 2 }}>
-            Role of Bridge
-          </div>
+          <div style={{ fontFamily: S, fontSize: 20, fontWeight: 400, color: colors.textPrimary, marginBottom: 2 }}>Role of Bridge</div>
           <div style={{ fontFamily: F, fontSize: 11, color: colors.accent, marginBottom: 10 }}>rob-roleofbridge.com</div>
           <p style={{ fontFamily: F, fontSize: 12, color: colors.textSecondary, margin: "0 0 12px", lineHeight: 1.7 }}>
             {ko
@@ -210,134 +175,215 @@ function ProfileHeader({ profile, postCount, lang, onEdit }: { profile: MyProfil
 
 export default function ArtistFeed({ lang }: Props) {
   const ko = lang === "ko";
-  const router = useRouter();
-  const [posts, setPosts] = useState<FeedPost[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [uploadOpen, setUploadOpen] = useState(false);
-  const [isArtist, setIsArtist] = useState(false);
+
   const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [isArtist, setIsArtist] = useState(false);
   const [myProfile, setMyProfile] = useState<MyProfile | null>(null);
-  const [feedMode, setFeedMode] = useState<"global" | "mine">("global");
+
+  const [homeTab, setHomeTab] = useState<HomeTab>("feed");
+  const [feedScope, setFeedScope] = useState<FeedScope>("all");
+
+  const [feedPosts, setFeedPosts] = useState<FeedPost[]>([]);
+  const [feedLoading, setFeedLoading] = useState(true);
+  const [minePosts, setMinePosts] = useState<FeedPost[]>([]);
+
   const [selected, setSelected] = useState<FeedPost | null>(null);
+  const [uploadOpen, setUploadOpen] = useState(false);
   const [profileEditOpen, setProfileEditOpen] = useState(false);
+  const [ritualOpen, setRitualOpen] = useState(false);
+  const [ritualRefresh, setRitualRefresh] = useState(0);
 
-  const load = useCallback(async () => {
-    setLoading(true);
-    try {
-      const meRes = await fetch("/api/auth/me", { cache: "no-store" });
-      const me = await meRes.json().catch(() => null);
-      const role = me?.session?.role ?? null;
-      const loggedIn = !!me?.session;
-      setIsLoggedIn(loggedIn);
-      setIsArtist(role === "artist");
+  // Identify viewer + load own grid (for artists).
+  const loadIdentity = useCallback(async () => {
+    const meRes = await fetch("/api/auth/me", { cache: "no-store" });
+    const me = await meRes.json().catch(() => null);
+    const role = me?.session?.role ?? null;
+    const loggedIn = !!me?.session;
+    setIsLoggedIn(loggedIn);
+    const artist = role === "artist";
+    setIsArtist(artist);
 
-      if (role === "artist" && me.profile) {
-        const p = me.profile;
-        setMyProfile({
-          name: p.name,
-          artistId: p.artistId,
-          profileImage: p.profileImage,
-          genre: p.genre,
-          bio: p.bio,
-          city: p.city,
-          country: p.country,
-          startedYear: p.startedYear,
-          instagram: p.instagram,
-        });
-        setFeedMode("mine");
-        const res = await fetch("/api/artist/artworks", { credentials: "include", cache: "no-store" });
-        const data = await res.json().catch(() => null);
-        if (res.ok && data?.artworks) {
-          setPosts(
-            data.artworks.map((a: FeedPost) => ({
-              ...a,
-              artist: {
-                artistId: p.artistId,
-                name: p.name,
-                profileImage: p.profileImage ?? null,
-                genre: p.genre ?? null,
-                city: p.city,
-                country: p.country,
-              },
-            })),
-          );
-        }
-      } else {
-        setMyProfile(null);
-        setFeedMode("global");
-        const res = await fetch("/api/artworks/feed?limit=60", { cache: "no-store" });
-        const data = await res.json().catch(() => null);
-        if (res.ok && data?.posts) setPosts(data.posts);
+    if (artist && me.profile) {
+      const p = me.profile;
+      const profile: MyProfile = {
+        name: p.name,
+        artistId: p.artistId,
+        profileImage: p.profileImage,
+        genre: p.genre,
+        bio: p.bio,
+        city: p.city,
+        country: p.country,
+        startedYear: p.startedYear,
+        instagram: p.instagram,
+      };
+      setMyProfile(profile);
+      const res = await fetch("/api/artist/artworks", { credentials: "include", cache: "no-store" });
+      const data = await res.json().catch(() => null);
+      if (res.ok && data?.artworks) {
+        setMinePosts(
+          data.artworks.map((a: FeedPost) => ({
+            ...a,
+            artist: {
+              artistId: profile.artistId,
+              name: profile.name,
+              profileImage: profile.profileImage ?? null,
+              genre: profile.genre ?? null,
+              city: profile.city,
+              country: profile.country,
+            },
+          })),
+        );
       }
-    } finally {
-      setLoading(false);
+    } else {
+      setMyProfile(null);
+      setHomeTab("feed");
     }
   }, []);
 
+  // Load the discovery feed (following → falls back to all).
+  const loadFeed = useCallback(
+    async (scope: FeedScope, artist: boolean) => {
+      setFeedLoading(true);
+      try {
+        const url =
+          artist && scope === "following"
+            ? "/api/artworks/feed?scope=following&limit=40"
+            : "/api/artworks/feed?limit=40";
+        const res = await fetch(url, { cache: "no-store", credentials: "include" });
+        const data = await res.json().catch(() => null);
+        setFeedPosts(res.ok && data?.posts ? data.posts : []);
+      } finally {
+        setFeedLoading(false);
+      }
+    },
+    [],
+  );
+
   useEffect(() => {
-    load();
-  }, [load]);
+    loadIdentity();
+  }, [loadIdentity]);
+
+  useEffect(() => {
+    loadFeed(feedScope, isArtist);
+  }, [loadFeed, feedScope, isArtist]);
+
+  function onUploaded() {
+    loadIdentity();
+    loadFeed(feedScope, isArtist);
+  }
+
+  const headerTitle = homeTab === "mine" && myProfile ? `@${myProfile.artistId}` : "ROB";
 
   return (
     <>
       <div style={{ maxWidth: 520, margin: "0 auto", paddingBottom: 88 }}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "12px 4px 8px" }}>
-          <span style={{ fontFamily: S, fontSize: 20, fontWeight: 600, color: colors.textPrimary, letterSpacing: "0.04em" }}>
-            {feedMode === "mine" && myProfile ? `@${myProfile.artistId}` : "ROB"}
-          </span>
-          {!isLoggedIn && (
+          <span style={{ fontFamily: S, fontSize: 20, fontWeight: 600, color: colors.textPrimary, letterSpacing: "0.04em" }}>{headerTitle}</span>
+          {isLoggedIn ? (
+            <NotificationsBell />
+          ) : (
             <Link href="/login?redirect=/" style={{ fontFamily: F, fontSize: 10, fontWeight: 600, letterSpacing: "0.1em", textTransform: "uppercase", color: colors.accent, textDecoration: "none" }}>
               {ko ? "로그인" : "Log in"}
             </Link>
           )}
         </div>
 
-        {feedMode === "global" ? (
-          <GuestIntro lang={lang} />
-        ) : myProfile ? (
-          <ProfileHeader profile={myProfile} postCount={posts.length} lang={lang} onEdit={() => setProfileEditOpen(true)} />
-        ) : null}
+        {/* Ritual stories strip — artists + anyone when moments exist */}
+        <RitualStrip lang={lang} isArtist={isArtist} onCompose={() => setRitualOpen(true)} refreshKey={ritualRefresh} />
 
-        <div style={{ display: "flex", justifyContent: "center", gap: 0, borderBottom: `1px solid ${colors.border}`, marginBottom: 2 }}>
-          <button type="button" style={{ flex: 1, padding: "12px 0", border: "none", borderBottom: `2px solid ${colors.textPrimary}`, background: "none", fontFamily: F, fontSize: 16, color: colors.textPrimary, cursor: "default" }}>
-            ▦
-          </button>
-        </div>
+        {!isLoggedIn && <GuestIntro lang={lang} />}
 
-        {loading ? (
-          <p style={{ fontFamily: F, fontSize: 12, color: colors.textMuted, textAlign: "center", padding: "48px 0" }}>
-            {ko ? "불러오는 중…" : "Loading…"}
-          </p>
-        ) : posts.length === 0 ? (
-          <div style={{ textAlign: "center", padding: "48px 20px" }}>
-            <p style={{ fontFamily: F, fontSize: 13, color: colors.textMuted, margin: "0 0 16px", lineHeight: 1.6 }}>
-              {feedMode === "mine"
-                ? ko ? "아직 올린 작업이 없어요. + 버튼으로 첫 작업을 올려보세요." : "No posts yet. Tap + to share your first work."
-                : ko ? "아직 게시물이 없어요." : "No posts yet."}
-            </p>
-            {feedMode === "mine" ? (
-              <button type="button" onClick={() => setUploadOpen(true)} style={{ padding: "10px 24px", border: "none", background: colors.textPrimary, color: colors.bgPrimary, fontFamily: F, fontSize: 10, fontWeight: 600, letterSpacing: "0.1em", textTransform: "uppercase", cursor: "pointer" }}>
-                + {ko ? "작업 올리기" : "Share"}
-              </button>
-            ) : (
-              <p style={{ fontFamily: F, fontSize: 12, color: colors.textMuted, margin: 0, lineHeight: 1.6 }}>
-                {ko ? "로그인하고 첫 작업을 올려보세요." : "Log in to share the first post."}
-              </p>
-            )}
+        {/* Tabs for logged-in artists */}
+        {isArtist && myProfile && (
+          <div style={{ display: "flex", borderBottom: `1px solid ${colors.border}` }}>
+            <button
+              type="button"
+              onClick={() => setHomeTab("feed")}
+              style={{ flex: 1, padding: "12px 0", border: "none", borderBottom: `2px solid ${homeTab === "feed" ? colors.textPrimary : "transparent"}`, background: "none", fontFamily: F, fontSize: 11, fontWeight: 600, letterSpacing: "0.08em", textTransform: "uppercase", color: homeTab === "feed" ? colors.textPrimary : colors.textMuted, cursor: "pointer" }}
+            >
+              {ko ? "둘러보기" : "Feed"}
+            </button>
+            <button
+              type="button"
+              onClick={() => setHomeTab("mine")}
+              style={{ flex: 1, padding: "12px 0", border: "none", borderBottom: `2px solid ${homeTab === "mine" ? colors.textPrimary : "transparent"}`, background: "none", fontFamily: F, fontSize: 11, fontWeight: 600, letterSpacing: "0.08em", textTransform: "uppercase", color: homeTab === "mine" ? colors.textPrimary : colors.textMuted, cursor: "pointer" }}
+            >
+              {ko ? "내 작업" : "Mine"}
+            </button>
           </div>
-        ) : (
-          <PostGrid posts={posts} onSelect={setSelected} />
         )}
 
-        {feedMode === "global" && posts.length > 0 && (
-          <p style={{ fontFamily: F, fontSize: 10, color: colors.textMuted, textAlign: "center", marginTop: 24 }}>
-            <Link href="/explore" style={{ color: colors.accent, textDecoration: "none" }}>
-              {ko ? "#해시태그로 탐색 →" : "Explore #hashtags →"}
-            </Link>
-          </p>
+        {/* MINE tab: profile + own grid */}
+        {isArtist && myProfile && homeTab === "mine" ? (
+          <>
+            <ProfileHeader profile={myProfile} postCount={minePosts.length} lang={lang} onEdit={() => setProfileEditOpen(true)} />
+            {minePosts.length === 0 ? (
+              <div style={{ textAlign: "center", padding: "48px 20px" }}>
+                <p style={{ fontFamily: F, fontSize: 13, color: colors.textMuted, margin: "0 0 16px", lineHeight: 1.6 }}>
+                  {ko ? "아직 올린 작업이 없어요. + 버튼으로 첫 작업을 올려보세요." : "No posts yet. Tap + to share your first work."}
+                </p>
+                <button type="button" onClick={() => setUploadOpen(true)} style={{ padding: "10px 24px", border: "none", background: colors.textPrimary, color: colors.bgPrimary, fontFamily: F, fontSize: 10, fontWeight: 600, letterSpacing: "0.1em", textTransform: "uppercase", cursor: "pointer" }}>
+                  + {ko ? "작업 올리기" : "Share"}
+                </button>
+              </div>
+            ) : (
+              <div style={{ marginTop: 2 }}>
+                <PostGrid posts={minePosts} onSelect={setSelected} />
+              </div>
+            )}
+          </>
+        ) : (
+          /* FEED tab (artists) and global feed (guests) */
+          <>
+            {isArtist && (
+              <div style={{ display: "flex", gap: 8, padding: "12px 4px" }}>
+                <button
+                  type="button"
+                  onClick={() => setFeedScope("following")}
+                  style={{ padding: "6px 14px", borderRadius: 999, border: `1px solid ${feedScope === "following" ? colors.textPrimary : colors.border}`, background: feedScope === "following" ? colors.textPrimary : "transparent", color: feedScope === "following" ? colors.bgPrimary : colors.textSecondary, fontFamily: F, fontSize: 11, fontWeight: 600, cursor: "pointer" }}
+                >
+                  {ko ? "팔로잉" : "Following"}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setFeedScope("all")}
+                  style={{ padding: "6px 14px", borderRadius: 999, border: `1px solid ${feedScope === "all" ? colors.textPrimary : colors.border}`, background: feedScope === "all" ? colors.textPrimary : "transparent", color: feedScope === "all" ? colors.bgPrimary : colors.textSecondary, fontFamily: F, fontSize: 11, fontWeight: 600, cursor: "pointer" }}
+                >
+                  {ko ? "전체" : "All"}
+                </button>
+              </div>
+            )}
+
+            {feedLoading ? (
+              <p style={{ fontFamily: F, fontSize: 12, color: colors.textMuted, textAlign: "center", padding: "48px 0" }}>{ko ? "불러오는 중…" : "Loading…"}</p>
+            ) : feedPosts.length === 0 ? (
+              <div style={{ textAlign: "center", padding: "48px 20px" }}>
+                <p style={{ fontFamily: F, fontSize: 13, color: colors.textMuted, margin: "0 0 12px", lineHeight: 1.6 }}>
+                  {isArtist && feedScope === "following"
+                    ? ko ? "아직 팔로우한 작가의 작업이 없어요." : "No posts from artists you follow yet."
+                    : ko ? "아직 게시물이 없어요." : "No posts yet."}
+                </p>
+                <Link href="/explore" style={{ fontFamily: F, fontSize: 12, color: colors.accent, textDecoration: "none" }}>
+                  {ko ? "작가 둘러보기 →" : "Discover artists →"}
+                </Link>
+              </div>
+            ) : (
+              <div style={{ paddingTop: 8 }}>
+                {feedPosts.map((post) => (
+                  <FeedPostCard key={post.id} post={post} lang={lang} isLoggedIn={isLoggedIn} />
+                ))}
+                <p style={{ fontFamily: F, fontSize: 10, color: colors.textMuted, textAlign: "center", marginTop: 8 }}>
+                  <Link href="/explore" style={{ color: colors.accent, textDecoration: "none" }}>
+                    {ko ? "#해시태그로 더 탐색 →" : "Explore more #hashtags →"}
+                  </Link>
+                </p>
+              </div>
+            )}
+          </>
         )}
       </div>
 
+      {/* Post detail modal (used by grids) */}
       {selected && (
         <div
           role="dialog"
@@ -346,18 +392,6 @@ export default function ArtistFeed({ lang }: Props) {
           onClick={() => setSelected(null)}
         >
           <div style={{ width: "100%", maxWidth: 420, maxHeight: "90vh", overflowY: "auto", background: colors.bgCard }} onClick={(e) => e.stopPropagation()}>
-            {selected.artist && feedMode === "global" && (
-              <button
-                type="button"
-                onClick={() => router.push(`/artist/public/${encodeURIComponent(selected.artist!.artistId)}`)}
-                style={{ display: "flex", alignItems: "center", gap: 10, width: "100%", padding: "12px 14px", border: "none", borderBottom: `1px solid ${colors.borderLight}`, background: "none", cursor: "pointer", textAlign: "left" }}
-              >
-                <div style={{ width: 28, height: 28, borderRadius: "50%", overflow: "hidden", background: colors.bgAccent }}>
-                  {selected.artist.profileImage ? <img src={selected.artist.profileImage} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} /> : null}
-                </div>
-                <span style={{ fontFamily: F, fontSize: 13, fontWeight: 600 }}>{selected.artist.name}</span>
-              </button>
-            )}
             <div style={{ aspectRatio: "1", background: "#111" }}>
               <img src={selected.imageUrl} alt={selected.title || ""} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
             </div>
@@ -380,7 +414,13 @@ export default function ArtistFeed({ lang }: Props) {
         </div>
       )}
 
-      <ArtworkUploadModal lang={lang} open={uploadOpen} onClose={() => setUploadOpen(false)} onPosted={load} />
+      <ArtworkUploadModal lang={lang} open={uploadOpen} onClose={() => setUploadOpen(false)} onPosted={onUploaded} />
+      <RitualComposerModal
+        lang={lang}
+        open={ritualOpen}
+        onClose={() => setRitualOpen(false)}
+        onPosted={() => setRitualRefresh((n) => n + 1)}
+      />
       {myProfile && (
         <ProfileEditModal
           open={profileEditOpen}
@@ -388,9 +428,7 @@ export default function ArtistFeed({ lang }: Props) {
           lang={lang}
           profileImage={myProfile.profileImage}
           bio={myProfile.bio}
-          onSaved={(data) => {
-            setMyProfile((prev) => (prev ? { ...prev, ...data } : prev));
-          }}
+          onSaved={(data) => setMyProfile((prev) => (prev ? { ...prev, ...data } : prev))}
         />
       )}
       <ArtistBottomNav lang={lang} activeTab="home" onCreate={() => setUploadOpen(true)} />
