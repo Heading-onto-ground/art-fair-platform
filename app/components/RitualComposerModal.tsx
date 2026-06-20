@@ -2,7 +2,8 @@
 
 import { useRef, useState } from "react";
 import { F, colors } from "@/lib/design";
-import { resizeImage } from "@/lib/artworkImageUtils";
+import { fileToDataUrl } from "@/lib/imageCrop";
+import ImageCropEditor from "@/app/components/ImageCropEditor";
 
 type Props = {
   open: boolean;
@@ -56,6 +57,8 @@ const MEDIUM_LABELS: Record<string, { ko: string; en: string }> = {
 export default function RitualComposerModal({ open, onClose, lang, onPosted }: Props) {
   const ko = lang === "ko";
   const inputRef = useRef<HTMLInputElement>(null);
+  const [rawSource, setRawSource] = useState<string | null>(null);
+  const [editing, setEditing] = useState(false);
   const [preview, setPreview] = useState<string | null>(null);
   const [note, setNote] = useState("");
   const [state, setState] = useState<(typeof STATES)[number]>("working");
@@ -66,6 +69,8 @@ export default function RitualComposerModal({ open, onClose, lang, onPosted }: P
   if (!open) return null;
 
   function reset() {
+    setRawSource(null);
+    setEditing(false);
     setPreview(null);
     setNote("");
     setState("working");
@@ -91,7 +96,10 @@ export default function RitualComposerModal({ open, onClose, lang, onPosted }: P
       return;
     }
     try {
-      setPreview(await resizeImage(file, 1200, 1200, 0.8));
+      const dataUrl = await fileToDataUrl(file);
+      setRawSource(dataUrl);
+      setPreview(null);
+      setEditing(true);
     } catch {
       setError(ko ? "이미지 처리 실패" : "Failed to process image");
     }
@@ -151,10 +159,42 @@ export default function RitualComposerModal({ open, onClose, lang, onPosted }: P
           <button type="button" onClick={handleClose} style={{ border: "none", background: "none", fontSize: 22, lineHeight: 1, cursor: "pointer", color: colors.textMuted }}>×</button>
         </div>
 
-        {preview ? (
+        {editing && (rawSource || preview) ? (
+          <ImageCropEditor
+            src={rawSource || preview!}
+            lang={lang}
+            outputMax={1200}
+            quality={0.8}
+            onApply={(dataUrl) => {
+              setPreview(dataUrl);
+              setEditing(false);
+            }}
+            onCancel={() => {
+              setRawSource(null);
+              setEditing(false);
+              if (inputRef.current) inputRef.current.value = "";
+            }}
+          />
+        ) : preview ? (
           <div style={{ position: "relative", aspectRatio: "1", background: "#000" }}>
             <img src={preview} alt="" style={{ width: "100%", height: "100%", objectFit: "contain" }} />
-            <button type="button" onClick={() => setPreview(null)} style={{ position: "absolute", top: 12, right: 12, width: 32, height: 32, borderRadius: "50%", border: "none", background: "rgba(0,0,0,0.5)", color: "#fff", cursor: "pointer", fontSize: 16 }}>×</button>
+            <button
+              type="button"
+              onClick={() => setEditing(true)}
+              style={{ position: "absolute", bottom: 12, left: 12, padding: "6px 12px", border: "none", borderRadius: 999, background: "rgba(0,0,0,0.55)", color: "#fff", cursor: "pointer", fontFamily: F, fontSize: 11 }}
+            >
+              {ko ? "크기 조절" : "Adjust"}
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                setPreview(null);
+                setRawSource(null);
+              }}
+              style={{ position: "absolute", top: 12, right: 12, width: 32, height: 32, borderRadius: "50%", border: "none", background: "rgba(0,0,0,0.5)", color: "#fff", cursor: "pointer", fontSize: 16 }}
+            >
+              ×
+            </button>
           </div>
         ) : (
           <button type="button" onClick={() => inputRef.current?.click()} style={{ width: "100%", aspectRatio: "1", maxHeight: 260, border: "none", background: colors.bgAccent, cursor: "pointer", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 8 }}>

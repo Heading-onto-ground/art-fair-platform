@@ -3,7 +3,8 @@
 import { useRef, useState } from "react";
 import Link from "next/link";
 import { F, colors } from "@/lib/design";
-import { resizeImage } from "@/lib/artworkImageUtils";
+import { fileToDataUrl } from "@/lib/imageCrop";
+import ImageCropEditor from "@/app/components/ImageCropEditor";
 import type { ArtworkPostType } from "@/lib/artworkTypes";
 import { POST_TYPE_LABELS } from "@/lib/artworkTypes";
 
@@ -18,6 +19,8 @@ export default function ArtworkUploadModal({ lang, open, onClose, onPosted }: Pr
   const ko = lang === "ko";
   const inputRef = useRef<HTMLInputElement>(null);
   const [posting, setPosting] = useState(false);
+  const [rawSource, setRawSource] = useState<string | null>(null);
+  const [editing, setEditing] = useState(false);
   const [preview, setPreview] = useState<string | null>(null);
   const [caption, setCaption] = useState("");
   const [postType, setPostType] = useState<ArtworkPostType>("work");
@@ -27,6 +30,8 @@ export default function ArtworkUploadModal({ lang, open, onClose, onPosted }: Pr
   if (!open) return null;
 
   function reset() {
+    setRawSource(null);
+    setEditing(false);
     setPreview(null);
     setCaption("");
     setPostType("work");
@@ -52,7 +57,10 @@ export default function ArtworkUploadModal({ lang, open, onClose, onPosted }: Pr
       return;
     }
     try {
-      setPreview(await resizeImage(file, 1600, 1600, 0.88));
+      const dataUrl = await fileToDataUrl(file);
+      setRawSource(dataUrl);
+      setPreview(null);
+      setEditing(true);
     } catch {
       setError(ko ? "이미지 처리 실패" : "Failed to process image");
     }
@@ -164,12 +172,38 @@ export default function ArtworkUploadModal({ lang, open, onClose, onPosted }: Pr
           </button>
         </div>
 
-        {preview ? (
+        {editing && (rawSource || preview) ? (
+          <ImageCropEditor
+            src={rawSource || preview!}
+            lang={lang}
+            outputMax={1600}
+            quality={0.88}
+            onApply={(dataUrl) => {
+              setPreview(dataUrl);
+              setEditing(false);
+            }}
+            onCancel={() => {
+              setRawSource(null);
+              setEditing(false);
+              if (inputRef.current) inputRef.current.value = "";
+            }}
+          />
+        ) : preview ? (
           <div style={{ position: "relative", aspectRatio: "1", background: "#000" }}>
             <img src={preview} alt="" style={{ width: "100%", height: "100%", objectFit: "contain" }} />
             <button
               type="button"
-              onClick={() => setPreview(null)}
+              onClick={() => setEditing(true)}
+              style={{ position: "absolute", bottom: 12, left: 12, padding: "6px 12px", border: "none", borderRadius: 999, background: "rgba(0,0,0,0.55)", color: "#fff", cursor: "pointer", fontFamily: F, fontSize: 11 }}
+            >
+              {ko ? "크기 조절" : "Adjust"}
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                setPreview(null);
+                setRawSource(null);
+              }}
               style={{ position: "absolute", top: 12, right: 12, width: 32, height: 32, borderRadius: "50%", border: "none", background: "rgba(0,0,0,0.5)", color: "#fff", cursor: "pointer", fontSize: 16 }}
             >
               ×

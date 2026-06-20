@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { F, S, colors } from "@/lib/design";
 import HashtagText from "@/app/components/HashtagText";
 import ArtworkUploadModal from "@/app/components/ArtworkUploadModal";
@@ -12,7 +13,7 @@ import RitualStrip from "@/app/components/RitualStrip";
 import RitualComposerModal from "@/app/components/RitualComposerModal";
 import CreateChoiceModal from "@/app/components/CreateChoiceModal";
 import PracticeRecordsPanel from "@/app/components/PracticeRecordsPanel";
-import FeedPostCard, { type FeedPost } from "@/app/components/FeedPostCard";
+import type { FeedPost } from "@/app/components/FeedPostCard";
 import NotificationsBell from "@/app/components/NotificationsBell";
 import { artworkTimeAgo } from "@/lib/artworkImageUtils";
 import { POST_TYPE_LABELS } from "@/lib/artworkTypes";
@@ -177,6 +178,7 @@ function ProfileHeader({ profile, postCount, lang, onEdit }: { profile: MyProfil
 
 export default function ArtistFeed({ lang }: Props) {
   const ko = lang === "ko";
+  const router = useRouter();
 
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [isArtist, setIsArtist] = useState(false);
@@ -392,11 +394,9 @@ export default function ArtistFeed({ lang }: Props) {
                 </Link>
               </div>
             ) : (
-              <div style={{ paddingTop: 8 }}>
-                {feedPosts.map((post) => (
-                  <FeedPostCard key={post.id} post={post} lang={lang} isLoggedIn={isLoggedIn} />
-                ))}
-                <p style={{ fontFamily: F, fontSize: 10, color: colors.textMuted, textAlign: "center", marginTop: 8 }}>
+              <div style={{ marginTop: 2 }}>
+                <PostGrid posts={feedPosts} onSelect={setSelected} />
+                <p style={{ fontFamily: F, fontSize: 10, color: colors.textMuted, textAlign: "center", marginTop: 16, paddingBottom: 8 }}>
                   <Link href="/explore" style={{ color: colors.accent, textDecoration: "none" }}>
                     {ko ? "#해시태그로 더 탐색 →" : "Explore more #hashtags →"}
                   </Link>
@@ -416,6 +416,29 @@ export default function ArtistFeed({ lang }: Props) {
           onClick={() => setSelected(null)}
         >
           <div style={{ width: "100%", maxWidth: 420, maxHeight: "90vh", overflowY: "auto", background: colors.bgCard }} onClick={(e) => e.stopPropagation()}>
+            {selected.artist && (
+              <button
+                type="button"
+                onClick={() => router.push(`/artist/public/${encodeURIComponent(selected.artist!.artistId)}`)}
+                style={{ display: "flex", alignItems: "center", gap: 10, width: "100%", padding: "12px 14px", border: "none", borderBottom: `1px solid ${colors.borderLight}`, background: "none", cursor: "pointer", textAlign: "left" }}
+              >
+                <span style={{ width: 28, height: 28, borderRadius: "50%", overflow: "hidden", background: colors.bgAccent, flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center" }}>
+                  {selected.artist.profileImage ? (
+                    <img src={selected.artist.profileImage} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                  ) : (
+                    <span style={{ fontFamily: F, fontSize: 11, color: colors.textLight }}>{selected.artist.name.charAt(0)}</span>
+                  )}
+                </span>
+                <span style={{ minWidth: 0 }}>
+                  <span style={{ display: "block", fontFamily: F, fontSize: 13, fontWeight: 600, color: colors.textPrimary }}>{selected.artist.name}</span>
+                  {(selected.artist.city || selected.artist.genre) && (
+                    <span style={{ display: "block", fontFamily: F, fontSize: 10, color: colors.textMuted }}>
+                      {[selected.artist.city, selected.artist.genre].filter(Boolean).join(" · ")}
+                    </span>
+                  )}
+                </span>
+              </button>
+            )}
             <div style={{ aspectRatio: "1", background: "#111" }}>
               <img src={selected.imageUrl} alt={selected.title || ""} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
             </div>

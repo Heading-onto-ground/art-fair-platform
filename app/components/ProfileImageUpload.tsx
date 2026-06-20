@@ -2,6 +2,8 @@
 
 import { useEffect, useRef, useState } from "react";
 import { F, colors } from "@/lib/design";
+import { fileToDataUrl } from "@/lib/imageCrop";
+import ImageCropEditor from "@/app/components/ImageCropEditor";
 
 type Props = {
   currentImage?: string | null;
@@ -16,10 +18,57 @@ export default function ProfileImageUpload({ currentImage, onUploaded, size = 12
   const [uploading, setUploading] = useState(false);
   const [preview, setPreview] = useState<string | null>(currentImage ?? null);
   const [error, setError] = useState<string | null>(null);
+  const [cropSource, setCropSource] = useState<string | null>(null);
 
   useEffect(() => {
     setPreview(currentImage ?? null);
   }, [currentImage]);
+
+  async function uploadDataUri(dataUri: string) {
+    setUploading(true);
+    setError(null);
+    try {
+      const blob = await fetch(dataUri).then((r) => r.blob());
+      const formData = new FormData();
+      formData.append("file", blob, "profile.jpg");
+
+      const blobRes = await fetch("/api/profile/image/upload", {
+        method: "POST",
+        credentials: "include",
+        body: formData,
+      });
+      const blobData = await blobRes.json().catch(() => null);
+
+      if (blobRes.ok && blobData?.ok && blobData?.url) {
+        setPreview(blobData.url);
+        onUploaded(blobData.url);
+        return;
+      }
+
+      if (blobData?.fallback) {
+        setPreview(dataUri);
+        const res = await fetch("/api/profile/image", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          credentials: "include",
+          body: JSON.stringify({ image: dataUri }),
+        });
+        const data = await res.json().catch(() => null);
+        if (!res.ok || !data?.ok) {
+          setError(data?.error || "Upload failed");
+          return;
+        }
+        onUploaded(dataUri);
+        return;
+      }
+
+      setError(blobData?.error || "Upload failed");
+    } catch {
+      setError("Upload failed");
+    } finally {
+      setUploading(false);
+    }
+  }
 
   async function handleFile(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
@@ -37,56 +86,11 @@ export default function ProfileImageUpload({ currentImage, onUploaded, size = 12
       return;
     }
 
-    setUploading(true);
-
     try {
-      // 1. Vercel Blob 업로드 시도
-      const formData = new FormData();
-      formData.append("file", file);
-
-      const blobRes = await fetch("/api/profile/image/upload", {
-        method: "POST",
-        credentials: "include",
-        body: formData,
-      });
-
-      const blobData = await blobRes.json().catch(() => null);
-
-      if (blobRes.ok && blobData?.ok && blobData?.url) {
-        // Vercel Blob 성공
-        setPreview(blobData.url);
-        onUploaded(blobData.url);
-        return;
-      }
-
-      // 2. Fallback: base64 방식 (BLOB_READ_WRITE_TOKEN 미설정 시)
-      if (blobData?.fallback) {
-        const dataUri = await resizeImage(file, 400, 400, 0.85);
-        setPreview(dataUri);
-
-        const res = await fetch("/api/profile/image", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          credentials: "include",
-          body: JSON.stringify({ image: dataUri }),
-        });
-
-        const data = await res.json().catch(() => null);
-        if (!res.ok || !data?.ok) {
-          setError(data?.error || "Upload failed");
-          return;
-        }
-
-        onUploaded(dataUri);
-        return;
-      }
-
-      setError(blobData?.error || "Upload failed");
+      setCropSource(await fileToDataUrl(file));
     } catch {
-      setError("Upload failed");
+      setError(ko ? "이미지 처리 실패" : "Failed to process image");
     } finally {
-      setUploading(false);
-      // input 초기화 (같은 파일 재선택 가능하도록)
       if (inputRef.current) inputRef.current.value = "";
     }
   }
@@ -176,35 +180,28 @@ export default function ProfileImageUpload({ currentImage, onUploaded, size = 12
         onChange={handleFile}
         style={{ display: "none" }}
       />
+
+      {cropSource && (
+        <div
+          role="dialog"
+          aria-modal="true"
+          style={{ position: "fixed", inset: 0, zIndex: 3000, background: "rgba(0,0,0,0.65)", display: "flex", alignItems: "flex-end", justifyContent: "center", padding: "0 0 max(16px, env(safe-area-inset-bottom))" }}
+        >
+          <div style={{ width: "100%", maxWidth: 420, borderRadius: "12px 12px 0 0", overflow: "hidden" }}>
+            <ImageCropEditor
+              src={cropSource}
+              lang={lang}
+              outputMax={800}
+              quality={0.85}
+              onApply={async (dataUrl) => {
+                setCropSource(null);
+                await uploadDataUri(dataUrl);
+              }}
+              onCancel={() => setCropSource(null)}
+            />
+          </div>
+        </div>
+      )}
     </div>
   );
-}
-
-/** Resize image to max dimensions and return base64 data URI (fallback용) */
-function resizeImage(file: File, maxW: number, maxH: number, quality: number): Promise<string> {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = () => {
-      const img = new Image();
-      img.onload = () => {
-        let w = img.width;
-        let h = img.height;
-        if (w > maxW || h > maxH) {
-          const ratio = Math.min(maxW / w, maxH / h);
-          w = Math.round(w * ratio);
-          h = Math.round(h * ratio);
-        }
-        const canvas = document.createElement("canvas");
-        canvas.width = w;
-        canvas.height = h;
-        const ctx = canvas.getContext("2d")!;
-        ctx.drawImage(img, 0, 0, w, h);
-        resolve(canvas.toDataURL("image/jpeg", quality));
-      };
-      img.onerror = reject;
-      img.src = reader.result as string;
-    };
-    reader.onerror = reject;
-    reader.readAsDataURL(file);
-  });
 }
