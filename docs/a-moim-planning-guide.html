@@ -1,0 +1,309 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>A모임 기획 가이드 — ROB × Role of Bridge</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --ink: #1a1a1a;
+      --muted: #5c5c5c;
+      --accent: #8b7355;
+      --line: #e8e3db;
+      --bg: #fdfbf7;
+      --card: #ffffff;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: "Noto Sans KR", sans-serif;
+      color: var(--ink);
+      background: var(--bg);
+      line-height: 1.65;
+      font-size: 11pt;
+    }
+    .page {
+      max-width: 210mm;
+      margin: 0 auto;
+      padding: 14mm 16mm 18mm;
+      background: var(--bg);
+    }
+    header {
+      border-bottom: 2px solid var(--ink);
+      padding-bottom: 10px;
+      margin-bottom: 18px;
+    }
+    .eyebrow {
+      font-size: 9pt;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: var(--accent);
+      font-weight: 600;
+      margin-bottom: 6px;
+    }
+    h1 {
+      font-size: 22pt;
+      font-weight: 700;
+      line-height: 1.25;
+      margin-bottom: 8px;
+    }
+    .subtitle {
+      font-size: 11pt;
+      color: var(--muted);
+    }
+    h2 {
+      font-size: 12pt;
+      font-weight: 700;
+      margin: 20px 0 8px;
+      padding-left: 10px;
+      border-left: 3px solid var(--accent);
+    }
+    h3 {
+      font-size: 10.5pt;
+      font-weight: 600;
+      margin: 14px 0 6px;
+      color: var(--ink);
+    }
+    p { margin-bottom: 8px; color: var(--muted); }
+    p strong, li strong { color: var(--ink); font-weight: 600; }
+    ul, ol { margin: 0 0 10px 18px; color: var(--muted); }
+    li { margin-bottom: 4px; }
+    .hero {
+      background: var(--card);
+      border: 1px solid var(--line);
+      padding: 14px 16px;
+      margin: 14px 0;
+    }
+    .hero p { margin: 0; font-size: 12pt; color: var(--ink); font-weight: 500; }
+    .hero .note { margin-top: 8px; font-size: 10pt; color: var(--muted); font-weight: 400; }
+    .grid-2 {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+      margin: 10px 0;
+    }
+    .card {
+      background: var(--card);
+      border: 1px solid var(--line);
+      padding: 12px 14px;
+    }
+    .card h3 { margin-top: 0; font-size: 10pt; }
+    .card p, .card li { font-size: 10pt; }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 10px 0 14px;
+      font-size: 10pt;
+    }
+    th, td {
+      border: 1px solid var(--line);
+      padding: 8px 10px;
+      text-align: left;
+      vertical-align: top;
+    }
+    th {
+      background: #f5f0e8;
+      color: var(--ink);
+      font-weight: 600;
+      width: 28%;
+    }
+    td { color: var(--muted); }
+    .quote {
+      border-left: 3px solid var(--accent);
+      padding: 10px 14px;
+      margin: 12px 0;
+      background: #faf7f2;
+      font-size: 10.5pt;
+      color: var(--ink);
+    }
+    .agenda {
+      counter-reset: step;
+      list-style: none;
+      margin-left: 0;
+    }
+    .agenda li {
+      counter-increment: step;
+      padding-left: 28px;
+      position: relative;
+      margin-bottom: 8px;
+    }
+    .agenda li::before {
+      content: counter(step);
+      position: absolute;
+      left: 0;
+      top: 0;
+      width: 20px;
+      height: 20px;
+      border-radius: 50%;
+      background: var(--ink);
+      color: #fff;
+      font-size: 9pt;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .warn {
+      background: #fff8f5;
+      border: 1px solid #ecd9cf;
+      padding: 12px 14px;
+      margin: 12px 0;
+      font-size: 10pt;
+    }
+    .warn strong { color: #8b3a3a; }
+    footer {
+      margin-top: 22px;
+      padding-top: 10px;
+      border-top: 1px solid var(--line);
+      font-size: 9pt;
+      color: #999;
+      display: flex;
+      justify-content: space-between;
+    }
+    @media print {
+      body { background: #fff; }
+      .page { padding: 0; max-width: none; }
+      .card, .hero { break-inside: avoid; }
+      h2 { break-after: avoid; }
+    }
+  </style>
+</head>
+<body>
+  <article class="page">
+    <header>
+      <div class="eyebrow">ROB × Role of Bridge · A모임 기획안</div>
+      <h1>A모임 기획 가이드</h1>
+      <p class="subtitle">작품보다 활동을 지속하는 사람들의 모임 — 기획·운영·ROB 연동 요약 (v1.0)</p>
+    </header>
+
+    <section>
+      <h2>한 문장 정의</h2>
+      <div class="hero">
+        <p>「작품보다 <strong>활동을 지속</strong>하는 사람들의 모임」</p>
+        <p class="note">잘 그리는 사람 · 유명해지는 사람 · 전시 따오는 사람의 모임이 아닙니다. <strong>계속 하는 사람</strong>의 모임입니다.</p>
+      </div>
+      <div class="quote">
+        슬로건 제안: <strong>「잘하는 사람들의 모임이 아니다. 계속하는 사람들의 모임이다.」</strong>
+      </div>
+    </section>
+
+    <section>
+      <h2>1순위 축 (반드시 하나)</h2>
+      <p>독서모임·네트워킹·전시 관람만으로는 6개월 뒤 대부분 사라집니다. 남는 것이 없기 때문입니다.</p>
+      <table>
+        <tr>
+          <th>선택하지 않을 것<br/>(부수 효과로만)</th>
+          <td>정서적 소속감 · 협업 매칭 · 기회·노출(갤러리 영업)</td>
+        </tr>
+        <tr>
+          <th>1순위로 잡을 것</th>
+          <td><strong>작가 활동의 지속</strong> — 멈추지 않게 만드는 것. 작품을 평가하는 곳이 아니라, 작가가 멈추지 않게 만드는 <strong>엔진룸</strong>.</td>
+        </tr>
+      </table>
+      <div class="warn">
+        <strong>주의:</strong> 「좋은 사람들끼리 친목하는 모임」이 되면 A모임의 색깔이 사라집니다. 매 모임마다 아래 두 질문을 <strong>의례로 고정</strong>하세요.
+      </div>
+    </section>
+
+    <section>
+      <h2>시그니처 의례 (다른 모임에 없는 한 가지)</h2>
+      <h3>① 이번 달 활동 발표 — 「지난 한 달 동안 한 것」</h3>
+      <p>결과가 아니라 <strong>활동</strong>을 인정합니다. 예시:</p>
+      <ul>
+        <li>작업실 정리 · 드로잉 10장 · 공모전 1건 지원 · 전시 2회 관람</li>
+        <li>책 1권 · 작업 3번 망함 · 포트폴리오 정리 · 재료 구매</li>
+      </ul>
+      <p>작가들이 실제로 원하는 것은 「전시 기회」만이 아닙니다. <strong>내가 계속 가고 있다는 증거</strong>를 원합니다. A모임은 서로를 감시하는 장치가 아니라, <strong>서로의 존재를 증명하는 장치</strong>입니다.</p>
+
+      <h3>② 1분 선언 — 「다음 모임 전까지 할 한 가지」</h3>
+      <p>모임 마지막 10분, 모든 참가자가 한 가지만 말합니다. 다음 모임 첫 순서에서 <strong>확인</strong>합니다 (평가·순위 아님).</p>
+      <ul>
+        <li>예: 작품 1점 완성 / 공모전 지원 / 포트폴리오 정리 / 드로잉 20장</li>
+      </ul>
+      <div class="quote">
+        시그니처 두 질문: <strong>「이번 달에 무엇을 했는가?」</strong> · <strong>「다음 달에는 무엇을 할 것인가?」</strong>
+      </div>
+    </section>
+
+    <section>
+      <h2>코어 vs 손님 (경계)</h2>
+      <div class="grid-2">
+        <div class="card">
+          <h3>손님 (Guest)</h3>
+          <ul>
+            <li>1회 참가 · 구경 가능</li>
+            <li>발표·선언은 선택</li>
+            <li>ROB 가입 필수 아님</li>
+          </ul>
+        </div>
+        <div class="card">
+          <h3>코어 (Core)</h3>
+          <ul>
+            <li>최근 2개월 <strong>활동 기록</strong> 제출<br/>또는 3회 이상 참석 + 선언 1회 이상</li>
+            <li>멤버십 = <strong>돈이 아니라 활동</strong></li>
+            <li>ROB 활동 요약 제출 권장 (구두·종이도 가능)</li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+    <section>
+      <h2>운영진이 작가에게 해줄 수 있는 것</h2>
+      <table>
+        <tr>
+          <th>하지 않을 것</th>
+          <td>해외 갤러리 영업 · 포트폴리오 대행 소개 (사실상 에이전시 사업, A모임 1순위와 불일치)</td>
+        </tr>
+        <tr>
+          <th>할 것</th>
+          <td><strong>활동 기록을 남겨주는 것</strong> — 참여자 · 작업 사진 · 진행 · 전시 정보. 1년 뒤 그 사람에게 <strong>작가 연대기(Timeline)</strong>가 생기게 함.</td>
+        </tr>
+      </table>
+    </section>
+
+    <section>
+      <h2>ROB / 앱 연동 (선택적 파트너)</h2>
+      <p>ROB는 「A모임 필수 앱」이 아니라, <strong>지속을 디지털로 증명해 주는 도구</strong>로 둡니다.</p>
+      <table>
+        <tr>
+          <th>오프라인<br/>(A모임)</th>
+          <td>월 1회 체크포인트 · 이번 달 활동 발표 · 다음 달 1분 선언 · 코어 확인</td>
+        </tr>
+        <tr>
+          <th>온라인<br/>(ROB)</th>
+          <td>
+            <strong>작업 과정 기록</strong> (피드 X, 연속 기록 O) · 완료작업 · 전시 기록 · 월간 활동 요약<br/>
+            모임 전날 「한 달 활동 카드」로 발표 자료 활용 가능
+          </td>
+        </tr>
+      </table>
+      <p><strong>연결 구조:</strong> A모임 = 오프라인에서 선언·확인 · ROB = 그 사이 4주 동안 멈추지 않았음을 남기는 엔진</p>
+    </section>
+
+    <section>
+      <h2>모임 90분 러닝오더 (예시)</h2>
+      <ol class="agenda">
+        <li><strong>10분</strong> — 오프닝 · 이번 달 테마 · 손님 소개 (1줄)</li>
+        <li><strong>35분</strong> — 「이번 달에 무엇을 했는가」 발표 (코어 필수, 1~2분/인)</li>
+        <li><strong>20분</strong> — 자유 대화 · 독서·전시·작업 이야기 (선택)</li>
+        <li><strong>15분</strong> — 작업 피드백 (원하는 사람만, 5분/인)</li>
+        <li><strong>10분</strong> — 「다음 모임 전까지 할 한 가지」 1분 선언 · 다음 일정 · 기록 담당 지정</li>
+      </ol>
+    </section>
+
+    <section>
+      <h2>기획자에게 전달할 한 줄</h2>
+      <div class="quote">
+        A모임 1순위 = <strong>작가 활동의 지속</strong>. 시그니처 = <strong>이번 달 뭐 했는지 / 다음 달 뭐 할지</strong>. ROB = <strong>그 사이 활동 로그 + 모임 때 보여줄 한 장 요약</strong>. 우리가 해주는 건 갤러리 영업이 아니라, <strong>1년 뒤 남는 작가 연대기</strong>.
+      </div>
+    </section>
+
+    <footer>
+      <span>rob-roleofbridge.com · NOAS × ROB</span>
+      <span>문서 v1.0 · 2026</span>
+    </footer>
+  </article>
+</body>
+</html>
