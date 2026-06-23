@@ -289,7 +289,7 @@ export async function POST(req: Request) {
       galleryId: openCall.galleryId,
       artistId: session.userId,
       artistName: profile.name ?? session.userId,
-      artistEmail: profile.email ?? session.userId,
+      artistEmail: session.email ?? "",
       artistCountry: profile.country ?? "",
       artistCity: profile.city ?? "",
       artistPortfolioUrl: sanitizePortfolioForApplication(profile.portfolioUrl),

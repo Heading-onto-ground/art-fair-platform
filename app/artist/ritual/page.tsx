@@ -5,6 +5,8 @@ import { useRouter } from "next/navigation";
 import TopBar from "@/app/components/TopBar";
 import RitualStrip from "@/app/components/RitualStrip";
 import RitualComposerModal, { STATE_LABELS, MEDIUM_LABELS } from "@/app/components/RitualComposerModal";
+import ArtistBottomNav from "@/app/components/ArtistBottomNav";
+import MobileInstallHint from "@/app/components/MobileInstallHint";
 import { useLanguage } from "@/lib/useLanguage";
 import { F, S, colors } from "@/lib/design";
 import { artworkTimeAgo } from "@/lib/artworkImageUtils";
@@ -80,7 +82,7 @@ export default function ArtistRitualPage() {
   }, [apply]);
 
   const stat = (value: string | number, label: string) => (
-    <div style={{ textAlign: "center" }}>
+    <div className="ritual-stat" style={{ textAlign: "center", flex: "1 1 72px" }}>
       <div style={{ fontFamily: S, fontSize: 26, fontWeight: 400, color: colors.textPrimary }}>{value}</div>
       <div style={{ fontFamily: F, fontSize: 10, color: colors.textMuted, letterSpacing: "0.06em", textTransform: "uppercase" }}>{label}</div>
     </div>
@@ -89,12 +91,14 @@ export default function ArtistRitualPage() {
   return (
     <>
       <TopBar />
-      <main style={{ maxWidth: 720, margin: "0 auto", padding: "32px 16px 100px" }}>
+      <main className="mobile-app-main" style={{ maxWidth: 560, margin: "0 auto", padding: "20px 14px 100px" }}>
+        <MobileInstallHint lang={lang} />
+
         <div style={{ marginBottom: 20 }}>
           <span style={{ fontFamily: F, fontSize: 10, fontWeight: 500, letterSpacing: "0.2em", color: colors.accent, textTransform: "uppercase" }}>
             {ko ? "작업 리추얼" : "Artist Ritual"}
           </span>
-          <h1 style={{ fontFamily: S, fontSize: 34, fontWeight: 300, color: colors.textPrimary, marginTop: 8 }}>
+          <h1 style={{ fontFamily: S, fontSize: 30, fontWeight: 300, color: colors.textPrimary, marginTop: 8 }}>
             {ko ? "오늘의 작업" : "Today's practice"}
           </h1>
           <p style={{ fontFamily: F, fontSize: 12, color: colors.textSecondary, marginTop: 6, lineHeight: 1.6 }}>
@@ -109,20 +113,51 @@ export default function ArtistRitualPage() {
             <p style={{ fontFamily: F, fontSize: 13, color: colors.textSecondary, margin: "0 0 16px" }}>
               {ko ? "작가로 로그인하면 작업을 기록할 수 있어요." : "Log in as an artist to record your practice."}
             </p>
-            <button type="button" onClick={() => router.push("/login?role=artist&redirect=/artist/ritual")} style={{ padding: "10px 24px", border: "none", background: colors.textPrimary, color: colors.bgPrimary, fontFamily: F, fontSize: 10, fontWeight: 600, letterSpacing: "0.1em", textTransform: "uppercase", cursor: "pointer" }}>
+            <button
+              type="button"
+              onClick={() => router.push("/login?role=artist&redirect=/artist/ritual")}
+              style={{ padding: "12px 28px", border: "none", background: colors.textPrimary, color: colors.bgPrimary, fontFamily: F, fontSize: 11, fontWeight: 600, letterSpacing: "0.1em", textTransform: "uppercase", cursor: "pointer", touchAction: "manipulation" }}
+            >
               {ko ? "로그인" : "Log in"}
             </button>
           </div>
         ) : (
           <>
             {isArtist && (
-              <div style={{ display: "flex", justifyContent: "space-around", alignItems: "center", padding: "20px 0", border: `1px solid ${colors.border}`, background: colors.bgAccent, marginBottom: 20 }}>
+              <div
+                className="ritual-stats-bar"
+                style={{
+                  display: "flex",
+                  flexWrap: "wrap",
+                  justifyContent: "space-around",
+                  alignItems: "center",
+                  gap: 12,
+                  padding: "16px 12px",
+                  border: `1px solid ${colors.border}`,
+                  background: colors.bgAccent,
+                  marginBottom: 20,
+                }}
+              >
                 {stat(`🔥 ${summary?.streak ?? 0}`, ko ? "연속" : "Streak")}
                 {stat(summary?.totalMoments ?? 0, ko ? "총 기록" : "Total")}
                 <button
                   type="button"
+                  className="ritual-record-btn"
                   onClick={() => setComposerOpen(true)}
-                  style={{ padding: "12px 20px", border: "none", background: summary?.postedToday ? colors.border : colors.accent, color: colors.bgPrimary, fontFamily: F, fontSize: 11, fontWeight: 600, letterSpacing: "0.08em", textTransform: "uppercase", cursor: "pointer" }}
+                  style={{
+                    flex: "1 1 140px",
+                    padding: "14px 16px",
+                    border: "none",
+                    background: summary?.postedToday ? colors.border : colors.accent,
+                    color: colors.bgPrimary,
+                    fontFamily: F,
+                    fontSize: 11,
+                    fontWeight: 600,
+                    letterSpacing: "0.08em",
+                    textTransform: "uppercase",
+                    cursor: "pointer",
+                    touchAction: "manipulation",
+                  }}
                 >
                   {summary?.postedToday ? (ko ? "기록 추가" : "Add more") : ko ? "오늘 기록" : "Record today"}
                 </button>
@@ -144,7 +179,7 @@ export default function ArtistRitualPage() {
                     {ko ? "아직 기록이 없어요. 첫 작업을 기록해보세요." : "No records yet. Capture your first practice."}
                   </p>
                 ) : (
-                  <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(150px, 1fr))", gap: 12 }}>
+                  <div style={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: 10 }}>
                     {myMoments.map((m) => (
                       <div key={m.id} style={{ border: `1px solid ${colors.border}`, background: colors.bgCard }}>
                         <div style={{ aspectRatio: "1", background: "#111" }}>
@@ -156,7 +191,11 @@ export default function ArtistRitualPage() {
                             {" · "}
                             {MEDIUM_LABELS[m.medium] ? (ko ? MEDIUM_LABELS[m.medium].ko : MEDIUM_LABELS[m.medium].en) : m.medium}
                           </div>
-                          {m.note && <p style={{ fontFamily: F, fontSize: 11, color: colors.textSecondary, margin: "4px 0 0", lineHeight: 1.5, display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" }}>{m.note}</p>}
+                          {m.note && (
+                            <p style={{ fontFamily: F, fontSize: 11, color: colors.textSecondary, margin: "4px 0 0", lineHeight: 1.5, display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" }}>
+                              {m.note}
+                            </p>
+                          )}
                           <div style={{ fontFamily: F, fontSize: 9, color: colors.textLight, marginTop: 4 }}>{artworkTimeAgo(m.createdAt, lang)}</div>
                         </div>
                       </div>
@@ -170,6 +209,7 @@ export default function ArtistRitualPage() {
       </main>
 
       <RitualComposerModal lang={lang} open={composerOpen} onClose={() => setComposerOpen(false)} onPosted={reloadAll} />
+      <ArtistBottomNav lang={lang} activeTab="ritual" onCreate={() => setComposerOpen(true)} />
     </>
   );
 }

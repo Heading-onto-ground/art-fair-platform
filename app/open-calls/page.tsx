@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import TopBar from "@/app/components/TopBar";
+import ArtistBottomNav from "@/app/components/ArtistBottomNav";
 import SignupPromptModal from "@/app/components/SignupPromptModal";
 import { CardSkeleton } from "@/app/components/Skeleton";
 import OpenCallPoster from "@/app/components/OpenCallPoster";
@@ -215,7 +216,7 @@ export default function OpenCallsPage() {
           .oc-list-poster { width: 100% !important; height: auto !important; aspect-ratio: 3/4 !important; max-height: 300px !important; }
         }
       `}</style>
-      <main style={{ padding: "56px 40px", maxWidth: 960, margin: "0 auto" }}>
+      <main className="mobile-app-main" style={{ padding: "56px 40px", maxWidth: 960, margin: "0 auto" }}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end", marginBottom: 48 }}>
           <div>
             <span style={{ fontFamily: F, fontSize: 10, fontWeight: 500, letterSpacing: "0.2em", color: "#8B7355", textTransform: "uppercase" }}>{t("oc_opportunities", lang)}</span>
@@ -466,6 +467,7 @@ export default function OpenCallsPage() {
           </div>
         </div>
       )}
+      <ArtistBottomNav lang={lang} activeTab="calls" onCreate={() => router.push("/artist/ritual")} />
     </>
   );
 }

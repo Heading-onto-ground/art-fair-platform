@@ -249,7 +249,7 @@ export default function RitualComposerModal({ open, onClose, lang, onPosted }: P
           {error && <p style={{ fontFamily: F, fontSize: 11, color: colors.error, marginTop: 12, marginBottom: 0 }}>{error}</p>}
         </div>
 
-        <input ref={inputRef} type="file" accept="image/jpeg,image/png,image/webp" onChange={handleFile} style={{ display: "none" }} />
+        <input ref={inputRef} type="file" accept="image/jpeg,image/png,image/webp,image/*" capture="environment" onChange={handleFile} style={{ display: "none" }} />
       </div>
     </div>
   );

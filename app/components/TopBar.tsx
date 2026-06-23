@@ -236,6 +236,7 @@ export default function TopBar() {
   // ── Grouped nav entries ──────────────────────────────────────────────────
   const artistNav = useMemo((): NavEntry[] => [
     { path: "/", label: lang === "ko" ? "홈" : lang === "ja" ? "ホーム" : "HOME" },
+    { path: "/artist/ritual", label: lang === "ko" ? "리추얼" : lang === "ja" ? "リチュアル" : "RITUAL" },
     { path: "/explore", label: lang === "ko" ? "탐색" : lang === "ja" ? "探索" : "EXPLORE" },
     { path: "/open-calls", label: t("nav_open_calls", lang) },
     { path: "/artist/me", label: lang === "ko" ? "마이페이지" : lang === "ja" ? "マイページ" : "MY PAGE" },

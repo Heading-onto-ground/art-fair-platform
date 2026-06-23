@@ -50,6 +50,7 @@ next-env.d.ts
 # local credential exports (never commit)
 scripts/output/*.csv
 scripts/output/*.txt
+scripts/partners.csv
 
 # Cursor editor
 .cursor/

@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { useRouter, usePathname } from "next/navigation";
 import { F, colors } from "@/lib/design";
 
-type Tab = "home" | "explore" | "create" | "calls" | "profile";
+type Tab = "home" | "ritual" | "explore" | "calls" | "profile";
 
 type Props = {
   lang: string;
@@ -34,6 +34,7 @@ export default function ArtistBottomNav({ lang, activeTab, onCreate }: Props) {
 
   const tab = activeTab ?? (
     pathname === "/" || pathname.startsWith("/artist/portfolio") ? "home"
+    : pathname.startsWith("/artist/ritual") ? "ritual"
     : pathname.startsWith("/explore") ? "explore"
     : pathname.startsWith("/artist/me") ? "profile"
     : pathname.startsWith("/open-calls") ? "calls"
@@ -46,22 +47,24 @@ export default function ArtistBottomNav({ lang, activeTab, onCreate }: Props) {
     flexDirection: "column",
     alignItems: "center",
     justifyContent: "center",
-    gap: 4,
-    padding: "10px 4px",
+    gap: 3,
+    padding: "8px 2px",
     border: "none",
     background: "transparent",
     cursor: "pointer",
     color: active ? colors.textPrimary : colors.textMuted,
     fontFamily: F,
-    fontSize: 9,
+    fontSize: 8,
     fontWeight: active ? 600 : 400,
-    letterSpacing: "0.06em",
+    letterSpacing: "0.05em",
     textTransform: "uppercase",
+    minWidth: 0,
+    touchAction: "manipulation",
   });
 
   function handleCreate() {
     if (!isLoggedIn || !isArtist) {
-      router.push("/login?role=artist&redirect=/");
+      router.push("/login?role=artist&redirect=/artist/ritual");
       return;
     }
     onCreate?.();
@@ -69,6 +72,8 @@ export default function ArtistBottomNav({ lang, activeTab, onCreate }: Props) {
 
   return (
     <nav
+      className="artist-bottom-nav"
+      aria-label={ko ? "주요 메뉴" : "Main menu"}
       style={{
         position: "fixed",
         left: 0,
@@ -85,37 +90,38 @@ export default function ArtistBottomNav({ lang, activeTab, onCreate }: Props) {
       }}
     >
       <button type="button" style={itemStyle(tab === "home")} onClick={() => router.push("/")}>
-        <span style={{ fontSize: 18 }}>{tab === "home" ? "⌂" : "○"}</span>
+        <span style={{ fontSize: 17, lineHeight: 1 }}>{tab === "home" ? "⌂" : "○"}</span>
         {ko ? "홈" : "Home"}
       </button>
-      <button type="button" style={itemStyle(tab === "explore")} onClick={() => router.push("/explore")}>
-        <span style={{ fontSize: 16 }}>⌕</span>
-        {ko ? "탐색" : "Explore"}
+      <button type="button" style={itemStyle(tab === "ritual")} onClick={() => router.push("/artist/ritual")}>
+        <span style={{ fontSize: 15, lineHeight: 1 }}>🔥</span>
+        {ko ? "리추얼" : "Ritual"}
       </button>
       <button
         type="button"
         onClick={handleCreate}
         style={{
-          flex: "0 0 64px",
+          flex: "0 0 56px",
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
           border: "none",
           background: "transparent",
           cursor: "pointer",
+          touchAction: "manipulation",
         }}
-        aria-label={ko ? "새로 올리기" : "Create"}
+        aria-label={ko ? "기록하기" : "Record"}
       >
         <span
           style={{
-            width: 44,
-            height: 44,
+            width: 42,
+            height: 42,
             borderRadius: 12,
             border: `2px solid ${colors.textPrimary}`,
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
-            fontSize: 24,
+            fontSize: 22,
             lineHeight: 1,
             color: colors.textPrimary,
           }}
@@ -124,7 +130,7 @@ export default function ArtistBottomNav({ lang, activeTab, onCreate }: Props) {
         </span>
       </button>
       <button type="button" style={itemStyle(tab === "calls")} onClick={() => router.push("/open-calls")}>
-        <span style={{ fontSize: 16 }}>◈</span>
+        <span style={{ fontSize: 15, lineHeight: 1 }}>◈</span>
         {ko ? "오픈콜" : "Calls"}
       </button>
       <button
@@ -132,7 +138,7 @@ export default function ArtistBottomNav({ lang, activeTab, onCreate }: Props) {
         style={itemStyle(tab === "profile")}
         onClick={() => router.push(isLoggedIn && isArtist ? "/artist/me" : "/login?role=artist&redirect=/artist/me")}
       >
-        <span style={{ fontSize: 16 }}>◎</span>
+        <span style={{ fontSize: 15, lineHeight: 1 }}>◎</span>
         {isLoggedIn && isArtist ? (ko ? "마이" : "Me") : ko ? "로그인" : "Login"}
       </button>
     </nav>

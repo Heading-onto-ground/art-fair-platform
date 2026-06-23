@@ -112,7 +112,7 @@ export default function ExplorePage() {
   return (
     <>
       <TopBar />
-      <main style={{ maxWidth: 640, margin: "0 auto", padding: "40px 20px 80px" }}>
+      <main className="mobile-app-main" style={{ maxWidth: 640, margin: "0 auto", padding: "40px 20px 80px" }}>
         <div style={{ marginBottom: 28 }}>
           <p style={{ fontFamily: F, fontSize: 10, letterSpacing: "0.18em", textTransform: "uppercase", color: colors.accent, margin: "0 0 8px" }}>
             {ko ? "해시태그 탐색" : "Hashtag Explore"}
@@ -269,7 +269,7 @@ export default function ExplorePage() {
           ))}
         </div>
       </main>
-      <ArtistBottomNav lang={lang} activeTab="explore" onCreate={() => router.push("/")} />
+      <ArtistBottomNav lang={lang} activeTab="explore" onCreate={() => router.push("/artist/ritual")} />
     </>
   );
 }

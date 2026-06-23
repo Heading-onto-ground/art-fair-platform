@@ -321,3 +321,40 @@ select {
     touch-action: manipulation; /* 더블탭 줌 방지, 터치 반응 개선 */
   }
 }
+
+/* Mobile app shell — bottom nav + safe area */
+.artist-bottom-nav {
+  display: none;
+}
+
+.mobile-app-main {
+  padding-bottom: 72px;
+}
+
+@media (max-width: 768px) {
+  .artist-bottom-nav {
+    display: flex !important;
+  }
+
+  .mobile-app-main {
+    padding-bottom: calc(72px + env(safe-area-inset-bottom));
+  }
+
+  .mobile-install-hint {
+    display: block;
+  }
+
+  .ritual-stats-bar {
+    flex-direction: row;
+  }
+
+  .ritual-record-btn {
+    max-width: 100%;
+  }
+}
+
+@media (min-width: 769px) {
+  .mobile-install-hint {
+    display: none;
+  }
+}

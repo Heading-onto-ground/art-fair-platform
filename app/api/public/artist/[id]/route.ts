@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { getProfileByUserId } from "@/lib/auth";
+import { sanitizePublicArtistProfile } from "@/lib/sanitizePublicProfile";
 
 export const dynamic = "force-dynamic";
 
@@ -64,7 +65,10 @@ export async function GET(
       return NextResponse.redirect(portfolioUrl, { status: 302 });
     }
 
-    return NextResponse.json({ ok: true, profile }, { status: 200 });
+    return NextResponse.json({
+      ok: true,
+      profile: sanitizePublicArtistProfile(profile as Record<string, unknown>),
+    }, { status: 200 });
   } catch (e) {
     console.error("GET /api/public/artist/[id] failed:", e);
     return NextResponse.json(

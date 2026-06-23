@@ -434,7 +434,7 @@ export default function ArtistMePage() {
   return (
     <>
       <TopBar />
-      <main style={{ maxWidth: 860, margin: "0 auto", padding: "56px 40px 100px" }}>
+      <main className="mobile-app-main" style={{ maxWidth: 860, margin: "0 auto", padding: "56px 40px 100px" }}>
         {adminReadOnly && (
           <div style={{ marginBottom: 20, padding: "12px 14px", border: "1px solid #E8E3DB", background: "#FAF8F4", color: "#8A8580", fontFamily: F, fontSize: 11, letterSpacing: "0.04em" }}>
             {lang === "ko" ? "관리자 미리보기 모드 (읽기 전용)" : "Admin preview mode (read-only)"}
@@ -1280,7 +1280,7 @@ export default function ArtistMePage() {
           </>
         )}
       </main>
-      <ArtistBottomNav lang={lang} activeTab="profile" onCreate={() => router.push("/")} />
+      <ArtistBottomNav lang={lang} activeTab="profile" onCreate={() => router.push("/artist/ritual")} />
     </>
   );
 }
