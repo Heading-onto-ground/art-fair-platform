@@ -31,6 +31,11 @@ const nextConfig = {
   async redirects() {
     return [
       {
+        source: "/a-moim-planning-guide.pdf",
+        destination: "/api/a-moim/planning-guide",
+        permanent: false,
+      },
+      {
         // Canonical host: non-www. Prevents split indexing between
         // www.rob-roleofbridge.com and rob-roleofbridge.com.
         source: '/:path*',

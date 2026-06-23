@@ -83,6 +83,6 @@ export function middleware(req: NextRequest) {
 }
 
 export const config = {
-  // Run on all routes except Next.js internals, static files, and API routes
-  matcher: ["/((?!_next/static|_next/image|favicon.ico|api/).*)"],
+  // Skip middleware for static assets (files with extensions), Next internals, and API routes.
+  matcher: ["/((?!_next/static|_next/image|favicon.ico|.*\\..*|api/).*)"],
 };

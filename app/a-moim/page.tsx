@@ -10,7 +10,7 @@ export const metadata: Metadata = pageMetadata({
   path: "/a-moim",
 });
 
-const PDF_PATH = "/a-moim-planning-guide.pdf";
+const PDF_PATH = "/api/a-moim/planning-guide";
 
 export default function AMoimGuidePage() {
   return (
@@ -48,7 +48,7 @@ export default function AMoimGuidePage() {
         </a>
 
         <p style={{ fontFamily: F, fontSize: 12, color: colors.textMuted, margin: "0 0 24px" }}>
-          <a href={PDF_PATH} target="_blank" rel="noopener noreferrer" style={{ color: colors.accent, textDecoration: "none" }}>
+          <a href={`${PDF_PATH}?inline=1`} target="_blank" rel="noopener noreferrer" style={{ color: colors.accent, textDecoration: "none" }}>
             브라우저에서 열기 →
           </a>
         </p>
