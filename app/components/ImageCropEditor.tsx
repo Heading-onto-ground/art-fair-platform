@@ -118,6 +118,8 @@ export default function ImageCropEditor({ src, lang, outputMax = 1600, quality =
             top: "50%",
             width: dispW,
             height: dispH,
+            maxWidth: "none",
+            maxHeight: "none",
             transform: `translate(calc(-50% + ${transform.offsetX}px), calc(-50% + ${transform.offsetY}px))`,
             userSelect: "none",
             pointerEvents: "none",
