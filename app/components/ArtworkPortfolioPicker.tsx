@@ -56,6 +56,8 @@ export default function ArtworkPortfolioPicker({ lang, onChanged }: Props) {
     }
   }
 
+  const selectedCount = artworks.filter((a) => a.inPortfolio).length;
+
   return (
     <div>
       <div style={{ marginBottom: 16 }}>
@@ -64,9 +66,46 @@ export default function ArtworkPortfolioPicker({ lang, onChanged }: Props) {
         </p>
         <p style={{ fontFamily: F, fontSize: 12, color: colors.textMuted, margin: 0, lineHeight: 1.6 }}>
           {ko
-            ? "사진을 눌러 공개 포트폴리오에 포함·제외할 수 있어요."
-            : "Tap a photo to add or remove it from your public portfolio."}
+            ? "사진을 눌러 공개 포트폴리오에 포함·제외하세요. 선택한 작업은 공개 프로필 그리드에 보이고, PDF로도 만들 수 있어요."
+            : "Tap a photo to add or remove it from your public portfolio. Selected works appear on your profile grid and can be exported as a PDF."}
         </p>
+      </div>
+
+      <div
+        style={{
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between",
+          gap: 10,
+          padding: "12px 14px",
+          marginBottom: 16,
+          border: `1px solid ${colors.border}`,
+          background: colors.bgAccent,
+        }}
+      >
+        <span style={{ fontFamily: F, fontSize: 12, color: colors.textSecondary }}>
+          {ko ? `포트폴리오에 ${selectedCount}점 선택됨` : `${selectedCount} selected`}
+        </span>
+        <button
+          type="button"
+          disabled={selectedCount === 0}
+          onClick={() => window.open("/artist/portfolio/print", "_blank", "noopener")}
+          style={{
+            padding: "9px 16px",
+            border: "none",
+            background: selectedCount === 0 ? colors.border : colors.textPrimary,
+            color: selectedCount === 0 ? colors.textMuted : colors.bgPrimary,
+            fontFamily: F,
+            fontSize: 10,
+            fontWeight: 600,
+            letterSpacing: "0.1em",
+            textTransform: "uppercase",
+            cursor: selectedCount === 0 ? "not-allowed" : "pointer",
+            whiteSpace: "nowrap",
+          }}
+        >
+          {ko ? "PDF 만들기" : "Make PDF"}
+        </button>
       </div>
 
       {loading ? (
