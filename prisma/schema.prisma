@@ -637,3 +637,34 @@ model ExhibitionArtist {
   @@unique([exhibitionId, artistId])
   @@index([artistId])
 }
+
+// ========== 모임(Gathering) — 오프라인 회차를 원자 네트워크로 ==========
+// 호스트(보통 운영진)가 한 번의 모임 회차를 기록하면, 참석자들 사이에
+// 공동현존(co_present) 엣지가 자동 생성된다. "컨테이너가 자기를 먼저 기록"하는 1층.
+
+model Gathering {
+  id         String              @id @default(cuid())
+  title      String              // 예: "A모임 #7"
+  theme      String?
+  location   String?
+  note       String?
+  happenedAt DateTime            @default(now())
+  createdBy  String              // 생성한 admin 이메일
+  createdAt  DateTime            @default(now())
+  updatedAt  DateTime            @updatedAt
+  attendees  GatheringAttendee[]
+
+  @@index([happenedAt])
+}
+
+model GatheringAttendee {
+  id          String    @id @default(cuid())
+  gatheringId String
+  gathering   Gathering @relation(fields: [gatheringId], references: [id], onDelete: Cascade)
+  artistId    String    // ArtistProfile.id
+  createdAt   DateTime  @default(now())
+
+  @@unique([gatheringId, artistId])
+  @@index([artistId])
+  @@index([gatheringId])
+}

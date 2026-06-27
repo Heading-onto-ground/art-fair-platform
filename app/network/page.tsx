@@ -1,9 +1,9 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
 import dynamic from "next/dynamic";
 import TopBar from "@/app/components/TopBar";
+import NetworkGraph, { type GraphEdge } from "@/app/components/NetworkGraph";
 import { F, S } from "@/lib/design";
 
 // Country → [lat, lng] lookup (no external geocoding needed)
@@ -65,15 +65,31 @@ const WorldMap = dynamic(() => import("@/app/components/NetworkWorldMap"), { ssr
 ) });
 
 export default function NetworkPage() {
-  const router = useRouter();
   const [nodes, setNodes] = useState<NodeData[]>([]);
+  const [edges, setEdges] = useState<GraphEdge[]>([]);
   const [loading, setLoading] = useState(true);
   const [view, setView] = useState<"map" | "graph">("map");
 
   useEffect(() => {
+    // Honor ?view=graph from the URL without forcing a Suspense boundary.
+    if (typeof window !== "undefined") {
+      const v = new URLSearchParams(window.location.search).get("view");
+      if (v === "graph") setView("graph");
+    }
+  }, []);
+
+  function changeView(v: "map" | "graph") {
+    setView(v);
+    if (typeof window !== "undefined") {
+      const url = v === "graph" ? "/network?view=graph" : "/network";
+      window.history.replaceState(null, "", url);
+    }
+  }
+
+  useEffect(() => {
     fetch("/api/network?limit=150")
       .then(r => r.json())
-      .then(d => setNodes(d.nodes ?? []))
+      .then(d => { setNodes(d.nodes ?? []); setEdges(d.edges ?? []); })
       .catch(() => {})
       .finally(() => setLoading(false));
   }, []);
@@ -125,7 +141,7 @@ export default function NetworkPage() {
             {/* View toggle */}
             <div style={{ display: "flex", border: "1px solid #E8E3DB" }}>
               {(["map", "graph"] as const).map(v => (
-                <button key={v} onClick={() => { if (v === "graph") router.push("/network?view=graph"); else setView("map"); }}
+                <button key={v} onClick={() => changeView(v)}
                   style={{ padding: "8px 16px", border: "none", background: view === v ? "#1A1A1A" : "transparent", color: view === v ? "#FDFBF7" : "#8A8580", fontFamily: F, fontSize: 10, letterSpacing: "0.08em", textTransform: "uppercase", cursor: "pointer" }}>
                   {v === "map" ? "지도" : "그래프"}
                 </button>
@@ -137,6 +153,10 @@ export default function NetworkPage() {
         {loading ? (
           <div style={{ height: "calc(100vh - 160px)", display: "flex", alignItems: "center", justifyContent: "center" }}>
             <p style={{ fontFamily: F, fontSize: 12, color: "#B0AAA2" }}>데이터 로딩 중...</p>
+          </div>
+        ) : view === "graph" ? (
+          <div style={{ height: "calc(100vh - 140px)" }}>
+            <NetworkGraph nodes={nodes} edges={edges} />
           </div>
         ) : (
           <div style={{ display: "flex", height: "calc(100vh - 140px)" }}>
