@@ -15,6 +15,7 @@ type AdminUserRow = {
   city: string;
   profileId: string;
   hasPortfolio: boolean;
+  isOperator: boolean;
 };
 
 type UserWithProfiles = {
@@ -22,6 +23,7 @@ type UserWithProfiles = {
   email: string;
   role: "artist" | "gallery" | "curator";
   createdAt: Date;
+  isOperator: boolean;
   artistProfile: {
     artistId: string;
     name: string;
@@ -63,6 +65,7 @@ export async function GET(req: Request) {
         email: true,
         role: true,
         createdAt: true,
+        isOperator: true,
         artistProfile: {
           select: {
             artistId: true,
@@ -108,6 +111,7 @@ export async function GET(req: Request) {
           ? (u.artistProfile?.artistId ?? "")
           : (u.galleryProfile?.galleryId ?? ""),
         hasPortfolio,
+        isOperator: !!u.isOperator,
       };
     });
 
@@ -127,6 +131,34 @@ export async function GET(req: Request) {
   } catch (e) {
     const detail = e instanceof Error ? e.message : String(e);
     console.error("GET /api/admin/users failed:", detail, e);
+    return NextResponse.json({ error: "server error" }, { status: 500 });
+  }
+}
+
+/** PATCH — grant/revoke operator permission (super-admin only). */
+export async function PATCH(req: Request) {
+  try {
+    const admin = getAdminSession();
+    if (!admin) {
+      return NextResponse.json({ error: "unauthorized" }, { status: 401 });
+    }
+
+    const body = await req.json().catch(() => null);
+    const userId = String(body?.userId || "").trim();
+    if (!userId) return NextResponse.json({ error: "userId required" }, { status: 400 });
+    if (typeof body?.isOperator !== "boolean") {
+      return NextResponse.json({ error: "isOperator (boolean) required" }, { status: 400 });
+    }
+
+    const updated = await prisma.user.update({
+      where: { id: userId },
+      data: { isOperator: body.isOperator },
+      select: { id: true, isOperator: true },
+    });
+
+    return NextResponse.json({ ok: true, userId: updated.id, isOperator: updated.isOperator });
+  } catch (e) {
+    console.error("PATCH /api/admin/users failed:", e);
     return NextResponse.json({ error: "server error" }, { status: 500 });
   }
 }

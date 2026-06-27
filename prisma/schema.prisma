@@ -23,6 +23,8 @@ model User {
   email        String          @unique
   role         Role
   passwordHash String
+  /** 제한된 운영자(operator) 권한 — 슈퍼 admin이 부여. 모임 기록·피드 모더레이션·회원 목록만 가능. */
+  isOperator   Boolean         @default(false)
   createdAt    DateTime        @default(now())
   artistProfile ArtistProfile?
   galleryProfile GalleryProfile?

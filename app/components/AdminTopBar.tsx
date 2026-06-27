@@ -21,6 +21,7 @@ export default function AdminTopBar() {
   const isDashboardActive = pathname === "/admin/outreach";
   const isOpenCallsActive = pathname === "/admin/open-calls";
   const isUsersActive = pathname === "/admin/users";
+  const isGatheringsActive = pathname === "/admin/gatherings";
   const isSourcesActive = pathname === "/admin/sources";
   const isAboutActive = pathname === "/admin/about";
   const isSecurityActive = pathname === "/admin/security";
@@ -139,6 +140,7 @@ export default function AdminTopBar() {
           <NavLink onClick={() => router.push("/admin/outreach")} label={tr("Dashboard", "대시보드", "ダッシュボード", "Tableau")} active={isDashboardActive} />
           <NavLink onClick={() => router.push("/admin/open-calls")} label={tr("Open Calls", "오픈콜", "オープンコール", "Open Calls")} active={isOpenCallsActive} />
           <NavLink onClick={() => router.push("/admin/users")} label={tr("Users", "가입자", "ユーザー", "Utilisateurs")} active={isUsersActive} />
+          <NavLink onClick={() => router.push("/admin/gatherings")} label={tr("Gatherings", "모임", "集まり", "Rencontres")} active={isGatheringsActive} />
           <NavLink
             onClick={() => router.push("/admin/support")}
             label={tr("Notes", "쪽지", "メモ", "Messages")}

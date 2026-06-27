@@ -18,6 +18,7 @@ type AdminUser = {
   city: string;
   profileId: string;
   hasPortfolio: boolean;
+  isOperator: boolean;
 };
 
 type Stats = {
@@ -104,6 +105,7 @@ export default function AdminUsersPage() {
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [deleting, setDeleting] = useState(false);
   const [clearingPortfolio, setClearingPortfolio] = useState<string | null>(null);
+  const [togglingOperator, setTogglingOperator] = useState<string | null>(null);
   const [verificationRequests, setVerificationRequests] = useState<VerificationRequest[]>([]);
   const [reviewingRequestId, setReviewingRequestId] = useState<string | null>(null);
   const tr = (en: string, ko: string, ja: string, fr: string) =>
@@ -298,6 +300,32 @@ export default function AdminUsersPage() {
       }
     } finally {
       setClearingPortfolio(null);
+    }
+  }
+
+  async function toggleOperator(userId: string, name: string, next: boolean) {
+    const ok = window.confirm(
+      next
+        ? `${name || userId}에게 운영자 권한을 부여할까요? (모임 기록·피드 모더레이션·회원 목록 열람 가능, /operator 콘솔 접근)`
+        : `${name || userId}의 운영자 권한을 해제할까요?`
+    );
+    if (!ok) return;
+    setTogglingOperator(userId);
+    setErr(null);
+    try {
+      const res = await fetch("/api/admin/users", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ userId, isOperator: next }),
+      });
+      const data = await res.json().catch(() => null);
+      if (!res.ok || !data?.ok) throw new Error(data?.error ?? "failed");
+      setUsers((prev) => prev.map((u) => (u.id === userId ? { ...u, isOperator: next } : u)));
+    } catch (e: unknown) {
+      setErr((e instanceof Error ? e.message : null) ?? "운영자 권한 변경 실패");
+    } finally {
+      setTogglingOperator(null);
     }
   }
 
@@ -629,11 +657,16 @@ export default function AdminUsersPage() {
                     />
                   </div>
                   <div>
-                    <div style={{ fontWeight: 500, display: "flex", alignItems: "center", gap: 6 }}>
+                    <div style={{ fontWeight: 500, display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
                       {u.email}
                       {u.role === "gallery" && ["suegallery", "noas"].includes(u.profileId) && (
                         <span style={{ fontFamily: F, fontSize: 9, fontWeight: 600, letterSpacing: "0.08em", color: "#4A7C59", background: "#EDF5F0", padding: "2px 6px", border: "1px solid #C2DCCC" }}>
                           ORGANIC
+                        </span>
+                      )}
+                      {u.isOperator && (
+                        <span style={{ fontFamily: F, fontSize: 9, fontWeight: 600, letterSpacing: "0.08em", color: "#8B7355", background: "#F5EFE6", padding: "2px 6px", border: "1px solid #E0D3BE" }}>
+                          OPERATOR
                         </span>
                       )}
                     </div>
@@ -667,6 +700,13 @@ export default function AdminUsersPage() {
                         {clearingPortfolio === u.id ? "..." : "포트폴리오 삭제"}
                       </button>
                     )}
+                    <button
+                      onClick={() => toggleOperator(u.id, u.name, !u.isOperator)}
+                      disabled={togglingOperator === u.id}
+                      style={{ fontFamily: F, fontSize: 10, fontWeight: 500, letterSpacing: "0.08em", textTransform: "uppercase", color: u.isOperator ? "#8B3A3A" : "#8B7355", background: "transparent", padding: "4px 10px", border: `1px solid ${u.isOperator ? "#E8DBDB" : "#E0D3BE"}`, cursor: "pointer" }}
+                    >
+                      {togglingOperator === u.id ? "..." : u.isOperator ? tr("Revoke operator", "운영자 해제", "運営者解除", "Retirer opérateur") : tr("Make operator", "운영자 지정", "運営者指定", "Definir opérateur")}
+                    </button>
                   </div>
                 </div>
               ))}

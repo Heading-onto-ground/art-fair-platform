@@ -35,6 +35,12 @@ CREATE TABLE IF NOT EXISTS "GatheringAttendee" (
 CREATE UNIQUE INDEX IF NOT EXISTS "GatheringAttendee_gatheringId_artistId_key" ON "GatheringAttendee"("gatheringId", "artistId");
 CREATE INDEX IF NOT EXISTS "GatheringAttendee_artistId_idx" ON "GatheringAttendee"("artistId");
 CREATE INDEX IF NOT EXISTS "GatheringAttendee_gatheringId_idx" ON "GatheringAttendee"("gatheringId");
+
+-- Operator permission flag on User
+DO $$ BEGIN
+  ALTER TABLE "User" ADD COLUMN IF NOT EXISTS "isOperator" BOOLEAN NOT NULL DEFAULT false;
+EXCEPTION WHEN others THEN NULL;
+END $$;
 `;
 
 export async function POST() {
@@ -62,7 +68,7 @@ export async function POST() {
 
     return NextResponse.json({
       ok: true,
-      message: `Executed ${statements.length} SQL statements for Gathering tables`,
+      message: `Executed ${statements.length} SQL statements (Gathering tables + User.isOperator)`,
       results,
     });
   } catch (e) {

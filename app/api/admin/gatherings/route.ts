@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { getAdminSession } from "@/lib/adminAuth";
+import { getOperatorContext } from "@/lib/operatorAuth";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -31,8 +31,8 @@ function pairsWithin(ids: string[], target: Set<string>): Set<string> {
 
 export async function GET() {
   try {
-    const admin = getAdminSession();
-    if (!admin) return NextResponse.json({ error: "unauthorized" }, { status: 401 });
+    const ctx = await getOperatorContext();
+    if (!ctx) return NextResponse.json({ error: "unauthorized" }, { status: 401 });
 
     const gatherings = await prisma.gathering.findMany({
       orderBy: { happenedAt: "desc" },
@@ -71,8 +71,8 @@ export async function GET() {
 
 export async function POST(req: Request) {
   try {
-    const admin = getAdminSession();
-    if (!admin) return NextResponse.json({ error: "unauthorized" }, { status: 401 });
+    const ctx = await getOperatorContext();
+    if (!ctx) return NextResponse.json({ error: "unauthorized" }, { status: 401 });
 
     const body = await req.json().catch(() => null);
     const title = String(body?.title || "").trim();
@@ -104,7 +104,7 @@ export async function POST(req: Request) {
         location,
         note: noteText,
         happenedAt,
-        createdBy: admin.email,
+        createdBy: ctx.actor,
         attendees: { create: attendeeIds.map((artistId: string) => ({ artistId })) },
       },
       include: { attendees: { select: { id: true, artistId: true } } },
