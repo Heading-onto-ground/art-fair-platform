@@ -201,7 +201,8 @@ export async function submitLaborSurveyResponse(input: {
     !input.answers.field ||
     !input.answers.careerYears ||
     !input.answers.laborExperience.trim() ||
-    (!input.answers.artistDisplayName.trim() && !input.answers.instagramId.trim())
+    !input.answers.artistDisplayName.trim() ||
+    !input.answers.instagramId.trim()
   ) {
     throw new Error("required_fields_missing");
   }

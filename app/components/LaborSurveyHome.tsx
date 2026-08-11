@@ -220,8 +220,8 @@ export default function LaborSurveyHome({ lang }: Props) {
           consent_required: ko ? "활용 동의 항목 중 하나 이상 선택해 주세요." : "Select at least one consent option.",
           conflicting_consent: ko ? "국감 활용 동의와 비동의를 동시에 선택할 수 없습니다." : "Conflicting consent selections.",
           required_fields_missing: ko
-            ? "작가명 또는 인스타 아이디, 분야, 경력, 노동 경험 서술은 필수입니다."
-            : "Artist name or Instagram, field, career, and labor experience are required.",
+            ? "작가명, 인스타그램 아이디, 분야, 경력, 노동 경험 서술은 필수입니다."
+            : "Artist name, Instagram, field, career, and labor experience are required.",
           campaign_closed: ko ? "설문이 마감되었습니다." : "Survey closed.",
         };
         throw new Error(messages[err] || err);
@@ -372,11 +372,11 @@ export default function LaborSurveyHome({ lang }: Props) {
 
           <p style={{ fontFamily: F, fontSize: 12, color: colors.textMuted, lineHeight: 1.7, margin: "0 0 4px" }}>
             {ko
-              ? "본명은 수집하지 않습니다. 활동명(작가명) 또는 인스타그램 아이디 중 하나 이상을 입력해 주세요."
-              : "We do not collect legal names. Please enter your artist name and/or Instagram handle."}
+              ? "본명은 수집하지 않습니다. 활동명(작가명)과 인스타그램 아이디를 모두 입력해 주세요."
+              : "We do not collect legal names. Please enter both your artist name and Instagram handle."}
           </p>
 
-          <label style={label}>{ko ? "작가명 / 활동명" : "Artist name"}</label>
+          <label style={label}>{ko ? "작가명 / 활동명" : "Artist name"} *</label>
           <input
             value={answers.artistDisplayName}
             onChange={(e) => setAnswer("artistDisplayName", e.target.value)}
@@ -384,7 +384,7 @@ export default function LaborSurveyHome({ lang }: Props) {
             placeholder={ko ? "예: @studio_name, 화가OO" : "e.g. @studio_name"}
           />
 
-          <label style={label}>{ko ? "인스타그램 아이디" : "Instagram handle"}</label>
+          <label style={label}>{ko ? "인스타그램 아이디" : "Instagram handle"} *</label>
           <input
             value={answers.instagramId}
             onChange={(e) => setAnswer("instagramId", e.target.value)}
