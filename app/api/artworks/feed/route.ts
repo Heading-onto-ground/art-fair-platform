@@ -45,6 +45,7 @@ export async function GET(req: NextRequest) {
     take: limit,
     include: {
       series: { select: { id: true, title: true } },
+      images: { select: { url: true, position: true }, orderBy: { position: "asc" } },
       artist: {
         select: {
           id: true,

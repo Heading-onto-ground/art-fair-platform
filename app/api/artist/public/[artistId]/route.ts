@@ -64,8 +64,14 @@ export async function GET(_req: Request, { params }: { params: { artistId: strin
 
   const artworks = await prisma.artwork.findMany({
     where: { artistId: profile.id, isPublic: true, inPortfolio: true },
-    orderBy: { createdAt: "desc" },
-    include: { series: { select: { id: true, title: true } } },
+    orderBy: [
+      { portfolioOrder: { sort: "asc", nulls: "last" } },
+      { createdAt: "desc" },
+    ],
+    include: {
+      series: { select: { id: true, title: true } },
+      images: { select: { url: true, position: true }, orderBy: { position: "asc" } },
+    },
   }).catch(() => []);
 
   const { loadHashtagsForArtworks } = await import("@/lib/artworkHashtags");
@@ -127,6 +133,7 @@ export async function GET(_req: Request, { params }: { params: { artistId: strin
       title: a.title,
       caption: a.caption,
       imageUrl: a.imageUrl,
+      imageUrls: a.images.length > 0 ? a.images.map((i: { url: string }) => i.url) : [a.imageUrl],
       medium: a.medium,
       postType: a.postType === "exhibition" ? "exhibition" : "work",
       seriesId: a.seriesId,

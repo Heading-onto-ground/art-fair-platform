@@ -5,8 +5,11 @@ import Link from "next/link";
 import { F, colors } from "@/lib/design";
 import { fileToDataUrl } from "@/lib/imageCrop";
 import ImageCropEditor from "@/app/components/ImageCropEditor";
+import ArtworkImageCarousel from "@/app/components/ArtworkImageCarousel";
 import type { ArtworkPostType } from "@/lib/artworkTypes";
 import { POST_TYPE_LABELS } from "@/lib/artworkTypes";
+
+const MAX_IMAGES = 5;
 
 type Props = {
   lang: string;
@@ -20,10 +23,12 @@ export default function ArtworkUploadModal({ lang, open, onClose, onPosted }: Pr
   const inputRef = useRef<HTMLInputElement>(null);
   const [posting, setPosting] = useState(false);
   const [rawSource, setRawSource] = useState<string | null>(null);
-  const [editing, setEditing] = useState(false);
-  const [preview, setPreview] = useState<string | null>(null);
+  // Index of the image being re-cropped; null = the crop result is appended
+  const [editingIndex, setEditingIndex] = useState<number | null>(null);
+  const [images, setImages] = useState<string[]>([]);
   const [caption, setCaption] = useState("");
   const [postType, setPostType] = useState<ArtworkPostType>("work");
+  const [addToPortfolio, setAddToPortfolio] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [lastNote, setLastNote] = useState<string | null>(null);
 
@@ -31,10 +36,11 @@ export default function ArtworkUploadModal({ lang, open, onClose, onPosted }: Pr
 
   function reset() {
     setRawSource(null);
-    setEditing(false);
-    setPreview(null);
+    setEditingIndex(null);
+    setImages([]);
     setCaption("");
     setPostType("work");
+    setAddToPortfolio(true);
     setError(null);
     setLastNote(null);
   }
@@ -59,16 +65,19 @@ export default function ArtworkUploadModal({ lang, open, onClose, onPosted }: Pr
     try {
       const dataUrl = await fileToDataUrl(file);
       setRawSource(dataUrl);
-      setPreview(null);
-      setEditing(true);
+      setEditingIndex(null);
     } catch {
       setError(ko ? "이미지 처리 실패" : "Failed to process image");
     }
     if (inputRef.current) inputRef.current.value = "";
   }
 
+  function removeImage(index: number) {
+    setImages((prev) => prev.filter((_, i) => i !== index));
+  }
+
   async function postArtwork() {
-    if (!preview || posting) return;
+    if (images.length === 0 || posting) return;
     setPosting(true);
     setError(null);
     setLastNote(null);
@@ -77,7 +86,13 @@ export default function ArtworkUploadModal({ lang, open, onClose, onPosted }: Pr
         method: "POST",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
-        body: JSON.stringify({ imageUrl: preview, caption: caption.trim() || null, postType }),
+        body: JSON.stringify({
+          imageUrl: images[0],
+          imageUrls: images,
+          caption: caption.trim() || null,
+          postType,
+          inPortfolio: addToPortfolio,
+        }),
       });
       const data = await res.json().catch(() => null);
       if (!res.ok || !data?.ok) {
@@ -111,7 +126,15 @@ export default function ArtworkUploadModal({ lang, open, onClose, onPosted }: Pr
             : `Tags: ${data.artwork.hashtags.map((t: string) => `#${t}`).join(" ")}`,
         );
       }
-      notes.push(ko ? "마이페이지에서 포트폴리오에 추가할 수 있어요" : "Add to portfolio from My Page");
+      notes.push(
+        addToPortfolio
+          ? ko
+            ? "포트폴리오에 추가됨"
+            : "Added to portfolio"
+          : ko
+            ? "마이페이지에서 포트폴리오에 추가할 수 있어요"
+            : "Add to portfolio from My Page",
+      );
       if (notes.length) setLastNote(notes.join(" · "));
 
       reset();
@@ -172,42 +195,71 @@ export default function ArtworkUploadModal({ lang, open, onClose, onPosted }: Pr
           </button>
         </div>
 
-        {editing && (rawSource || preview) ? (
+        {rawSource ? (
           <ImageCropEditor
-            src={rawSource || preview!}
+            src={rawSource}
             lang={lang}
             outputMax={1600}
             quality={0.88}
             onApply={(dataUrl) => {
-              setPreview(dataUrl);
-              setEditing(false);
+              setImages((prev) => {
+                if (editingIndex !== null && editingIndex < prev.length) {
+                  return prev.map((img, i) => (i === editingIndex ? dataUrl : img));
+                }
+                return prev.length < MAX_IMAGES ? [...prev, dataUrl] : prev;
+              });
+              setRawSource(null);
+              setEditingIndex(null);
             }}
             onCancel={() => {
               setRawSource(null);
-              setEditing(false);
+              setEditingIndex(null);
               if (inputRef.current) inputRef.current.value = "";
             }}
           />
-        ) : preview ? (
-          <div style={{ position: "relative", aspectRatio: "1", background: "#000" }}>
-            <img src={preview} alt="" style={{ width: "100%", height: "100%", objectFit: "contain" }} />
-            <button
-              type="button"
-              onClick={() => setEditing(true)}
-              style={{ position: "absolute", bottom: 12, left: 12, padding: "6px 12px", border: "none", borderRadius: 999, background: "rgba(0,0,0,0.55)", color: "#fff", cursor: "pointer", fontFamily: F, fontSize: 11 }}
-            >
-              {ko ? "크기 조절" : "Adjust"}
-            </button>
-            <button
-              type="button"
-              onClick={() => {
-                setPreview(null);
-                setRawSource(null);
-              }}
-              style={{ position: "absolute", top: 12, right: 12, width: 32, height: 32, borderRadius: "50%", border: "none", background: "rgba(0,0,0,0.5)", color: "#fff", cursor: "pointer", fontSize: 16 }}
-            >
-              ×
-            </button>
+        ) : images.length > 0 ? (
+          <div>
+            <ArtworkImageCarousel images={images} objectFit="contain" />
+            <div style={{ display: "flex", gap: 8, padding: "10px 16px 0", overflowX: "auto" }}>
+              {images.map((img, i) => (
+                <div key={i} style={{ position: "relative", flexShrink: 0 }}>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setRawSource(img);
+                      setEditingIndex(i);
+                    }}
+                    aria-label={ko ? `${i + 1}번째 사진 조절` : `Adjust photo ${i + 1}`}
+                    style={{ width: 52, height: 52, padding: 0, border: i === 0 ? `2px solid ${colors.accent}` : `1px solid ${colors.border}`, cursor: "pointer", overflow: "hidden", background: "#111" }}
+                  >
+                    <img src={img} alt="" style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} />
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => removeImage(i)}
+                    aria-label={ko ? `${i + 1}번째 사진 삭제` : `Remove photo ${i + 1}`}
+                    style={{ position: "absolute", top: -6, right: -6, width: 18, height: 18, borderRadius: "50%", border: "none", background: "rgba(0,0,0,0.7)", color: "#fff", fontSize: 10, lineHeight: 1, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}
+                  >
+                    ×
+                  </button>
+                </div>
+              ))}
+              {images.length < MAX_IMAGES && (
+                <button
+                  type="button"
+                  onClick={() => inputRef.current?.click()}
+                  aria-label={ko ? "사진 추가" : "Add photo"}
+                  style={{ width: 52, height: 52, flexShrink: 0, border: `1px dashed ${colors.borderDark}`, background: colors.bgAccent, color: colors.textMuted, fontSize: 20, cursor: "pointer" }}
+                >
+                  +
+                </button>
+              )}
+            </div>
+            <p style={{ fontFamily: F, fontSize: 10, color: colors.textMuted, margin: "8px 16px 0" }}>
+              {ko
+                ? `첫 번째 사진이 대표 이미지예요 (최대 ${MAX_IMAGES}장)`
+                : `The first photo is the cover (up to ${MAX_IMAGES})`}
+            </p>
           </div>
         ) : (
           <button
@@ -217,7 +269,7 @@ export default function ArtworkUploadModal({ lang, open, onClose, onPosted }: Pr
           >
             <span style={{ fontSize: 44, color: colors.textLight }}>+</span>
             <span style={{ fontFamily: F, fontSize: 11, color: colors.textMuted, letterSpacing: "0.1em", textTransform: "uppercase" }}>
-              {ko ? "사진 선택" : "Select photo"}
+              {ko ? "사진 선택 (여러 장 가능)" : "Select photos"}
             </span>
           </button>
         )}
@@ -261,10 +313,55 @@ export default function ArtworkUploadModal({ lang, open, onClose, onPosted }: Pr
             }}
           />
 
+          <button
+            type="button"
+            onClick={() => setAddToPortfolio((v) => !v)}
+            aria-pressed={addToPortfolio}
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: 10,
+              width: "100%",
+              marginTop: 14,
+              padding: "12px 14px",
+              border: `1px solid ${addToPortfolio ? colors.accent : colors.border}`,
+              background: addToPortfolio ? colors.accentSoft : "transparent",
+              cursor: "pointer",
+              textAlign: "left",
+            }}
+          >
+            <span
+              aria-hidden
+              style={{
+                width: 20,
+                height: 20,
+                borderRadius: "50%",
+                flexShrink: 0,
+                border: addToPortfolio ? "none" : `1.5px solid ${colors.borderDark}`,
+                background: addToPortfolio ? colors.success : "transparent",
+                color: "#fff",
+                fontSize: 11,
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+              }}
+            >
+              {addToPortfolio ? "✓" : ""}
+            </span>
+            <span style={{ display: "flex", flexDirection: "column", gap: 2 }}>
+              <span style={{ fontFamily: F, fontSize: 12, fontWeight: 600, color: colors.textPrimary }}>
+                {ko ? "포트폴리오에 바로 추가" : "Add to portfolio now"}
+              </span>
+              <span style={{ fontFamily: F, fontSize: 10, color: colors.textMuted }}>
+                {ko
+                  ? "공개 프로필 그리드와 PDF에 바로 포함돼요. 나중에 마이페이지에서 뺄 수 있어요."
+                  : "Shown on your public profile grid and PDF. You can remove it later in My Page."}
+              </span>
+            </span>
+          </button>
+
           <p style={{ fontFamily: F, fontSize: 10, color: colors.textMuted, margin: "10px 0 0", lineHeight: 1.5 }}>
-            {ko
-              ? "#해시태그로 검색됩니다. 포트폴리오 공개는 마이페이지에서 선택하세요."
-              : "Use #hashtags for discovery. Choose portfolio visibility in My Page."}
+            {ko ? "#해시태그로 검색됩니다." : "Use #hashtags for discovery."}
           </p>
 
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: 16, gap: 12 }}>
@@ -274,18 +371,18 @@ export default function ArtworkUploadModal({ lang, open, onClose, onPosted }: Pr
             <button
               type="button"
               onClick={postArtwork}
-              disabled={!preview || posting}
+              disabled={images.length === 0 || posting}
               style={{
                 padding: "10px 28px",
                 border: "none",
-                background: !preview || posting ? colors.border : colors.accent,
+                background: images.length === 0 || posting ? colors.border : colors.accent,
                 color: colors.bgPrimary,
                 fontFamily: F,
                 fontSize: 11,
                 fontWeight: 600,
                 letterSpacing: "0.1em",
                 textTransform: "uppercase",
-                cursor: !preview || posting ? "not-allowed" : "pointer",
+                cursor: images.length === 0 || posting ? "not-allowed" : "pointer",
               }}
             >
               {posting ? (ko ? "공유 중…" : "Sharing…") : ko ? "공유" : "Share"}

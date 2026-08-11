@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { F, S, colors } from "@/lib/design";
 import HashtagText from "@/app/components/HashtagText";
 import ArtworkUploadModal from "@/app/components/ArtworkUploadModal";
+import ArtworkImageCarousel from "@/app/components/ArtworkImageCarousel";
 import ArtworkEngagementPanel from "@/app/components/ArtworkEngagementPanel";
 import ArtistBottomNav from "@/app/components/ArtistBottomNav";
 import ProfileEditModal from "@/app/components/ProfileEditModal";
@@ -51,6 +52,9 @@ function PostGrid({ posts, onSelect }: { posts: FeedPost[]; onSelect: (post: Fee
           <img src={post.imageUrl} alt={post.title || ""} style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} />
           {post.postType === "exhibition" && (
             <span style={{ position: "absolute", top: 6, right: 6, fontSize: 10, color: "#fff", textShadow: "0 1px 3px rgba(0,0,0,0.6)" }}>◆</span>
+          )}
+          {(post.imageUrls?.length ?? 0) > 1 && (
+            <span style={{ position: "absolute", top: 6, left: 6, fontSize: 11, color: "#fff", textShadow: "0 1px 3px rgba(0,0,0,0.6)" }}>⧉</span>
           )}
         </button>
       ))}
@@ -439,9 +443,7 @@ export default function ArtistFeed({ lang }: Props) {
                 </span>
               </button>
             )}
-            <div style={{ aspectRatio: "1", background: "#111" }}>
-              <img src={selected.imageUrl} alt={selected.title || ""} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
-            </div>
+            <ArtworkImageCarousel images={selected.imageUrls?.length ? selected.imageUrls : [selected.imageUrl]} alt={selected.title || ""} />
             <div style={{ padding: "14px 16px 18px" }}>
               <div style={{ fontFamily: F, fontSize: 9, fontWeight: 600, letterSpacing: "0.1em", textTransform: "uppercase", color: colors.accent, marginBottom: 8 }}>
                 {ko ? POST_TYPE_LABELS[selected.postType].ko : POST_TYPE_LABELS[selected.postType].en}

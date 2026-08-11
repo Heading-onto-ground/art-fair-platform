@@ -12,6 +12,8 @@ import { syncExhibitionArtEvent } from "@/lib/artworkExhibitionSync";
 
 export const dynamic = "force-dynamic";
 
+const MAX_IMAGES_PER_POST = 5;
+
 async function withHashtags<T extends { id: string }>(items: T[]) {
   const tagMap = await loadHashtagsForArtworks(items.map((i) => i.id));
   return items.map((item) => ({
@@ -36,7 +38,10 @@ export async function GET() {
   const artworks = await prisma.artwork.findMany({
     where: { artistId: profile.id },
     orderBy: { createdAt: "desc" },
-    include: { series: { select: { id: true, title: true } } },
+    include: {
+      series: { select: { id: true, title: true } },
+      images: { select: { url: true, position: true }, orderBy: { position: "asc" } },
+    },
   });
 
   const tagged = await withHashtags(artworks);
@@ -61,12 +66,18 @@ export async function POST(req: NextRequest) {
   }
 
   const body = await req.json().catch(() => ({}));
-  const imageUrl = String(body.imageUrl || body.imageUri || "").trim();
+  // Multi-photo posts: imageUrls[] (first = cover). Single imageUrl kept for compat.
+  const rawImageUrls: string[] = Array.isArray(body.imageUrls)
+    ? body.imageUrls.filter((v: unknown): v is string => typeof v === "string" && v.trim().length > 0)
+    : [];
+  const imageUrl = rawImageUrls[0]?.trim() || String(body.imageUrl || body.imageUri || "").trim();
+  const extraImageUrls = rawImageUrls.slice(1, MAX_IMAGES_PER_POST).map((v) => v.trim());
   const caption = typeof body.caption === "string" ? body.caption.trim() || null : null;
   const titleInput = typeof body.title === "string" ? body.title.trim() || null : null;
   const seriesIdInput = typeof body.seriesId === "string" ? body.seriesId : null;
   const postType = parsePostType(body.postType);
   const medium = typeof body.medium === "string" ? body.medium.trim() || null : profile.genre || null;
+  const inPortfolio = body.inPortfolio === true;
 
   if (!imageUrl) {
     return NextResponse.json({ ok: false, error: "image required" }, { status: 400 });
@@ -106,6 +117,15 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ ok: false, error: stored.error }, { status: 400 });
   }
 
+  const storedExtraUrls: string[] = [];
+  for (const extra of extraImageUrls) {
+    const storedExtra = await storeArtworkImage(session.userId, extra);
+    if (!storedExtra.ok) {
+      return NextResponse.json({ ok: false, error: storedExtra.error }, { status: 400 });
+    }
+    storedExtraUrls.push(storedExtra.url);
+  }
+
   const title = deriveArtworkTitle(titleInput, caption);
 
   let seriesAssignment: {
@@ -133,9 +153,19 @@ export async function POST(req: NextRequest) {
       imageUrl: stored.url,
       medium,
       isPublic: true,
-      inPortfolio: false,
+      inPortfolio,
+      ...(storedExtraUrls.length > 0
+        ? {
+            images: {
+              create: [stored.url, ...storedExtraUrls].map((url, position) => ({ url, position })),
+            },
+          }
+        : {}),
     },
-    include: { series: { select: { id: true, title: true } } },
+    include: {
+      series: { select: { id: true, title: true } },
+      images: { select: { url: true, position: true }, orderBy: { position: "asc" } },
+    },
   });
 
   const hashtags = await syncArtworkHashtags(artwork.id, caption);
@@ -167,6 +197,46 @@ export async function PATCH(req: NextRequest) {
   }
 
   const body = await req.json().catch(() => ({}));
+
+  // Portfolio reorder: { orderedIds: string[] } — index becomes portfolioOrder
+  if (Array.isArray(body.orderedIds)) {
+    const orderedIds = body.orderedIds.filter(
+      (v: unknown): v is string => typeof v === "string" && v.trim().length > 0,
+    );
+    if (orderedIds.length === 0) {
+      return NextResponse.json({ ok: false, error: "orderedIds required" }, { status: 400 });
+    }
+    const owned = await prisma.artwork.findMany({
+      where: { id: { in: orderedIds }, artistId: profile.id },
+      select: { id: true },
+    });
+    const ownedIds = new Set(owned.map((a: { id: string }) => a.id));
+    await prisma.$transaction(
+      orderedIds
+        .filter((id: string) => ownedIds.has(id))
+        .map((id: string, index: number) =>
+          prisma.artwork.update({ where: { id }, data: { portfolioOrder: index } }),
+        ),
+    );
+    return NextResponse.json({ ok: true, count: ownedIds.size });
+  }
+
+  // Batch portfolio toggle: { ids: string[], inPortfolio: boolean }
+  if (Array.isArray(body.ids)) {
+    if (typeof body.inPortfolio !== "boolean") {
+      return NextResponse.json({ ok: false, error: "inPortfolio required" }, { status: 400 });
+    }
+    const ids = body.ids.filter((v: unknown): v is string => typeof v === "string" && v.trim().length > 0);
+    if (ids.length === 0) {
+      return NextResponse.json({ ok: false, error: "ids required" }, { status: 400 });
+    }
+    const result = await prisma.artwork.updateMany({
+      where: { id: { in: ids }, artistId: profile.id },
+      data: { inPortfolio: body.inPortfolio },
+    });
+    return NextResponse.json({ ok: true, count: result.count });
+  }
+
   const id = String(body.id || "").trim();
   if (!id) return NextResponse.json({ ok: false, error: "id required" }, { status: 400 });
 
@@ -202,7 +272,10 @@ export async function PATCH(req: NextRequest) {
   const artwork = await prisma.artwork.update({
     where: { id },
     data,
-    include: { series: { select: { id: true, title: true } } },
+    include: {
+      series: { select: { id: true, title: true } },
+      images: { select: { url: true, position: true }, orderBy: { position: "asc" } },
+    },
   });
 
   const hashtags =

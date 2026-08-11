@@ -4,6 +4,7 @@ import { useRouter } from "next/navigation";
 import { F, colors } from "@/lib/design";
 import HashtagText from "@/app/components/HashtagText";
 import ArtworkEngagementPanel from "@/app/components/ArtworkEngagementPanel";
+import ArtworkImageCarousel from "@/app/components/ArtworkImageCarousel";
 import { artworkTimeAgo } from "@/lib/artworkImageUtils";
 import { POST_TYPE_LABELS } from "@/lib/artworkTypes";
 import type { ArtworkPostType } from "@/lib/artworkTypes";
@@ -13,6 +14,7 @@ export type FeedPost = {
   title: string | null;
   caption: string | null;
   imageUrl: string;
+  imageUrls?: string[];
   postType: ArtworkPostType;
   hashtags: string[];
   createdAt: string;
@@ -62,9 +64,7 @@ export default function FeedPostCard({ post, lang, isLoggedIn }: Props) {
         </button>
       )}
 
-      <div style={{ aspectRatio: "1", background: "#111" }}>
-        <img src={post.imageUrl} alt={post.title || ""} style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} />
-      </div>
+      <ArtworkImageCarousel images={post.imageUrls?.length ? post.imageUrls : [post.imageUrl]} alt={post.title || ""} />
 
       <div style={{ padding: "12px 4px 0" }}>
         <div style={{ fontFamily: F, fontSize: 9, fontWeight: 600, letterSpacing: "0.1em", textTransform: "uppercase", color: colors.accent, marginBottom: 8 }}>

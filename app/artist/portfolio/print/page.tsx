@@ -78,7 +78,13 @@ export default function PortfolioPrintPage() {
     () =>
       artworks
         .filter((a) => a.inPortfolio)
-        .sort((a, b) => (a.createdAt < b.createdAt ? 1 : -1)),
+        .sort((a, b) => {
+          // Manual order first (portfolioOrder asc, nulls last), then newest first
+          const ao = a.portfolioOrder ?? Number.MAX_SAFE_INTEGER;
+          const bo = b.portfolioOrder ?? Number.MAX_SAFE_INTEGER;
+          if (ao !== bo) return ao - bo;
+          return a.createdAt < b.createdAt ? 1 : -1;
+        }),
     [artworks],
   );
 

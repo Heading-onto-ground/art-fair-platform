@@ -5,10 +5,12 @@ export type ArtworkItem = {
   title: string | null;
   caption: string | null;
   imageUrl: string;
+  imageUrls: string[];
   medium: string | null;
   postType: ArtworkPostType;
   isPublic: boolean;
   inPortfolio: boolean;
+  portfolioOrder: number | null;
   seriesId: string | null;
   seriesTitle: string | null;
   hashtags: string[];

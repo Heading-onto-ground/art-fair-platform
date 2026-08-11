@@ -115,18 +115,33 @@ model Artwork {
   medium      String?
   isPublic    Boolean        @default(true)
   inPortfolio Boolean        @default(true)
+  portfolioOrder Int?        // manual ordering in public portfolio (null = after ordered, newest first)
   createdAt   DateTime       @default(now())
   updatedAt   DateTime       @updatedAt
   hashtags    ArtworkHashtag[]
   likes       ArtworkLike[]
   collabInterests ArtworkCollabInterest[]
   comments    ArtworkComment[]
+  images      ArtworkImage[]
 
   @@index([artistId])
   @@index([seriesId])
   @@index([artistId, createdAt])
   @@index([postType])
   @@index([createdAt])
+}
+
+// Additional images for multi-photo posts (Instagram-style carousel).
+// Artwork.imageUrl stays the cover image; rows here hold the full ordered set.
+model ArtworkImage {
+  id        String   @id @default(cuid())
+  artworkId String
+  artwork   Artwork  @relation(fields: [artworkId], references: [id], onDelete: Cascade)
+  url       String
+  position  Int      @default(0)
+  createdAt DateTime @default(now())
+
+  @@index([artworkId])
 }
 
 model Hashtag {
@@ -671,4 +686,43 @@ model GatheringAttendee {
   @@unique([gatheringId, artistId])
   @@index([artistId])
   @@index([gatheringId])
+}
+
+// ========== 예술인 노동·계약 실태 설문 (간담회 사전조사) ==========
+
+model LaborSurveyCampaign {
+  id          String                @id @default(cuid())
+  title       String
+  subtitle    String?
+  description String?
+  gatheringId String?
+  isActive    Boolean               @default(true)
+  opensAt     DateTime?
+  closesAt    DateTime?
+  createdBy   String                // admin email
+  createdAt   DateTime              @default(now())
+  updatedAt   DateTime              @updatedAt
+  responses   LaborSurveyResponse[]
+
+  @@index([isActive])
+}
+
+model LaborSurveyResponse {
+  id                    String              @id @default(cuid())
+  campaignId            String
+  campaign              LaborSurveyCampaign @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  userId                String
+  artistProfileId       String?
+  answers               Json
+  consentResearch       Boolean             @default(false)
+  consentPolicy         Boolean             @default(false)
+  consentNationalAssembly Boolean           @default(false)
+  consentAnonymousCase  Boolean             @default(false)
+  declineNationalAssembly Boolean           @default(false)
+  consentAt             DateTime
+  submittedAt           DateTime            @default(now())
+
+  @@unique([campaignId, userId])
+  @@index([campaignId])
+  @@index([userId])
 }

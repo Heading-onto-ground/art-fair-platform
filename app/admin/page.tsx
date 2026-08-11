@@ -323,6 +323,16 @@ export default function AdminHomePage() {
       ),
       href: "/admin/rejected-artists",
     },
+    {
+      title: tr("Labor Survey", "노동 설문", "労働アンケート", "Enquete travail"),
+      description: tr(
+        "Manage pre-event artist labor surveys, view responses, and control campaign status.",
+        "간담회 사전 설문 캠페인을 관리하고 응답을 확인합니다.",
+        "イベント前アンケートキャンペーンを管理し、回答を確認します。",
+        "Gerez les enquetes pre-evenement et consultez les reponses."
+      ),
+      href: "/admin/labor-survey",
+    },
   ];
 
   return (

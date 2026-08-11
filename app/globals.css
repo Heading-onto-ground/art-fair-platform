@@ -32,6 +32,11 @@
   box-sizing: border-box;
 }
 
+/* Hide horizontal scrollbar on image carousels (WebKit) */
+.carousel-scroll::-webkit-scrollbar {
+  display: none;
+}
+
 body {
   background: var(--bg-primary);
   color: var(--text-primary);
