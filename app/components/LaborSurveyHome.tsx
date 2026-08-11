@@ -158,17 +158,6 @@ export default function LaborSurveyHome({ lang }: Props) {
       if (data?.mine) {
         setSubmittedAt(data.mine.submittedAt);
         setAnswers(data.mine.answers);
-      } else if (data?.profilePrefill) {
-        const pre = data.profilePrefill as { artistId?: string; instagram?: string };
-        setAnswers((prev) => ({
-          ...prev,
-          artistDisplayName: pre.artistId ? `@${pre.artistId.replace(/^@+/, "")}` : prev.artistDisplayName,
-          instagramId: pre.instagram
-            ? pre.instagram.startsWith("@")
-              ? pre.instagram
-              : `@${pre.instagram.replace(/^@+/, "")}`
-            : prev.instagramId,
-        }));
       }
     } finally {
       setLoading(false);

@@ -57,26 +57,15 @@ export async function GET() {
     const session = getServerSession();
 
     let mine = null;
-    let profilePrefill: { artistId?: string; instagram?: string } | null = null;
 
     if (session?.userId) {
       mine = await getMyLaborSurveyResponse(campaign.id, session.userId);
-      if (session.role === "artist") {
-        const profile = await getProfileByUserId(session.userId);
-        if (profile?.role === "artist") {
-          profilePrefill = {
-            artistId: profile.artistId ? String(profile.artistId) : undefined,
-            instagram: profile.instagram ? String(profile.instagram) : undefined,
-          };
-        }
-      }
     }
 
     return NextResponse.json({
       ok: true,
       campaign,
       session: session ? { role: session.role, userId: session.userId } : null,
-      profilePrefill,
       mine,
     });
   } catch (e) {
