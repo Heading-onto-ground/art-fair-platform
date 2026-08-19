@@ -236,12 +236,11 @@ export default function LaborSurveyHome({ lang }: Props) {
         <span style={{ fontFamily: F, fontSize: 10, letterSpacing: "0.18em", textTransform: "uppercase", color: colors.accent }}>
           {ko ? "사전 설문" : "Pre-event survey"}
         </span>
-        <h1 style={{ fontFamily: S, fontSize: 26, fontWeight: 400, margin: "6px 0 4px", lineHeight: 1.25, color: colors.textPrimary }}>
-          {campaign?.title ?? (ko ? "예술인 솔직담백 수다회" : "Artist roundtable")}
+        <h1 style={{ fontFamily: S, fontSize: 26, fontWeight: 400, margin: "6px 0 10px", lineHeight: 1.35, color: colors.textPrimary }}>
+          {ko
+            ? "예술인 활동 증명 제도 개선 연구·정책·국정감사를 위한 자료 수집"
+            : "Data collection for research, policy, and audits to improve the Artist Activity Certification System"}
         </h1>
-        {campaign?.subtitle && (
-          <p style={{ fontFamily: S, fontSize: 18, color: colors.textSecondary, margin: "0 0 10px" }}>{campaign.subtitle}</p>
-        )}
         <p style={{ fontFamily: F, fontSize: 12, color: colors.textMuted, lineHeight: 1.7, margin: 0 }}>
           {campaign?.description ??
             (ko
