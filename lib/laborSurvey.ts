@@ -198,6 +198,8 @@ export async function submitLaborSurveyResponse(input: {
   }
 
   if (
+    !input.answers.ageGroup ||
+    !input.answers.gender ||
     !input.answers.field ||
     !input.answers.careerYears ||
     !input.answers.laborExperience.trim() ||

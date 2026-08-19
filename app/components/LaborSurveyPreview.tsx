@@ -2,11 +2,13 @@
 
 import { F, S, colors } from "@/lib/design";
 import {
+  AGE_GROUP_OPTIONS,
   CAREER_OPTIONS,
   CONTRACT_FREQ_OPTIONS,
   CONTRACT_TIMING_OPTIONS,
   EMPLOYMENT_OPTIONS,
   FIELD_OPTIONS,
+  GENDER_OPTIONS,
 } from "@/lib/laborSurveyTypes";
 
 const sectionHead = {
@@ -47,7 +49,11 @@ export default function LaborSurveyPreview() {
       <div style={field}>@username</div>
 
       <h3 style={sectionHead}>A. 활동 현황</h3>
-      <p style={label}>분야 *</p>
+      <p style={label}>연령 *</p>
+      <div style={field}>{AGE_GROUP_OPTIONS.join(" · ")}</div>
+      <p style={label}>성별 *</p>
+      <div style={field}>{GENDER_OPTIONS.join(" · ")}</div>
+      <p style={label}>분야 (예술활동증명 기준) *</p>
       <div style={field}>{FIELD_OPTIONS.join(" · ")}</div>
       <p style={label}>활동 경력 *</p>
       <div style={field}>{CAREER_OPTIONS.join(" · ")}</div>

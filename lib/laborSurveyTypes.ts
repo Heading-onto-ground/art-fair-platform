@@ -6,6 +6,8 @@ export type LaborSurveyAnswers = {
   instagramId: string;
 
   // A. 활동 현황
+  ageGroup: string;
+  gender: string;
   field: string;
   careerYears: string;
   employmentType: string;
@@ -79,16 +81,28 @@ export const DEFAULT_CAMPAIGN = {
     "예술인의 노동환경 및 계약실태를 청취하기 위한 사전 설문입니다. 응답은 익명으로 집계되며, 연구·정책·국정감사 자료로 활용될 수 있습니다.",
 };
 
+/** 예술활동증명 분야 구분과 동일 */
 export const FIELD_OPTIONS = [
-  "시각예술",
-  "공연/연극",
-  "음악",
   "문학",
-  "영상/미디어",
-  "무용",
+  "일반미술",
   "디자인/공예",
-  "기타",
+  "전통미술",
+  "사진",
+  "건축",
+  "일반음악",
+  "대중음악",
+  "국악",
+  "무용",
+  "연극",
+  "영화",
+  "방송",
+  "공연",
+  "만화",
 ];
+
+export const AGE_GROUP_OPTIONS = ["10대", "20대", "30대", "40대", "50대", "60대 이상"];
+
+export const GENDER_OPTIONS = ["남", "여"];
 
 export const CAREER_OPTIONS = ["1년 미만", "1–3년", "3–5년", "5–10년", "10년 이상"];
 
@@ -112,6 +126,8 @@ export function emptyLaborSurveyAnswers(): LaborSurveyAnswers {
   return {
     artistDisplayName: "",
     instagramId: "",
+    ageGroup: "",
+    gender: "",
     field: "",
     careerYears: "",
     employmentType: "",

@@ -123,7 +123,7 @@ export default function AdminLaborSurveyPage() {
   const activeCampaign = campaigns.find((c) => c.id === activeId) ?? campaigns[0];
 
   const tableColumns = LABOR_SURVEY_EXPORT_COLUMNS.filter((c) =>
-    ["submittedAt", "artistDisplayName", "instagramId", "field", "careerYears", "laborExperience"].includes(c.key),
+    ["submittedAt", "artistDisplayName", "instagramId", "ageGroup", "gender", "field", "careerYears", "laborExperience"].includes(c.key),
   );
 
   return (

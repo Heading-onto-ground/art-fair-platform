@@ -5,11 +5,13 @@ import Link from "next/link";
 import type { CSSProperties } from "react";
 import { F, S, colors } from "@/lib/design";
 import {
+  AGE_GROUP_OPTIONS,
   CAREER_OPTIONS,
   CONTRACT_FREQ_OPTIONS,
   CONTRACT_TIMING_OPTIONS,
   EMPLOYMENT_OPTIONS,
   FIELD_OPTIONS,
+  GENDER_OPTIONS,
   emptyLaborSurveyAnswers,
   type LaborSurveyAnswers,
   type LaborSurveyAggregate,
@@ -209,8 +211,8 @@ export default function LaborSurveyHome({ lang }: Props) {
           consent_required: ko ? "활용 동의 항목 중 하나 이상 선택해 주세요." : "Select at least one consent option.",
           conflicting_consent: ko ? "국감 활용 동의와 비동의를 동시에 선택할 수 없습니다." : "Conflicting consent selections.",
           required_fields_missing: ko
-            ? "작가명, 인스타그램 아이디, 분야, 경력, 노동 경험 서술은 필수입니다."
-            : "Artist name, Instagram, field, career, and labor experience are required.",
+            ? "작가명, 인스타그램 아이디, 연령, 성별, 분야, 경력, 노동 경험 서술은 필수입니다."
+            : "Artist name, Instagram, age, gender, field, career, and labor experience are required.",
           campaign_closed: ko ? "설문이 마감되었습니다." : "Survey closed.",
         };
         throw new Error(messages[err] || err);
@@ -383,7 +385,47 @@ export default function LaborSurveyHome({ lang }: Props) {
 
           <h2 style={sectionHead}>A. {ko ? "활동 현황" : "Activity"}</h2>
 
-          <label style={label}>{ko ? "분야" : "Field"} *</label>
+          <label style={label}>{ko ? "연령" : "Age group"} *</label>
+          <select value={answers.ageGroup} onChange={(e) => setAnswer("ageGroup", e.target.value)} style={input}>
+            <option value="">{ko ? "선택" : "Select"}</option>
+            {AGE_GROUP_OPTIONS.map((o) => (
+              <option key={o} value={o}>{o}</option>
+            ))}
+          </select>
+
+          <label style={label}>{ko ? "성별" : "Gender"} *</label>
+          <div style={{ display: "flex", gap: 8, marginTop: 4 }}>
+            {GENDER_OPTIONS.map((g) => (
+              <label
+                key={g}
+                style={{
+                  flex: 1,
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  gap: 6,
+                  padding: "10px 8px",
+                  border: `1px solid ${answers.gender === g ? colors.textPrimary : colors.border}`,
+                  background: answers.gender === g ? colors.textPrimary : colors.bgCard,
+                  color: answers.gender === g ? colors.bgPrimary : colors.textSecondary,
+                  fontFamily: F,
+                  fontSize: 12,
+                  cursor: "pointer",
+                }}
+              >
+                <input
+                  type="radio"
+                  name="gender"
+                  checked={answers.gender === g}
+                  onChange={() => setAnswer("gender", g)}
+                  style={{ display: "none" }}
+                />
+                {g}
+              </label>
+            ))}
+          </div>
+
+          <label style={label}>{ko ? "분야 (예술활동증명 기준)" : "Field (activity cert.)"} *</label>
           <select value={answers.field} onChange={(e) => setAnswer("field", e.target.value)} style={input}>
             <option value="">{ko ? "선택" : "Select"}</option>
             {FIELD_OPTIONS.map((o) => (

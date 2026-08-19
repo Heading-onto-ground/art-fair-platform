@@ -29,6 +29,8 @@ export const LABOR_SURVEY_EXPORT_COLUMNS: ExportColumn[] = [
   },
   { key: "artistDisplayName", header: "작가명", get: (r) => r.displayName ?? r.answers.artistDisplayName ?? "" },
   { key: "instagramId", header: "인스타 아이디", get: (r) => r.instagramId ?? r.answers.instagramId ?? "" },
+  { key: "ageGroup", header: "연령", get: (r) => r.answers.ageGroup ?? "" },
+  { key: "gender", header: "성별", get: (r) => r.answers.gender ?? "" },
   { key: "field", header: "분야", get: (r) => r.answers.field },
   { key: "careerYears", header: "활동 경력", get: (r) => r.answers.careerYears },
   { key: "employmentType", header: "전업·겸업", get: (r) => r.answers.employmentType },
@@ -124,5 +126,5 @@ export function flattenResponseForTable(r: AdminLaborSurveyResponse): Record<str
 }
 
 export function summarizeAnswers(a: LaborSurveyAnswers): string {
-  return [a.field, a.careerYears].filter(Boolean).join(" · ");
+  return [a.ageGroup, a.gender, a.field, a.careerYears].filter(Boolean).join(" · ");
 }

@@ -8,16 +8,26 @@ import {
   submitLaborSurveyResponse,
 } from "@/lib/laborSurvey";
 import type { LaborSurveyAnswers, LaborSurveyConsent } from "@/lib/laborSurveyTypes";
+import {
+  AGE_GROUP_OPTIONS,
+  FIELD_OPTIONS,
+  GENDER_OPTIONS,
+} from "@/lib/laborSurveyTypes";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 function sanitizeAnswers(raw: Record<string, unknown>): LaborSurveyAnswers {
   const instagramRaw = sanitizeText(String(raw.instagramId || ""), 80).replace(/^@+/, "");
+  const field = sanitizeText(String(raw.field || ""), 80);
+  const ageGroup = sanitizeText(String(raw.ageGroup || ""), 20);
+  const gender = sanitizeText(String(raw.gender || ""), 10);
   return {
     artistDisplayName: sanitizeText(String(raw.artistDisplayName || ""), 80),
     instagramId: instagramRaw ? `@${instagramRaw}` : "",
-    field: sanitizeText(String(raw.field || ""), 80),
+    ageGroup: AGE_GROUP_OPTIONS.includes(ageGroup) ? ageGroup : "",
+    gender: GENDER_OPTIONS.includes(gender) ? gender : "",
+    field: FIELD_OPTIONS.includes(field) ? field : "",
     careerYears: sanitizeText(String(raw.careerYears || ""), 40),
     employmentType: sanitizeText(String(raw.employmentType || ""), 80),
     isFreelancer: (["yes", "no", "mixed"].includes(String(raw.isFreelancer))
