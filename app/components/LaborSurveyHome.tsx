@@ -14,13 +14,11 @@ import {
   GENDER_OPTIONS,
   emptyLaborSurveyAnswers,
   type LaborSurveyAnswers,
-  type LaborSurveyAggregate,
   type LaborSurveyCampaignPublic,
   type LaborSurveyConsent,
 } from "@/lib/laborSurveyTypes";
 
 type Props = { lang: string };
-type HomeTab = "survey" | "results";
 
 type SessionInfo = { role: "artist" | "gallery" | "curator"; userId: string } | null;
 
@@ -96,40 +94,9 @@ function YesNo({
   );
 }
 
-function AggregateBar({ label: barLabel, percent, total }: { label: string; percent: number | null; total: number }) {
-  return (
-    <div style={{ marginBottom: 18 }}>
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", gap: 12, marginBottom: 8 }}>
-        <p style={{ margin: 0, fontFamily: F, fontSize: 13, color: colors.textPrimary, lineHeight: 1.5, flex: 1 }}>
-          “{barLabel}”
-        </p>
-        <span style={{ fontFamily: S, fontSize: 22, color: colors.accent, flexShrink: 0 }}>
-          {percent !== null ? `${percent}%` : "—"}
-        </span>
-      </div>
-      <div style={{ height: 8, background: colors.bgAccent, borderRadius: 4, overflow: "hidden" }}>
-        <div
-          style={{
-            height: "100%",
-            width: percent !== null ? `${percent}%` : "0%",
-            background: colors.accent,
-            transition: "width 0.4s ease",
-          }}
-        />
-      </div>
-      {percent === null && total > 0 && (
-        <p style={{ margin: "6px 0 0", fontFamily: F, fontSize: 11, color: colors.textLight }}>
-          응답 {total}명 — 집계 공개 최소 인원 미달
-        </p>
-      )}
-    </div>
-  );
-}
-
 export default function LaborSurveyHome({ lang }: Props) {
   const ko = lang === "ko";
 
-  const [tab, setTab] = useState<HomeTab>("survey");
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
@@ -147,9 +114,6 @@ export default function LaborSurveyHome({ lang }: Props) {
     declineNationalAssembly: false,
   });
 
-  const [aggregate, setAggregate] = useState<LaborSurveyAggregate | null>(null);
-  const [aggregateLoading, setAggregateLoading] = useState(false);
-
   const loadSurvey = useCallback(async () => {
     setLoading(true);
     try {
@@ -166,27 +130,9 @@ export default function LaborSurveyHome({ lang }: Props) {
     }
   }, []);
 
-  const loadAggregate = useCallback(async (campaignId?: string) => {
-    setAggregateLoading(true);
-    try {
-      const q = campaignId ? `?campaignId=${encodeURIComponent(campaignId)}` : "";
-      const res = await fetch(`/api/labor-survey/aggregate${q}`, { cache: "no-store" });
-      const data = await res.json().catch(() => null);
-      if (data?.aggregate) setAggregate(data.aggregate);
-    } finally {
-      setAggregateLoading(false);
-    }
-  }, []);
-
   useEffect(() => {
     loadSurvey();
   }, [loadSurvey]);
-
-  useEffect(() => {
-    if (tab === "results" && campaign?.id) {
-      loadAggregate(campaign.id);
-    }
-  }, [tab, campaign?.id, loadAggregate]);
 
   function setAnswer<K extends keyof LaborSurveyAnswers>(key: K, value: LaborSurveyAnswers[K]) {
     setAnswers((prev) => ({ ...prev, [key]: value }));
@@ -219,7 +165,6 @@ export default function LaborSurveyHome({ lang }: Props) {
       }
       setSubmittedAt(data.submittedAt);
       setMessage(ko ? "응답이 저장되었습니다. 감사합니다." : "Your response has been saved. Thank you.");
-      loadAggregate(campaign.id);
     } catch (e: unknown) {
       setMessage(e instanceof Error ? e.message : ko ? "제출에 실패했습니다." : "Submit failed.");
     } finally {
@@ -249,72 +194,16 @@ export default function LaborSurveyHome({ lang }: Props) {
         </p>
       </div>
 
-      {/* Tabs */}
-      <div style={{ display: "flex", borderBottom: `1px solid ${colors.border}`, marginBottom: 4 }}>
-        {([
-          { id: "survey" as const, ko: "설문 응답", en: "Survey" },
-          { id: "results" as const, ko: "집계 결과", en: "Results" },
-        ]).map((t) => (
-          <button
-            key={t.id}
-            type="button"
-            onClick={() => setTab(t.id)}
-            style={{
-              flex: 1,
-              padding: "12px 0",
-              border: "none",
-              borderBottom: `2px solid ${tab === t.id ? colors.textPrimary : "transparent"}`,
-              background: "none",
-              fontFamily: F,
-              fontSize: 10,
-              fontWeight: 600,
-              letterSpacing: "0.06em",
-              textTransform: "uppercase",
-              color: tab === t.id ? colors.textPrimary : colors.textMuted,
-              cursor: "pointer",
-            }}
-          >
-            {ko ? t.ko : t.en}
-          </button>
-        ))}
-      </div>
-
       {loading ? (
         <p style={{ fontFamily: F, fontSize: 13, color: colors.textLight, padding: "32px 4px" }}>
           {ko ? "불러오는 중..." : "Loading..."}
         </p>
-      ) : tab === "results" ? (
-        <div style={{ padding: "16px 4px" }}>
-          <p style={{ fontFamily: F, fontSize: 12, color: colors.textMuted, lineHeight: 1.7, marginBottom: 20 }}>
-            {ko
-              ? "오늘 참여자들의 사전 응답을 익명으로 집계합니다. 개인을 특정할 수 있는 정보는 포함되지 않습니다."
-              : "Anonymous aggregate of pre-event responses. No personally identifying information."}
-          </p>
-          {aggregateLoading ? (
-            <p style={{ fontFamily: F, fontSize: 13, color: colors.textLight }}>{ko ? "집계 중..." : "Loading..."}</p>
-          ) : aggregate ? (
-            <>
-              <p style={{ fontFamily: F, fontSize: 11, color: colors.textLight, marginBottom: 20 }}>
-                {ko ? `총 ${aggregate.responseCount}명 응답` : `${aggregate.responseCount} responses`}
-              </p>
-              {aggregate.responseCount === 0 ? (
-                <p style={{ fontFamily: F, fontSize: 13, color: colors.textMuted }}>
-                  {ko ? "아직 응답이 없습니다." : "No responses yet."}
-                </p>
-              ) : (
-                aggregate.items.map((item) => (
-                  <AggregateBar key={item.key} label={item.label} percent={item.percent} total={aggregate.responseCount} />
-                ))
-              )}
-            </>
-          ) : null}
-        </div>
       ) : !session ? (
         <div style={{ padding: "24px 4px" }}>
           <p style={{ fontFamily: F, fontSize: 13, color: colors.textSecondary, lineHeight: 1.7, marginBottom: 16 }}>
             {ko
-              ? "설문 응답은 예술가 계정으로 로그인한 뒤 작성할 수 있습니다. 집계 결과 탭은 누구나 볼 수 있습니다."
-              : "Log in as an artist to respond. Aggregate results are public."}
+              ? "설문 응답은 예술가 계정으로 로그인한 뒤 작성할 수 있습니다. 제출한 응답은 관리자만 확인할 수 있습니다."
+              : "Log in as an artist to respond. Submitted responses are visible only to administrators."}
           </p>
           <Link
             href="/login?role=artist&redirect=/"

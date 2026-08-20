@@ -156,14 +156,11 @@ export default function AdminLaborSurveyPage() {
         {tab === "live" && (
           <section style={{ border: "1px solid #E8E3DB", background: "#FFF", padding: "24px" }}>
             <p style={{ fontFamily: F, fontSize: 13, color: "#4A4A4A", lineHeight: 1.7, marginBottom: 16 }}>
-              참여자에게 보이는 메인 페이지입니다. 집계 결과 탭은 로그인 없이 볼 수 있습니다.
+              참여자에게 보이는 메인 페이지입니다. 제출된 응답은 관리자만 확인할 수 있습니다.
             </p>
             <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
               <a href="/" target="_blank" rel="noreferrer" style={primaryBtn}>
                 설문 페이지 (/) ↗
-              </a>
-              <a href="/" target="_blank" rel="noreferrer" style={ghostBtn}>
-                집계 결과 보기 ↗
               </a>
             </div>
           </section>

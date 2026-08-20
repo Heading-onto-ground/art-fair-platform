@@ -1,10 +1,14 @@
 import { NextResponse } from "next/server";
+import { requireAdminSession } from "@/lib/apiGuards";
 import { getLaborSurveyAggregate, getOrCreateActiveCampaign } from "@/lib/laborSurvey";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 export async function GET(req: Request) {
+  const { error } = requireAdminSession();
+  if (error) return error;
+
   try {
     const url = new URL(req.url);
     let campaignId = url.searchParams.get("campaignId") || "";
