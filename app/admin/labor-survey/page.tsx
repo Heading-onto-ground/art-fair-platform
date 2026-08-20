@@ -19,7 +19,6 @@ export default function AdminLaborSurveyPage() {
   const [activeId, setActiveId] = useState<string>("");
   const [responses, setResponses] = useState<AdminLaborSurveyResponse[]>([]);
   const [loading, setLoading] = useState(true);
-  const [downloading, setDownloading] = useState(false);
   const [msg, setMsg] = useState<string | null>(null);
 
   useEffect(() => {
@@ -80,33 +79,11 @@ export default function AdminLaborSurveyPage() {
     }
   }
 
-  async function downloadExcel() {
+  function openPdfExport() {
     if (!activeId) return;
-    setDownloading(true);
-    setMsg(null);
-    try {
-      const res = await fetch(`/api/admin/labor-survey/export?campaignId=${encodeURIComponent(activeId)}`, {
-        credentials: "include",
-      });
-      if (!res.ok) throw new Error("export_failed");
-      const blob = await res.blob();
-      const disposition = res.headers.get("Content-Disposition") || "";
-      const match = disposition.match(/filename="([^"]+)"/);
-      const filename = match?.[1] ? decodeURIComponent(match[1]) : "labor-survey.xls";
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = filename;
-      document.body.appendChild(a);
-      a.click();
-      a.remove();
-      URL.revokeObjectURL(url);
-      setMsg(`엑셀 파일을 다운로드했습니다. (${responses.length}건)`);
-    } catch {
-      setMsg("엑셀 다운로드에 실패했습니다.");
-    } finally {
-      setDownloading(false);
-    }
+    const url = `/admin/labor-survey/pdf?campaignId=${encodeURIComponent(activeId)}`;
+    window.open(url, "_blank", "noopener,noreferrer");
+    setMsg(`PDF 저장 화면을 열었습니다. 기존 응답 ${responses.length}건이 포함됩니다.`);
   }
 
   if (authenticated === null) {
@@ -135,7 +112,7 @@ export default function AdminLaborSurveyPage() {
         </span>
         <h1 style={{ fontFamily: S, fontSize: 36, fontWeight: 300, margin: "8px 0 8px" }}>예술인 노동 설문</h1>
         <p style={{ fontFamily: F, fontSize: 13, color: "#8A8580", lineHeight: 1.7, marginBottom: 20 }}>
-          관리자에서 설문 미리보기·응답 목록·엑셀 다운로드를 할 수 있습니다. 응답자는 작가명·인스타 아이디로만 표시됩니다.
+          관리자에서 설문 미리보기·응답 목록·PDF 저장을 할 수 있습니다. 응답자는 작가명·인스타 아이디로만 표시됩니다.
         </p>
 
         <div style={{ display: "flex", gap: 8, marginBottom: 20, flexWrap: "wrap" }}>
@@ -235,15 +212,15 @@ export default function AdminLaborSurveyPage() {
                 </div>
                 <button
                   type="button"
-                  onClick={downloadExcel}
-                  disabled={downloading || responses.length === 0}
+                  onClick={openPdfExport}
+                  disabled={responses.length === 0}
                   style={{
                     ...primaryBtn,
                     opacity: responses.length === 0 ? 0.5 : 1,
-                    cursor: downloading || responses.length === 0 ? "not-allowed" : "pointer",
+                    cursor: responses.length === 0 ? "not-allowed" : "pointer",
                   }}
                 >
-                  {downloading ? "다운로드 중..." : "엑셀 다운로드 (.xls)"}
+                  PDF로 저장
                 </button>
               </div>
 
@@ -278,7 +255,7 @@ export default function AdminLaborSurveyPage() {
                     </tbody>
                   </table>
                   <p style={{ fontFamily: F, fontSize: 11, color: "#B0AAA2", padding: "10px 14px", margin: 0 }}>
-                    엑셀 다운로드 시 전체 항목(동의 포함 {LABOR_SURVEY_EXPORT_COLUMNS.length}열)이 포함됩니다.
+                    PDF 저장 시 기존 응답과 전체 항목(동의 포함 {LABOR_SURVEY_EXPORT_COLUMNS.length}개)이 포함됩니다.
                   </p>
                 </div>
               )}
