@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { LABOR_SURVEY_EXPORT_COLUMNS } from "@/lib/laborSurveyExport";
+import { downloadLaborSurveyPdf, laborSurveyPdfFilename } from "@/lib/downloadLaborSurveyPdf";
 import type { AdminLaborSurveyResponse } from "@/lib/laborSurvey";
 import type { LaborSurveyCampaignPublic } from "@/lib/laborSurveyTypes";
 
@@ -15,6 +16,7 @@ export default function LaborSurveyPdfPage() {
   const router = useRouter();
   const [data, setData] = useState<SurveyData | null>(null);
   const [error, setError] = useState("");
+  const [pdfDownloading, setPdfDownloading] = useState(false);
 
   useEffect(() => {
     const campaignId = new URLSearchParams(window.location.search).get("campaignId") || "";
@@ -46,9 +48,21 @@ export default function LaborSurveyPdfPage() {
       .catch(() => setError("설문 응답을 불러오지 못했습니다."));
   }, [router]);
 
-  async function printPdf() {
-    await document.fonts?.ready;
-    window.print();
+  async function savePdf() {
+    if (!data || data.responses.length === 0 || pdfDownloading) return;
+    const campaignId = new URLSearchParams(window.location.search).get("campaignId") || "";
+    setPdfDownloading(true);
+    setError("");
+    try {
+      await downloadLaborSurveyPdf({
+        campaignId,
+        filename: laborSurveyPdfFilename(data.campaign?.title || "예술인 노동 설문"),
+      });
+    } catch (e: unknown) {
+      setError(e instanceof Error ? e.message : "PDF를 만들지 못했습니다.");
+    } finally {
+      setPdfDownloading(false);
+    }
   }
 
   return (
@@ -153,9 +167,13 @@ export default function LaborSurveyPdfPage() {
       `}</style>
 
       <div className="pdf-toolbar">
-        <span>전체 응답을 확인한 뒤 인쇄 창에서 “PDF로 저장”을 선택하세요.</span>
-        <button type="button" onClick={printPdf} disabled={!data || data.responses.length === 0}>
-          PDF로 저장
+        <span>응답을 확인한 뒤 PDF로 저장할 수 있습니다.</span>
+        <button
+          type="button"
+          onClick={savePdf}
+          disabled={!data || data.responses.length === 0 || pdfDownloading}
+        >
+          {pdfDownloading ? "PDF 생성 중..." : "PDF로 저장"}
         </button>
       </div>
 

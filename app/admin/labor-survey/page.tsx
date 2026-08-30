@@ -6,6 +6,7 @@ import AdminTopBar from "@/app/components/AdminTopBar";
 import LaborSurveyPreview from "@/app/components/LaborSurveyPreview";
 import { F, S } from "@/lib/design";
 import { LABOR_SURVEY_EXPORT_COLUMNS } from "@/lib/laborSurveyExport";
+import { downloadLaborSurveyPdf, laborSurveyPdfFilename } from "@/lib/downloadLaborSurveyPdf";
 import type { LaborSurveyCampaignPublic } from "@/lib/laborSurveyTypes";
 import type { AdminLaborSurveyResponse } from "@/lib/laborSurvey";
 
@@ -19,6 +20,7 @@ export default function AdminLaborSurveyPage() {
   const [activeId, setActiveId] = useState<string>("");
   const [responses, setResponses] = useState<AdminLaborSurveyResponse[]>([]);
   const [loading, setLoading] = useState(true);
+  const [pdfDownloading, setPdfDownloading] = useState(false);
   const [msg, setMsg] = useState<string | null>(null);
 
   useEffect(() => {
@@ -79,11 +81,21 @@ export default function AdminLaborSurveyPage() {
     }
   }
 
-  function openPdfExport() {
-    if (!activeId) return;
-    const url = `/admin/labor-survey/pdf?campaignId=${encodeURIComponent(activeId)}`;
-    window.open(url, "_blank", "noopener,noreferrer");
-    setMsg(`PDF 저장 화면을 열었습니다. 기존 응답 ${responses.length}건이 포함됩니다.`);
+  async function savePdf() {
+    if (!activeId || pdfDownloading || responses.length === 0) return;
+    setPdfDownloading(true);
+    setMsg(null);
+    try {
+      const title =
+        campaigns.find((c) => c.id === activeId)?.title || campaigns[0]?.title || "예술인 노동 설문";
+      const filename = laborSurveyPdfFilename(title);
+      await downloadLaborSurveyPdf({ campaignId: activeId, filename });
+      setMsg(`${filename} 파일을 저장했습니다.`);
+    } catch (e: unknown) {
+      setMsg(e instanceof Error ? e.message : "PDF를 만들지 못했습니다.");
+    } finally {
+      setPdfDownloading(false);
+    }
   }
 
   if (authenticated === null) {
@@ -209,15 +221,15 @@ export default function AdminLaborSurveyPage() {
                 </div>
                 <button
                   type="button"
-                  onClick={openPdfExport}
-                  disabled={responses.length === 0}
+                  onClick={savePdf}
+                  disabled={responses.length === 0 || pdfDownloading}
                   style={{
                     ...primaryBtn,
-                    opacity: responses.length === 0 ? 0.5 : 1,
-                    cursor: responses.length === 0 ? "not-allowed" : "pointer",
+                    opacity: responses.length === 0 || pdfDownloading ? 0.5 : 1,
+                    cursor: responses.length === 0 || pdfDownloading ? "not-allowed" : "pointer",
                   }}
                 >
-                  PDF로 저장
+                  {pdfDownloading ? "PDF 생성 중..." : "PDF로 저장"}
                 </button>
               </div>
 
