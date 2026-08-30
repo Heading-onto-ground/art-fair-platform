@@ -2,7 +2,10 @@
 const nextConfig = {
   reactStrictMode: true,
   experimental: {
-    serverComponentsExternalPackages: ["@vercel/blob", "undici"],
+    serverComponentsExternalPackages: ["@vercel/blob", "undici", "pdf-lib", "@pdf-lib/fontkit"],
+    outputFileTracingIncludes: {
+      "/api/admin/labor-survey/pdf": ["./lib/fonts/**/*"],
+    },
   },
   async headers() {
     return [
