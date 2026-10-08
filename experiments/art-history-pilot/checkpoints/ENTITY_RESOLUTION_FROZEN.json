@@ -1,0 +1,18 @@
+{
+  "checkpoint": "ENTITY_RESOLUTION_FROZEN",
+  "pairCount": 20,
+  "wrongMergeRate": 0,
+  "thresholds": {
+    "internationalMedianExhibitions": 8,
+    "domesticMedianExhibitions": 4,
+    "emergingMedianExhibitions": 2,
+    "tier1CoverageMin": 0.7,
+    "auditSampleSize": 50,
+    "auditMaxIncorrectRate": 0.15,
+    "entityPairCount": 20,
+    "entityMaxWrongMergeRate": 0.02,
+    "maxMedianReviewMinutes": 45,
+    "emergingStopMedian": 1
+  },
+  "hash": "2ba20e9bf3cdf352e107c563181d51b9f02892bdc315ad80a18cf8544f7b90c6"
+}

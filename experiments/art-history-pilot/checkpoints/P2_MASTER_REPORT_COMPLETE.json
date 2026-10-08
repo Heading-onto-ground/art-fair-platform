@@ -1,0 +1,9 @@
+{
+  "checkpoint": "P2_MASTER_REPORT_COMPLETE",
+  "report": "reports/P2_MASTER_REPORT.md",
+  "dataVerdict": "INTERNATIONAL_SEARCH_RESCUE_BELOW_THRESHOLD",
+  "productVerdict": "PRODUCT_EXPERIENCE_READY_FOR_HUMAN_TEST",
+  "productionClearance": "UNRESOLVED",
+  "nextStep": "NEXT_TEST_HYBRID_MODEL",
+  "pivotVerdictIssued": false
+}

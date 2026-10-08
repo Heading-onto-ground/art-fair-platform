@@ -1,0 +1,12 @@
+{
+  "checkpoint": "P2_SEARCH_DISCOVERY_RULES_FROZEN",
+  "searchSnippetsAreEvidence": false,
+  "maxQueriesPerArtist": 10,
+  "maxCandidateUrlsPerArtist": 10,
+  "reviewMinutesTarget": 30,
+  "operationalWarningMedianMinutes": 45,
+  "usageStatus": "PILOT_ONLY",
+  "productionClearance": "UNRESOLVED",
+  "threshold": "international median >= 8",
+  "doNotRecolorYellowToGreen": true
+}

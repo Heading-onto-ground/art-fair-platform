@@ -1,0 +1,163 @@
+{
+  "frozenAt": "2026-10-07T17:25:16.424Z",
+  "rule": "A domain is listed here only after this run's robots and terms review approved it. Appearing in the brief is not approval.",
+  "domains": [],
+  "held": [
+    {
+      "host": "www.wikidata.org",
+      "tier": 0,
+      "mode": "blocked",
+      "reason": "robots_disallow_target"
+    },
+    {
+      "host": "www.mmca.go.kr",
+      "tier": 1,
+      "mode": "hold",
+      "reason": "open_license_is_per_item_not_sitewide"
+    },
+    {
+      "host": "koreaartistprize.org",
+      "tier": 1,
+      "mode": "hold",
+      "reason": "reuse_not_explicitly_granted"
+    },
+    {
+      "host": "sema.seoul.go.kr",
+      "tier": 1,
+      "mode": "blocked",
+      "reason": "robots_disallow_target"
+    },
+    {
+      "host": "www.gwangjubiennale.org",
+      "tier": 1,
+      "mode": "blocked",
+      "reason": "explicit_permission_required"
+    },
+    {
+      "host": "www.busanbiennale.org",
+      "tier": 1,
+      "mode": "blocked",
+      "reason": "robots_disallow_target"
+    },
+    {
+      "host": "mediacityseoul.kr",
+      "tier": 1,
+      "mode": "blocked",
+      "reason": "robots_disallow_target"
+    },
+    {
+      "host": "songeun.or.kr",
+      "tier": 1,
+      "mode": "blocked",
+      "reason": "robots_disallow_target"
+    },
+    {
+      "host": "www.kukjegallery.com",
+      "tier": 1,
+      "mode": "hold",
+      "reason": "reuse_not_explicitly_granted"
+    },
+    {
+      "host": "www.galleryhyundai.com",
+      "tier": 1,
+      "mode": "hold",
+      "reason": "reuse_not_explicitly_granted"
+    },
+    {
+      "host": "www.pkmgallery.com",
+      "tier": 1,
+      "mode": "hold",
+      "reason": "reuse_not_explicitly_granted"
+    },
+    {
+      "host": "www.arariogallery.com",
+      "tier": 1,
+      "mode": "hold",
+      "reason": "reuse_not_explicitly_granted"
+    },
+    {
+      "host": "www.gallerybaton.com",
+      "tier": 1,
+      "mode": "hold",
+      "reason": "reuse_not_explicitly_granted"
+    },
+    {
+      "host": "www.hakgojae.com",
+      "tier": 1,
+      "mode": "blocked",
+      "reason": "robots_disallow_target"
+    },
+    {
+      "host": "www.pacegallery.com",
+      "tier": 1,
+      "mode": "blocked",
+      "reason": "explicit_permission_required"
+    },
+    {
+      "host": "www.lehmannmaupin.com",
+      "tier": 1,
+      "mode": "hold",
+      "reason": "reuse_not_explicitly_granted"
+    },
+    {
+      "host": "www.victoria-miro.com",
+      "tier": 1,
+      "mode": "blocked",
+      "reason": "explicit_permission_required"
+    },
+    {
+      "host": "www.hauserwirth.com",
+      "tier": 1,
+      "mode": "blocked",
+      "reason": "robots_disallow_target"
+    },
+    {
+      "host": "www.tate.org.uk",
+      "tier": 1,
+      "mode": "hold",
+      "reason": "reuse_not_explicitly_granted"
+    },
+    {
+      "host": "www.moma.org",
+      "tier": 1,
+      "mode": "hold",
+      "reason": "reuse_not_explicitly_granted"
+    },
+    {
+      "host": "www.guggenheim.org",
+      "tier": 1,
+      "mode": "hold",
+      "reason": "reuse_not_explicitly_granted"
+    },
+    {
+      "host": "www.diaart.org",
+      "tier": 1,
+      "mode": "blocked",
+      "reason": "robots_disallow_target"
+    },
+    {
+      "host": "www.southbankcentre.co.uk",
+      "tier": 1,
+      "mode": "hold",
+      "reason": "terms_not_located"
+    },
+    {
+      "host": "www.labiennale.org",
+      "tier": 1,
+      "mode": "hold",
+      "reason": "reuse_not_explicitly_granted"
+    },
+    {
+      "host": "whitney.org",
+      "tier": 1,
+      "mode": "hold",
+      "reason": "reuse_not_explicitly_granted"
+    },
+    {
+      "host": "www.e-flux.com",
+      "tier": 2,
+      "mode": "hold",
+      "reason": "reuse_not_explicitly_granted"
+    }
+  ]
+}

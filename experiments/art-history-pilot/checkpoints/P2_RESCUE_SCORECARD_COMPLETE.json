@@ -1,0 +1,12 @@
+{
+  "checkpoint": "P2_RESCUE_SCORECARD_COMPLETE",
+  "report": "reports/INTERNATIONAL_25_SEARCH_RESCUE.md",
+  "verdict": "INTERNATIONAL_SEARCH_RESCUE_BELOW_THRESHOLD",
+  "priorVerdictPreserved": "INTERNATIONAL_CANARY_BELOW_THRESHOLD",
+  "interpretation": "OFFICIAL_INDEX_DISCOVERY_INSUFFICIENT",
+  "median": 2,
+  "artistsAtLeast8": 9,
+  "uniqueExhibitions": 468,
+  "artistExhibitionIncidences": 474,
+  "rescuedPilotIds": ["A09", "A20"]
+}

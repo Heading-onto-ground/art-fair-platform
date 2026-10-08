@@ -1,0 +1,496 @@
+{
+  "reviews": [
+    {
+      "host": "www.wikidata.org",
+      "tier": 0,
+      "category": "identity",
+      "reviewedAt": "2026-10-07T17:23:37.548Z",
+      "robotsStatus": 200,
+      "robotsAllowTarget": false,
+      "targetPath": "/w/api.php",
+      "crawlDelay": 5,
+      "robotsError": null,
+      "documentsFetched": [
+        "https://www.wikidata.org",
+        "https://www.wikidata.org/wiki/Wikidata:Copyright",
+        "https://foundation.wikimedia.org/wiki/Terms_of_Use",
+        "https://www.wikidata.org/wiki/Wikidata:Licensing"
+      ],
+      "matchedSentence": "ty, Lexeme, and EntitySchema namespaces is available under the Creative Commons CC0 License ; text in the other namespaces is available under the Creative Commons ",
+      "mode": "blocked",
+      "approved": false,
+      "reason": "robots_disallow_target"
+    },
+    {
+      "host": "www.mmca.go.kr",
+      "tier": 1,
+      "category": "museum",
+      "reviewedAt": "2026-10-07T17:23:38.663Z",
+      "robotsStatus": 200,
+      "robotsAllowTarget": true,
+      "targetPath": "/",
+      "crawlDelay": null,
+      "robotsError": null,
+      "documentsFetched": [
+        "https://www.mmca.go.kr",
+        "https://www.mmca.go.kr/civil/copyright.do"
+      ],
+      "matchedSentence": null,
+      "mode": "hold",
+      "approved": false,
+      "reason": "open_license_is_per_item_not_sitewide"
+    },
+    {
+      "host": "koreaartistprize.org",
+      "tier": 1,
+      "category": "award",
+      "reviewedAt": "2026-10-07T17:23:39.632Z",
+      "robotsStatus": 200,
+      "robotsAllowTarget": true,
+      "targetPath": "/",
+      "crawlDelay": null,
+      "robotsError": null,
+      "documentsFetched": [
+        "https://koreaartistprize.org"
+      ],
+      "matchedSentence": null,
+      "mode": "hold",
+      "approved": false,
+      "reason": "reuse_not_explicitly_granted"
+    },
+    {
+      "host": "sema.seoul.go.kr",
+      "tier": 1,
+      "category": "museum",
+      "reviewedAt": "2026-10-07T17:23:42.182Z",
+      "robotsStatus": 200,
+      "robotsAllowTarget": false,
+      "targetPath": "/",
+      "crawlDelay": null,
+      "robotsError": null,
+      "documentsFetched": [
+        "https://sema.seoul.go.kr",
+        "https://sema.seoul.go.kr/kr/sema/privacy"
+      ],
+      "matchedSentence": "(사업자등록번호) 101-83-02866 (대표번호) 02–2124–8800 , 02–120 (직원찾기) 직원 및 연락처 개인정보처리방침 이메일무단수집거부 과학기술정보통신부 WA(WEB접근성) 품질인증 마크, 웹와치(WebWatch) 2026.2.22 ~ 2027.2.21 서울책방 Back",
+      "mode": "blocked",
+      "approved": false,
+      "reason": "robots_disallow_target"
+    },
+    {
+      "host": "www.gwangjubiennale.org",
+      "tier": 1,
+      "category": "biennale",
+      "reviewedAt": "2026-10-07T17:23:43.356Z",
+      "robotsStatus": 200,
+      "robotsAllowTarget": true,
+      "targetPath": "/",
+      "crawlDelay": null,
+      "robotsError": null,
+      "documentsFetched": [
+        "https://www.gwangjubiennale.org",
+        "https://www.gwangjubiennale.org/gb/member/privacy.do",
+        "https://www.gwangjubiennale.org/gb/member/terms.do"
+      ],
+      "matchedSentence": "엔날레 NEWSLETTER 광주비엔날레에서 진행되는 문화 예술 정보를 한눈에 확인 하세요 구독신청 관련사이트 개인정보 보호정책 이용약관 이메일 무단수집 거부 국세청 홈페이지 바로가기 (재)광주비엔날레 대표이사 윤범모 전남광주통합특별시 북구 비엔날레로 115[우 61104] 사업자등록번호 4",
+      "mode": "blocked",
+      "approved": false,
+      "reason": "explicit_permission_required"
+    },
+    {
+      "host": "www.busanbiennale.org",
+      "tier": 1,
+      "category": "biennale",
+      "reviewedAt": "2026-10-07T17:23:43.930Z",
+      "robotsStatus": null,
+      "robotsAllowTarget": false,
+      "targetPath": "/",
+      "crawlDelay": null,
+      "robotsError": "TypeError: fetch failed",
+      "documentsFetched": [],
+      "matchedSentence": null,
+      "mode": "blocked",
+      "approved": false,
+      "reason": "robots_disallow_target"
+    },
+    {
+      "host": "mediacityseoul.kr",
+      "tier": 1,
+      "category": "biennale",
+      "reviewedAt": "2026-10-07T17:23:45.341Z",
+      "robotsStatus": 200,
+      "robotsAllowTarget": false,
+      "targetPath": "/",
+      "crawlDelay": null,
+      "robotsError": null,
+      "documentsFetched": [
+        "https://mediacityseoul.kr",
+        "https://mediacityseoul.kr/ko/smb/privacy-and-copyright-policy",
+        "https://mediacityseoul.kr/ko/smb/privacy-and-copyright-policy",
+        "https://www.mediacityseoul.kr/en/smb"
+      ],
+      "matchedSentence": "Editing Andy St. Louis All rights reserved. No part of this website may be used without prior permission from each copyright holder, Seoul Museum of Art and the respective contributors",
+      "mode": "blocked",
+      "approved": false,
+      "reason": "robots_disallow_target"
+    },
+    {
+      "host": "songeun.or.kr",
+      "tier": 1,
+      "category": "award",
+      "reviewedAt": "2026-10-07T17:23:48.729Z",
+      "robotsStatus": 200,
+      "robotsAllowTarget": false,
+      "targetPath": "/",
+      "crawlDelay": null,
+      "robotsError": null,
+      "documentsFetched": [
+        "https://songeun.or.kr"
+      ],
+      "matchedSentence": null,
+      "mode": "blocked",
+      "approved": false,
+      "reason": "robots_disallow_target"
+    },
+    {
+      "host": "www.kukjegallery.com",
+      "tier": 1,
+      "category": "gallery",
+      "reviewedAt": "2026-10-07T17:23:49.202Z",
+      "robotsStatus": 200,
+      "robotsAllowTarget": true,
+      "targetPath": "/",
+      "crawlDelay": null,
+      "robotsError": null,
+      "documentsFetched": [
+        "https://www.kukjegallery.com"
+      ],
+      "matchedSentence": null,
+      "mode": "hold",
+      "approved": false,
+      "reason": "reuse_not_explicitly_granted"
+    },
+    {
+      "host": "www.galleryhyundai.com",
+      "tier": 1,
+      "category": "gallery",
+      "reviewedAt": "2026-10-07T17:23:49.593Z",
+      "robotsStatus": 200,
+      "robotsAllowTarget": true,
+      "targetPath": "/",
+      "crawlDelay": null,
+      "robotsError": null,
+      "documentsFetched": [
+        "https://www.galleryhyundai.com"
+      ],
+      "matchedSentence": null,
+      "mode": "hold",
+      "approved": false,
+      "reason": "reuse_not_explicitly_granted"
+    },
+    {
+      "host": "www.pkmgallery.com",
+      "tier": 1,
+      "category": "gallery",
+      "reviewedAt": "2026-10-07T17:23:51.631Z",
+      "robotsStatus": 200,
+      "robotsAllowTarget": true,
+      "targetPath": "/",
+      "crawlDelay": null,
+      "robotsError": null,
+      "documentsFetched": [
+        "https://www.pkmgallery.com"
+      ],
+      "matchedSentence": null,
+      "mode": "hold",
+      "approved": false,
+      "reason": "reuse_not_explicitly_granted"
+    },
+    {
+      "host": "www.arariogallery.com",
+      "tier": 1,
+      "category": "gallery",
+      "reviewedAt": "2026-10-07T17:23:52.975Z",
+      "robotsStatus": 200,
+      "robotsAllowTarget": true,
+      "targetPath": "/",
+      "crawlDelay": 10,
+      "robotsError": null,
+      "documentsFetched": [
+        "https://www.arariogallery.com"
+      ],
+      "matchedSentence": null,
+      "mode": "hold",
+      "approved": false,
+      "reason": "reuse_not_explicitly_granted"
+    },
+    {
+      "host": "www.gallerybaton.com",
+      "tier": 1,
+      "category": "gallery",
+      "reviewedAt": "2026-10-07T17:23:56.339Z",
+      "robotsStatus": 200,
+      "robotsAllowTarget": true,
+      "targetPath": "/",
+      "crawlDelay": 10,
+      "robotsError": null,
+      "documentsFetched": [
+        "https://www.gallerybaton.com",
+        "https://www.gallerybaton.com/privacy-policy/"
+      ],
+      "matchedSentence": null,
+      "mode": "hold",
+      "approved": false,
+      "reason": "reuse_not_explicitly_granted"
+    },
+    {
+      "host": "www.hakgojae.com",
+      "tier": 1,
+      "category": "gallery",
+      "reviewedAt": "2026-10-07T17:24:00.764Z",
+      "robotsStatus": null,
+      "robotsAllowTarget": false,
+      "targetPath": "/",
+      "crawlDelay": null,
+      "robotsError": "TypeError: fetch failed",
+      "documentsFetched": [],
+      "matchedSentence": null,
+      "mode": "blocked",
+      "approved": false,
+      "reason": "robots_disallow_target"
+    },
+    {
+      "host": "www.pacegallery.com",
+      "tier": 1,
+      "category": "gallery",
+      "reviewedAt": "2026-10-07T17:24:06.356Z",
+      "robotsStatus": 200,
+      "robotsAllowTarget": true,
+      "targetPath": "/",
+      "crawlDelay": null,
+      "robotsError": null,
+      "documentsFetched": [
+        "https://www.pacegallery.com",
+        "https://www.pacegallery.com/terms/",
+        "https://www.pacegallery.com/privacy/"
+      ],
+      "matchedSentence": "tings or otherwise. We may also obtain information about you where it is in the public domain, such as director information available on company registers or information tha",
+      "mode": "blocked",
+      "approved": false,
+      "reason": "explicit_permission_required"
+    },
+    {
+      "host": "www.lehmannmaupin.com",
+      "tier": 1,
+      "category": "gallery",
+      "reviewedAt": "2026-10-07T17:24:09.355Z",
+      "robotsStatus": 200,
+      "robotsAllowTarget": true,
+      "targetPath": "/",
+      "crawlDelay": null,
+      "robotsError": null,
+      "documentsFetched": [
+        "https://www.lehmannmaupin.com",
+        "https://www.lehmannmaupin.com/terms-and-conditions",
+        "https://www.lehmannmaupin.com/privacy-policy"
+      ],
+      "matchedSentence": null,
+      "mode": "hold",
+      "approved": false,
+      "reason": "reuse_not_explicitly_granted"
+    },
+    {
+      "host": "www.victoria-miro.com",
+      "tier": 1,
+      "category": "gallery",
+      "reviewedAt": "2026-10-07T17:24:12.109Z",
+      "robotsStatus": 200,
+      "robotsAllowTarget": true,
+      "targetPath": "/",
+      "crawlDelay": 10,
+      "robotsError": null,
+      "documentsFetched": [
+        "https://www.victoria-miro.com",
+        "https://www.victoria-miro.com/privacy-policy/",
+        "https://www.victoria-miro.com/privacy-policy/"
+      ],
+      "matchedSentence": null,
+      "mode": "blocked",
+      "approved": false,
+      "reason": "explicit_permission_required"
+    },
+    {
+      "host": "www.hauserwirth.com",
+      "tier": 1,
+      "category": "gallery",
+      "reviewedAt": "2026-10-07T17:24:12.524Z",
+      "robotsStatus": 429,
+      "robotsAllowTarget": false,
+      "targetPath": "/",
+      "crawlDelay": null,
+      "robotsError": null,
+      "documentsFetched": [
+        "https://www.hauserwirth.com"
+      ],
+      "matchedSentence": null,
+      "mode": "blocked",
+      "approved": false,
+      "reason": "robots_disallow_target"
+    },
+    {
+      "host": "www.tate.org.uk",
+      "tier": 1,
+      "category": "museum",
+      "reviewedAt": "2026-10-07T17:24:13.709Z",
+      "robotsStatus": 200,
+      "robotsAllowTarget": true,
+      "targetPath": "/",
+      "crawlDelay": null,
+      "robotsError": null,
+      "documentsFetched": [
+        "https://www.tate.org.uk",
+        "https://www.tate.org.uk/about-us/image-licensing",
+        "https://www.tate.org.uk/about-us/policies-and-procedures/tate-privacy-policy"
+      ],
+      "matchedSentence": null,
+      "mode": "hold",
+      "approved": false,
+      "reason": "reuse_not_explicitly_granted"
+    },
+    {
+      "host": "www.moma.org",
+      "tier": 1,
+      "category": "museum",
+      "reviewedAt": "2026-10-07T17:24:17.414Z",
+      "robotsStatus": 200,
+      "robotsAllowTarget": true,
+      "targetPath": "/",
+      "crawlDelay": null,
+      "robotsError": null,
+      "documentsFetched": [
+        "https://www.moma.org",
+        "https://www.moma.org/collection/terms/",
+        "https://www.moma.org/collection/terms/"
+      ],
+      "matchedSentence": null,
+      "mode": "hold",
+      "approved": false,
+      "reason": "reuse_not_explicitly_granted"
+    },
+    {
+      "host": "www.guggenheim.org",
+      "tier": 1,
+      "category": "museum",
+      "reviewedAt": "2026-10-07T17:24:19.935Z",
+      "robotsStatus": 200,
+      "robotsAllowTarget": true,
+      "targetPath": "/",
+      "crawlDelay": null,
+      "robotsError": null,
+      "documentsFetched": [
+        "https://www.guggenheim.org",
+        "https://www.guggenheim.org/privacy-policy#cookiesadvertising"
+      ],
+      "matchedSentence": null,
+      "mode": "hold",
+      "approved": false,
+      "reason": "reuse_not_explicitly_granted"
+    },
+    {
+      "host": "www.diaart.org",
+      "tier": 1,
+      "category": "museum",
+      "reviewedAt": "2026-10-07T17:24:20.691Z",
+      "robotsStatus": 403,
+      "robotsAllowTarget": false,
+      "targetPath": "/",
+      "crawlDelay": null,
+      "robotsError": null,
+      "documentsFetched": [
+        "https://www.diaart.org"
+      ],
+      "matchedSentence": null,
+      "mode": "blocked",
+      "approved": false,
+      "reason": "robots_disallow_target"
+    },
+    {
+      "host": "www.southbankcentre.co.uk",
+      "tier": 1,
+      "category": "museum",
+      "reviewedAt": "2026-10-07T17:24:21.781Z",
+      "robotsStatus": 200,
+      "robotsAllowTarget": true,
+      "targetPath": "/",
+      "crawlDelay": null,
+      "robotsError": null,
+      "documentsFetched": [
+        "https://www.southbankcentre.co.uk"
+      ],
+      "matchedSentence": null,
+      "mode": "hold",
+      "approved": false,
+      "reason": "terms_not_located"
+    },
+    {
+      "host": "www.labiennale.org",
+      "tier": 1,
+      "category": "biennale",
+      "reviewedAt": "2026-10-07T17:24:27.506Z",
+      "robotsStatus": 200,
+      "robotsAllowTarget": true,
+      "targetPath": "/",
+      "crawlDelay": 60,
+      "robotsError": null,
+      "documentsFetched": [
+        "https://www.labiennale.org",
+        "https://www.labiennale.org/it/note-legali",
+        "https://www.labiennale.org/it/privacy"
+      ],
+      "matchedSentence": null,
+      "mode": "hold",
+      "approved": false,
+      "reason": "reuse_not_explicitly_granted"
+    },
+    {
+      "host": "whitney.org",
+      "tier": 1,
+      "category": "museum",
+      "reviewedAt": "2026-10-07T17:24:30.052Z",
+      "robotsStatus": 200,
+      "robotsAllowTarget": true,
+      "targetPath": "/",
+      "crawlDelay": null,
+      "robotsError": null,
+      "documentsFetched": [
+        "https://whitney.org",
+        "https://whitney.org/privacy-policy",
+        "https://whitney.org/terms-and-conditions"
+      ],
+      "matchedSentence": null,
+      "mode": "hold",
+      "approved": false,
+      "reason": "reuse_not_explicitly_granted"
+    },
+    {
+      "host": "www.e-flux.com",
+      "tier": 2,
+      "category": "corroboration",
+      "reviewedAt": "2026-10-07T17:24:33.567Z",
+      "robotsStatus": 200,
+      "robotsAllowTarget": true,
+      "targetPath": "/",
+      "crawlDelay": null,
+      "robotsError": null,
+      "documentsFetched": [
+        "https://www.e-flux.com",
+        "https://www.e-flux.com/privacy",
+        "https://www.e-flux.com/privacy"
+      ],
+      "matchedSentence": null,
+      "mode": "hold",
+      "approved": false,
+      "reason": "reuse_not_explicitly_granted"
+    }
+  ]
+}

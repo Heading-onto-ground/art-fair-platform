@@ -1,0 +1,9 @@
+{
+  "checkpoint": "P2_PRODUCT_CANARY_READY",
+  "prototype": "view-v2/index.html",
+  "priorViewPreserved": "view/index.html",
+  "report": "reports/PRODUCT_EXPERIENCE_CANARY.md",
+  "verdict": "PRODUCT_EXPERIENCE_READY_FOR_HUMAN_TEST",
+  "compellingDeclared": false,
+  "externalAnalytics": false
+}

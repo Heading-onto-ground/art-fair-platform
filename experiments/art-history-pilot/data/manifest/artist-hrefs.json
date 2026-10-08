@@ -1,0 +1,64 @@
+{
+  "hits": [
+    {
+      "index": "https://www.kukjegallery.com/artists",
+      "status": 200,
+      "name": "Lee Ufan",
+      "url": "NAME_ON_PAGE_NO_HREF"
+    },
+    {
+      "index": "https://www.kukjegallery.com/artists",
+      "status": 200,
+      "name": "Haegue Yang",
+      "url": "NAME_ON_PAGE_NO_HREF"
+    },
+    {
+      "index": "https://www.kukjegallery.com/artists",
+      "status": 200,
+      "name": "Park Seo-Bo",
+      "url": "NAME_ON_PAGE_NO_HREF"
+    },
+    {
+      "index": "https://www.kukjegallery.com/artists",
+      "status": 200,
+      "name": "Ha Chong-Hyun",
+      "url": "NAME_ON_PAGE_NO_HREF"
+    },
+    {
+      "index": "https://www.kukjegallery.com/artists",
+      "status": 200,
+      "name": "Chung Sang-Hwa",
+      "url": "NAME_ON_PAGE_NO_HREF"
+    },
+    {
+      "index": "https://www.kukjegallery.com/artists",
+      "status": 200,
+      "name": "Suki Seokyeong Kang",
+      "url": "NAME_ON_PAGE_NO_HREF"
+    },
+    {
+      "index": "https://www.kukjegallery.com/artists",
+      "status": 200,
+      "name": "Gimhongsok",
+      "url": "NAME_ON_PAGE_NO_HREF"
+    },
+    {
+      "index": "https://www.kukjegallery.com/artists",
+      "status": 200,
+      "name": "Kyungah Ham",
+      "url": "NAME_ON_PAGE_NO_HREF"
+    },
+    {
+      "index": "https://www.kukjegallery.com/artists",
+      "status": 200,
+      "name": "Park Chan-kyong",
+      "url": "NAME_ON_PAGE_NO_HREF"
+    },
+    {
+      "index": "https://www.pkmgallery.com/artists",
+      "status": 200,
+      "name": "Koo Jeong A",
+      "url": "https://www.pkmgallery.com/artists/koo-jeong-a2"
+    }
+  ]
+}

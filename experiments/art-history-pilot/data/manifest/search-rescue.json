@@ -1,0 +1,791 @@
+{
+  "retrievedAt": "2026-10-08T09:15:42.462Z",
+  "reviewMinutes": null,
+  "before": [
+    131,
+    58,
+    2,
+    0,
+    0,
+    0,
+    88,
+    52,
+    0,
+    3,
+    0,
+    0,
+    1,
+    8,
+    0,
+    17,
+    0,
+    0,
+    0,
+    0,
+    6,
+    0,
+    11,
+    0,
+    0
+  ],
+  "after": [
+    131,
+    58,
+    2,
+    0,
+    0,
+    1,
+    88,
+    52,
+    67,
+    4,
+    1,
+    0,
+    1,
+    8,
+    0,
+    17,
+    0,
+    0,
+    1,
+    25,
+    7,
+    2,
+    11,
+    0,
+    0
+  ],
+  "median": 2,
+  "atLeast8": 9,
+  "uniqueExhibitions": 469,
+  "incidences": 588,
+  "rescued": [
+    "A09",
+    "A20"
+  ],
+  "reviewed": [
+    {
+      "pilotId": "A03",
+      "url": "https://www.tate.org.uk/whats-on/tate-modern/the-genesis-exhibition-do-ho-suh",
+      "http": 200,
+      "robots": "ALLOWED",
+      "hits": 0,
+      "accepted": 0,
+      "attached": 0,
+      "rejected": 0,
+      "reason": "page_opened"
+    },
+    {
+      "pilotId": "A04",
+      "url": "https://www.lehmannmaupin.com/artists/lee-bul/exhibitions",
+      "http": 200,
+      "robots": "ALLOWED",
+      "hits": 0,
+      "accepted": 0,
+      "attached": 0,
+      "rejected": 0,
+      "reason": "page_opened"
+    },
+    {
+      "pilotId": "A04",
+      "url": "https://www.mplus.org.hk/en/exhibitions/lee-bul-from-1998-to-now/",
+      "http": 200,
+      "robots": "ALLOWED",
+      "hits": 0,
+      "accepted": 0,
+      "attached": 0,
+      "rejected": 0,
+      "reason": "page_opened"
+    },
+    {
+      "pilotId": "A04",
+      "url": "https://www.muhka.be/en/exhibitions/lee-bul-from-1998-to-now/",
+      "http": 200,
+      "robots": "ALLOWED",
+      "hits": 0,
+      "accepted": 0,
+      "attached": 0,
+      "rejected": 0,
+      "reason": "page_opened"
+    },
+    {
+      "pilotId": "A05",
+      "url": "https://kimsooja.com/home/exhibitions",
+      "http": null,
+      "robots": "UNREADABLE",
+      "hits": 0,
+      "accepted": 0,
+      "attached": 0,
+      "rejected": 0,
+      "reason": "manual_queue_robots_unreadable"
+    },
+    {
+      "pilotId": "A05",
+      "url": "https://kimsooja.com/home/info/biography",
+      "http": null,
+      "robots": "UNREADABLE",
+      "hits": 0,
+      "accepted": 0,
+      "attached": 0,
+      "rejected": 0,
+      "reason": "manual_queue_robots_unreadable"
+    },
+    {
+      "pilotId": "A06",
+      "url": "https://ucca-group.com/en/exhibition/anicka-yi/",
+      "http": null,
+      "robots": "UNREADABLE",
+      "hits": 0,
+      "accepted": 0,
+      "attached": 0,
+      "rejected": 0,
+      "reason": "manual_queue_robots_unreadable"
+    },
+    {
+      "pilotId": "A06",
+      "url": "https://www.mfah.org/exhibitions/anicka-yi",
+      "http": null,
+      "robots": "UNREADABLE",
+      "hits": 0,
+      "accepted": 0,
+      "attached": 0,
+      "rejected": 0,
+      "reason": "manual_queue_robots_unreadable"
+    },
+    {
+      "pilotId": "A06",
+      "url": "https://collections.stormking.org/Detail/occurrences/222",
+      "http": 200,
+      "robots": "ALLOWED",
+      "hits": 1,
+      "accepted": 1,
+      "attached": 0,
+      "rejected": 0,
+      "reason": "page_opened"
+    },
+    {
+      "pilotId": "A06",
+      "url": "https://www.aros.dk/en/exhibitions/step-inside/",
+      "http": 200,
+      "robots": "ALLOWED",
+      "hits": 0,
+      "accepted": 0,
+      "attached": 0,
+      "rejected": 0,
+      "reason": "page_opened"
+    },
+    {
+      "pilotId": "A09",
+      "url": "https://www.estherschipper.com/artists/155-lee-bae/biography/",
+      "http": 200,
+      "robots": "ALLOWED",
+      "hits": 0,
+      "accepted": 0,
+      "attached": 0,
+      "rejected": 0,
+      "reason": "page_opened"
+    },
+    {
+      "pilotId": "A09",
+      "url": "https://www.johyungallery.com/artists/50-lee-bae/biography/",
+      "http": 200,
+      "robots": "ALLOWED",
+      "hits": 68,
+      "accepted": 65,
+      "attached": 3,
+      "rejected": 0,
+      "reason": "page_opened"
+    },
+    {
+      "pilotId": "A09",
+      "url": "https://www.estherschipper.com/artists/155-lee-bae/",
+      "http": 200,
+      "robots": "ALLOWED",
+      "hits": 2,
+      "accepted": 2,
+      "attached": 0,
+      "rejected": 0,
+      "reason": "page_opened"
+    },
+    {
+      "pilotId": "A10",
+      "url": "https://www.mmca.go.kr/eng/exhibitions/exhibitionsDetail.do?exhId=202101290001367",
+      "http": 200,
+      "robots": "ALLOWED",
+      "hits": 0,
+      "accepted": 0,
+      "attached": 0,
+      "rejected": 0,
+      "reason": "page_opened"
+    },
+    {
+      "pilotId": "A10",
+      "url": "https://www.galleryhyundai.com/artist/view/20000000007",
+      "http": 200,
+      "robots": "ALLOWED",
+      "hits": 0,
+      "accepted": 0,
+      "attached": 0,
+      "rejected": 0,
+      "reason": "page_opened"
+    },
+    {
+      "pilotId": "A10",
+      "url": "https://levygorvy.com/exhibitions/chung-sang-hwa-london-2020/",
+      "http": 200,
+      "robots": "ALLOWED",
+      "hits": 0,
+      "accepted": 0,
+      "attached": 0,
+      "rejected": 0,
+      "reason": "page_opened"
+    },
+    {
+      "pilotId": "A10",
+      "url": "https://levygorvy.com/exhibitions/chung-sang-hwa/",
+      "http": 200,
+      "robots": "ALLOWED",
+      "hits": 1,
+      "accepted": 1,
+      "attached": 0,
+      "rejected": 0,
+      "reason": "page_opened"
+    },
+    {
+      "pilotId": "A11",
+      "url": "https://www.clevelandart.org/exhibitions/kim-beom-objects-being-taught-they-are-nothing-tools",
+      "http": 200,
+      "robots": "ALLOWED",
+      "hits": 0,
+      "accepted": 0,
+      "attached": 0,
+      "rejected": 0,
+      "reason": "page_opened"
+    },
+    {
+      "pilotId": "A11",
+      "url": "https://www.stpi.com.sg/whats-on/kim-beom-random-life",
+      "http": 200,
+      "robots": "ALLOWED",
+      "hits": 0,
+      "accepted": 0,
+      "attached": 0,
+      "rejected": 0,
+      "reason": "page_opened"
+    },
+    {
+      "pilotId": "A11",
+      "url": "https://kunsthalaarhus.dk/en/Exhibitions/Beom-Kim",
+      "http": 404,
+      "robots": "ALLOWED",
+      "hits": 0,
+      "accepted": 0,
+      "attached": 0,
+      "rejected": 0,
+      "reason": "http_404"
+    },
+    {
+      "pilotId": "A11",
+      "url": "https://chapterii.org/press/184-kim-beom-how-to-become-a-rock-at-leeum-museum/",
+      "http": 200,
+      "robots": "ALLOWED",
+      "hits": 1,
+      "accepted": 1,
+      "attached": 0,
+      "rejected": 0,
+      "reason": "page_opened"
+    },
+    {
+      "pilotId": "A12",
+      "url": "https://www.walkerart.org/whats-on/minouk-lim/",
+      "http": 200,
+      "robots": "ALLOWED",
+      "hits": 0,
+      "accepted": 0,
+      "attached": 0,
+      "rejected": 0,
+      "reason": "page_opened"
+    },
+    {
+      "pilotId": "A12",
+      "url": "https://www.portikus.de/en/exhibitions/195_united_paradox",
+      "http": 200,
+      "robots": "ALLOWED",
+      "hits": 0,
+      "accepted": 0,
+      "attached": 0,
+      "rejected": 0,
+      "reason": "page_opened"
+    },
+    {
+      "pilotId": "A12",
+      "url": "https://tinakimgallery.com/exhibitions/173-minouk-lim-hyper-yellow-ilmin-museum-of-art/",
+      "http": 200,
+      "robots": "ALLOWED",
+      "hits": 0,
+      "accepted": 0,
+      "attached": 0,
+      "rejected": 0,
+      "reason": "page_opened"
+    },
+    {
+      "pilotId": "A13",
+      "url": "https://www.labiennale.org/en/art/2024/korea-republic",
+      "http": 200,
+      "robots": "ALLOWED",
+      "hits": 0,
+      "accepted": 0,
+      "attached": 0,
+      "rejected": 0,
+      "reason": "page_opened"
+    },
+    {
+      "pilotId": "A13",
+      "url": "https://www.arko.or.kr/pavilion/24pavilion/en/exhibition.html",
+      "http": 200,
+      "robots": "ALLOWED",
+      "hits": 0,
+      "accepted": 0,
+      "attached": 0,
+      "rejected": 0,
+      "reason": "page_opened"
+    },
+    {
+      "pilotId": "A13",
+      "url": "https://www.korean-pavilion.or.kr/en/artist.html",
+      "http": null,
+      "robots": "UNREADABLE",
+      "hits": 0,
+      "accepted": 0,
+      "attached": 0,
+      "rejected": 0,
+      "reason": "manual_queue_robots_unreadable"
+    },
+    {
+      "pilotId": "A15",
+      "url": "https://www.tate.org.uk/whats-on/tate-modern/mire-lee",
+      "http": 200,
+      "robots": "ALLOWED",
+      "hits": 0,
+      "accepted": 0,
+      "attached": 0,
+      "rejected": 0,
+      "reason": "page_opened"
+    },
+    {
+      "pilotId": "A17",
+      "url": "https://www.wkv-stuttgart.de/en/program/2026/ausstellungen/resistant-theatre/",
+      "http": 200,
+      "robots": "ALLOWED",
+      "hits": 0,
+      "accepted": 0,
+      "attached": 0,
+      "rejected": 0,
+      "reason": "page_opened"
+    },
+    {
+      "pilotId": "A17",
+      "url": "https://kunstverein-duesseldorf.de/en/exhibitions/deferral-theatre/",
+      "http": 200,
+      "robots": "ALLOWED",
+      "hits": 0,
+      "accepted": 0,
+      "attached": 0,
+      "rejected": 0,
+      "reason": "page_opened"
+    },
+    {
+      "pilotId": "A17",
+      "url": "http://sirenjung.com/",
+      "http": null,
+      "robots": "UNREADABLE",
+      "hits": 0,
+      "accepted": 0,
+      "attached": 0,
+      "rejected": 0,
+      "reason": "manual_queue_robots_unreadable"
+    },
+    {
+      "pilotId": "A18",
+      "url": "https://vanabbemuseum.nl/en/see-and-do/exhibitions/ayoung-kim",
+      "http": 200,
+      "robots": "ALLOWED",
+      "hits": 0,
+      "accepted": 0,
+      "attached": 0,
+      "rejected": 0,
+      "reason": "page_opened"
+    },
+    {
+      "pilotId": "A18",
+      "url": "https://www.momaps1.org/en/programs/556-ayoung-kim/",
+      "http": 200,
+      "robots": "ALLOWED",
+      "hits": 0,
+      "accepted": 0,
+      "attached": 0,
+      "rejected": 0,
+      "reason": "page_opened"
+    },
+    {
+      "pilotId": "A18",
+      "url": "https://www.smb.museum/en/exhibitions/detail/ayoung-kim/",
+      "http": 200,
+      "robots": "ALLOWED",
+      "hits": 0,
+      "accepted": 0,
+      "attached": 0,
+      "rejected": 0,
+      "reason": "page_opened"
+    },
+    {
+      "pilotId": "A18",
+      "url": "https://www.ima.org.au/exhibitions/ayoung-kim-delivery-dancers-sphere/",
+      "http": 200,
+      "robots": "ALLOWED",
+      "hits": 0,
+      "accepted": 0,
+      "attached": 0,
+      "rejected": 0,
+      "reason": "page_opened"
+    },
+    {
+      "pilotId": "A19",
+      "url": "https://www.geumhyungjeong.com/archive.html",
+      "http": null,
+      "robots": "UNREADABLE",
+      "hits": 0,
+      "accepted": 0,
+      "attached": 0,
+      "rejected": 0,
+      "reason": "manual_queue_robots_unreadable"
+    },
+    {
+      "pilotId": "A19",
+      "url": "https://www.geumhyungjeong.com/current.html",
+      "http": null,
+      "robots": "UNREADABLE",
+      "hits": 0,
+      "accepted": 0,
+      "attached": 0,
+      "rejected": 0,
+      "reason": "manual_queue_robots_unreadable"
+    },
+    {
+      "pilotId": "A19",
+      "url": "https://kunsthallebasel.ch/en/exhibitions/geumhyung-jeong",
+      "http": 200,
+      "robots": "ALLOWED",
+      "hits": 0,
+      "accepted": 0,
+      "attached": 0,
+      "rejected": 0,
+      "reason": "page_opened"
+    },
+    {
+      "pilotId": "A19",
+      "url": "https://ica.art/exhibitions/geumhyung-jeong-under-construction",
+      "http": 200,
+      "robots": "ALLOWED",
+      "hits": 1,
+      "accepted": 1,
+      "attached": 0,
+      "rejected": 0,
+      "reason": "page_opened"
+    },
+    {
+      "pilotId": "A20",
+      "url": "https://www.yeesookyung.com/cv",
+      "http": 200,
+      "robots": "ALLOWED",
+      "hits": 25,
+      "accepted": 25,
+      "attached": 0,
+      "rejected": 0,
+      "reason": "page_opened"
+    },
+    {
+      "pilotId": "A21",
+      "url": "https://artsonje.org/en/exhibition/kyungah-ham-desire-and-anesthesia/",
+      "http": 200,
+      "robots": "ALLOWED",
+      "hits": 1,
+      "accepted": 1,
+      "attached": 0,
+      "rejected": 0,
+      "reason": "page_opened"
+    },
+    {
+      "pilotId": "A21",
+      "url": "https://www.carliergebauer.com/exhibition/3795/",
+      "http": 200,
+      "robots": "ALLOWED",
+      "hits": 0,
+      "accepted": 0,
+      "attached": 0,
+      "rejected": 0,
+      "reason": "page_opened"
+    },
+    {
+      "pilotId": "A22",
+      "url": "https://www.mmca.go.kr/eng/exhibitions/exhibitionsDetail.do?exhId=201703170000564",
+      "http": 200,
+      "robots": "ALLOWED",
+      "hits": 0,
+      "accepted": 0,
+      "attached": 0,
+      "rejected": 0,
+      "reason": "page_opened"
+    },
+    {
+      "pilotId": "A22",
+      "url": "http://imheungsoon.com/",
+      "http": 200,
+      "robots": "ALLOWED",
+      "hits": 0,
+      "accepted": 0,
+      "attached": 0,
+      "rejected": 0,
+      "reason": "page_opened"
+    },
+    {
+      "pilotId": "A22",
+      "url": "https://www.moma.org/calendar/exhibitions/3695",
+      "http": 403,
+      "robots": "ALLOWED",
+      "hits": 0,
+      "accepted": 0,
+      "attached": 0,
+      "rejected": 0,
+      "reason": "http_403"
+    },
+    {
+      "pilotId": "A22",
+      "url": "https://thepage-gallery.com/exhibitions/14-im-heung-soon-ghost-guide/",
+      "http": 200,
+      "robots": "ALLOWED",
+      "hits": 2,
+      "accepted": 2,
+      "attached": 0,
+      "rejected": 0,
+      "reason": "page_opened"
+    },
+    {
+      "pilotId": "A24",
+      "url": "https://moonandjeon.com/Moon-Kyungwon",
+      "http": 200,
+      "robots": "ALLOWED",
+      "hits": 0,
+      "accepted": 0,
+      "attached": 0,
+      "rejected": 0,
+      "reason": "page_opened"
+    },
+    {
+      "pilotId": "A24",
+      "url": "https://www.ycam.jp/en/archive/works/promise-park-rendering-of-future-patterns/",
+      "http": 200,
+      "robots": "ALLOWED",
+      "hits": 0,
+      "accepted": 0,
+      "attached": 0,
+      "rejected": 0,
+      "reason": "page_opened"
+    },
+    {
+      "pilotId": "A24",
+      "url": "https://www.mmca.go.kr/eng/exhibitions/exhibitionsDetail.do?exhId=202101290001376",
+      "http": 200,
+      "robots": "ALLOWED",
+      "hits": 0,
+      "accepted": 0,
+      "attached": 0,
+      "rejected": 0,
+      "reason": "page_opened"
+    },
+    {
+      "pilotId": "A24",
+      "url": "https://kanazawa21.jp/data_list.php?g=81&d=208",
+      "http": 200,
+      "robots": "ALLOWED",
+      "hits": 0,
+      "accepted": 0,
+      "attached": 0,
+      "rejected": 0,
+      "reason": "page_opened"
+    },
+    {
+      "pilotId": "A25",
+      "url": "https://umma.umich.edu/exhibitions/in-focus-nikki-s-lee/",
+      "http": 403,
+      "robots": "ALLOWED",
+      "hits": 0,
+      "accepted": 0,
+      "attached": 0,
+      "rejected": 0,
+      "reason": "http_403"
+    },
+    {
+      "pilotId": "A25",
+      "url": "https://mattress.org/exhibition/layers-series-rome-prague-bangkok-seoul-new-york/",
+      "http": 200,
+      "robots": "ALLOWED",
+      "hits": 0,
+      "accepted": 0,
+      "attached": 0,
+      "rejected": 0,
+      "reason": "page_opened"
+    },
+    {
+      "pilotId": "A25",
+      "url": "https://nmwa.org/art/artists/nikki-s-lee/",
+      "http": 200,
+      "robots": "ALLOWED",
+      "hits": 0,
+      "accepted": 0,
+      "attached": 0,
+      "rejected": 0,
+      "reason": "page_opened"
+    },
+    {
+      "pilotId": "A25",
+      "url": "https://vsf.la/exhibitions/49-nikki-s.-lee-parts-and-scenes",
+      "http": 200,
+      "robots": "ALLOWED",
+      "hits": 0,
+      "accepted": 0,
+      "attached": 0,
+      "rejected": 0,
+      "reason": "page_opened"
+    }
+  ],
+  "queries": [
+    {
+      "pilotId": "A03",
+      "queries": [
+        "\"Do Ho Suh\" exhibition Tate Modern official"
+      ],
+      "queryCount": 1
+    },
+    {
+      "pilotId": "A04",
+      "queries": [
+        "Lee Bul official exhibition museum gallery retrospective",
+        "Lee Bul Lehmann Maupin exhibitions official"
+      ],
+      "queryCount": 2
+    },
+    {
+      "pilotId": "A05",
+      "queries": [
+        "Kimsooja official exhibitions CV museum"
+      ],
+      "queryCount": 1
+    },
+    {
+      "pilotId": "A06",
+      "queries": [
+        "Anicka Yi exhibition museum official"
+      ],
+      "queryCount": 1
+    },
+    {
+      "pilotId": "A09",
+      "queries": [
+        "Lee Bae artist official exhibitions gallery CV"
+      ],
+      "queryCount": 1
+    },
+    {
+      "pilotId": "A10",
+      "queries": [
+        "\"Chung Sang-Hwa\" exhibition museum gallery official"
+      ],
+      "queryCount": 1
+    },
+    {
+      "pilotId": "A11",
+      "queries": [
+        "Kim Beom artist exhibition museum official"
+      ],
+      "queryCount": 1
+    },
+    {
+      "pilotId": "A12",
+      "queries": [
+        "Minouk Lim exhibition museum official artist"
+      ],
+      "queryCount": 1
+    },
+    {
+      "pilotId": "A13",
+      "queries": [
+        "Koo Jeong A Venice Biennale official exhibition"
+      ],
+      "queryCount": 1
+    },
+    {
+      "pilotId": "A15",
+      "queries": [
+        "Mire Lee exhibition Tate Modern official"
+      ],
+      "queryCount": 1
+    },
+    {
+      "pilotId": "A17",
+      "queries": [
+        "\"siren eun young jung\" exhibition official"
+      ],
+      "queryCount": 1
+    },
+    {
+      "pilotId": "A18",
+      "queries": [
+        "Ayoung Kim exhibition museum official site"
+      ],
+      "queryCount": 1
+    },
+    {
+      "pilotId": "A19",
+      "queries": [
+        "Geumhyung Jeong exhibition museum official"
+      ],
+      "queryCount": 1
+    },
+    {
+      "pilotId": "A20",
+      "queries": [
+        "Yeesookyung official exhibition gallery museum"
+      ],
+      "queryCount": 1
+    },
+    {
+      "pilotId": "A21",
+      "queries": [
+        "Kyungah Ham exhibition museum official"
+      ],
+      "queryCount": 1
+    },
+    {
+      "pilotId": "A22",
+      "queries": [
+        "Im Heung-soon exhibition museum official"
+      ],
+      "queryCount": 1
+    },
+    {
+      "pilotId": "A24",
+      "queries": [
+        "Moon Kyungwon exhibition museum official"
+      ],
+      "queryCount": 1
+    },
+    {
+      "pilotId": "A25",
+      "queries": [
+        "\"Nikki S. Lee\" exhibition museum official"
+      ],
+      "queryCount": 1
+    }
+  ]
+}

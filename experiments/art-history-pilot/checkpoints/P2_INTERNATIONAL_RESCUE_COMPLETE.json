@@ -1,0 +1,9 @@
+{
+  "checkpoint": "P2_INTERNATIONAL_RESCUE_COMPLETE",
+  "retrievedAt": "2026-10-08T09:15:42.462Z",
+  "records": "data/claims/exhibitions.json",
+  "runLog": "data/manifest/search-rescue.json",
+  "usageStatus": "PILOT_ONLY",
+  "productionClearance": "UNRESOLVED",
+  "searchSnippetsAreEvidence": false
+}

@@ -1,0 +1,1550 @@
+{
+  "status": "FROZEN",
+  "frozenAt": "2026-10-07T17:25:16.420Z",
+  "rules": {
+    "cohorts": "25 international / 50 domestic institutional / 25 emerging",
+    "emerging": "24th SongEun 본선 참여 individuals, collective removed, then winner 탁영준, then the first six names in the 23rd 참여작가 sentence.",
+    "identity": "Wikidata structured data is CC0, but robots.txt Disallow: /w/ blocks /w/api.php for a generic agent. No QIDs were stored.",
+    "merge": "During this pilot, canonical merge requires the same authoritative id or an explicit human approval. HIGH_CONFIDENCE_CANDIDATE does not merge."
+  },
+  "exclusions": [
+    {
+      "name": "업체 eobchae",
+      "reason": "Collective. This canary is limited to person entities."
+    },
+    {
+      "name": "언메이크랩",
+      "reason": "Collective named in Korea Artist Prize 2025. Not given a person seat."
+    },
+    {
+      "name": "윤형근",
+      "reason": "Historical estate. Outside the domestic cohort's roughly 2011–2026 practice window."
+    },
+    {
+      "name": "김창열",
+      "reason": "Historical estate. Outside the domestic cohort's roughly 2011–2026 practice window."
+    },
+    {
+      "name": "박이소",
+      "reason": "Died 2004. Not used to fill the recent institutional cohort."
+    }
+  ],
+  "artists": [
+    {
+      "pilotId": "A01",
+      "cohort": "INTERNATIONAL",
+      "canonicalKoreanName": "이우환",
+      "romanizedNames": [
+        "Lee Ufan"
+      ],
+      "otherAliases": [
+        "Ufan Lee"
+      ],
+      "birthYear": null,
+      "wikidataQid": null,
+      "identityStatus": "QID_UNRESOLVED",
+      "ambiguityNote": null,
+      "alsoInternational": false,
+      "selectionNote": "Cohort A. Frozen before extraction as the documentation upper bound: international museum, biennale, or global-gallery pages are expected."
+    },
+    {
+      "pilotId": "A02",
+      "cohort": "INTERNATIONAL",
+      "canonicalKoreanName": "양혜규",
+      "romanizedNames": [
+        "Haegue Yang"
+      ],
+      "otherAliases": [],
+      "birthYear": null,
+      "wikidataQid": null,
+      "identityStatus": "QID_UNRESOLVED",
+      "ambiguityNote": null,
+      "alsoInternational": false,
+      "selectionNote": "Cohort A. Frozen before extraction as the documentation upper bound: international museum, biennale, or global-gallery pages are expected."
+    },
+    {
+      "pilotId": "A03",
+      "cohort": "INTERNATIONAL",
+      "canonicalKoreanName": "서도호",
+      "romanizedNames": [
+        "Do Ho Suh"
+      ],
+      "otherAliases": [
+        "Suh Do Ho"
+      ],
+      "birthYear": null,
+      "wikidataQid": null,
+      "identityStatus": "QID_UNRESOLVED",
+      "ambiguityNote": null,
+      "alsoInternational": false,
+      "selectionNote": "Cohort A. Frozen before extraction as the documentation upper bound: international museum, biennale, or global-gallery pages are expected."
+    },
+    {
+      "pilotId": "A04",
+      "cohort": "INTERNATIONAL",
+      "canonicalKoreanName": "이불",
+      "romanizedNames": [
+        "Lee Bul"
+      ],
+      "otherAliases": [],
+      "birthYear": null,
+      "wikidataQid": null,
+      "identityStatus": "QID_UNRESOLVED",
+      "ambiguityNote": null,
+      "alsoInternational": false,
+      "selectionNote": "Cohort A. Frozen before extraction as the documentation upper bound: international museum, biennale, or global-gallery pages are expected."
+    },
+    {
+      "pilotId": "A05",
+      "cohort": "INTERNATIONAL",
+      "canonicalKoreanName": "김수자",
+      "romanizedNames": [
+        "Kimsooja"
+      ],
+      "otherAliases": [
+        "Kim Sooja"
+      ],
+      "birthYear": null,
+      "wikidataQid": null,
+      "identityStatus": "QID_UNRESOLVED",
+      "ambiguityNote": null,
+      "alsoInternational": false,
+      "selectionNote": "Cohort A. Frozen before extraction as the documentation upper bound: international museum, biennale, or global-gallery pages are expected."
+    },
+    {
+      "pilotId": "A06",
+      "cohort": "INTERNATIONAL",
+      "canonicalKoreanName": "아니카 이",
+      "romanizedNames": [
+        "Anicka Yi"
+      ],
+      "otherAliases": [],
+      "birthYear": null,
+      "wikidataQid": null,
+      "identityStatus": "QID_UNRESOLVED",
+      "ambiguityNote": null,
+      "alsoInternational": false,
+      "selectionNote": "Cohort A. Frozen before extraction as the documentation upper bound: international museum, biennale, or global-gallery pages are expected."
+    },
+    {
+      "pilotId": "A07",
+      "cohort": "INTERNATIONAL",
+      "canonicalKoreanName": "박서보",
+      "romanizedNames": [
+        "Park Seo-Bo"
+      ],
+      "otherAliases": [
+        "Park Seobo"
+      ],
+      "birthYear": null,
+      "wikidataQid": null,
+      "identityStatus": "QID_UNRESOLVED",
+      "ambiguityNote": null,
+      "alsoInternational": false,
+      "selectionNote": "Cohort A. Frozen before extraction as the documentation upper bound: international museum, biennale, or global-gallery pages are expected."
+    },
+    {
+      "pilotId": "A08",
+      "cohort": "INTERNATIONAL",
+      "canonicalKoreanName": "하종현",
+      "romanizedNames": [
+        "Ha Chong-Hyun"
+      ],
+      "otherAliases": [
+        "Ha Chonghyun"
+      ],
+      "birthYear": null,
+      "wikidataQid": null,
+      "identityStatus": "QID_UNRESOLVED",
+      "ambiguityNote": null,
+      "alsoInternational": false,
+      "selectionNote": "Cohort A. Frozen before extraction as the documentation upper bound: international museum, biennale, or global-gallery pages are expected."
+    },
+    {
+      "pilotId": "A09",
+      "cohort": "INTERNATIONAL",
+      "canonicalKoreanName": "이배",
+      "romanizedNames": [
+        "Lee Bae"
+      ],
+      "otherAliases": [],
+      "birthYear": null,
+      "wikidataQid": null,
+      "identityStatus": "QID_UNRESOLVED",
+      "ambiguityNote": "Common name. Do not merge without an authoritative identifier.",
+      "alsoInternational": false,
+      "selectionNote": "Cohort A. Frozen before extraction as the documentation upper bound: international museum, biennale, or global-gallery pages are expected."
+    },
+    {
+      "pilotId": "A10",
+      "cohort": "INTERNATIONAL",
+      "canonicalKoreanName": "정상화",
+      "romanizedNames": [
+        "Chung Sang-Hwa"
+      ],
+      "otherAliases": [
+        "Chung Sanghwa"
+      ],
+      "birthYear": null,
+      "wikidataQid": null,
+      "identityStatus": "QID_UNRESOLVED",
+      "ambiguityNote": null,
+      "alsoInternational": false,
+      "selectionNote": "Cohort A. Frozen before extraction as the documentation upper bound: international museum, biennale, or global-gallery pages are expected."
+    },
+    {
+      "pilotId": "A11",
+      "cohort": "INTERNATIONAL",
+      "canonicalKoreanName": "김범",
+      "romanizedNames": [
+        "Kim Beom"
+      ],
+      "otherAliases": [],
+      "birthYear": null,
+      "wikidataQid": null,
+      "identityStatus": "QID_UNRESOLVED",
+      "ambiguityNote": "Common name. Do not merge without an authoritative identifier.",
+      "alsoInternational": false,
+      "selectionNote": "Cohort A. Frozen before extraction as the documentation upper bound: international museum, biennale, or global-gallery pages are expected."
+    },
+    {
+      "pilotId": "A12",
+      "cohort": "INTERNATIONAL",
+      "canonicalKoreanName": "임민욱",
+      "romanizedNames": [
+        "Minouk Lim"
+      ],
+      "otherAliases": [],
+      "birthYear": null,
+      "wikidataQid": null,
+      "identityStatus": "QID_UNRESOLVED",
+      "ambiguityNote": null,
+      "alsoInternational": false,
+      "selectionNote": "Cohort A. Frozen before extraction as the documentation upper bound: international museum, biennale, or global-gallery pages are expected."
+    },
+    {
+      "pilotId": "A13",
+      "cohort": "INTERNATIONAL",
+      "canonicalKoreanName": "구정아",
+      "romanizedNames": [
+        "Koo Jeong A"
+      ],
+      "otherAliases": [],
+      "birthYear": null,
+      "wikidataQid": null,
+      "identityStatus": "QID_UNRESOLVED",
+      "ambiguityNote": null,
+      "alsoInternational": false,
+      "selectionNote": "Cohort A. Frozen before extraction as the documentation upper bound: international museum, biennale, or global-gallery pages are expected."
+    },
+    {
+      "pilotId": "A14",
+      "cohort": "INTERNATIONAL",
+      "canonicalKoreanName": "강서경",
+      "romanizedNames": [
+        "Suki Seokyeong Kang"
+      ],
+      "otherAliases": [],
+      "birthYear": null,
+      "wikidataQid": null,
+      "identityStatus": "QID_UNRESOLVED",
+      "ambiguityNote": null,
+      "alsoInternational": false,
+      "selectionNote": "Cohort A. Frozen before extraction as the documentation upper bound: international museum, biennale, or global-gallery pages are expected."
+    },
+    {
+      "pilotId": "A15",
+      "cohort": "INTERNATIONAL",
+      "canonicalKoreanName": "이미래",
+      "romanizedNames": [
+        "Mire Lee"
+      ],
+      "otherAliases": [],
+      "birthYear": null,
+      "wikidataQid": null,
+      "identityStatus": "QID_UNRESOLVED",
+      "ambiguityNote": null,
+      "alsoInternational": false,
+      "selectionNote": "Cohort A. Frozen before extraction as the documentation upper bound: international museum, biennale, or global-gallery pages are expected."
+    },
+    {
+      "pilotId": "A16",
+      "cohort": "INTERNATIONAL",
+      "canonicalKoreanName": "김홍석",
+      "romanizedNames": [
+        "Gimhongsok"
+      ],
+      "otherAliases": [
+        "Kim Hong-seok"
+      ],
+      "birthYear": null,
+      "wikidataQid": null,
+      "identityStatus": "QID_UNRESOLVED",
+      "ambiguityNote": null,
+      "alsoInternational": false,
+      "selectionNote": "Cohort A. Frozen before extraction as the documentation upper bound: international museum, biennale, or global-gallery pages are expected."
+    },
+    {
+      "pilotId": "A17",
+      "cohort": "INTERNATIONAL",
+      "canonicalKoreanName": "정은영",
+      "romanizedNames": [
+        "siren eun young jung"
+      ],
+      "otherAliases": [],
+      "birthYear": null,
+      "wikidataQid": null,
+      "identityStatus": "QID_UNRESOLVED",
+      "ambiguityNote": "Hangul form is shared. Preferred public name is siren eun young jung.",
+      "alsoInternational": false,
+      "selectionNote": "Cohort A. Frozen before extraction as the documentation upper bound: international museum, biennale, or global-gallery pages are expected."
+    },
+    {
+      "pilotId": "A18",
+      "cohort": "INTERNATIONAL",
+      "canonicalKoreanName": "김아영",
+      "romanizedNames": [
+        "Ayoung Kim"
+      ],
+      "otherAliases": [],
+      "birthYear": null,
+      "wikidataQid": null,
+      "identityStatus": "QID_UNRESOLVED",
+      "ambiguityNote": null,
+      "alsoInternational": false,
+      "selectionNote": "Cohort A. Frozen before extraction as the documentation upper bound: international museum, biennale, or global-gallery pages are expected."
+    },
+    {
+      "pilotId": "A19",
+      "cohort": "INTERNATIONAL",
+      "canonicalKoreanName": "정금형",
+      "romanizedNames": [
+        "Geumhyung Jeong"
+      ],
+      "otherAliases": [],
+      "birthYear": null,
+      "wikidataQid": null,
+      "identityStatus": "QID_UNRESOLVED",
+      "ambiguityNote": null,
+      "alsoInternational": false,
+      "selectionNote": "Cohort A. Frozen before extraction as the documentation upper bound: international museum, biennale, or global-gallery pages are expected."
+    },
+    {
+      "pilotId": "A20",
+      "cohort": "INTERNATIONAL",
+      "canonicalKoreanName": "이수경",
+      "romanizedNames": [
+        "Yeesookyung"
+      ],
+      "otherAliases": [],
+      "birthYear": null,
+      "wikidataQid": null,
+      "identityStatus": "QID_UNRESOLVED",
+      "ambiguityNote": "Hangul form is shared. Preferred public name is Yeesookyung.",
+      "alsoInternational": false,
+      "selectionNote": "Cohort A. Frozen before extraction as the documentation upper bound: international museum, biennale, or global-gallery pages are expected."
+    },
+    {
+      "pilotId": "A21",
+      "cohort": "INTERNATIONAL",
+      "canonicalKoreanName": "함경아",
+      "romanizedNames": [
+        "Kyungah Ham"
+      ],
+      "otherAliases": [],
+      "birthYear": null,
+      "wikidataQid": null,
+      "identityStatus": "QID_UNRESOLVED",
+      "ambiguityNote": null,
+      "alsoInternational": false,
+      "selectionNote": "Cohort A. Frozen before extraction as the documentation upper bound: international museum, biennale, or global-gallery pages are expected."
+    },
+    {
+      "pilotId": "A22",
+      "cohort": "INTERNATIONAL",
+      "canonicalKoreanName": "임흥순",
+      "romanizedNames": [
+        "Im Heung-soon"
+      ],
+      "otherAliases": [],
+      "birthYear": null,
+      "wikidataQid": null,
+      "identityStatus": "QID_UNRESOLVED",
+      "ambiguityNote": null,
+      "alsoInternational": false,
+      "selectionNote": "Cohort A. Frozen before extraction as the documentation upper bound: international museum, biennale, or global-gallery pages are expected."
+    },
+    {
+      "pilotId": "A23",
+      "cohort": "INTERNATIONAL",
+      "canonicalKoreanName": "박찬경",
+      "romanizedNames": [
+        "Park Chan-kyong"
+      ],
+      "otherAliases": [],
+      "birthYear": null,
+      "wikidataQid": null,
+      "identityStatus": "QID_UNRESOLVED",
+      "ambiguityNote": null,
+      "alsoInternational": false,
+      "selectionNote": "Cohort A. Frozen before extraction as the documentation upper bound: international museum, biennale, or global-gallery pages are expected."
+    },
+    {
+      "pilotId": "A24",
+      "cohort": "INTERNATIONAL",
+      "canonicalKoreanName": "문경원",
+      "romanizedNames": [
+        "Moon Kyungwon"
+      ],
+      "otherAliases": [],
+      "birthYear": null,
+      "wikidataQid": null,
+      "identityStatus": "QID_UNRESOLVED",
+      "ambiguityNote": null,
+      "alsoInternational": false,
+      "selectionNote": "Cohort A. Frozen before extraction as the documentation upper bound: international museum, biennale, or global-gallery pages are expected."
+    },
+    {
+      "pilotId": "A25",
+      "cohort": "INTERNATIONAL",
+      "canonicalKoreanName": "니키 리",
+      "romanizedNames": [
+        "Nikki S. Lee"
+      ],
+      "otherAliases": [
+        "Nikki Lee"
+      ],
+      "birthYear": null,
+      "wikidataQid": null,
+      "identityStatus": "QID_UNRESOLVED",
+      "ambiguityNote": null,
+      "alsoInternational": false,
+      "selectionNote": "Cohort A. Frozen before extraction as the documentation upper bound: international museum, biennale, or global-gallery pages are expected."
+    },
+    {
+      "pilotId": "B01",
+      "cohort": "DOMESTIC_INSTITUTIONAL",
+      "canonicalKoreanName": "최정화",
+      "romanizedNames": [
+        "Choi Jeong Hwa"
+      ],
+      "otherAliases": [],
+      "birthYear": null,
+      "wikidataQid": null,
+      "identityStatus": "QID_UNRESOLVED",
+      "ambiguityNote": null,
+      "alsoInternational": true,
+      "selectionNote": "Cohort B. Korean museum and prize exhibitions, roughly 2011–2026. Historical estates were not used to fill this cohort."
+    },
+    {
+      "pilotId": "B02",
+      "cohort": "DOMESTIC_INSTITUTIONAL",
+      "canonicalKoreanName": "전준호",
+      "romanizedNames": [
+        "Jeon Joonho"
+      ],
+      "otherAliases": [],
+      "birthYear": null,
+      "wikidataQid": null,
+      "identityStatus": "QID_UNRESOLVED",
+      "ambiguityNote": null,
+      "alsoInternational": false,
+      "selectionNote": "Cohort B. Korean museum and prize exhibitions, roughly 2011–2026. Historical estates were not used to fill this cohort."
+    },
+    {
+      "pilotId": "B03",
+      "cohort": "DOMESTIC_INSTITUTIONAL",
+      "canonicalKoreanName": "정연두",
+      "romanizedNames": [
+        "Jung Yeondoo"
+      ],
+      "otherAliases": [],
+      "birthYear": null,
+      "wikidataQid": null,
+      "identityStatus": "QID_UNRESOLVED",
+      "ambiguityNote": null,
+      "alsoInternational": false,
+      "selectionNote": "Cohort B. Korean museum and prize exhibitions, roughly 2011–2026. Historical estates were not used to fill this cohort."
+    },
+    {
+      "pilotId": "B04",
+      "cohort": "DOMESTIC_INSTITUTIONAL",
+      "canonicalKoreanName": "배영환",
+      "romanizedNames": [
+        "Bae Young-whan"
+      ],
+      "otherAliases": [],
+      "birthYear": null,
+      "wikidataQid": null,
+      "identityStatus": "QID_UNRESOLVED",
+      "ambiguityNote": null,
+      "alsoInternational": false,
+      "selectionNote": "Cohort B. Korean museum and prize exhibitions, roughly 2011–2026. Historical estates were not used to fill this cohort."
+    },
+    {
+      "pilotId": "B05",
+      "cohort": "DOMESTIC_INSTITUTIONAL",
+      "canonicalKoreanName": "김소라",
+      "romanizedNames": [
+        "Sora Kim"
+      ],
+      "otherAliases": [],
+      "birthYear": null,
+      "wikidataQid": null,
+      "identityStatus": "QID_UNRESOLVED",
+      "ambiguityNote": "Common name. Do not merge without an authoritative identifier.",
+      "alsoInternational": false,
+      "selectionNote": "Cohort B. Korean museum and prize exhibitions, roughly 2011–2026. Historical estates were not used to fill this cohort."
+    },
+    {
+      "pilotId": "B06",
+      "cohort": "DOMESTIC_INSTITUTIONAL",
+      "canonicalKoreanName": "노재운",
+      "romanizedNames": [
+        "Rho Jae Oon"
+      ],
+      "otherAliases": [],
+      "birthYear": null,
+      "wikidataQid": null,
+      "identityStatus": "QID_UNRESOLVED",
+      "ambiguityNote": null,
+      "alsoInternational": false,
+      "selectionNote": "Cohort B. Korean museum and prize exhibitions, roughly 2011–2026. Historical estates were not used to fill this cohort."
+    },
+    {
+      "pilotId": "B07",
+      "cohort": "DOMESTIC_INSTITUTIONAL",
+      "canonicalKoreanName": "이용백",
+      "romanizedNames": [
+        "Lee Yongbaek"
+      ],
+      "otherAliases": [],
+      "birthYear": null,
+      "wikidataQid": null,
+      "identityStatus": "QID_UNRESOLVED",
+      "ambiguityNote": null,
+      "alsoInternational": false,
+      "selectionNote": "Cohort B. Korean museum and prize exhibitions, roughly 2011–2026. Historical estates were not used to fill this cohort."
+    },
+    {
+      "pilotId": "B08",
+      "cohort": "DOMESTIC_INSTITUTIONAL",
+      "canonicalKoreanName": "안규철",
+      "romanizedNames": [
+        "Ahn Kyuchul"
+      ],
+      "otherAliases": [],
+      "birthYear": null,
+      "wikidataQid": null,
+      "identityStatus": "QID_UNRESOLVED",
+      "ambiguityNote": null,
+      "alsoInternational": false,
+      "selectionNote": "Cohort B. Korean museum and prize exhibitions, roughly 2011–2026. Historical estates were not used to fill this cohort."
+    },
+    {
+      "pilotId": "B09",
+      "cohort": "DOMESTIC_INSTITUTIONAL",
+      "canonicalKoreanName": "양아치",
+      "romanizedNames": [
+        "Yangachi"
+      ],
+      "otherAliases": [],
+      "birthYear": null,
+      "wikidataQid": null,
+      "identityStatus": "QID_UNRESOLVED",
+      "ambiguityNote": null,
+      "alsoInternational": false,
+      "selectionNote": "Cohort B. Korean museum and prize exhibitions, roughly 2011–2026. Historical estates were not used to fill this cohort."
+    },
+    {
+      "pilotId": "B10",
+      "cohort": "DOMESTIC_INSTITUTIONAL",
+      "canonicalKoreanName": "오형근",
+      "romanizedNames": [
+        "Oh Hein-kuhn"
+      ],
+      "otherAliases": [],
+      "birthYear": null,
+      "wikidataQid": null,
+      "identityStatus": "QID_UNRESOLVED",
+      "ambiguityNote": null,
+      "alsoInternational": false,
+      "selectionNote": "Cohort B. Korean museum and prize exhibitions, roughly 2011–2026. Historical estates were not used to fill this cohort."
+    },
+    {
+      "pilotId": "B11",
+      "cohort": "DOMESTIC_INSTITUTIONAL",
+      "canonicalKoreanName": "배병우",
+      "romanizedNames": [
+        "Bae Bien-U"
+      ],
+      "otherAliases": [],
+      "birthYear": null,
+      "wikidataQid": null,
+      "identityStatus": "QID_UNRESOLVED",
+      "ambiguityNote": null,
+      "alsoInternational": false,
+      "selectionNote": "Cohort B. Korean museum and prize exhibitions, roughly 2011–2026. Historical estates were not used to fill this cohort."
+    },
+    {
+      "pilotId": "B12",
+      "cohort": "DOMESTIC_INSTITUTIONAL",
+      "canonicalKoreanName": "김아타",
+      "romanizedNames": [
+        "Atta Kim"
+      ],
+      "otherAliases": [],
+      "birthYear": null,
+      "wikidataQid": null,
+      "identityStatus": "QID_UNRESOLVED",
+      "ambiguityNote": null,
+      "alsoInternational": false,
+      "selectionNote": "Cohort B. Korean museum and prize exhibitions, roughly 2011–2026. Historical estates were not used to fill this cohort."
+    },
+    {
+      "pilotId": "B13",
+      "cohort": "DOMESTIC_INSTITUTIONAL",
+      "canonicalKoreanName": "구본창",
+      "romanizedNames": [
+        "Koo Bohnchang"
+      ],
+      "otherAliases": [],
+      "birthYear": null,
+      "wikidataQid": null,
+      "identityStatus": "QID_UNRESOLVED",
+      "ambiguityNote": null,
+      "alsoInternational": false,
+      "selectionNote": "Cohort B. Korean museum and prize exhibitions, roughly 2011–2026. Historical estates were not used to fill this cohort."
+    },
+    {
+      "pilotId": "B14",
+      "cohort": "DOMESTIC_INSTITUTIONAL",
+      "canonicalKoreanName": "함진",
+      "romanizedNames": [
+        "Ham Jin"
+      ],
+      "otherAliases": [],
+      "birthYear": null,
+      "wikidataQid": null,
+      "identityStatus": "QID_UNRESOLVED",
+      "ambiguityNote": "Short name. Do not merge without an authoritative identifier.",
+      "alsoInternational": false,
+      "selectionNote": "Cohort B. Korean museum and prize exhibitions, roughly 2011–2026. Historical estates were not used to fill this cohort."
+    },
+    {
+      "pilotId": "B15",
+      "cohort": "DOMESTIC_INSTITUTIONAL",
+      "canonicalKoreanName": "이이남",
+      "romanizedNames": [
+        "Lee Lee Nam"
+      ],
+      "otherAliases": [],
+      "birthYear": null,
+      "wikidataQid": null,
+      "identityStatus": "QID_UNRESOLVED",
+      "ambiguityNote": null,
+      "alsoInternational": false,
+      "selectionNote": "Cohort B. Korean museum and prize exhibitions, roughly 2011–2026. Historical estates were not used to fill this cohort."
+    },
+    {
+      "pilotId": "B16",
+      "cohort": "DOMESTIC_INSTITUTIONAL",
+      "canonicalKoreanName": "최수앙",
+      "romanizedNames": [
+        "Xooang Choi"
+      ],
+      "otherAliases": [],
+      "birthYear": null,
+      "wikidataQid": null,
+      "identityStatus": "QID_UNRESOLVED",
+      "ambiguityNote": null,
+      "alsoInternational": false,
+      "selectionNote": "Cohort B. Korean museum and prize exhibitions, roughly 2011–2026. Historical estates were not used to fill this cohort."
+    },
+    {
+      "pilotId": "B17",
+      "cohort": "DOMESTIC_INSTITUTIONAL",
+      "canonicalKoreanName": "권오상",
+      "romanizedNames": [
+        "Gwon Osang"
+      ],
+      "otherAliases": [],
+      "birthYear": null,
+      "wikidataQid": null,
+      "identityStatus": "QID_UNRESOLVED",
+      "ambiguityNote": null,
+      "alsoInternational": false,
+      "selectionNote": "Cohort B. Korean museum and prize exhibitions, roughly 2011–2026. Historical estates were not used to fill this cohort."
+    },
+    {
+      "pilotId": "B18",
+      "cohort": "DOMESTIC_INSTITUTIONAL",
+      "canonicalKoreanName": "신미경",
+      "romanizedNames": [
+        "Meekyoung Shin"
+      ],
+      "otherAliases": [],
+      "birthYear": null,
+      "wikidataQid": null,
+      "identityStatus": "QID_UNRESOLVED",
+      "ambiguityNote": null,
+      "alsoInternational": false,
+      "selectionNote": "Cohort B. Korean museum and prize exhibitions, roughly 2011–2026. Historical estates were not used to fill this cohort."
+    },
+    {
+      "pilotId": "B19",
+      "cohort": "DOMESTIC_INSTITUTIONAL",
+      "canonicalKoreanName": "이승택",
+      "romanizedNames": [
+        "Lee Seung-taek"
+      ],
+      "otherAliases": [],
+      "birthYear": null,
+      "wikidataQid": null,
+      "identityStatus": "QID_UNRESOLVED",
+      "ambiguityNote": null,
+      "alsoInternational": true,
+      "selectionNote": "Cohort B. Korean museum and prize exhibitions, roughly 2011–2026. Historical estates were not used to fill this cohort."
+    },
+    {
+      "pilotId": "B20",
+      "cohort": "DOMESTIC_INSTITUTIONAL",
+      "canonicalKoreanName": "김상돈",
+      "romanizedNames": [
+        "Kim Sang-don"
+      ],
+      "otherAliases": [],
+      "birthYear": null,
+      "wikidataQid": null,
+      "identityStatus": "QID_UNRESOLVED",
+      "ambiguityNote": null,
+      "alsoInternational": false,
+      "selectionNote": "Cohort B. Korean museum and prize exhibitions, roughly 2011–2026. Historical estates were not used to fill this cohort."
+    },
+    {
+      "pilotId": "B21",
+      "cohort": "DOMESTIC_INSTITUTIONAL",
+      "canonicalKoreanName": "김희천",
+      "romanizedNames": [
+        "Kim Heecheon"
+      ],
+      "otherAliases": [],
+      "birthYear": null,
+      "wikidataQid": null,
+      "identityStatus": "QID_UNRESOLVED",
+      "ambiguityNote": null,
+      "alsoInternational": false,
+      "selectionNote": "Cohort B. Korean museum and prize exhibitions, roughly 2011–2026. Historical estates were not used to fill this cohort."
+    },
+    {
+      "pilotId": "B22",
+      "cohort": "DOMESTIC_INSTITUTIONAL",
+      "canonicalKoreanName": "이완",
+      "romanizedNames": [
+        "Lee Wan"
+      ],
+      "otherAliases": [],
+      "birthYear": null,
+      "wikidataQid": null,
+      "identityStatus": "QID_UNRESOLVED",
+      "ambiguityNote": "Common name. Do not merge without an authoritative identifier.",
+      "alsoInternational": false,
+      "selectionNote": "Cohort B. Korean museum and prize exhibitions, roughly 2011–2026. Historical estates were not used to fill this cohort."
+    },
+    {
+      "pilotId": "B23",
+      "cohort": "DOMESTIC_INSTITUTIONAL",
+      "canonicalKoreanName": "백현진",
+      "romanizedNames": [
+        "Bek Hyunjin"
+      ],
+      "otherAliases": [],
+      "birthYear": null,
+      "wikidataQid": null,
+      "identityStatus": "QID_UNRESOLVED",
+      "ambiguityNote": null,
+      "alsoInternational": false,
+      "selectionNote": "Cohort B. Korean museum and prize exhibitions, roughly 2011–2026. Historical estates were not used to fill this cohort."
+    },
+    {
+      "pilotId": "B24",
+      "cohort": "DOMESTIC_INSTITUTIONAL",
+      "canonicalKoreanName": "김기라",
+      "romanizedNames": [
+        "Kim Kira"
+      ],
+      "otherAliases": [],
+      "birthYear": null,
+      "wikidataQid": null,
+      "identityStatus": "QID_UNRESOLVED",
+      "ambiguityNote": null,
+      "alsoInternational": false,
+      "selectionNote": "Cohort B. Korean museum and prize exhibitions, roughly 2011–2026. Historical estates were not used to fill this cohort."
+    },
+    {
+      "pilotId": "B25",
+      "cohort": "DOMESTIC_INSTITUTIONAL",
+      "canonicalKoreanName": "이진주",
+      "romanizedNames": [
+        "Lee Jinju"
+      ],
+      "otherAliases": [],
+      "birthYear": null,
+      "wikidataQid": null,
+      "identityStatus": "QID_UNRESOLVED",
+      "ambiguityNote": null,
+      "alsoInternational": false,
+      "selectionNote": "Cohort B. Korean museum and prize exhibitions, roughly 2011–2026. Historical estates were not used to fill this cohort."
+    },
+    {
+      "pilotId": "B26",
+      "cohort": "DOMESTIC_INSTITUTIONAL",
+      "canonicalKoreanName": "권병준",
+      "romanizedNames": [
+        "Kwon Byung-jun"
+      ],
+      "otherAliases": [],
+      "birthYear": null,
+      "wikidataQid": null,
+      "identityStatus": "QID_UNRESOLVED",
+      "ambiguityNote": null,
+      "alsoInternational": false,
+      "selectionNote": "Cohort B. Korean museum and prize exhibitions, roughly 2011–2026. Historical estates were not used to fill this cohort. Korea Artist Prize 2023."
+    },
+    {
+      "pilotId": "B27",
+      "cohort": "DOMESTIC_INSTITUTIONAL",
+      "canonicalKoreanName": "이강승",
+      "romanizedNames": [
+        "Kang Seung Lee"
+      ],
+      "otherAliases": [],
+      "birthYear": null,
+      "wikidataQid": null,
+      "identityStatus": "QID_UNRESOLVED",
+      "ambiguityNote": null,
+      "alsoInternational": true,
+      "selectionNote": "Cohort B. Korean museum and prize exhibitions, roughly 2011–2026. Historical estates were not used to fill this cohort. Korea Artist Prize 2023."
+    },
+    {
+      "pilotId": "B28",
+      "cohort": "DOMESTIC_INSTITUTIONAL",
+      "canonicalKoreanName": "전소정",
+      "romanizedNames": [
+        "Jeon Sojung"
+      ],
+      "otherAliases": [],
+      "birthYear": null,
+      "wikidataQid": null,
+      "identityStatus": "QID_UNRESOLVED",
+      "ambiguityNote": null,
+      "alsoInternational": false,
+      "selectionNote": "Cohort B. Korean museum and prize exhibitions, roughly 2011–2026. Historical estates were not used to fill this cohort. Korea Artist Prize 2023."
+    },
+    {
+      "pilotId": "B29",
+      "cohort": "DOMESTIC_INSTITUTIONAL",
+      "canonicalKoreanName": "권하윤",
+      "romanizedNames": [
+        "Kwon Hayoun"
+      ],
+      "otherAliases": [],
+      "birthYear": null,
+      "wikidataQid": null,
+      "identityStatus": "QID_UNRESOLVED",
+      "ambiguityNote": null,
+      "alsoInternational": false,
+      "selectionNote": "Cohort B. Korean museum and prize exhibitions, roughly 2011–2026. Historical estates were not used to fill this cohort. Korea Artist Prize 2024."
+    },
+    {
+      "pilotId": "B30",
+      "cohort": "DOMESTIC_INSTITUTIONAL",
+      "canonicalKoreanName": "양정욱",
+      "romanizedNames": [
+        "Yang Jung-uk"
+      ],
+      "otherAliases": [],
+      "birthYear": null,
+      "wikidataQid": null,
+      "identityStatus": "QID_UNRESOLVED",
+      "ambiguityNote": null,
+      "alsoInternational": false,
+      "selectionNote": "Cohort B. Korean museum and prize exhibitions, roughly 2011–2026. Historical estates were not used to fill this cohort. Korea Artist Prize 2024."
+    },
+    {
+      "pilotId": "B31",
+      "cohort": "DOMESTIC_INSTITUTIONAL",
+      "canonicalKoreanName": "윤지영",
+      "romanizedNames": [
+        "Yun Ji-young"
+      ],
+      "otherAliases": [],
+      "birthYear": null,
+      "wikidataQid": null,
+      "identityStatus": "QID_UNRESOLVED",
+      "ambiguityNote": "Common name. This seat is the Korea Artist Prize 2024 participant only.",
+      "alsoInternational": false,
+      "selectionNote": "Cohort B. Korean museum and prize exhibitions, roughly 2011–2026. Historical estates were not used to fill this cohort. Korea Artist Prize 2024."
+    },
+    {
+      "pilotId": "B32",
+      "cohort": "DOMESTIC_INSTITUTIONAL",
+      "canonicalKoreanName": "제인 진 카이젠",
+      "romanizedNames": [
+        "Jane Jin Kaisen"
+      ],
+      "otherAliases": [],
+      "birthYear": null,
+      "wikidataQid": null,
+      "identityStatus": "QID_UNRESOLVED",
+      "ambiguityNote": null,
+      "alsoInternational": true,
+      "selectionNote": "Cohort B. Korean museum and prize exhibitions, roughly 2011–2026. Historical estates were not used to fill this cohort. Korea Artist Prize 2024."
+    },
+    {
+      "pilotId": "B33",
+      "cohort": "DOMESTIC_INSTITUTIONAL",
+      "canonicalKoreanName": "김영은",
+      "romanizedNames": [
+        "Kim Young-eun"
+      ],
+      "otherAliases": [],
+      "birthYear": null,
+      "wikidataQid": null,
+      "identityStatus": "QID_UNRESOLVED",
+      "ambiguityNote": "Very common name. This seat is the Korea Artist Prize 2025 participant only.",
+      "alsoInternational": false,
+      "selectionNote": "Cohort B. Korean museum and prize exhibitions, roughly 2011–2026. Historical estates were not used to fill this cohort. Korea Artist Prize 2025."
+    },
+    {
+      "pilotId": "B34",
+      "cohort": "DOMESTIC_INSTITUTIONAL",
+      "canonicalKoreanName": "임영주",
+      "romanizedNames": [
+        "Lim Young-ju"
+      ],
+      "otherAliases": [],
+      "birthYear": null,
+      "wikidataQid": null,
+      "identityStatus": "QID_UNRESOLVED",
+      "ambiguityNote": "Common name. This seat is the Korea Artist Prize 2025 participant only.",
+      "alsoInternational": false,
+      "selectionNote": "Cohort B. Korean museum and prize exhibitions, roughly 2011–2026. Historical estates were not used to fill this cohort. Korea Artist Prize 2025."
+    },
+    {
+      "pilotId": "B35",
+      "cohort": "DOMESTIC_INSTITUTIONAL",
+      "canonicalKoreanName": "김지평",
+      "romanizedNames": [
+        "Kim Ji-pyeong"
+      ],
+      "otherAliases": [],
+      "birthYear": null,
+      "wikidataQid": null,
+      "identityStatus": "QID_UNRESOLVED",
+      "ambiguityNote": null,
+      "alsoInternational": false,
+      "selectionNote": "Cohort B. Korean museum and prize exhibitions, roughly 2011–2026. Historical estates were not used to fill this cohort. Korea Artist Prize 2025."
+    },
+    {
+      "pilotId": "B36",
+      "cohort": "DOMESTIC_INSTITUTIONAL",
+      "canonicalKoreanName": "윤석남",
+      "romanizedNames": [
+        "Yun Suk-nam"
+      ],
+      "otherAliases": [],
+      "birthYear": null,
+      "wikidataQid": null,
+      "identityStatus": "QID_UNRESOLVED",
+      "ambiguityNote": null,
+      "alsoInternational": false,
+      "selectionNote": "Cohort B. Korean museum and prize exhibitions, roughly 2011–2026. Historical estates were not used to fill this cohort."
+    },
+    {
+      "pilotId": "B37",
+      "cohort": "DOMESTIC_INSTITUTIONAL",
+      "canonicalKoreanName": "김용익",
+      "romanizedNames": [
+        "Kim Yong-ik"
+      ],
+      "otherAliases": [],
+      "birthYear": null,
+      "wikidataQid": null,
+      "identityStatus": "QID_UNRESOLVED",
+      "ambiguityNote": null,
+      "alsoInternational": false,
+      "selectionNote": "Cohort B. Korean museum and prize exhibitions, roughly 2011–2026. Historical estates were not used to fill this cohort."
+    },
+    {
+      "pilotId": "B38",
+      "cohort": "DOMESTIC_INSTITUTIONAL",
+      "canonicalKoreanName": "이건용",
+      "romanizedNames": [
+        "Lee Kun-yong"
+      ],
+      "otherAliases": [],
+      "birthYear": null,
+      "wikidataQid": null,
+      "identityStatus": "QID_UNRESOLVED",
+      "ambiguityNote": null,
+      "alsoInternational": false,
+      "selectionNote": "Cohort B. Korean museum and prize exhibitions, roughly 2011–2026. Historical estates were not used to fill this cohort."
+    },
+    {
+      "pilotId": "B39",
+      "cohort": "DOMESTIC_INSTITUTIONAL",
+      "canonicalKoreanName": "문성식",
+      "romanizedNames": [
+        "Sungsic Moon"
+      ],
+      "otherAliases": [],
+      "birthYear": null,
+      "wikidataQid": null,
+      "identityStatus": "QID_UNRESOLVED",
+      "ambiguityNote": null,
+      "alsoInternational": false,
+      "selectionNote": "Cohort B. Korean museum and prize exhibitions, roughly 2011–2026. Historical estates were not used to fill this cohort."
+    },
+    {
+      "pilotId": "B40",
+      "cohort": "DOMESTIC_INSTITUTIONAL",
+      "canonicalKoreanName": "김성환",
+      "romanizedNames": [
+        "Sung Hwan Kim"
+      ],
+      "otherAliases": [],
+      "birthYear": null,
+      "wikidataQid": null,
+      "identityStatus": "QID_UNRESOLVED",
+      "ambiguityNote": "Common name. Do not merge without birth year or an authoritative identifier.",
+      "alsoInternational": true,
+      "selectionNote": "Cohort B. Korean museum and prize exhibitions, roughly 2011–2026. Historical estates were not used to fill this cohort."
+    },
+    {
+      "pilotId": "B41",
+      "cohort": "DOMESTIC_INSTITUTIONAL",
+      "canonicalKoreanName": "이동기",
+      "romanizedNames": [
+        "Lee Dongi"
+      ],
+      "otherAliases": [],
+      "birthYear": null,
+      "wikidataQid": null,
+      "identityStatus": "QID_UNRESOLVED",
+      "ambiguityNote": null,
+      "alsoInternational": false,
+      "selectionNote": "Cohort B. Korean museum and prize exhibitions, roughly 2011–2026. Historical estates were not used to fill this cohort."
+    },
+    {
+      "pilotId": "B42",
+      "cohort": "DOMESTIC_INSTITUTIONAL",
+      "canonicalKoreanName": "장지아",
+      "romanizedNames": [
+        "Chang Jia"
+      ],
+      "otherAliases": [],
+      "birthYear": null,
+      "wikidataQid": null,
+      "identityStatus": "QID_UNRESOLVED",
+      "ambiguityNote": null,
+      "alsoInternational": false,
+      "selectionNote": "Cohort B. Korean museum and prize exhibitions, roughly 2011–2026. Historical estates were not used to fill this cohort."
+    },
+    {
+      "pilotId": "B43",
+      "cohort": "DOMESTIC_INSTITUTIONAL",
+      "canonicalKoreanName": "김을",
+      "romanizedNames": [
+        "Kim Eull"
+      ],
+      "otherAliases": [],
+      "birthYear": null,
+      "wikidataQid": null,
+      "identityStatus": "QID_UNRESOLVED",
+      "ambiguityNote": null,
+      "alsoInternational": false,
+      "selectionNote": "Cohort B. Korean museum and prize exhibitions, roughly 2011–2026. Historical estates were not used to fill this cohort."
+    },
+    {
+      "pilotId": "B44",
+      "cohort": "DOMESTIC_INSTITUTIONAL",
+      "canonicalKoreanName": "조해준",
+      "romanizedNames": [
+        "Cho Hae-jun"
+      ],
+      "otherAliases": [],
+      "birthYear": null,
+      "wikidataQid": null,
+      "identityStatus": "QID_UNRESOLVED",
+      "ambiguityNote": null,
+      "alsoInternational": false,
+      "selectionNote": "Cohort B. Korean museum and prize exhibitions, roughly 2011–2026. Historical estates were not used to fill this cohort."
+    },
+    {
+      "pilotId": "B45",
+      "cohort": "DOMESTIC_INSTITUTIONAL",
+      "canonicalKoreanName": "이형구",
+      "romanizedNames": [
+        "Hyungkoo Lee"
+      ],
+      "otherAliases": [],
+      "birthYear": null,
+      "wikidataQid": null,
+      "identityStatus": "QID_UNRESOLVED",
+      "ambiguityNote": null,
+      "alsoInternational": false,
+      "selectionNote": "Cohort B. Korean museum and prize exhibitions, roughly 2011–2026. Historical estates were not used to fill this cohort."
+    },
+    {
+      "pilotId": "B46",
+      "cohort": "DOMESTIC_INSTITUTIONAL",
+      "canonicalKoreanName": "김구림",
+      "romanizedNames": [
+        "Kim Ku-lim"
+      ],
+      "otherAliases": [],
+      "birthYear": null,
+      "wikidataQid": null,
+      "identityStatus": "QID_UNRESOLVED",
+      "ambiguityNote": null,
+      "alsoInternational": false,
+      "selectionNote": "Cohort B. Korean museum and prize exhibitions, roughly 2011–2026. Historical estates were not used to fill this cohort."
+    },
+    {
+      "pilotId": "B47",
+      "cohort": "DOMESTIC_INSTITUTIONAL",
+      "canonicalKoreanName": "이강소",
+      "romanizedNames": [
+        "Lee Kang-so"
+      ],
+      "otherAliases": [],
+      "birthYear": null,
+      "wikidataQid": null,
+      "identityStatus": "QID_UNRESOLVED",
+      "ambiguityNote": null,
+      "alsoInternational": false,
+      "selectionNote": "Cohort B. Korean museum and prize exhibitions, roughly 2011–2026. Historical estates were not used to fill this cohort."
+    },
+    {
+      "pilotId": "B48",
+      "cohort": "DOMESTIC_INSTITUTIONAL",
+      "canonicalKoreanName": "김홍주",
+      "romanizedNames": [
+        "Kim Hong-joo"
+      ],
+      "otherAliases": [],
+      "birthYear": null,
+      "wikidataQid": null,
+      "identityStatus": "QID_UNRESOLVED",
+      "ambiguityNote": null,
+      "alsoInternational": false,
+      "selectionNote": "Cohort B. Korean museum and prize exhibitions, roughly 2011–2026. Historical estates were not used to fill this cohort."
+    },
+    {
+      "pilotId": "B49",
+      "cohort": "DOMESTIC_INSTITUTIONAL",
+      "canonicalKoreanName": "최병소",
+      "romanizedNames": [
+        "Choi Byung-so"
+      ],
+      "otherAliases": [],
+      "birthYear": null,
+      "wikidataQid": null,
+      "identityStatus": "QID_UNRESOLVED",
+      "ambiguityNote": null,
+      "alsoInternational": false,
+      "selectionNote": "Cohort B. Korean museum and prize exhibitions, roughly 2011–2026. Historical estates were not used to fill this cohort."
+    },
+    {
+      "pilotId": "B50",
+      "cohort": "DOMESTIC_INSTITUTIONAL",
+      "canonicalKoreanName": "이명호",
+      "romanizedNames": [
+        "Lee Myoung-ho"
+      ],
+      "otherAliases": [],
+      "birthYear": null,
+      "wikidataQid": null,
+      "identityStatus": "QID_UNRESOLVED",
+      "ambiguityNote": null,
+      "alsoInternational": false,
+      "selectionNote": "Cohort B. Korean museum and prize exhibitions, roughly 2011–2026. Historical estates were not used to fill this cohort."
+    },
+    {
+      "pilotId": "C01",
+      "cohort": "EMERGING",
+      "canonicalKoreanName": "구나",
+      "romanizedNames": [
+        "Gu Na"
+      ],
+      "otherAliases": [],
+      "birthYear": null,
+      "wikidataQid": null,
+      "identityStatus": "QID_UNRESOLVED",
+      "ambiguityNote": null,
+      "alsoInternational": false,
+      "selectionNote": "Cohort C. Individuals from the 24th SongEun Art Award 본선 참여 line (collective 업체 eobchae removed), then winner 탁영준, then the first six names in the 23rd edition 참여작가 sentence. Frozen before extraction."
+    },
+    {
+      "pilotId": "C02",
+      "cohort": "EMERGING",
+      "canonicalKoreanName": "구자명",
+      "romanizedNames": [
+        "Koo Ja-myoung"
+      ],
+      "otherAliases": [],
+      "birthYear": null,
+      "wikidataQid": null,
+      "identityStatus": "QID_UNRESOLVED",
+      "ambiguityNote": null,
+      "alsoInternational": false,
+      "selectionNote": "Cohort C. Individuals from the 24th SongEun Art Award 본선 참여 line (collective 업체 eobchae removed), then winner 탁영준, then the first six names in the 23rd edition 참여작가 sentence. Frozen before extraction."
+    },
+    {
+      "pilotId": "C03",
+      "cohort": "EMERGING",
+      "canonicalKoreanName": "김원화",
+      "romanizedNames": [
+        "Kim Won-hwa"
+      ],
+      "otherAliases": [],
+      "birthYear": null,
+      "wikidataQid": null,
+      "identityStatus": "QID_UNRESOLVED",
+      "ambiguityNote": null,
+      "alsoInternational": false,
+      "selectionNote": "Cohort C. Individuals from the 24th SongEun Art Award 본선 참여 line (collective 업체 eobchae removed), then winner 탁영준, then the first six names in the 23rd edition 참여작가 sentence. Frozen before extraction."
+    },
+    {
+      "pilotId": "C04",
+      "cohort": "EMERGING",
+      "canonicalKoreanName": "노상호",
+      "romanizedNames": [
+        "Noh Sang-ho"
+      ],
+      "otherAliases": [],
+      "birthYear": null,
+      "wikidataQid": null,
+      "identityStatus": "QID_UNRESOLVED",
+      "ambiguityNote": null,
+      "alsoInternational": false,
+      "selectionNote": "Cohort C. Individuals from the 24th SongEun Art Award 본선 참여 line (collective 업체 eobchae removed), then winner 탁영준, then the first six names in the 23rd edition 참여작가 sentence. Frozen before extraction."
+    },
+    {
+      "pilotId": "C05",
+      "cohort": "EMERGING",
+      "canonicalKoreanName": "박종영",
+      "romanizedNames": [
+        "Park Jong-young"
+      ],
+      "otherAliases": [],
+      "birthYear": null,
+      "wikidataQid": null,
+      "identityStatus": "QID_UNRESOLVED",
+      "ambiguityNote": null,
+      "alsoInternational": false,
+      "selectionNote": "Cohort C. Individuals from the 24th SongEun Art Award 본선 참여 line (collective 업체 eobchae removed), then winner 탁영준, then the first six names in the 23rd edition 참여작가 sentence. Frozen before extraction."
+    },
+    {
+      "pilotId": "C06",
+      "cohort": "EMERGING",
+      "canonicalKoreanName": "배윤환",
+      "romanizedNames": [
+        "Bae Yoon-hwan"
+      ],
+      "otherAliases": [],
+      "birthYear": null,
+      "wikidataQid": null,
+      "identityStatus": "QID_UNRESOLVED",
+      "ambiguityNote": null,
+      "alsoInternational": false,
+      "selectionNote": "Cohort C. Individuals from the 24th SongEun Art Award 본선 참여 line (collective 업체 eobchae removed), then winner 탁영준, then the first six names in the 23rd edition 참여작가 sentence. Frozen before extraction."
+    },
+    {
+      "pilotId": "C07",
+      "cohort": "EMERGING",
+      "canonicalKoreanName": "손수민",
+      "romanizedNames": [
+        "Shon Soo-min"
+      ],
+      "otherAliases": [],
+      "birthYear": null,
+      "wikidataQid": null,
+      "identityStatus": "QID_UNRESOLVED",
+      "ambiguityNote": null,
+      "alsoInternational": false,
+      "selectionNote": "Cohort C. Individuals from the 24th SongEun Art Award 본선 참여 line (collective 업체 eobchae removed), then winner 탁영준, then the first six names in the 23rd edition 참여작가 sentence. Frozen before extraction."
+    },
+    {
+      "pilotId": "C08",
+      "cohort": "EMERGING",
+      "canonicalKoreanName": "송예환",
+      "romanizedNames": [
+        "Song Ye-hwan"
+      ],
+      "otherAliases": [],
+      "birthYear": null,
+      "wikidataQid": null,
+      "identityStatus": "QID_UNRESOLVED",
+      "ambiguityNote": null,
+      "alsoInternational": false,
+      "selectionNote": "Cohort C. Individuals from the 24th SongEun Art Award 본선 참여 line (collective 업체 eobchae removed), then winner 탁영준, then the first six names in the 23rd edition 참여작가 sentence. Frozen before extraction."
+    },
+    {
+      "pilotId": "C09",
+      "cohort": "EMERGING",
+      "canonicalKoreanName": "안유리",
+      "romanizedNames": [
+        "An Yu-ri"
+      ],
+      "otherAliases": [],
+      "birthYear": null,
+      "wikidataQid": null,
+      "identityStatus": "QID_UNRESOLVED",
+      "ambiguityNote": null,
+      "alsoInternational": false,
+      "selectionNote": "Cohort C. Individuals from the 24th SongEun Art Award 본선 참여 line (collective 업체 eobchae removed), then winner 탁영준, then the first six names in the 23rd edition 참여작가 sentence. Frozen before extraction."
+    },
+    {
+      "pilotId": "C10",
+      "cohort": "EMERGING",
+      "canonicalKoreanName": "얄루",
+      "romanizedNames": [
+        "Yaloo"
+      ],
+      "otherAliases": [],
+      "birthYear": null,
+      "wikidataQid": null,
+      "identityStatus": "QID_UNRESOLVED",
+      "ambiguityNote": null,
+      "alsoInternational": false,
+      "selectionNote": "Cohort C. Individuals from the 24th SongEun Art Award 본선 참여 line (collective 업체 eobchae removed), then winner 탁영준, then the first six names in the 23rd edition 참여작가 sentence. Frozen before extraction."
+    },
+    {
+      "pilotId": "C11",
+      "cohort": "EMERGING",
+      "canonicalKoreanName": "오묘초",
+      "romanizedNames": [
+        "Omyo Cho"
+      ],
+      "otherAliases": [],
+      "birthYear": null,
+      "wikidataQid": null,
+      "identityStatus": "QID_UNRESOLVED",
+      "ambiguityNote": null,
+      "alsoInternational": false,
+      "selectionNote": "Cohort C. Individuals from the 24th SongEun Art Award 본선 참여 line (collective 업체 eobchae removed), then winner 탁영준, then the first six names in the 23rd edition 참여작가 sentence. Frozen before extraction."
+    },
+    {
+      "pilotId": "C12",
+      "cohort": "EMERGING",
+      "canonicalKoreanName": "유아연",
+      "romanizedNames": [
+        "Ryu Ah-yeon"
+      ],
+      "otherAliases": [],
+      "birthYear": null,
+      "wikidataQid": null,
+      "identityStatus": "QID_UNRESOLVED",
+      "ambiguityNote": null,
+      "alsoInternational": false,
+      "selectionNote": "Cohort C. Individuals from the 24th SongEun Art Award 본선 참여 line (collective 업체 eobchae removed), then winner 탁영준, then the first six names in the 23rd edition 참여작가 sentence. Frozen before extraction."
+    },
+    {
+      "pilotId": "C13",
+      "cohort": "EMERGING",
+      "canonicalKoreanName": "이승애",
+      "romanizedNames": [
+        "Lee Seung-ae"
+      ],
+      "otherAliases": [],
+      "birthYear": null,
+      "wikidataQid": null,
+      "identityStatus": "QID_UNRESOLVED",
+      "ambiguityNote": null,
+      "alsoInternational": false,
+      "selectionNote": "Cohort C. Individuals from the 24th SongEun Art Award 본선 참여 line (collective 업체 eobchae removed), then winner 탁영준, then the first six names in the 23rd edition 참여작가 sentence. Frozen before extraction."
+    },
+    {
+      "pilotId": "C14",
+      "cohort": "EMERGING",
+      "canonicalKoreanName": "이혜인",
+      "romanizedNames": [
+        "Lee Hye-in"
+      ],
+      "otherAliases": [],
+      "birthYear": null,
+      "wikidataQid": null,
+      "identityStatus": "QID_UNRESOLVED",
+      "ambiguityNote": null,
+      "alsoInternational": false,
+      "selectionNote": "Cohort C. Individuals from the 24th SongEun Art Award 본선 참여 line (collective 업체 eobchae removed), then winner 탁영준, then the first six names in the 23rd edition 참여작가 sentence. Frozen before extraction."
+    },
+    {
+      "pilotId": "C15",
+      "cohort": "EMERGING",
+      "canonicalKoreanName": "조재영",
+      "romanizedNames": [
+        "Cho Jai-young"
+      ],
+      "otherAliases": [],
+      "birthYear": null,
+      "wikidataQid": null,
+      "identityStatus": "QID_UNRESOLVED",
+      "ambiguityNote": null,
+      "alsoInternational": false,
+      "selectionNote": "Cohort C. Individuals from the 24th SongEun Art Award 본선 참여 line (collective 업체 eobchae removed), then winner 탁영준, then the first six names in the 23rd edition 참여작가 sentence. Frozen before extraction."
+    },
+    {
+      "pilotId": "C16",
+      "cohort": "EMERGING",
+      "canonicalKoreanName": "진민욱",
+      "romanizedNames": [
+        "Jin Min-wook"
+      ],
+      "otherAliases": [],
+      "birthYear": null,
+      "wikidataQid": null,
+      "identityStatus": "QID_UNRESOLVED",
+      "ambiguityNote": null,
+      "alsoInternational": false,
+      "selectionNote": "Cohort C. Individuals from the 24th SongEun Art Award 본선 참여 line (collective 업체 eobchae removed), then winner 탁영준, then the first six names in the 23rd edition 참여작가 sentence. Frozen before extraction."
+    },
+    {
+      "pilotId": "C17",
+      "cohort": "EMERGING",
+      "canonicalKoreanName": "최장원",
+      "romanizedNames": [
+        "Choi Jang-won"
+      ],
+      "otherAliases": [],
+      "birthYear": null,
+      "wikidataQid": null,
+      "identityStatus": "QID_UNRESOLVED",
+      "ambiguityNote": null,
+      "alsoInternational": false,
+      "selectionNote": "Cohort C. Individuals from the 24th SongEun Art Award 본선 참여 line (collective 업체 eobchae removed), then winner 탁영준, then the first six names in the 23rd edition 참여작가 sentence. Frozen before extraction."
+    },
+    {
+      "pilotId": "C18",
+      "cohort": "EMERGING",
+      "canonicalKoreanName": "추미림",
+      "romanizedNames": [
+        "Chu Mi-rim"
+      ],
+      "otherAliases": [],
+      "birthYear": null,
+      "wikidataQid": null,
+      "identityStatus": "QID_UNRESOLVED",
+      "ambiguityNote": null,
+      "alsoInternational": false,
+      "selectionNote": "Cohort C. Individuals from the 24th SongEun Art Award 본선 참여 line (collective 업체 eobchae removed), then winner 탁영준, then the first six names in the 23rd edition 참여작가 sentence. Frozen before extraction."
+    },
+    {
+      "pilotId": "C19",
+      "cohort": "EMERGING",
+      "canonicalKoreanName": "탁영준",
+      "romanizedNames": [
+        "Tak Young-jun"
+      ],
+      "otherAliases": [],
+      "birthYear": null,
+      "wikidataQid": null,
+      "identityStatus": "QID_UNRESOLVED",
+      "ambiguityNote": null,
+      "alsoInternational": false,
+      "selectionNote": "Cohort C. Individuals from the 24th SongEun Art Award 본선 참여 line (collective 업체 eobchae removed), then winner 탁영준, then the first six names in the 23rd edition 참여작가 sentence. Frozen before extraction."
+    },
+    {
+      "pilotId": "C20",
+      "cohort": "EMERGING",
+      "canonicalKoreanName": "남진우",
+      "romanizedNames": [
+        "Nam Jin-woo"
+      ],
+      "otherAliases": [],
+      "birthYear": null,
+      "wikidataQid": null,
+      "identityStatus": "QID_UNRESOLVED",
+      "ambiguityNote": null,
+      "alsoInternational": false,
+      "selectionNote": "Cohort C. Individuals from the 24th SongEun Art Award 본선 참여 line (collective 업체 eobchae removed), then winner 탁영준, then the first six names in the 23rd edition 참여작가 sentence. Frozen before extraction."
+    },
+    {
+      "pilotId": "C21",
+      "cohort": "EMERGING",
+      "canonicalKoreanName": "문이삭",
+      "romanizedNames": [
+        "Moon Isak"
+      ],
+      "otherAliases": [],
+      "birthYear": null,
+      "wikidataQid": null,
+      "identityStatus": "QID_UNRESOLVED",
+      "ambiguityNote": null,
+      "alsoInternational": false,
+      "selectionNote": "Cohort C. Individuals from the 24th SongEun Art Award 본선 참여 line (collective 업체 eobchae removed), then winner 탁영준, then the first six names in the 23rd edition 참여작가 sentence. Frozen before extraction."
+    },
+    {
+      "pilotId": "C22",
+      "cohort": "EMERGING",
+      "canonicalKoreanName": "박웅규",
+      "romanizedNames": [
+        "Park Woong-kyu"
+      ],
+      "otherAliases": [],
+      "birthYear": null,
+      "wikidataQid": null,
+      "identityStatus": "QID_UNRESOLVED",
+      "ambiguityNote": null,
+      "alsoInternational": false,
+      "selectionNote": "Cohort C. Individuals from the 24th SongEun Art Award 본선 참여 line (collective 업체 eobchae removed), then winner 탁영준, then the first six names in the 23rd edition 참여작가 sentence. Frozen before extraction."
+    },
+    {
+      "pilotId": "C23",
+      "cohort": "EMERGING",
+      "canonicalKoreanName": "박형진",
+      "romanizedNames": [
+        "Park Hyung-jin"
+      ],
+      "otherAliases": [],
+      "birthYear": null,
+      "wikidataQid": null,
+      "identityStatus": "QID_UNRESOLVED",
+      "ambiguityNote": null,
+      "alsoInternational": false,
+      "selectionNote": "Cohort C. Individuals from the 24th SongEun Art Award 본선 참여 line (collective 업체 eobchae removed), then winner 탁영준, then the first six names in the 23rd edition 참여작가 sentence. Frozen before extraction."
+    },
+    {
+      "pilotId": "C24",
+      "cohort": "EMERGING",
+      "canonicalKoreanName": "백경호",
+      "romanizedNames": [
+        "Baek Kyung-ho"
+      ],
+      "otherAliases": [],
+      "birthYear": null,
+      "wikidataQid": null,
+      "identityStatus": "QID_UNRESOLVED",
+      "ambiguityNote": null,
+      "alsoInternational": false,
+      "selectionNote": "Cohort C. Individuals from the 24th SongEun Art Award 본선 참여 line (collective 업체 eobchae removed), then winner 탁영준, then the first six names in the 23rd edition 참여작가 sentence. Frozen before extraction."
+    },
+    {
+      "pilotId": "C25",
+      "cohort": "EMERGING",
+      "canonicalKoreanName": "백종관",
+      "romanizedNames": [
+        "Baek Jong-gwan"
+      ],
+      "otherAliases": [],
+      "birthYear": null,
+      "wikidataQid": null,
+      "identityStatus": "QID_UNRESOLVED",
+      "ambiguityNote": "The 23rd SongEun participation sentence and artist list say 백종관. The same page's 본선 참여 line says 백종원. This seat stays 백종관 and must not be auto-merged.",
+      "alsoInternational": false,
+      "selectionNote": "Cohort C. Individuals from the 24th SongEun Art Award 본선 참여 line (collective 업체 eobchae removed), then winner 탁영준, then the first six names in the 23rd edition 참여작가 sentence. Frozen before extraction."
+    }
+  ]
+}

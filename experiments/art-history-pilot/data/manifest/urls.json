@@ -1,0 +1,16 @@
+{
+  "rule": "Human-selected URLs only. Do not add a URL that was not opened or returned by a source review. A reviewed URL is not an exhibition record.",
+  "urls": [
+    {
+      "artistPilotId": null,
+      "url": "https://www.mmca.go.kr/exhibitions/exhibitionsDetail.do?exhId=202302010001618",
+      "domain": "www.mmca.go.kr",
+      "sourceTier": 1,
+      "sourceType": "museum_exhibition_page",
+      "discoveredBy": "pilot-researcher",
+      "discoveredAt": "2026-10-08",
+      "reviewStatus": "license_mark_absent",
+      "note": "Opened to see whether this page carries the KOGL type 1 mark required by MMCA. The mark is not on the page, so no exhibition facts were stored."
+    }
+  ]
+}

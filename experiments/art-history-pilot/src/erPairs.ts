@@ -1,0 +1,173 @@
+import type { EntityRef } from "./resolve";
+
+export type ErPair = {
+  id: string;
+  left: EntityRef;
+  right: EntityRef;
+  expectedState: "EXACT_MATCH" | "HIGH_CONFIDENCE_CANDIDATE" | "REVIEW_REQUIRED" | "DISTINCT";
+  expectedAutoMerge: boolean;
+  note: string;
+};
+
+export const ER_PAIRS: ErPair[] = [
+  {
+    id: "P01",
+    left: { kind: "artist", name: "Lee Ufan", qid: "Q-LEE-UFAN", birthYear: 1936 },
+    right: { kind: "artist", name: "이우환", qid: "Q-LEE-UFAN", birthYear: 1936 },
+    expectedState: "EXACT_MATCH",
+    expectedAutoMerge: true,
+    note: "Same authoritative id.",
+  },
+  {
+    id: "P02",
+    left: { kind: "artist", name: "Lee Ufan", birthYear: 1936 },
+    right: { kind: "artist", name: "Ufan Lee", birthYear: 1936 },
+    expectedState: "HIGH_CONFIDENCE_CANDIDATE",
+    expectedAutoMerge: false,
+    note: "Reordered romanization plus the same birth year is not a merge.",
+  },
+  {
+    id: "P03",
+    left: { kind: "artist", name: "Haegue Yang", birthYear: 1971 },
+    right: { kind: "artist", name: "양혜규", aliases: ["Haegue Yang"], birthYear: 1971 },
+    expectedState: "HIGH_CONFIDENCE_CANDIDATE",
+    expectedAutoMerge: false,
+    note: "Hangul and romanization with the same birth year.",
+  },
+  {
+    id: "P04",
+    left: { kind: "artist", name: "Do Ho Suh", birthYear: 1962 },
+    right: { kind: "artist", name: "Suh Do Ho", birthYear: 1962 },
+    expectedState: "HIGH_CONFIDENCE_CANDIDATE",
+    expectedAutoMerge: false,
+    note: "Token-reordered name.",
+  },
+  {
+    id: "P05",
+    left: { kind: "space", name: "Kukje Gallery", branch: "Seoul", city: "Seoul" },
+    right: { kind: "space", name: "Kukje Gallery", branch: "Busan", city: "Busan" },
+    expectedState: "DISTINCT",
+    expectedAutoMerge: false,
+    note: "Same brand, different branches.",
+  },
+  {
+    id: "P06",
+    left: { kind: "space", name: "Kukje Gallery", aliases: ["국제갤러리"] },
+    right: { kind: "space", name: "국제갤러리" },
+    expectedState: "REVIEW_REQUIRED",
+    expectedAutoMerge: false,
+    note: "Bilingual alias with no branch or city.",
+  },
+  {
+    id: "P07",
+    left: { kind: "space", name: "MMCA", branch: "Seoul", city: "Seoul", aliases: ["국립현대미술관"] },
+    right: { kind: "space", name: "MMCA", branch: "Gwacheon", city: "Gwacheon" },
+    expectedState: "DISTINCT",
+    expectedAutoMerge: false,
+    note: "Museum branches stay separate.",
+  },
+  {
+    id: "P08",
+    left: { kind: "space", name: "Pace Gallery", branch: "New York", city: "New York" },
+    right: { kind: "space", name: "Pace Gallery", branch: "Seoul", city: "Seoul" },
+    expectedState: "DISTINCT",
+    expectedAutoMerge: false,
+    note: "Gallery branches stay separate.",
+  },
+  {
+    id: "P09",
+    left: { kind: "artist", name: "Park Seo-Bo", birthYear: 1931 },
+    right: { kind: "artist", name: "박서보", aliases: ["Park Seo-Bo"], birthYear: 1931 },
+    expectedState: "HIGH_CONFIDENCE_CANDIDATE",
+    expectedAutoMerge: false,
+    note: "Alias plus birth year.",
+  },
+  {
+    id: "P10",
+    left: { kind: "artist", name: "Kim Young-eun", birthYear: 1981 },
+    right: { kind: "artist", name: "Kim Young-eun", birthYear: 1952 },
+    expectedState: "DISTINCT",
+    expectedAutoMerge: false,
+    note: "Fixture: same name, different birth years. These are not identified real people.",
+  },
+  {
+    id: "P11",
+    left: { kind: "artist", name: "Anicka Yi", birthYear: 1971 },
+    right: { kind: "artist", name: "아니카 이", aliases: ["Anicka Yi"], birthYear: 1971 },
+    expectedState: "HIGH_CONFIDENCE_CANDIDATE",
+    expectedAutoMerge: false,
+    note: "Korean and English public names.",
+  },
+  {
+    id: "P12",
+    left: { kind: "artist", name: "siren eun young jung" },
+    right: { kind: "artist", name: "정은영", aliases: ["siren eun young jung"] },
+    expectedState: "REVIEW_REQUIRED",
+    expectedAutoMerge: false,
+    note: "Name match without a birth year.",
+  },
+  {
+    id: "P13",
+    left: { kind: "space", name: "Gallery Hyundai", aliases: ["갤러리현대"], city: "Seoul" },
+    right: { kind: "space", name: "갤러리현대", city: "Seoul" },
+    expectedState: "HIGH_CONFIDENCE_CANDIDATE",
+    expectedAutoMerge: false,
+    note: "Same city bilingual name still needs a person to merge.",
+  },
+  {
+    id: "P14",
+    left: { kind: "space", name: "SeMA", aliases: ["Seoul Museum of Art"], city: "Seoul" },
+    right: { kind: "space", name: "Seoul Museum of Art", city: "Seoul" },
+    expectedState: "HIGH_CONFIDENCE_CANDIDATE",
+    expectedAutoMerge: false,
+    note: "Abbreviation plus full name.",
+  },
+  {
+    id: "P15",
+    left: { kind: "artist", name: "Lee Bul", qid: "Q-LEE-BUL" },
+    right: { kind: "artist", name: "이불", qid: "Q-LEE-BUL" },
+    expectedState: "EXACT_MATCH",
+    expectedAutoMerge: true,
+    note: "Same authoritative id.",
+  },
+  {
+    id: "P16",
+    left: { kind: "artist", name: "Kimsooja", birthYear: 1957 },
+    right: { kind: "artist", name: "Kim Sooja", birthYear: 1957 },
+    expectedState: "HIGH_CONFIDENCE_CANDIDATE",
+    expectedAutoMerge: false,
+    note: "Spacing difference.",
+  },
+  {
+    id: "P17",
+    left: { kind: "artist", name: "Chung Sang-Hwa", birthYear: 1932 },
+    right: { kind: "artist", name: "정상화", aliases: ["Chung Sang-Hwa"], birthYear: 1932 },
+    expectedState: "HIGH_CONFIDENCE_CANDIDATE",
+    expectedAutoMerge: false,
+    note: "Alias plus birth year.",
+  },
+  {
+    id: "P18",
+    left: { kind: "artist", name: "Lee Bae", birthYear: 1956 },
+    right: { kind: "artist", name: "Lee Bae", birthYear: 1988 },
+    expectedState: "DISTINCT",
+    expectedAutoMerge: false,
+    note: "Fixture: same name, different birth years.",
+  },
+  {
+    id: "P19",
+    left: { kind: "artist", name: "Kim Beom", qid: "Q-KIM-A", birthYear: 1963 },
+    right: { kind: "artist", name: "Kim Beom", qid: "Q-KIM-B", birthYear: 1963 },
+    expectedState: "DISTINCT",
+    expectedAutoMerge: false,
+    note: "Different authoritative ids win over a shared name and birth year.",
+  },
+  {
+    id: "P20",
+    left: { kind: "artist", name: "Ha Chong-Hyun", birthYear: 1935 },
+    right: { kind: "artist", name: "Ha Chong Hyun" },
+    expectedState: "REVIEW_REQUIRED",
+    expectedAutoMerge: false,
+    note: "Close romanization with one birth year missing.",
+  },
+];

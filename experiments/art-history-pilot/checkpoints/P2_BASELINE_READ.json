@@ -1,0 +1,13 @@
+{
+  "checkpoint": "P2_BASELINE_READ",
+  "read": [
+    "reports/SOURCE_POLICY_REPAIR.md",
+    "reports/INTERNATIONAL_25_MANUAL_CANARY.md",
+    "data/seed/artists.json",
+    "data/policy/source-policy-matrix.json",
+    "data/claims/exhibitions.json",
+    "src/resolve.ts",
+    "view/index.html"
+  ],
+  "preservedVerdict": "INTERNATIONAL_CANARY_BELOW_THRESHOLD"
+}

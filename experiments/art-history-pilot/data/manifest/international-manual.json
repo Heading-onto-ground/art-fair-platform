@@ -1,0 +1,269 @@
+{
+  "opened": [
+    {
+      "pilotId": "A01",
+      "url": "https://www.kukjegallery.com/artists/view?seq=190",
+      "status": 200,
+      "hits": 130
+    },
+    {
+      "pilotId": "A01",
+      "url": "https://www.galleryhyundai.com/story/view/14",
+      "status": 200,
+      "hits": 0
+    },
+    {
+      "pilotId": "A02",
+      "url": "https://www.kukjegallery.com/artists/view?seq=176",
+      "status": 200,
+      "hits": 58
+    },
+    {
+      "pilotId": "A03",
+      "url": "https://www.lehmannmaupin.com/artists/do-ho-suh",
+      "status": 200,
+      "hits": 2
+    },
+    {
+      "pilotId": "A03",
+      "url": "https://www.mmca.go.kr/#",
+      "status": 200,
+      "hits": 0
+    },
+    {
+      "pilotId": "A07",
+      "url": "https://www.kukjegallery.com/artists/view?seq=181",
+      "status": 200,
+      "hits": 87
+    },
+    {
+      "pilotId": "A08",
+      "url": "https://www.kukjegallery.com/artists/view?seq=344",
+      "status": 200,
+      "hits": 51
+    },
+    {
+      "pilotId": "A10",
+      "url": "https://www.kukjegallery.com/artists/view?seq=343",
+      "status": 200,
+      "hits": 0
+    },
+    {
+      "pilotId": "A13",
+      "url": "https://www.pkmgallery.com/artists/koo-jeong-a2",
+      "status": 200,
+      "hits": 2
+    },
+    {
+      "pilotId": "A14",
+      "url": "https://www.kukjegallery.com/artists/view?seq=388",
+      "status": 200,
+      "hits": 8
+    },
+    {
+      "pilotId": "A16",
+      "url": "https://www.kukjegallery.com/artists/view?seq=180",
+      "status": 200,
+      "hits": 17
+    },
+    {
+      "pilotId": "A18",
+      "url": "https://www.galleryhyundai.com/story/view/27",
+      "status": 200,
+      "hits": 0
+    },
+    {
+      "pilotId": "A21",
+      "url": "https://www.kukjegallery.com/artists/view?seq=336",
+      "status": 200,
+      "hits": 6
+    },
+    {
+      "pilotId": "A23",
+      "url": "https://www.kukjegallery.com/artists/view?seq=348",
+      "status": 200,
+      "hits": 11
+    }
+  ],
+  "accepted": 370,
+  "rejected": 1,
+  "perArtist": [
+    {
+      "pilotId": "A01",
+      "name": "Lee Ufan",
+      "urls": [
+        "https://www.kukjegallery.com/artists/view?seq=190",
+        "https://www.galleryhyundai.com/story/view/14"
+      ],
+      "accepted": 131
+    },
+    {
+      "pilotId": "A02",
+      "name": "Haegue Yang",
+      "urls": [
+        "https://www.kukjegallery.com/artists/view?seq=176"
+      ],
+      "accepted": 58
+    },
+    {
+      "pilotId": "A03",
+      "name": "Do Ho Suh",
+      "urls": [
+        "https://www.lehmannmaupin.com/artists/do-ho-suh",
+        "https://www.mmca.go.kr/#"
+      ],
+      "accepted": 2
+    },
+    {
+      "pilotId": "A04",
+      "name": "Lee Bul",
+      "urls": [],
+      "accepted": 0
+    },
+    {
+      "pilotId": "A05",
+      "name": "Kimsooja",
+      "urls": [],
+      "accepted": 0
+    },
+    {
+      "pilotId": "A06",
+      "name": "Anicka Yi",
+      "urls": [],
+      "accepted": 0
+    },
+    {
+      "pilotId": "A07",
+      "name": "Park Seo-Bo",
+      "urls": [
+        "https://www.kukjegallery.com/artists/view?seq=181"
+      ],
+      "accepted": 88
+    },
+    {
+      "pilotId": "A08",
+      "name": "Ha Chong-Hyun",
+      "urls": [
+        "https://www.kukjegallery.com/artists/view?seq=344"
+      ],
+      "accepted": 52
+    },
+    {
+      "pilotId": "A09",
+      "name": "Lee Bae",
+      "urls": [],
+      "accepted": 0
+    },
+    {
+      "pilotId": "A10",
+      "name": "Chung Sang-Hwa",
+      "urls": [
+        "https://www.kukjegallery.com/artists/view?seq=343"
+      ],
+      "accepted": 3
+    },
+    {
+      "pilotId": "A11",
+      "name": "Kim Beom",
+      "urls": [],
+      "accepted": 0
+    },
+    {
+      "pilotId": "A12",
+      "name": "Minouk Lim",
+      "urls": [],
+      "accepted": 0
+    },
+    {
+      "pilotId": "A13",
+      "name": "Koo Jeong A",
+      "urls": [
+        "https://www.pkmgallery.com/artists/koo-jeong-a2"
+      ],
+      "accepted": 1
+    },
+    {
+      "pilotId": "A14",
+      "name": "Suki Seokyeong Kang",
+      "urls": [
+        "https://www.kukjegallery.com/artists/view?seq=388"
+      ],
+      "accepted": 8
+    },
+    {
+      "pilotId": "A15",
+      "name": "Mire Lee",
+      "urls": [],
+      "accepted": 0
+    },
+    {
+      "pilotId": "A16",
+      "name": "Gimhongsok",
+      "urls": [
+        "https://www.kukjegallery.com/artists/view?seq=180"
+      ],
+      "accepted": 17
+    },
+    {
+      "pilotId": "A17",
+      "name": "siren eun young jung",
+      "urls": [],
+      "accepted": 0
+    },
+    {
+      "pilotId": "A18",
+      "name": "Ayoung Kim",
+      "urls": [
+        "https://www.galleryhyundai.com/story/view/27"
+      ],
+      "accepted": 0
+    },
+    {
+      "pilotId": "A19",
+      "name": "Geumhyung Jeong",
+      "urls": [],
+      "accepted": 0
+    },
+    {
+      "pilotId": "A20",
+      "name": "Yeesookyung",
+      "urls": [],
+      "accepted": 0
+    },
+    {
+      "pilotId": "A21",
+      "name": "Kyungah Ham",
+      "urls": [
+        "https://www.kukjegallery.com/artists/view?seq=336"
+      ],
+      "accepted": 6
+    },
+    {
+      "pilotId": "A22",
+      "name": "Im Heung-soon",
+      "urls": [],
+      "accepted": 0
+    },
+    {
+      "pilotId": "A23",
+      "name": "Park Chan-kyong",
+      "urls": [
+        "https://www.kukjegallery.com/artists/view?seq=348"
+      ],
+      "accepted": 11
+    },
+    {
+      "pilotId": "A24",
+      "name": "Moon Kyungwon",
+      "urls": [],
+      "accepted": 0
+    },
+    {
+      "pilotId": "A25",
+      "name": "Nikki S. Lee",
+      "urls": [],
+      "accepted": 0
+    }
+  ],
+  "median": 0
+}
