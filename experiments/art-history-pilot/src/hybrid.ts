@@ -48,11 +48,14 @@ export function submissionMark(origin: Exclude<HistoryOrigin, "ROB_RESEARCHED">,
 export function provenanceLabel(marks: ProvenanceMark[]): string {
   if (marks.some((mark) => mark.verification === "CONFLICT")) return "Conflict";
   const official = marks.some((mark) => mark.origin === "ROB_RESEARCHED");
-  const firstParty = marks.some((mark) => mark.origin !== "ROB_RESEARCHED");
-  if (official && firstParty) return "Artist + official source";
+  const firstParty = [...new Set(marks.map((mark) => mark.origin))].filter((origin) => origin !== "ROB_RESEARCHED");
+  if (official && firstParty.length > 1) return "Multiple sources";
+  if (official && firstParty[0] === "ARTIST_SUBMITTED") return "Artist + official source";
+  if (official && firstParty[0] === "GALLERY_SUBMITTED") return "Gallery + official source";
+  if (official && firstParty[0] === "INSTITUTION_SUBMITTED") return "Institution + official source";
   if (official) return "Official source";
-  if (marks.some((mark) => mark.origin === "GALLERY_SUBMITTED")) return "Gallery added";
-  if (marks.some((mark) => mark.origin === "INSTITUTION_SUBMITTED")) return "Institution added";
+  if (firstParty.includes("GALLERY_SUBMITTED")) return "Gallery added";
+  if (firstParty.includes("INSTITUTION_SUBMITTED")) return "Institution added";
   return "Artist added";
 }
 
@@ -72,6 +75,22 @@ function specificTitle(title: string, venue: string | null): boolean {
 
 function sameFact(left: string | null, right: string | null): boolean {
   return compactName(left ?? "") === compactName(right ?? "") && compactName(left ?? "").length > 0;
+}
+
+export function classifySubmission(
+  existing: DatedFact | null,
+  draft: DatedFact,
+): "NEW" | "ATTACHED" | "CONFLICT" | "REVIEW_REQUIRED" {
+  if (!existing) return "NEW";
+  const match = submissionMatch(existing, draft);
+  if (match !== "REVIEW_REQUIRED") return match;
+  const left = existing.start ?? "";
+  const right = draft.start ?? "";
+  const sameVenue = compactName(existing.venue ?? "").length > 0 && compactName(existing.venue ?? "") === compactName(draft.venue ?? "");
+  const sameYear = YEAR.test(left.slice(0, 4)) && left.slice(0, 4) === right.slice(0, 4);
+  const specific = draft.title.trim().length >= 24 && compactName(draft.title) !== compactName(draft.venue ?? "");
+  if (sameVenue && sameYear && specific && left.length > 4 && right.length > 4 && left.slice(0, 7) !== right.slice(0, 7)) return "CONFLICT";
+  return "REVIEW_REQUIRED";
 }
 
 export function submissionMatch(existing: DatedFact, draft: DatedFact): MatchResult {

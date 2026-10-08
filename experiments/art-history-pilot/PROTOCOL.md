@@ -25,6 +25,7 @@ npx tsx experiments/art-history-pilot/scripts/collect-international.ts
 npx tsx experiments/art-history-pilot/scripts/review-domains.ts
 npx tsx experiments/art-history-pilot/scripts/freeze.ts
 npx tsx experiments/art-history-pilot/scripts/build-view.ts
+npx tsx experiments/art-history-pilot/scripts/build-view-v3.ts
 npx tsx experiments/art-history-pilot/scripts/report.ts
 ```
 
@@ -37,5 +38,7 @@ Phase P1-M reads only official pages already classified `ELIGIBLE` for manual re
 Phase P2 is a separate pair of tests. P2-A may use a search engine only to discover an official URL, then opens that page. Snippets are not evidence. Its report is `reports/INTERNATIONAL_25_SEARCH_RESCUE.md`. P2-B is the static prototype in `view-v2/`. `view/index.html` stays as the earlier checkpoint. The combined note is `reports/P2_MASTER_REPORT.md`.
 
 Phase P3 does not collect more public-web records. It adds a local hybrid history on top of the records already accepted: one timeline, explicit provenance, and a human-test sheet. Reports: `reports/HYBRID_MODEL_CANARY.md` and `reports/HUMAN_TEST_PROTOCOL.md`.
+
+Phase P4 does not collect more public-web records and does not migrate this pilot into production. It builds a separate product prototype in `view-v3/`. `view/` and `view-v2/` stay as earlier checkpoints. The note is `reports/FULL_PRODUCT_PROTOTYPE_V3.md`.
 
 Page snapshots, if a later step fetches them, go in `.local-snapshots/` and are gitignored.

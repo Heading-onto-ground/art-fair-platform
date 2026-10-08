@@ -12,7 +12,8 @@ import { FROZEN_THRESHOLDS, decideReuse } from "../src/policy";
 import { classifyPair, decideMerge } from "../src/resolve";
 import { robotsAllows } from "../src/robots";
 import { exhibitionFromSinglePage, exhibitionsFromBlocks, exhibitionsFromCards, exhibitionsFromCv, plainPage } from "../src/cvList";
-import { enteredDate, linkParticipant, officialMark, provenanceLabel, submissionMark, submissionMatch } from "../src/hybrid";
+import { enteredDate, classifySubmission, linkParticipant, officialMark, provenanceLabel, submissionMark, submissionMatch } from "../src/hybrid";
+import { EMPTY_HISTORY, buildCatalog, collapseTimeline, connectionMap, displayCity, documentedShares, dotMark, historyLayout, pageTitle, rangeCoversToday, rankingModules, searchArtists, sharedExhibitionPhrase, spaceIdFor } from "../src/catalog";
 import { exhibitionKey, historySignature, sameCanonicalExhibition, seoBucket, timelineFraction } from "../src/product";
 import type { ExhibitionRecord } from "../src/claims";
 import { classifyManualResearch, classifySource } from "../src/sourcePolicy";
@@ -540,7 +541,12 @@ describe("search rescue rules", () => {
     expect(submissionMatch({ ...existing, start: "2025-03" }, { title: existing.title, venue: existing.venue, start: "2025-06" })).toBe("REVIEW_REQUIRED");
     expect(submissionMatch(existing, { title: "A different exhibition title here", venue: "Other Gallery", start: "2025" })).toBe("NEW");
     expect(provenanceLabel([officialMark("https://example.test"), submissionMark("ARTIST_SUBMITTED", null)])).toBe("Artist + official source");
+    expect(provenanceLabel([officialMark("https://example.test"), submissionMark("GALLERY_SUBMITTED", null)])).toBe("Gallery + official source");
     expect(provenanceLabel([submissionMark("ARTIST_SUBMITTED", null)])).toBe("Artist added");
+    expect(provenanceLabel([submissionMark("GALLERY_SUBMITTED", null)])).toBe("Gallery added");
+    expect(classifySubmission(null, { title: existing.title, venue: existing.venue, start: "2025" })).toBe("NEW");
+    expect(classifySubmission(existing, { title: existing.title, venue: existing.venue, start: "2025" })).toBe("ATTACHED");
+    expect(classifySubmission({ ...existing, start: "2025-03" }, { title: existing.title, venue: existing.venue, start: "2025-06" })).toBe("CONFLICT");
     const people = [
       { id: "A01", labels: ["Lee Ufan", "이우환"] },
       { id: "A07", labels: ["Park Seo-Bo", "박서보"] },
@@ -577,6 +583,83 @@ describe("search snippets", () => {
   });
 });
 
+describe("v3 catalog", () => {
+  const artists = JSON.parse(readFileSync(path.join(pilotRoot(), "data/seed/artists.json"), "utf8")).artists;
+  const records = JSON.parse(readFileSync(path.join(pilotRoot(), "data/claims/exhibitions.json"), "utf8")).records;
+  const identity = JSON.parse(readFileSync(path.join(pilotRoot(), "data/identity/wikidata.json"), "utf8")).artists;
+  const catalog = buildCatalog(artists, records, identity, "2026-10-08");
+
+  it("searches english, korean, and verified aliases without inventing people", () => {
+    expect(searchArtists(catalog.artists, "양혜규").map((artist) => artist.name)).toEqual(["Haegue Yang"]);
+    expect(searchArtists(catalog.artists, "Ufan Lee").map((artist) => artist.id)).toEqual(["A01"]);
+    expect(searchArtists(catalog.artists, "zzzz-no-artist")).toEqual([]);
+    expect(catalog.artists).toHaveLength(25);
+  });
+
+  it("keeps year precision visually distinct and orders a career", () => {
+    expect(dotMark("2018", "year")).toBe("open");
+    expect(dotMark("2018-03", "month")).toBe("filled");
+    expect(dotMark("2018-03-02", "day")).toBe("filled");
+    const lee = catalog.artists.find((artist) => artist.id === "A01");
+    expect(lee?.count).toBe(130);
+    expect(lee?.marks.length).toBeGreaterThan(0);
+    const ids = lee?.marks.flatMap((mark) => (mark.kind === "cluster" ? mark.ids : [mark.id])) ?? [];
+    expect(new Set(ids).size).toBe(ids.length);
+    expect(lee?.signature.reduce((sum, count) => sum + count, 0)).toBeGreaterThan(0);
+    const park = catalog.artists.find((artist) => artist.id === "A07");
+    expect(documentedShares(catalog.exhibitions, "A01").some((share) => share.id === "A07")).toBe(true);
+    expect(sharedExhibitionPhrase(park?.count ? 2 : 2)).toBe("2 documented shared exhibitions");
+    expect(catalog.artists.find((artist) => artist.id === "A04")?.count).toBe(0);
+    expect(catalog.artists.find((artist) => artist.id === "A11")?.birthYear).toBeNull();
+  });
+
+  it("does not merge a vague title into another exhibition", () => {
+    const marks = collapseTimeline([
+      { id: "a", fraction: 0.2, mark: "open", year: 2000 },
+      { id: "b", fraction: 0.2, mark: "open", year: 2000 },
+      { id: "c", fraction: 0.5, mark: "filled", year: 2010 },
+    ]);
+    expect(marks.map((mark) => mark.kind)).toEqual(["cluster", "dot"]);
+    expect(marks[0].kind === "cluster" ? marks[0].count : 0).toBe(2);
+    expect(catalog.exhibitions).toHaveLength(records.filter((record: { status: string }) => record.status === "PILOT_ACCEPTED" || record.status === "AUTO_ACCEPTED").length);
+    expect(displayCity("an official Collateral Event of the 61st International Art Exhibition - La Biennale di Venezia, Venice")).toBeNull();
+    expect(spaceIdFor("Kukje Gallery")).toBe(spaceIdFor("Kukje Gallery"));
+  });
+
+  it("derives a local map and refuses a current show from a year-only date", () => {
+    expect(rangeCoversToday("2026", null, "year", "2026-10-08")).toBe(false);
+    expect(rangeCoversToday("2026-10", null, "month", "2026-10-08")).toBe(true);
+    expect(rangeCoversToday("2026-01", "2026-03", "month", "2026-10-08")).toBe(false);
+    const map = connectionMap(
+      { id: "A01", name: "Lee Ufan" },
+      catalog.exhibitions.map((exhibition) => ({
+        ...exhibition,
+        people: exhibition.artistIds.map((id) => ({ id, name: id })),
+      })),
+      2,
+    );
+    expect(map.nodes.length).toBeLessThanOrEqual(12);
+    expect(map.nodes[0]).toMatchObject({ id: "A01", kind: "artist" });
+    expect(historyLayout(390)).toBe("vertical");
+    expect(historyLayout(1024)).toBe("horizontal");
+    expect(historyLayout(1440)).toBe("horizontal");
+  });
+
+  it("publishes no fabricated ranking and keeps titles factual", () => {
+    const rankings = rankingModules();
+    expect(rankings.map((item) => item.entries.length)).toEqual([0, 0, 0, 0]);
+    expect(rankings.every((item) => item.status === "COMING_FROM_VERIFIED_DATA")).toBe(true);
+    expect(JSON.stringify(rankings)).not.toMatch(/\d{5,}/);
+    expect(pageTitle("artist", "Haegue Yang")).toBe("Haegue Yang: Exhibition History & Connections | ROB");
+    expect(pageTitle("exhibition", "Relatum")).toBe("Relatum: Artists, Space & History | ROB");
+    expect(pageTitle("space", "Kukje Gallery")).toBe("Kukje Gallery: Exhibitions & Artists | ROB");
+    expect(pageTitle("ranking", "Oldest Living Artists")).toBe("Oldest Living Artists | ROB");
+    expect(EMPTY_HISTORY).toBe("No accepted exhibition records in ROB yet.");
+    expect(catalog.rankings.every((item) => item.entries.length === 0)).toBe(true);
+    expect(catalog.usageStatus).toBe("PILOT_ONLY");
+  });
+});
+
 describe("isolation", () => {
   it("does not import the production app", () => {
     const files: string[] = [];
@@ -595,10 +678,19 @@ describe("isolation", () => {
     expect(combined).not.toMatch(/prisma\/schema\.prisma/);
     const prototype = readFileSync(path.join(pilotRoot(), "view-v2/index.html"), "utf8");
     const client = readFileSync(path.join(pilotRoot(), "view-v2/app.js"), "utf8");
+    const product = readFileSync(path.join(pilotRoot(), "view-v3/app.js"), "utf8");
+    const productHtml = readFileSync(path.join(pilotRoot(), "view-v3/index.html"), "utf8");
     expect(client).toContain("No accepted exhibition records in ROB yet.");
-    expect(prototype + client).not.toMatch(/google-analytics|googletagmanager|plausible/);
+    expect(product).toContain("No accepted exhibition records in ROB yet.");
+    expect(productHtml).toContain("Search an artist.");
+    expect(product).toContain("Coming from verified data");
+    expect(product).not.toMatch(/\bFollowers\b|\bFollowing\b|ROB Artist Score/);
+    expect(prototype + client + product + productHtml).not.toMatch(/google-analytics|googletagmanager|plausible/);
     expect(client).toContain("localStorage");
+    expect(product).toContain("localStorage");
     expect(client).not.toMatch(/\bfetch\s*\(/);
+    expect(product).not.toMatch(/\bfetch\s*\(/);
     expect(() => new vm.Script(client)).not.toThrow();
+    expect(() => new vm.Script(product)).not.toThrow();
   });
 });
