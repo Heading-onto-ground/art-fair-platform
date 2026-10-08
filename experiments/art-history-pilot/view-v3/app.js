@@ -1,4 +1,4 @@
-/* Pilot product client. Rules mirror src/hybrid.ts and src/catalog.ts. No network calls. */
+/* Pilot product client. Rules mirror src/hybrid.ts, src/catalog.ts, and src/display.ts. No network calls. */
 (function () {
   const C = window.ROB_CATALOG;
   const STORE_KEY = "rob-art-history-v3";
@@ -10,6 +10,11 @@
   let mapFor = "";
   let shown = 24;
   let lastFocus = null;
+  let journeyKey = "";
+  let journeyArtist = "";
+  let journeyUntil = 0;
+  let momentExpanded = false;
+  let momentFor = "";
 
   function parseHash() {
     const raw = (location.hash || "#/").replace(/^#/, "");
@@ -338,11 +343,100 @@
     return marks.map((mark, index) => Object.assign({}, mark, { lane: lanes[index] }));
   }
 
-  function signatureHtml(counts) {
+  const NAMED_ENTITIES = { amp: "&", lt: "<", gt: ">", quot: "\"", apos: "'", nbsp: " ", auml: "ä", Auml: "Ä", ouml: "ö", Ouml: "Ö", uuml: "ü", Uuml: "Ü", aacute: "á", Aacute: "Á", eacute: "é", Eacute: "É", iacute: "í", oacute: "ó", uacute: "ú", agrave: "à", egrave: "è", ecirc: "ê", acirc: "â", ucirc: "û", Ucirc: "Û", ocirc: "ô", ccedil: "ç", Ccedil: "Ç", ntilde: "ñ", szlig: "ß", mdash: "—", ndash: "–", hellip: "…" };
+  const COUNTRY_ALIASES = { korea: "Korea", "south korea": "Korea", "republic of korea": "Korea", rok: "Korea", "대한민국": "Korea", "한국": "Korea" };
+
+  function decodeDisplayText(value) {
+    return String(value || "").replace(/&(#x[0-9a-fA-F]+|#\d+|[a-zA-Z]+);/g, (entity, body) => {
+      if (body.charAt(0) === "#") {
+        const code = body.charAt(1) === "x" || body.charAt(1) === "X" ? parseInt(body.slice(2), 16) : parseInt(body.slice(1), 10);
+        if (!isFinite(code) || code < 0 || code > 0x10ffff) return entity;
+        return String.fromCodePoint(code);
+      }
+      return Object.prototype.hasOwnProperty.call(NAMED_ENTITIES, body) ? NAMED_ENTITIES[body] : entity;
+    });
+  }
+
+  function displayCountry(value) {
+    if (!value) return null;
+    const decoded = decodeDisplayText(value).trim();
+    if (!decoded) return null;
+    return Object.prototype.hasOwnProperty.call(COUNTRY_ALIASES, decoded.toLowerCase()) ? COUNTRY_ALIASES[decoded.toLowerCase()] : decoded;
+  }
+
+  function compactPhrase(value) {
+    return decodeDisplayText(value).toLowerCase().replace(/[^a-z0-9가-힣]/g, "");
+  }
+
+  function phrasesMatch(left, right) {
+    if (!left || !right) return false;
+    const a = compactPhrase(left);
+    const b = compactPhrase(right);
+    return a.length > 0 && a === b;
+  }
+
+  function uncertainDisplay(value) {
+    if (!value) return false;
+    const decoded = decodeDisplayText(value);
+    if (/&(?:#x[0-9a-fA-F]+|#\d+|[a-zA-Z]+);/.test(decoded)) return true;
+    return /\b[A-Za-z]{1,2}\d{4}\b/.test(decoded);
+  }
+
+  function textOf(value) {
+    return esc(decodeDisplayText(value || ""));
+  }
+
+  function clusterFace(count) {
+    const safe = Math.max(0, count);
+    const visible = Math.min(safe, 4);
+    return { visible: visible, overflow: safe - visible };
+  }
+
+  function signatureColumns(counts) {
     const max = Math.max.apply(null, counts.concat(0));
-    const empty = counts.every((count) => count === 0);
-    const bars = counts.map((count) => `<i style="height:${count ? Math.max(2, Math.round((count / Math.max(max, 1)) * 18)) : 0}px"></i>`).join("");
-    return `<span class="signature${empty ? " empty" : ""}" aria-hidden="true">${bars}</span>`;
+    if (!max) return counts.map(() => 0);
+    return counts.map((count) => (count ? Math.max(1, Math.round((count / max) * 3)) : 0));
+  }
+
+  function placeBits(event) {
+    const title = decodeDisplayText(event.title || "");
+    const venue = event.venue ? decodeDisplayText(event.venue) : "";
+    const city = event.city ? decodeDisplayText(event.city) : "";
+    const country = displayCountry(event.country) || "";
+    return [phrasesMatch(title, venue) ? "" : venue, city, country].filter(Boolean);
+  }
+
+  function yearGroups(events) {
+    const map = new Map();
+    events.forEach((event) => {
+      if (!event.year) return;
+      const row = map.get(event.year) || { year: event.year, ids: [], marks: [] };
+      row.ids.push(event.id);
+      row.marks.push(isOpenDot(event) ? "open" : "filled");
+      map.set(event.year, row);
+    });
+    return [...map.values()].sort((a, b) => a.year - b.year).map((row) => Object.assign({ count: row.ids.length }, row, clusterFace(row.ids.length)));
+  }
+
+  function timelineView(groups) {
+    const zoom = (parseHash().params.get("zoom") || "all").toUpperCase();
+    const level = zoom === "DECADE" || zoom === "YEAR" ? zoom : "ALL";
+    const focus = Number(parseHash().params.get("focus")) || null;
+    const first = groups[0].year;
+    const last = groups[groups.length - 1].year;
+    if (level === "DECADE") {
+      const year = focus || last;
+      const start = Math.floor(year / 10) * 10;
+      return { level: level, focus: focus, start: start, end: start + 9, first: first, last: last };
+    }
+    return { level: level, focus: focus, start: first, end: last, first: first, last: last };
+  }
+
+  function signatureHtml(counts) {
+    const cols = signatureColumns(counts || []);
+    const empty = cols.every((count) => count === 0);
+    const body = cols.map((count) => count ? `<span class="col">${"<i></i>".repeat(count)}</span>` : `<span class="col empty"></span>`).join("");
+    return `<span class="signature${empty ? " empty" : ""}" aria-hidden="true">${body}</span>`;
   }
 
   function sharedPhrase(count) {
@@ -367,9 +461,17 @@
 
   function artistHref(id, via) {
     const params = new URLSearchParams();
+    const current = parseHash().params;
     const from = currentArtistId();
     if (via) params.set("via", via);
-    if (from && from !== id) params.set("from", from);
+    if (from && from !== id) {
+      params.set("from", from);
+      const zoom = current.get("zoom");
+      const focus = current.get("focus");
+      if (zoom) params.set("srcZoom", zoom);
+      if (focus) params.set("srcFocus", focus);
+      params.set("srcScroll", String(window.scrollY || 0));
+    }
     const query = params.toString();
     return `/artist/${id}${query ? `?${query}` : ""}`;
   }
@@ -482,11 +584,15 @@
   }
 
   function viaLine() {
-    const via = parseHash().params.get("via");
-    if (!via) return "";
+    const { params } = parseHash();
+    const via = params.get("via");
+    const from = params.get("from");
+    if (!via || !from) return "";
     const exhibition = exhibitionById(via);
-    const title = exhibition ? exhibition.title : "a documented exhibition";
-    return ` <span>You came here through ${exhibition ? `<button type="button" data-event="${esc(via)}">${esc(title)}</button>` : esc(title)}.</span>`;
+    const fromPerson = personById(from);
+    const title = exhibition ? short(decodeDisplayText(exhibition.title), 72) : "a documented exhibition";
+    const fromName = fromPerson ? fromPerson.name : "Previous artist";
+    return `<span class="path"><button type="button" data-back>${esc(fromName)}</button><span aria-hidden="true"> / </span><button type="button" data-event="${esc(via)}">${esc(title)}</button></span><span class="via">You came here through ${esc(title)}.</span>`;
   }
 
   function renderArtist(main, id, section) {
@@ -530,6 +636,7 @@
       </aside>
     </article>`;
     notice = "";
+    if ((section || "history") === "history") maybeJourney(person);
   }
 
   function tabLink(id, name, label, current) {
@@ -547,67 +654,99 @@
       return `<section><p>${EMPTY_HISTORY}</p><p class="quiet-link">${next}</p></section>`;
     }
     if (!life.dated.length) {
-      return `<section><p class="quiet">Date not recorded</p>${life.undated.map((event) => `<button type="button" class="result" data-event="${esc(event.id)}"><span>${esc(event.title)}</span><span class="meta">Date not recorded</span></button>`).join("")}</section>`;
+      return `<section><p class="quiet">Date not recorded</p>${life.undated.map((event) => `<button type="button" class="result" data-event="${esc(event.id)}"><span>${textOf(event.title)}</span><span class="meta">Date not recorded</span></button>`).join("")}</section>`;
     }
-    const marks = marksFor(life.dated);
-    const maxLane = marks.reduce((max, mark) => Math.max(max, mark.lane), 0);
-    const maxStack = marks.reduce((max, mark) => Math.max(max, mark.kind === "cluster" ? mark.count : 1), 1);
-    const stackPad = Math.max(0, maxStack - 1) * 13;
-    const pad = maxLane * 22 + stackPad;
-    const height = pad + 86;
-    const dots = marks.map((mark) => {
-      const top = pad + 46 - mark.lane * 22;
-      const left = `clamp(0px, calc(${(mark.fraction * 100).toFixed(2)}% - 14px), calc(100% - 28px))`;
-      if (mark.kind === "cluster") {
-        const label = `${mark.year || "Undated"}, ${mark.count} exhibitions, ${mark.mark === "open" ? "year only" : "dated"}`;
-        const pips = (mark.marks || []).map((kind) => `<i class="pip${kind === "open" ? " open" : ""}"></i>`).join("");
-        return `<button type="button" class="cluster ${mark.mark}" style="left:${left};top:${top}px" data-cluster="${esc(mark.ids.join(","))}" aria-label="${esc(label)}"><span class="stack" aria-hidden="true">${pips}</span><span class="tip">${esc(label)}</span></button>`;
-      }
-      const event = exhibitionById(mark.id);
-      const label = `${event ? event.when : ""}, ${event ? event.title : "Exhibition"}, ${event && event.venue ? event.venue : "Venue not recorded"}, ${mark.mark === "open" ? "year only" : "month or day recorded"}`;
-      const tip = `${mark.year || ""} · ${short(event ? event.title : "", 48)}`;
-      return `<button type="button" class="dot ${mark.mark}" style="left:${left};top:${top}px" data-event="${esc(mark.id)}" aria-label="${esc(label)}"><span class="tip">${esc(tip)}</span></button>`;
+    const groups = yearGroups(life.dated);
+    const view = timelineView(groups);
+    const visibleGroups = groups.filter((group) => group.year >= view.start && group.year <= view.end);
+    const axisTop = 78;
+    const dots = visibleGroups.map((group) => {
+      const span = Math.max(1, view.end - view.start);
+      const fraction = view.start === view.end ? 0.5 : (group.year - view.start) / span;
+      const left = `clamp(0px, calc(${(fraction * 100).toFixed(2)}% - 7px), calc(100% - 14px))`;
+      const precision = group.marks.every((mark) => mark === "filled") ? "month or day recorded" : group.marks.every((mark) => mark === "open") ? "year only" : "mixed precision";
+      const label = `${group.year}, ${group.count} documented exhibition${group.count === 1 ? "" : "s"}, ${precision}`;
+      const single = group.count === 1 ? ` data-event="${esc(group.ids[0])}"` : "";
+      const count = group.count > 4 ? `<span class="more">${group.count}</span>` : "";
+      return `<button type="button" class="cluster${view.focus === group.year ? " is-on" : ""}" style="left:${left};top:${axisTop}px" data-year="${group.year}"${single} aria-label="${esc(label)}"><span class="stack" aria-hidden="true">${pipsHtml(group)}</span>${count}</button>`;
     }).join("");
-    const earliest = life.dated[0];
-    const latestYear = life.dated[life.dated.length - 1].year;
     const addedLine = life.addedCount ? `<p class="facts">${life.addedCount} added in this browser. Documented count stays ${life.officialCount}.</p>` : "";
     const reviews = reviewEvents(person);
-    const reviewHtml = reviews.length ? `<section><h2 class="section-title">Needs review</h2><p class="quiet">These are not on the timeline.</p>${reviews.map((event) => `<p>${esc(event.title)} · ${esc(event.reviewReason || "Ambiguous match.")}</p>`).join("")}</section>` : "";
-    const undatedHtml = life.undated.map((event) => `<button type="button" class="result" data-event="${esc(event.id)}"><span>${esc(event.title)}</span><span class="meta">Date not recorded</span></button>`).join("");
-    return `<section>
+    const reviewHtml = reviews.length ? `<section><h2 class="section-title">Needs review</h2><p class="quiet">These are not on the timeline.</p>${reviews.map((event) => `<p>${textOf(event.title)} · ${esc(event.reviewReason || "Ambiguous match.")}</p>`).join("")}</section>` : "";
+    const undatedHtml = life.undated.map((event) => `<button type="button" class="result" data-event="${esc(event.id)}"><span>${textOf(event.title)}</span><span class="meta">Date not recorded</span></button>`).join("");
+    const context = view.level === "DECADE" ? `<p class="quiet">Showing ${view.start}–${view.end}. The documented career runs ${view.first}–${view.last}.</p>` : "";
+    return `<section class="history-block">
+      <div class="zoom" role="group" aria-label="Timeline detail">
+        <button type="button" data-zoom-level="all" aria-pressed="${view.level === "ALL" ? "true" : "false"}">All</button>
+        <button type="button" data-zoom-level="decade" aria-pressed="${view.level === "DECADE" ? "true" : "false"}">Decade</button>
+        <button type="button" data-zoom-level="year" aria-pressed="${view.level === "YEAR" ? "true" : "false"}">Year</button>
+      </div>
       <div class="career-meta">
-        <div>${signatureHtml(person.demo ? historySignature(life.dated.map((event) => event.start || "")) : person.signature)}<span class="sr">History signature, ${life.officialCount} documented exhibitions</span>
+        <div>${signatureHtml(person.demo ? historySignature(life.dated.map((event) => event.start || "")) : person.signature)}<span class="sr">History signature, ${life.officialCount} documented exhibitions, ${view.first} to ${view.last}</span>
           <p>${life.officialCount} documented exhibition${life.officialCount === 1 ? "" : "s"}</p>
-          ${earliest ? `<p class="quiet-link"><button type="button" data-event="${esc(earliest.id)}">Earliest recorded exhibition · ${esc(String(earliest.start).slice(0, 4))}</button></p>` : ""}
+          <p class="quiet">${esc(view.first)} – ${esc(view.last)}</p>
         </div>
       </div>
       ${addedLine}
-      <div class="track-wrap" style="height:${height}px">
-        <div class="axis" style="top:${pad + 46}px"></div>
-        <span class="ymin" style="top:${pad + 54}px">${esc(earliest.year)}</span>
-        <span class="ymax" style="top:${pad + 54}px">${esc(latestYear)}</span>
+      ${context}
+      <div class="track-wrap" style="height:132px">
+        <div class="axis" style="top:${axisTop}px"></div>
+        <span class="ymin">${esc(view.start)}</span>
+        <span class="ymax">${esc(view.end)}</span>
         ${dots}
       </div>
-      <p class="legend">Open circles mark year-only dates.</p>
-      <div class="vertical">${verticalHtml(life.dated)}</div>
+      <p class="legend">Open circles are year-only. Filled circles include a month or a day. A number is the count for that year.</p>
+      ${branchHtml(groups, view)}
+      <div class="vertical">${verticalYears(view.level === "DECADE" ? visibleGroups : groups, view)}</div>
       ${undatedHtml ? `<div class="undated-list"><h2 class="section-title">Date not recorded</h2>${undatedHtml}</div>` : ""}
       ${reviewHtml}
     </section>`;
   }
 
-  function verticalHtml(events) {
-    let html = "";
-    let year = "";
-    events.forEach((event) => {
-      const label = event.year ? String(event.year) : "Date not recorded";
-      if (label !== year) {
-        year = label;
-        html += `<h3 class="year">${esc(label)}</h3>`;
-      }
-      const place = [event.venue, event.city].filter(Boolean).join(", ") || "Venue not recorded";
-      html += `<div class="v-item"><button type="button" data-event="${esc(event.id)}"><i class="node${isOpenDot(event) ? " open" : ""}" aria-hidden="true"></i><strong>${esc(event.title)}</strong><span class="native">${esc(place)}</span></button></div>`;
-    });
-    return html;
+  function pipsHtml(group) {
+    return group.marks.slice(0, group.visible).map((mark) => `<i class="pip${mark === "open" ? " open" : ""}"></i>`).join("");
+  }
+
+  function branchHtml(groups, view) {
+    if (!view.focus) return `<div class="moment-slot"></div>`;
+    const group = groups.find((item) => item.year === view.focus);
+    if (!group) return `<div class="moment-slot"></div>`;
+    const selected = parseHash().params.get("event");
+    const items = group.ids.map((id) => {
+      const event = exhibitionById(id);
+      if (!event) return "";
+      const place = placeBits(event).join(" · ");
+      return `<button type="button" class="branch-item${selected === id ? " is-on" : ""}" data-event="${esc(id)}"><i class="pip${isOpenDot(event) ? " open" : ""}" aria-hidden="true"></i><span><strong>${textOf(event.title)}</strong>${place ? `<span class="native">${esc(place)}</span>` : ""}</span></button>`;
+    }).join("");
+    return `<div class="branch" id="year-${group.year}">
+      <p class="kicker">${group.year}</p>
+      <p>${group.count} documented exhibition${group.count === 1 ? "" : "s"}</p>
+      <div class="branch-list">${items}</div>
+      <div class="moment-slot"></div>
+    </div>`;
+  }
+
+  function verticalYears(groups, view) {
+    const selected = parseHash().params.get("event");
+    return groups.map((group) => {
+      const open = view.focus === group.year;
+      const items = open ? group.ids.map((id) => {
+        const event = exhibitionById(id);
+        if (!event) return "";
+        const place = placeBits(event).join(" · ");
+        return `<button type="button" class="branch-item${selected === id ? " is-on" : ""}" data-event="${esc(id)}"><i class="pip${isOpenDot(event) ? " open" : ""}" aria-hidden="true"></i><span><strong>${textOf(event.title)}</strong>${place ? `<span class="native">${esc(place)}</span>` : ""}</span></button>`;
+      }).join("") : "";
+      const precision = group.marks.every((mark) => mark === "open") ? "year only" : "dated";
+      const noun = group.count === 1 ? "exhibition" : "exhibitions";
+      return `<div class="v-year${open ? " is-open" : ""}">
+        <button type="button" class="year-head" data-year="${group.year}" aria-expanded="${open ? "true" : "false"}" aria-label="${group.year}, ${group.count} documented ${noun}, ${precision}">
+          <span>${group.year}</span>
+          <span class="stack" aria-hidden="true">${pipsHtml(group)}</span>
+          <span class="v-count">${group.count}</span>
+        </button>
+        ${open ? `<div class="branch-list">${items}</div>` : ""}
+      </div>`;
+    }).join("");
   }
 
   function connectionsHtml(person) {
@@ -801,8 +940,11 @@
     const recorded = (exhibition.recordedNames || []).map((name) => `<p>${esc(name)}</p>`).join("");
     const unresolved = (exhibition.reviewNames || []).map((name) => `<p>Needs review: ${esc(name)}</p>`).join("");
     const plainUnresolved = (exhibition.recordedNames || []).length && exhibition.local ? (exhibition.recordedNames || []).map((name) => `<p>Unresolved participant: ${esc(name)}</p>`).join("") : recorded;
-    const space = exhibition.spaceId && exhibition.venue ? `<button type="button" class="inline" data-go="/space/${esc(exhibition.spaceId)}">${esc(exhibition.venue)}</button>` : esc(exhibition.venue || "Venue not recorded");
-    const place = [exhibition.city, exhibition.country].filter(Boolean).join(" · ");
+    const title = decodeDisplayText(exhibition.title);
+    const venueText = exhibition.venue ? decodeDisplayText(exhibition.venue) : "";
+    const sameVenue = phrasesMatch(title, venueText);
+    const space = sameVenue ? "" : exhibition.spaceId && venueText ? `<button type="button" class="inline" data-go="/space/${esc(exhibition.spaceId)}">${esc(venueText)}</button>` : venueText ? esc(venueText) : "Venue not recorded";
+    const place = [exhibition.city ? decodeDisplayText(exhibition.city) : "", displayCountry(exhibition.country) || ""].filter(Boolean).join(" · ");
     const curators = exhibition.curators.length ? exhibition.curators.map((name) => {
       const curator = C.curators.find((item) => item.name === name);
       return curator ? `<button type="button" class="inline" data-go="/curator/${esc(curator.id)}">${esc(name)}</button>` : esc(name);
@@ -812,9 +954,9 @@
     main.innerHTML = `<article class="page">
       <p class="crumbs">${backButton()}</p>
       <p class="kicker">Exhibition</p>
-      <h1>${esc(exhibition.title)}</h1>
+      <h1>${esc(title)}</h1>
       <p>${esc(exhibition.when)}</p>
-      <p>${space}</p>
+      ${space ? `<p>${space}</p>` : ""}
       ${place ? `<p class="quiet">${esc(place)}</p>` : ""}
       <p><button type="button" class="prov" data-prov="${esc(exhibition.id)}">${provIcon(label)} ${esc(label)}</button></p>
       <h2 class="section-title">Participants</h2>
@@ -857,9 +999,10 @@
     });
     const strata = [...groups.entries()].map(([label, rows]) => `<section class="strata"><h3>${esc(label)}</h3>${rows.map((exhibition) => {
       const names = exhibition.artistIds.map((artistId) => personById(artistId)).filter(Boolean).map((person) => person.name).join(", ");
-      return `<p><button type="button" class="inline" data-go="/exhibition/${esc(exhibition.id)}">${esc(exhibition.title)}</button></p><p class="quiet">${esc(names || "Artists not linked")}${exhibition.local ? " · Added in this browser" : ""}</p>`;
+      const shownTitle = textOf(exhibition.title);
+      return `<p><button type="button" class="inline" data-go="/exhibition/${esc(exhibition.id)}">${shownTitle}</button></p><p class="quiet">${esc(names || "Artists not linked")}${exhibition.local ? " · Added in this browser" : ""}</p>`;
     }).join("")}</section>`).join("");
-    const where = [space.city, space.country].filter(Boolean).join(" · ");
+    const where = [space.city ? decodeDisplayText(space.city) : "", displayCountry(space.country) || ""].filter(Boolean).join(" · ");
     main.innerHTML = `<article class="page">
       <p class="crumbs">${backButton()}</p>
       <p class="kicker">Space</p>
@@ -888,15 +1031,22 @@
     const artists = C.artists.map((artist) => `<a href="#/artist/${esc(artist.id)}"><span><strong>${esc(artist.name)}</strong><span class="native">${esc(artist.korean)}</span></span><span class="meta">${signatureHtml(artist.signature)}<span class="sr">${artist.count} documented exhibitions</span><span>${artist.count} documented</span></span></a>`).join("");
     const decades = `<button type="button" data-decade="" aria-pressed="${decade ? "false" : "true"}">All years</button>${C.explore.decades.map((item) => `<button type="button" data-decade="${item}" aria-pressed="${String(item) === decade ? "true" : "false"}">${item}s</button>`).join("")}`;
     const cities = `<button type="button" data-city="" aria-pressed="${city ? "false" : "true"}">All cities</button>${C.explore.cities.slice(0, 8).map((item) => `<button type="button" data-city="${esc(item.name)}" aria-pressed="${item.name === city ? "true" : "false"}">${esc(item.name)}</button>`).join("")}`;
-    const countries = `<button type="button" data-country="" aria-pressed="${country ? "false" : "true"}">All countries</button>${C.explore.countries.slice(0, 8).map((item) => `<button type="button" data-country="${esc(item.name)}" aria-pressed="${item.name === country ? "true" : "false"}">${esc(item.name)}</button>`).join("")}`;
+    const countryCounts = new Map();
+    C.exhibitions.forEach((exhibition) => {
+      const name = displayCountry(exhibition.country);
+      if (!name) return;
+      countryCounts.set(name, (countryCounts.get(name) || 0) + 1);
+    });
+    const countryOptions = [...countryCounts.entries()].sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0])).slice(0, 8);
+    const countries = `<button type="button" data-country="" aria-pressed="${country ? "false" : "true"}">All countries</button>${countryOptions.map((item) => `<button type="button" data-country="${esc(item[0])}" aria-pressed="${item[0] === country ? "true" : "false"}">${esc(item[0])}</button>`).join("")}`;
     const filtered = C.exhibitions.filter((exhibition) => {
       if (decade && String(exhibition.decade) !== decade) return false;
       if (city && exhibition.city !== city) return false;
-      if (country && exhibition.country !== country) return false;
+      if (country && displayCountry(exhibition.country) !== country) return false;
       return true;
     });
     const slice = filtered.slice(0, shown);
-    const rows = slice.map((exhibition) => `<button type="button" class="result" data-go="/exhibition/${esc(exhibition.id)}"><span>${esc(exhibition.title)}</span><span class="meta">${esc([exhibition.year, exhibition.city].filter(Boolean).join(" · "))}</span></button>`).join("");
+    const rows = slice.map((exhibition) => `<button type="button" class="result" data-go="/exhibition/${esc(exhibition.id)}"><span>${textOf(exhibition.title)}</span><span class="meta">${esc([exhibition.year, exhibition.city ? decodeDisplayText(exhibition.city) : ""].filter(Boolean).join(" · "))}</span></button>`).join("");
     const more = filtered.length > slice.length ? `<p class="quiet-link"><button type="button" data-more="1">Show more</button></p>` : "";
     const repeated = C.spaces.filter((space) => space.exhibitionIds.length >= 2).slice(0, 12);
     const once = C.spaces.filter((space) => space.exhibitionIds.length === 1).length;
@@ -975,6 +1125,13 @@
   function render() {
     const { parts } = parseHash();
     const main = document.querySelector("#main");
+    const artistId = parts[0] === "artist" ? parts[1] : "";
+    if (artistId !== journeyArtist) journeyKey = "";
+    if (parts[0] !== "artist") {
+      const overlay = document.querySelector("#journey");
+      if (overlay) overlay.hidden = true;
+      document.body.classList.remove("traveling");
+    }
     setNav(parts);
     applyTitle(parts);
     if (!parts.length) renderHome(main);
@@ -1008,22 +1165,46 @@
     const { params } = parseHash();
     const eventId = params.get("event");
     const cluster = params.get("cluster");
+    const moment = document.querySelector("#moment");
+    const slot = document.querySelector(".moment-slot");
+    const desktop = window.matchMedia("(min-width: 721px)").matches;
     if (!eventId && !cluster) {
-      if (!document.querySelector("#moment").hidden) hideMoment();
+      if (slot) slot.innerHTML = "";
+      document.body.classList.remove("panel-open");
+      if (!moment.hidden) hideMoment();
+      else moment.innerHTML = "";
       return;
     }
-    const moment = document.querySelector("#moment");
+    const markup = cluster && !eventId ? clusterMarkup(cluster.split(",").filter(Boolean)) : momentMarkup(eventId);
+    document.body.classList.add("panel-open");
+    if (desktop && slot && eventId) {
+      slot.innerHTML = `<div class="moment-card">${markup}</div>`;
+      moment.hidden = true;
+      moment.innerHTML = "";
+      document.querySelector("#scrim").hidden = true;
+      moment.setAttribute("aria-modal", "false");
+      return;
+    }
     const wasHidden = moment.hidden;
     if (wasHidden) lastFocus = document.activeElement;
     moment.hidden = false;
-    document.body.classList.add("panel-open");
-    document.querySelector("#scrim").hidden = window.matchMedia("(min-width: 721px)").matches;
-    if (cluster && !eventId) paintCluster(cluster.split(",").filter(Boolean));
-    else paintEvent(eventId);
+    moment.setAttribute("aria-modal", desktop ? "false" : "true");
+    document.querySelector("#scrim").hidden = desktop;
+    moment.innerHTML = markup;
     if (wasHidden) {
       const close = moment.querySelector("[data-action='close-moment']");
       if (close) close.focus();
     }
+  }
+
+  function clusterMarkup(ids) {
+    const rows = ids.map(exhibitionById).filter(Boolean);
+    const year = rows[0] && rows[0].year ? rows[0].year : "These records";
+    return `<button type="button" class="text-button" data-action="close-moment">Close</button>
+      <p class="kicker">Year</p>
+      <h2 id="moment-title">${esc(year)}</h2>
+      <p class="quiet">${rows.length} recorded exhibitions share this position.</p>
+      ${rows.map((exhibition) => `<button type="button" class="result" data-event="${esc(exhibition.id)}"><span>${textOf(exhibition.title)}</span><span class="meta">${esc(exhibition.when)}</span></button>`).join("")}`;
   }
 
   function paintCluster(ids) {
@@ -1036,47 +1217,74 @@
       ${rows.map((exhibition) => `<button type="button" class="result" data-event="${esc(exhibition.id)}"><span>${esc(exhibition.title)}</span><span class="meta">${esc(exhibition.venue || exhibition.when)}</span></button>`).join("")}`;
   }
 
-  function paintEvent(id) {
+  function momentMarkup(id) {
     const exhibition = exhibitionById(id);
-    const moment = document.querySelector("#moment");
-    if (!exhibition) {
-      moment.innerHTML = `<button type="button" class="text-button" data-action="close-moment">Close</button><h2 id="moment-title">Record not found.</h2>`;
-      return;
+    if (!exhibition) return `<button type="button" class="text-button" data-action="close-moment">Close</button><h2 id="moment-title">Record not found.</h2>`;
+    if (momentFor !== id) {
+      momentFor = id;
+      momentExpanded = false;
     }
+    const lines = momentPlaceView(exhibition);
     const label = provenanceFor(exhibition);
-    const opened = moment.dataset.prov === id;
+    const opened = document.querySelector("#moment").dataset.prov === id;
+    const picture = momentPicture(exhibition, momentExpanded);
+    const extraArtists = (exhibition.recordedNames || []).map((name) => `<p class="quiet">${exhibition.local ? "Unresolved participant" : "Also recorded"}: ${esc(decodeDisplayText(name))}</p>`).join("");
+    const review = (exhibition.reviewNames || []).map((name) => `<p class="quiet">Needs review: ${esc(name)}</p>`).join("");
+    const conflict = overlays(exhibition.id).filter((event) => event.verification === "CONFLICT").map((event) => `<p>Submitted date ${esc(event.conflictNote || event.start || "")}. The documented date is unchanged.</p>`).join("");
+    return `<button type="button" class="text-button" data-action="close-moment">Close</button>
+      <h2 id="moment-title">${esc(lines.title)}</h2>
+      <p>${esc(exhibition.when)}</p>
+      ${lines.place ? `<p>${esc(lines.place)}</p>` : ""}
+      ${picture}
+      ${extraArtists}${review}
+      <p><button type="button" class="prov" data-prov="${esc(exhibition.id)}" aria-expanded="${opened ? "true" : "false"}">${provIcon(label)} ${esc(label)}</button></p>
+      ${opened ? evidenceHtml(exhibition) : ""}
+      ${conflict}
+      <p class="quiet-link"><button type="button" data-go="/exhibition/${esc(exhibition.id)}">Open exhibition</button></p>`;
+  }
+
+  function momentPlaceView(exhibition) {
+    const title = decodeDisplayText(exhibition.title).trim();
+    const venue = exhibition.venue ? decodeDisplayText(exhibition.venue).trim() : "";
+    const city = exhibition.city ? decodeDisplayText(exhibition.city).trim() : "";
+    const country = displayCountry(exhibition.country) || "";
+    const parts = [phrasesMatch(title, venue) ? "" : venue, city, country].filter(Boolean);
+    return { title: title, place: parts.length ? parts.join(" · ") : "" };
+  }
+
+  function momentPicture(exhibition, expanded) {
     const current = currentArtistId();
-    const satellites = [];
+    const artists = [];
     exhibition.artistIds.forEach((artistId) => {
       if (artistId === current) return;
       const person = personById(artistId);
-      if (person) satellites.push({ label: person.name, go: artistHref(person.id, exhibition.id) });
+      if (person) artists.push({ label: person.name, go: artistHref(person.id, exhibition.id) });
     });
-    if (exhibition.spaceId && exhibition.venue) satellites.push({ label: exhibition.venue, go: `/space/${exhibition.spaceId}` });
-    exhibition.curators.forEach((name) => {
-      const curator = C.curators.find((item) => item.name === name);
-      satellites.push({ label: name, go: curator ? `/curator/${curator.id}` : "/curators" });
-    });
-    const visible = satellites.slice(0, 6);
-    const slots = visible.map((node, index) => {
-      const angle = -Math.PI / 2 + (index * 2 * Math.PI) / Math.max(1, visible.length);
+    const same = phrasesMatch(exhibition.title, exhibition.venue);
+    const space = exhibition.spaceId && exhibition.venue ? { label: same ? (exhibition.city ? decodeDisplayText(exhibition.city) : "Space") : decodeDisplayText(exhibition.venue), go: `/space/${exhibition.spaceId}` } : null;
+    const curator = exhibition.curators[0] ? { label: decodeDisplayText(exhibition.curators[0]), go: "/curators" } : null;
+    const reserve = (space ? 1 : 0) + (curator ? 1 : 0);
+    const room = Math.max(0, 7 - reserve);
+    const shownArtists = expanded ? artists : artists.slice(0, room);
+    const hidden = Math.max(0, artists.length - shownArtists.length);
+    const nodes = shownArtists.slice();
+    if (space && !same) nodes.push(space);
+    else if (space && !shownArtists.length) nodes.push(space);
+    if (curator) nodes.push(curator);
+    const more = hidden ? `<p class="quiet-link"><button type="button" data-action="more-artists">+ ${hidden} artists</button></p>` : "";
+    if (!nodes.length) return `<p class="quiet">No other documented artist is on this record.</p>${more}`;
+    if (nodes.length === 1) return `<div class="stem"><span class="hub" aria-hidden="true"></span><button type="button" class="sat" data-go="${nodes[0].go}">${esc(nodes[0].label)}</button></div>${more}`;
+    const slots = nodes.map((node, index) => {
+      const angle = -Math.PI / 2 + (index * 2 * Math.PI) / nodes.length;
       return Object.assign({}, node, { x: 50 + Math.cos(angle) * 34, y: 50 + Math.sin(angle) * 34 });
     });
     const lines = slots.map((node) => `<line x1="50" y1="50" x2="${node.x}" y2="${node.y}"></line>`).join("");
     const buttons = slots.map((node) => `<button type="button" class="sat" style="left:${node.x}%;top:${node.y}%" data-go="${node.go}">${esc(short(node.label, 48))}</button>`).join("");
-    const extraArtists = (exhibition.recordedNames || []).map((name) => `<p class="quiet">${exhibition.local ? "Unresolved participant" : "Also recorded"}: ${esc(name)}</p>`).join("");
-    const review = (exhibition.reviewNames || []).map((name) => `<p class="quiet">Needs review: ${esc(name)}</p>`).join("");
-    const conflict = overlays(exhibition.id).filter((event) => event.verification === "CONFLICT").map((event) => `<p>Submitted date ${esc(event.conflictNote || event.start || "")}. The documented date is unchanged.</p>`).join("");
-    moment.innerHTML = `<button type="button" class="text-button" data-action="close-moment">Close</button>
-      <p class="kicker">${esc(exhibition.when)}</p>
-      <h2 id="moment-title">${esc(exhibition.title)}</h2>
-      <p>${esc(exhibition.venue || "Venue not recorded")}${exhibition.city ? ` · ${esc(exhibition.city)}` : ""}</p>
-      <p><button type="button" class="prov" data-prov="${esc(exhibition.id)}" aria-expanded="${opened ? "true" : "false"}">${provIcon(label)} ${esc(label)}</button></p>
-      ${opened ? evidenceHtml(exhibition) : ""}
-      ${conflict}
-      ${visible.length ? `<div class="orbit"><svg viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">${lines}</svg><span class="hub" style="left:50%;top:50%" aria-hidden="true"></span>${buttons}</div>` : "<p class=\"quiet\">No other documented artist, space, or curator is attached.</p>"}
-      ${extraArtists}${review}
-      <p class="quiet-link"><button type="button" data-go="/exhibition/${esc(exhibition.id)}">Open exhibition</button></p>`;
+    return `<div class="orbit"><svg viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">${lines}</svg><span class="hub" style="left:50%;top:50%" aria-hidden="true"></span>${buttons}</div>${more}`;
+  }
+
+  function paintEvent(id) {
+    document.querySelector("#moment").innerHTML = momentMarkup(id);
   }
 
   function evidenceHtml(exhibition) {
@@ -1085,6 +1293,7 @@
       blocks.push(`<p>Origin · ${esc(originWord(exhibition.origin))}</p><p>Verification · ${esc(verificationWord(exhibition.verification))}</p>`);
     } else {
       blocks.push(`<p>Origin · ROB researched</p><p>Verification · ${esc(verificationWord(overlays(exhibition.id).some((event) => event.verification === "CONFLICT") ? "CONFLICT" : "OFFICIAL_SOURCE"))}</p>`);
+      if (uncertainDisplay(exhibition.title) || uncertainDisplay(exhibition.venue) || uncertainDisplay(exhibition.city)) blocks.push("<p>Data under review</p>");
       overlays(exhibition.id).forEach((event) => {
         blocks.push(`<p>Origin · ${esc(originWord(event.origin))}</p><p>Verification · ${esc(verificationWord(event.verification))}</p>`);
       });
@@ -1098,13 +1307,23 @@
     return `<section class="evidence">${blocks.join("")}${links.join("")}<p class="quiet">This describes the record's evidence, not an artistic endorsement.</p></section>`;
   }
 
-  function openMoment(id) {
+  function replaceQuery(mutate, keepScroll) {
     const { parts, params } = parseHash();
-    params.set("event", id);
-    params.delete("cluster");
+    mutate(params);
     const query = params.toString();
-    history.replaceState({ entry: Boolean(history.state && history.state.entry) }, "", `${location.pathname}${location.search}#/${parts.join("/")}?${query}`);
-    syncMoment();
+    history.replaceState({ entry: true }, "", `${location.pathname}${location.search}#/${parts.join("/")}${query ? `?${query}` : ""}`);
+    render();
+    if (!keepScroll) window.scrollTo(0, 0);
+  }
+
+  function openMoment(id) {
+    const exhibition = exhibitionById(id);
+    replaceQuery((params) => {
+      params.set("event", id);
+      params.delete("cluster");
+      if (params.get("zoom") !== "decade") params.set("zoom", "year");
+      if (exhibition && exhibition.year) params.set("focus", String(exhibition.year));
+    }, true);
   }
 
   function openCluster(ids) {
@@ -1117,12 +1336,41 @@
   }
 
   function closeMoment() {
-    const { parts, params } = parseHash();
-    params.delete("event");
-    params.delete("cluster");
-    const query = params.toString();
-    history.replaceState({ entry: Boolean(history.state && history.state.entry) }, "", `${location.pathname}${location.search}#/${parts.join("/")}${query ? `?${query}` : ""}`);
+    replaceQuery((params) => {
+      params.delete("event");
+      params.delete("cluster");
+    }, true);
     hideMoment();
+  }
+
+  function openYear(year) {
+    replaceQuery((params) => {
+      const next = String(year);
+      const same = params.get("focus") === next && params.get("zoom") === "year";
+      if (same && !params.get("event")) {
+        params.delete("focus");
+        params.set("zoom", "all");
+      } else {
+        params.set("zoom", "year");
+        params.set("focus", next);
+      }
+      params.delete("event");
+      params.delete("cluster");
+    }, true);
+  }
+
+  function setZoom(level) {
+    replaceQuery((params) => {
+      const groups = yearGroups(career(personById(currentArtistId()) || { id: "" }).dated || []);
+      const last = groups.length ? groups[groups.length - 1].year : null;
+      params.set("zoom", level);
+      if (level === "all") {
+        params.delete("focus");
+        params.delete("event");
+      }
+      if ((level === "decade" || level === "year") && !params.get("focus") && last) params.set("focus", String(last));
+      if (level === "decade") params.delete("event");
+    }, true);
   }
 
   function back() {
@@ -1130,7 +1378,14 @@
     const from = params.get("from");
     const via = params.get("via");
     if (from) {
-      go(`/artist/${from}${via ? `?event=${encodeURIComponent(via)}` : ""}`, true);
+      const next = new URLSearchParams();
+      if (via) next.set("event", via);
+      if (params.get("srcZoom")) next.set("zoom", params.get("srcZoom"));
+      if (params.get("srcFocus")) next.set("focus", params.get("srcFocus"));
+      const query = next.toString();
+      const scroll = Number(params.get("srcScroll") || 0);
+      go(`/artist/${from}${query ? `?${query}` : ""}`, true, true);
+      window.requestAnimationFrame(() => window.scrollTo(0, scroll));
       return;
     }
     if (history.state && history.state.entry) {
@@ -1138,6 +1393,52 @@
       return;
     }
     go("/", true);
+  }
+
+  function reduceMotion() {
+    return window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  }
+
+  function maybeJourney(person) {
+    const { params } = parseHash();
+    const fromId = params.get("from");
+    const via = params.get("via");
+    const overlay = document.querySelector("#journey");
+    if (!overlay || !fromId || !via) {
+      if (overlay) overlay.hidden = true;
+      return;
+    }
+    const key = `${fromId}>${person.id}:${via}`;
+    const crumbs = document.querySelector(".crumbs");
+    if (journeyKey === key) {
+      if (Date.now() < journeyUntil && crumbs) crumbs.classList.add("is-waiting");
+      return;
+    }
+    journeyKey = key;
+    journeyArtist = person.id;
+    const fromPerson = personById(fromId);
+    const exhibition = exhibitionById(via);
+    document.querySelector("#journey-from").textContent = fromPerson ? fromPerson.name : "";
+    document.querySelector("#journey-via").textContent = exhibition ? short(decodeDisplayText(exhibition.title), 80) : "";
+    document.querySelector("#journey-to").textContent = person.name;
+    if (reduceMotion()) {
+      overlay.hidden = true;
+      return;
+    }
+    overlay.hidden = false;
+    overlay.classList.remove("is-on");
+    void overlay.offsetWidth;
+    overlay.classList.add("is-on");
+    if (crumbs) crumbs.classList.add("is-waiting");
+    document.body.classList.add("traveling");
+    journeyUntil = Date.now() + 640;
+    window.setTimeout(() => {
+      if (journeyKey !== key) return;
+      overlay.hidden = true;
+      document.body.classList.remove("traveling");
+      const live = document.querySelector(".crumbs");
+      if (live) live.classList.remove("is-waiting");
+    }, 640);
   }
 
   function claim(id) {
@@ -1303,16 +1604,26 @@
       go(link.getAttribute("href").slice(1));
       return;
     }
-    const target = event.target.closest("[data-go], [data-event], [data-cluster], [data-back], [data-prov], [data-claim], [data-action], [data-decade], [data-city], [data-country], [data-mode], [data-more]");
+    const target = event.target.closest("[data-go], [data-event], [data-cluster], [data-year], [data-zoom-level], [data-back], [data-prov], [data-claim], [data-action], [data-decade], [data-city], [data-country], [data-mode], [data-more]");
     if (!target) return;
     if (target.dataset.go) {
       event.preventDefault();
       go(target.dataset.go);
       return;
     }
+    if (target.dataset.zoomLevel) {
+      event.preventDefault();
+      setZoom(target.dataset.zoomLevel);
+      return;
+    }
     if (target.dataset.event) {
       event.preventDefault();
       openMoment(target.dataset.event);
+      return;
+    }
+    if (target.dataset.year) {
+      event.preventDefault();
+      openYear(target.dataset.year);
       return;
     }
     if (target.dataset.cluster) {
@@ -1371,6 +1682,10 @@
     }
     const action = target.dataset.action;
     if (action === "close-moment") closeMoment();
+    if (action === "more-artists") {
+      momentExpanded = true;
+      syncMoment();
+    }
     if (action === "map-more") {
       mapDepth = 3;
       render();

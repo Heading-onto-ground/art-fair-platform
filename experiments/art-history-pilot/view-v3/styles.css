@@ -190,9 +190,10 @@ button { cursor: pointer; }
   text-decoration: none;
 }
 .native { display: block; color: var(--muted); font-size: 15px; }
-.signature { display: inline-flex; align-items: end; gap: 3px; height: 22px; min-width: 72px; }
-.signature i { display: block; width: 5px; background: var(--ink); }
-.signature.empty i { background: var(--line); height: 1px !important; align-self: center; }
+.signature { display: inline-flex; align-items: end; gap: 6px; height: 26px; min-width: 96px; }
+.signature .col { display: flex; flex-direction: column-reverse; justify-content: flex-start; gap: 3px; width: 6px; height: 26px; }
+.signature .col i { display: block; width: 6px; height: 6px; border-radius: 50%; background: var(--ink); }
+.signature .col.empty { border-bottom: 1px solid var(--line); align-self: end; height: auto; }
 
 .page { padding: 36px 0 72px; }
 .page-head h1 { font-size: clamp(40px, 6vw, 68px); max-width: 14ch; }
@@ -207,7 +208,7 @@ button { cursor: pointer; }
 .axis { position: absolute; left: 0; right: 0; top: 46px; border-top: 1px solid var(--ink); }
 .ymin, .ymax {
   position: absolute;
-  top: 54px;
+  top: 98px;
   font-family: "Segoe UI", system-ui, sans-serif;
   font-size: 12px;
   color: var(--muted);
@@ -233,9 +234,9 @@ button { cursor: pointer; }
   background: var(--ink);
 }
 .dot.open::before, .cluster.open::before, .node.open { background: transparent; }
-.cluster { width: 18px; height: 18px; margin-top: -9px; }
+.cluster { width: 14px; height: 14px; margin-top: -7px; }
 .cluster::before { display: none; }
-.cluster .stack {
+.cluster .stack, .year-head .stack {
   position: absolute;
   left: 50%;
   bottom: 3px;
@@ -244,7 +245,22 @@ button { cursor: pointer; }
   flex-direction: column-reverse;
   align-items: center;
   gap: 4px;
+  pointer-events: none;
 }
+.cluster.is-on { z-index: 2; }
+.cluster.is-on .pip { width: 11px; height: 11px; }
+.cluster .more {
+  position: absolute;
+  pointer-events: none;
+  top: 16px;
+  left: 50%;
+  transform: translateX(-50%);
+  font-family: "Segoe UI", system-ui, sans-serif;
+  font-size: 11px;
+  color: var(--muted);
+}
+body.panel-open .cluster:not(.is-on) { opacity: 0.32; }
+body.panel-open .cluster.is-on .pip { width: 11px; height: 11px; }
 .pip {
   display: block;
   width: 9px;
@@ -283,11 +299,7 @@ button { cursor: pointer; }
 
 #scrim { position: fixed; inset: 0; background: rgba(27, 25, 22, 0.28); z-index: 20; }
 @media (min-width: 721px) {
-  body.panel-open .frame {
-    width: min(1120px, calc(100% - 500px));
-    margin-right: 468px;
-    margin-left: auto;
-  }
+  body.panel-open .frame { width: min(1120px, calc(100% - 48px)); margin: 0 auto; }
 }
 #moment {
   position: fixed;
@@ -366,7 +378,7 @@ body.debug .debug-only {
   .links, .tools a { display: none; }
   .below { grid-template-columns: 1fr; padding-bottom: 24px; }
   .hero { min-height: calc(100svh - 150px); }
-  .track-wrap { display: none; }
+  .track-wrap, .branch { display: none; }
   .vertical { display: block; }
   .career-meta { display: block; }
   .tabbar {
@@ -406,6 +418,72 @@ body.debug .debug-only {
 }
 @keyframes guide { 50% { opacity: 0.35; } }
 @keyframes rise { from { transform: translateY(8px); } to { transform: none; } }
+.zoom { display: flex; gap: 16px; margin-top: 18px; }
+.zoom button { background: none; border: 0; padding: 0; color: var(--muted); font-size: 13px; letter-spacing: 0.08em; }
+.zoom button[aria-pressed="true"] { color: var(--ink); border-bottom: 1px solid var(--ink); }
+.branch { margin-top: 8px; }
+.branch-list { display: grid; gap: 0; margin: 8px 0 0; }
+.branch-item, .year-head {
+  display: grid;
+  grid-template-columns: 16px 1fr auto;
+  gap: 10px;
+  align-items: start;
+  width: 100%;
+  background: none;
+  border: 0;
+  border-bottom: 1px solid var(--line);
+  padding: 12px 0;
+  text-align: left;
+}
+.branch-item.is-on strong { border-bottom: 1px solid var(--ink); }
+.year-head { position: relative; grid-template-columns: 64px 1fr auto; }
+.year-head .stack { position: static; transform: none; flex-direction: row; }
+.v-count { font-family: "Segoe UI", system-ui, sans-serif; font-size: 13px; color: var(--muted); }
+.moment-card {
+  border-top: 1px solid var(--ink);
+  margin-top: 18px;
+  padding-top: 18px;
+  max-width: 640px;
+}
+.stem { display: flex; flex-direction: column; align-items: flex-start; gap: 8px; margin: 18px 0; min-height: 72px; }
+.stem .hub, .stem .sat { position: static; transform: none; max-width: none; text-align: left; }
+.stem .hub::before { display: block; }
+.stem::before { content: ""; width: 1px; height: 36px; background: var(--ink); margin-left: 5px; }
+.stem .sat, .year-head, .branch-item { min-height: 44px; }
+.sat:hover, .branch-item:hover strong, .year-head:hover { letter-spacing: 0.01em; }
+@media (prefers-reduced-motion: no-preference) {
+  .orbit .sat:hover { transform: translate(-50%, calc(-50% - 3px)); }
+  .stem .sat:hover { transform: translateX(4px); }
+}
+@media (max-width: 720px) {
+  .sat { min-height: 44px; padding: 8px 0; }
+}
+.path { margin-left: 14px; }
+.via { display: block; margin-top: 6px; color: var(--muted); font-size: 14px; }
+.crumbs.is-waiting .path, .crumbs.is-waiting .via { opacity: 0; }
+#journey {
+  position: fixed;
+  inset: 0;
+  z-index: 40;
+  background: var(--paper);
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding: 12vh 8vw;
+}
+#journey[hidden] { display: none; }
+#journey.is-on { animation: journeyFade 640ms ease forwards; }
+@keyframes journeyFade {
+  0% { opacity: 1; }
+  55% { opacity: 1; }
+  100% { opacity: 0; }
+}
+#journey p { margin: 0; font-size: clamp(28px, 5vw, 52px); letter-spacing: -0.03em; }
+#journey-via { margin: 8px 0 8px 8px !important; font-family: "Segoe UI", system-ui, sans-serif; font-size: 14px !important; color: var(--muted); }
+#journey-line { width: 1px; height: 64px; background: var(--ink); margin: 8px 8px 16px; }
+body.traveling .track-wrap, body.traveling .vertical { animation: grow 640ms ease; }
+@keyframes grow { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: none; } }
 @media (prefers-reduced-motion: reduce) {
-  .mark::after, #moment { animation: none; }
+  .mark::after, #moment, body.traveling .track-wrap, body.traveling .vertical { animation: none; }
+  #journey { display: none !important; }
 }

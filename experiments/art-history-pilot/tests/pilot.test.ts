@@ -14,6 +14,7 @@ import { robotsAllows } from "../src/robots";
 import { exhibitionFromSinglePage, exhibitionsFromBlocks, exhibitionsFromCards, exhibitionsFromCv, plainPage } from "../src/cvList";
 import { enteredDate, classifySubmission, linkParticipant, officialMark, provenanceLabel, submissionMark, submissionMatch } from "../src/hybrid";
 import { EMPTY_HISTORY, buildCatalog, collapseTimeline, connectionMap, displayCity, documentedShares, dotMark, historyLayout, pageTitle, rangeCoversToday, rankingModules, searchArtists, sharedExhibitionPhrase, spaceIdFor } from "../src/catalog";
+import { careerSpan, clusterFace, decodeDisplayText, displayCountry, groupByYear, journeyStops, majorGaps, momentPlace, momentSatellites, restoredArtistPath, shouldPlayJourney, signatureColumns, uncertainDisplay, zoomSpan } from "../src/display";
 import { exhibitionKey, historySignature, sameCanonicalExhibition, seoBucket, timelineFraction } from "../src/product";
 import type { ExhibitionRecord } from "../src/claims";
 import { classifyManualResearch, classifySource } from "../src/sourcePolicy";
@@ -657,6 +658,70 @@ describe("v3 catalog", () => {
     expect(EMPTY_HISTORY).toBe("No accepted exhibition records in ROB yet.");
     expect(catalog.rankings.every((item) => item.entries.length === 0)).toBe(true);
     expect(catalog.usageStatus).toBe("PILOT_ONLY");
+  });
+});
+
+describe("core experience", () => {
+  const artists = JSON.parse(readFileSync(path.join(pilotRoot(), "data/seed/artists.json"), "utf8")).artists;
+  const records = JSON.parse(readFileSync(path.join(pilotRoot(), "data/claims/exhibitions.json"), "utf8")).records;
+  const identity = JSON.parse(readFileSync(path.join(pilotRoot(), "data/identity/wikidata.json"), "utf8")).artists;
+  const catalog = buildCatalog(artists, records, identity, "2026-10-08");
+
+  it("keeps every documented event inside a year cluster", () => {
+    const lee = catalog.exhibitions.filter((exhibition) => exhibition.artistIds.includes("A01") && exhibition.year);
+    const groups = groupByYear(lee.map((exhibition) => ({ id: exhibition.id, year: exhibition.year, mark: exhibition.precision === "year" ? "open" : "filled" })));
+    expect(groups.reduce((sum, group) => sum + group.count, 0)).toBe(130);
+    expect(groups.every((group) => group.visible + group.overflow === group.count)).toBe(true);
+    expect(Math.max(...groups.map((group) => group.visible))).toBeLessThanOrEqual(4);
+    expect(clusterFace(12)).toEqual({ visible: 4, overflow: 8 });
+    const span = careerSpan(groups);
+    expect(span).toEqual({ first: 1967, last: 2026 });
+    expect(majorGaps([{ year: 1967 }, { year: 1972 }])).toEqual([{ from: 1968, to: 1971 }]);
+    expect(zoomSpan("ALL", null, 1967, 2026)).toEqual({ start: 1967, end: 2026 });
+    expect(zoomSpan("YEAR", 2019, 1967, 2026)).toEqual({ start: 1967, end: 2026 });
+    expect(zoomSpan("DECADE", 2019, 1967, 2026)).toEqual({ start: 2010, end: 2019 });
+    expect(signatureColumns([0, 2, 8])).toEqual([0, 1, 3]);
+  });
+
+  it("decodes presentation text without inventing an uncertain value", () => {
+    expect(decodeDisplayText("St&auml;dtisches")).toBe("Städtisches");
+    expect(decodeDisplayText("Br&ucirc;lée")).toBe("Brûlée");
+    expect(decodeDisplayText("Tokyo G1995")).toBe("Tokyo G1995");
+    expect(uncertainDisplay("Tokyo G1995")).toBe(true);
+    expect(uncertainDisplay("Städtisches Museum")).toBe(false);
+    expect(displayCountry("Korea")).toBe("Korea");
+    expect(displayCountry("South Korea")).toBe("Korea");
+    expect(displayCountry("대한민국")).toBe("Korea");
+    expect(displayCountry("France")).toBe("France");
+    expect(displayCountry("North Korea")).toBe("North Korea");
+    const place = momentPlace({ title: "Sato Gallery", venue: "Sato Gallery", city: "Tokyo", country: "Japan" });
+    expect(place.title).toBe("Sato Gallery");
+    expect(place.place).toBe("Tokyo · Japan");
+    expect(place.review).toBe(false);
+    const raw = records.find((record: { title?: string }) => String(record.title || "").includes("G1995"));
+    if (raw) expect(raw.title).toContain("G1995");
+  });
+
+  it("restores the previous year and caps a local moment", () => {
+    expect(restoredArtistPath({ from: "A01", via: "e36e8dee259d6973", srcZoom: "year", srcFocus: "2025" })).toBe(
+      "/artist/A01?event=e36e8dee259d6973&zoom=year&focus=2025",
+    );
+    expect(journeyStops("Lee Ufan", "The Making of Modern Korean Art", "Park Seo-Bo")).toHaveLength(3);
+    expect(shouldPlayJourney(false)).toBe(true);
+    expect(shouldPlayJourney(true)).toBe(false);
+    const satellites = momentSatellites({
+      artists: Array.from({ length: 10 }, (_, index) => ({ id: `a${index}`, kind: "artist", label: `Artist ${index}` })),
+      space: { id: "s", kind: "space", label: "Tina Kim Gallery" },
+      curators: [],
+    });
+    expect(satellites.visible.length).toBeLessThanOrEqual(7);
+    expect(satellites.hiddenArtists).toBeGreaterThan(0);
+    expect(satellites.visible.some((node) => node.kind === "space")).toBe(true);
+    const lee = catalog.artists.find((artist) => artist.id === "A01");
+    const park = catalog.artists.find((artist) => artist.name === "Park Seo-Bo");
+    expect(documentedShares(catalog.exhibitions, lee?.id ?? "").some((share) => share.id === park?.id)).toBe(true);
+    expect(catalog.artists.find((artist) => artist.name === "Park Chan-kyong")?.count).toBeGreaterThan(0);
+    expect(catalog.artists.find((artist) => artist.name === "Lee Bul")?.count).toBe(0);
   });
 });
 

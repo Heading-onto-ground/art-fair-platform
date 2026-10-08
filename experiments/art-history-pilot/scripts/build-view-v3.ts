@@ -26,7 +26,7 @@ const html = `<!DOCTYPE html>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>ROB</title>
   <meta name="description" content="Search an artist. See their journey." />
-  <link rel="stylesheet" href="styles.css?v=9" />
+  <link rel="stylesheet" href="styles.css?v=13" />
 </head>
 <body>
   <a class="skip" href="#main">Skip to content</a>
@@ -70,8 +70,14 @@ const html = `<!DOCTYPE html>
   </nav>
   <div id="scrim" hidden></div>
   <div id="moment" hidden role="dialog" aria-modal="true" aria-labelledby="moment-title"></div>
+  <div id="journey" hidden>
+    <p id="journey-from"></p>
+    <p id="journey-via"></p>
+    <span id="journey-line" aria-hidden="true"></span>
+    <p id="journey-to"></p>
+  </div>
   <script>window.ROB_CATALOG = ${json};</script>
-  <script src="app.js?v=9"></script>
+  <script src="app.js?v=14"></script>
 </body>
 </html>
 `;

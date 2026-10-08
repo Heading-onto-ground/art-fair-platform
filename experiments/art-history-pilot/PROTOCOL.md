@@ -41,4 +41,6 @@ Phase P3 does not collect more public-web records. It adds a local hybrid histor
 
 Phase P4 does not collect more public-web records and does not migrate this pilot into production. It builds a separate product prototype in `view-v3/`. `view/` and `view-v2/` stay as earlier checkpoints. The note is `reports/FULL_PRODUCT_PROTOTYPE_V3.md`.
 
+Phase P4.1 does not add product areas. It refines the dense timeline and the artist-to-artist crossing inside `view-v3/`. The note is `reports/CORE_EXPERIENCE_REFINEMENT.md`.
+
 Page snapshots, if a later step fetches them, go in `.local-snapshots/` and are gitignored.
