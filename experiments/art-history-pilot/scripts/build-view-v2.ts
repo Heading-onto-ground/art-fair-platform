@@ -24,8 +24,13 @@ type EventModel = {
   venue: string | null;
   city: string | null;
   curators: string[];
+  start: string | null;
+  end: string | null;
   artists: { id: string | null; name: string }[];
   sources: string[];
+  origin: string;
+  verification: string;
+  provenance: string;
 };
 
 type PersonModel = {
@@ -110,9 +115,14 @@ function buildPeople(artists: SeedArtist[], records: ExhibitionRecord[], identit
         year: record.start ? Number(record.start.value.slice(0, 4)) : null,
         venue: record.venueName,
         city,
+        start: record.start?.value ?? null,
+        end: record.end?.value ?? null,
         curators: record.curatorNames,
         artists: linked,
-        sources: [record.sourceUrl, ...(record.additionalSources ?? [])],
+        sources: [record.sourceUrl, ...(record.additionalSources ?? [])].filter(Boolean),
+        origin: "ROB_RESEARCHED",
+        verification: "OFFICIAL_SOURCE",
+        provenance: "Official source",
       };
     }),
   }));
@@ -133,7 +143,7 @@ function html(data: PersonModel[]): string {
     body { margin: 0; background: #f6f4f0; color: #161616; font-family: "Palatino Linotype", Palatino, Georgia, serif; }
     button, input { font: inherit; color: inherit; }
     a { color: inherit; }
-    header, main { width: min(1080px, calc(100% - 40px)); margin: 0 auto; }
+    header, main, #human { width: min(1080px, calc(100% - 40px)); margin: 0 auto; }
     header { padding: 48px 0 12px; }
     .mark { letter-spacing: 0.22em; font-size: 13px; }
     h1 { font-weight: 400; font-size: 42px; line-height: 1.15; margin: 18px 0; }
@@ -164,6 +174,13 @@ function html(data: PersonModel[]): string {
     .log { margin: 28px 0 64px; padding: 14px 16px; }
     .log button { margin-right: 8px; }
     .empty { color: #5e5a55; }
+    .prov, .demo, form label, .questions { font-family: system-ui, sans-serif; font-size: 13px; }
+    .prov { border: 0; background: none; padding: 0; text-decoration: underline; cursor: pointer; }
+    .demo { letter-spacing: 0.08em; font-size: 11px; }
+    form { display: grid; gap: 10px; margin-top: 16px; }
+    input, select, textarea { width: 100%; border: 1px solid #161616; background: #fff; padding: 8px 10px; font-family: system-ui, sans-serif; font-size: 14px; }
+    .questions { display: grid; gap: 12px; }
+    .questions div { display: flex; gap: 8px; flex-wrap: wrap; }
     @media (max-width: 720px) {
       h1 { font-size: 32px; }
       .track { display: none; }
@@ -186,136 +203,22 @@ function html(data: PersonModel[]): string {
   <main id="stage" hidden>
     <article class="artist" id="artist"></article>
     <section class="moment" id="moment" hidden></section>
+    <section class="moment" id="composer" hidden></section>
     <section class="log">
       <p>This pilot keeps a local session log in this browser. It does not call an analytics service.</p>
       <button id="clear" type="button">Clear log</button>
+      <button id="clear-hybrid" type="button">Clear prototype additions</button>
       <button id="export" type="button">Export log</button>
       <pre id="log"></pre>
     </section>
   </main>
-  <script>
-    const PEOPLE = ${json};
-    const byId = new Map(PEOPLE.map((person) => [person.id, person]));
-    const KEY = "rob-art-history-pilot-log";
-    const state = { id: null, eventId: null, via: null };
-    const stack = [];
-    const q = document.querySelector("#q");
-    const results = document.querySelector("#results");
-    const stage = document.querySelector("#stage");
-    const artistEl = document.querySelector("#artist");
-    const momentEl = document.querySelector("#moment");
-    const logEl = document.querySelector("#log");
-
-    function readLog() {
-      try { return JSON.parse(localStorage.getItem(KEY) || "[]"); } catch { return []; }
-    }
-    function writeLog(entries) {
-      localStorage.setItem(KEY, JSON.stringify(entries.slice(-200)));
-      logEl.textContent = entries.length + " local events";
-    }
-    function log(type, detail) {
-      const entries = readLog();
-      entries.push({ type, detail, at: new Date().toISOString() });
-      writeLog(entries);
-    }
-    function signature(counts) {
-      const max = Math.max(1, ...counts);
-      return '<span class="signature">' + counts.map((count) => '<i style="height:' + (count ? 6 + Math.round((count / max) * 18) : 2) + 'px"></i>').join("") + "</span>";
-    }
-    function showResults(query) {
-      const needle = query.trim().toLowerCase();
-      const found = PEOPLE.filter((person) => !needle || person.search.toLowerCase().includes(needle) || person.name.toLowerCase().includes(needle) || person.korean.includes(query.trim()));
-      results.innerHTML = found.slice(0, 12).map((person) =>
-        '<button class="result" data-id="' + person.id + '"><span><strong>' + person.name + '</strong><span class="korean">' + person.korean + '</span><small>' +
-        (person.birthYear ? "b. " + person.birthYear + " · " : "") + person.count + " documented exhibitions</small></span>" + signature(person.signature) + "</button>"
-      ).join("");
-    }
-    function openArtist(id, via, returning) {
-      const person = byId.get(id);
-      if (!person) return;
-      const previous = state.id;
-      if (!returning && previous && previous !== id) stack.push(previous);
-      state.id = id;
-      state.eventId = null;
-      state.via = via || null;
-      stage.hidden = false;
-      results.hidden = true;
-      momentEl.hidden = true;
-      document.title = person.name + ": Exhibition History & Connections | ROB";
-      document.querySelector('meta[name="description"]').setAttribute("content", "Explore " + person.name + "'s documented exhibitions, spaces, curators and artist connections through time.");
-      const marks = person.events.filter((event) => event.year).map((event) => event.year);
-      const uniqueYears = [...new Set(marks)];
-      const labels = uniqueYears.filter((_, index) => index % Math.ceil(uniqueYears.length / 6) === 0);
-      const dots = person.events.map((event, index) => {
-        const lift = (index % 3) * 10;
-        return '<button class="dot' + (event.precise ? "" : " uncertain") + '" style="left:' + (event.fraction * 100) + '%;margin-top:-' + lift + 'px" data-event="' + event.id + '" title="' + event.when + '"></button>';
-      }).join("");
-      const years = labels.map((year) => {
-        const sample = person.events.find((event) => event.year === year);
-        return '<span class="yearmark" style="left:' + ((sample ? sample.fraction : 0) * 100) + '%">' + year + "</span>";
-      }).join("");
-      const vertical = person.events.map((event) =>
-        '<article><button data-event="' + event.id + '"><span class="node' + (event.precise ? "" : " uncertain") + '"></span><strong>' + (event.year || "Undated") + '</strong><br>' + event.title + '<br><span class="meta">' + [event.venue, event.city].filter(Boolean).join(" · ") + "</span></button></article>"
-      ).join("");
-      artistEl.innerHTML =
-        (state.via ? '<p class="crumbs"><button id="back" type="button">Back</button> You came here through ' + state.via + "</p>" : "") +
-        "<h2>" + person.name + '</h2><p class="korean">' + person.korean + "</p>" +
-        '<p class="meta">' + (person.birthYear ? "b. " + person.birthYear + " · " : "") + person.count + " documented exhibitions" +
-        (person.earliest ? " · Earliest recorded exhibition " + person.earliest : "") + "</p>" +
-        signature(person.signature) +
-        '<div class="tabs"><span>HISTORY</span><span>CONNECTIONS</span><span>WORKS</span><span>ABOUT</span></div>' +
-        (person.events.length ? '<div class="track"><div class="axis"></div>' + dots + years + '</div><p class="meta">Open circles mark year-only dates.</p><div class="vertical">' + vertical + "</div>" : '<p class="empty">No accepted exhibition records in ROB yet.</p>');
-      if (!returning) {
-        log(previous && previous !== id ? "SECOND_ARTIST_REACHED" : "ARTIST_OPENED", id);
-        if (via && previous && previous !== id) log("CONNECTION_FOLLOWED", previous + "→" + id);
-      }
-    }
-    function openEvent(id) {
-      const person = byId.get(state.id);
-      const event = person && person.events.find((item) => item.id === id);
-      if (!event) return;
-      state.eventId = id;
-      const others = event.artists.filter((artist) => artist.id && artist.id !== person.id);
-      momentEl.hidden = false;
-      momentEl.innerHTML =
-        "<h3>" + event.title + "</h3><p>" + event.when + " · " + event.precision + "</p><p>" + [event.venue, event.city].filter(Boolean).join(" · ") + "</p>" +
-        (event.curators.length ? "<p>Curator: " + event.curators.join(", ") + "</p>" : "") +
-        '<div class="constellation">' + others.map((artist) => '<button data-artist="' + artist.id + '" data-via="' + event.title.replace(/"/g, "") + '">' + artist.name + "</button>").join("") +
-        (event.venue ? "<span>" + event.venue + "</span>" : "") + "</div>" +
-        '<p class="sources">Sources ' + event.sources.length + "</p>" +
-        event.sources.map((url) => '<a href="' + url + '" target="_blank" rel="noreferrer">Official source ↗</a>').join(" ");
-      log("TIMELINE_EVENT_OPENED", id);
-    }
-    document.body.addEventListener("click", (event) => {
-      const result = event.target.closest("[data-id]");
-      if (result) { openArtist(result.dataset.id, null); return; }
-      const exhibition = event.target.closest("[data-event]");
-      if (exhibition) { openEvent(exhibition.dataset.event); return; }
-      const next = event.target.closest("[data-artist]");
-      if (next) { openArtist(next.dataset.artist, next.dataset.via, false); return; }
-      if (event.target.id === "back") {
-        const prev = stack.pop();
-        if (prev) { log("RETURNED_TO_PREVIOUS_ARTIST", prev); openArtist(prev, null, true); }
-        return;
-      }
-      if (event.target.closest(".sources a")) log("SOURCE_OPENED", event.target.getAttribute("href"));
-    });
-    q.addEventListener("input", () => { results.hidden = false; showResults(q.value); log("SEARCH_PERFORMED", q.value.slice(0, 80)); });
-    document.querySelector("#start").addEventListener("click", () => {
-      log("START_HISTORY_PLACEHOLDER", "");
-      results.insertAdjacentHTML("afterbegin", '<p class="hint">First-party artist history is not open in this pilot.</p>');
-    });
-    document.querySelector("#clear").addEventListener("click", () => { localStorage.removeItem(KEY); writeLog([]); });
-    document.querySelector("#export").addEventListener("click", () => {
-      const blob = new Blob([JSON.stringify(readLog(), null, 2)], { type: "application/json" });
-      const link = document.createElement("a");
-      link.href = URL.createObjectURL(blob);
-      link.download = "rob-pilot-session-log.json";
-      link.click();
-    });
-    showResults("");
-    writeLog(readLog());
-  </script>
+  <section class="log" id="human">
+    <p>Human test. Answers stay in this browser.</p>
+    <div class="questions" id="questions"></div>
+    <button id="save-answers" type="button">Save answers</button>
+  </section>
+  <script>window.ROB_PEOPLE = ${json};</script>
+  <script src="app.js"></script>
 </body>
 </html>`;
 }

@@ -12,6 +12,7 @@ import { FROZEN_THRESHOLDS, decideReuse } from "../src/policy";
 import { classifyPair, decideMerge } from "../src/resolve";
 import { robotsAllows } from "../src/robots";
 import { exhibitionFromSinglePage, exhibitionsFromBlocks, exhibitionsFromCards, exhibitionsFromCv, plainPage } from "../src/cvList";
+import { enteredDate, linkParticipant, officialMark, provenanceLabel, submissionMark, submissionMatch } from "../src/hybrid";
 import { exhibitionKey, historySignature, sameCanonicalExhibition, seoBucket, timelineFraction } from "../src/product";
 import type { ExhibitionRecord } from "../src/claims";
 import { classifyManualResearch, classifySource } from "../src/sourcePolicy";
@@ -525,6 +526,33 @@ describe("search rescue rules", () => {
       canonical("The Making of Modern Korean Art: Letters", "Tina Kim Gallery"),
     )).toBe(true);
     expect(sameCanonicalExhibition(canonical("Gallery Hyundai", "Gallery Hyundai"), canonical("Gallery Hyundai", "Gallery Hyundai"))).toBe(false);
+  });
+
+  it("keeps first-party history on one timeline without inventing a date or a person", () => {
+    expect(enteredDate("2018", "DAY")).toEqual({ value: "2018", precision: "YEAR" });
+    expect(enteredDate("2018-03", "DAY").value).toBe("2018-03");
+    expect(enteredDate("", "YEAR")).toEqual({ value: null, precision: "UNKNOWN" });
+    const existing = { title: "The Making of Modern Korean Art: Letters", venue: "Tina Kim Gallery", start: "2025" };
+    expect(submissionMatch(existing, { title: existing.title, venue: existing.venue, start: "2025" })).toBe("ATTACHED");
+    expect(submissionMatch(existing, { title: existing.title, venue: existing.venue, start: "2025-03" })).toBe("ATTACHED");
+    expect(submissionMatch(existing, { title: existing.title, venue: existing.venue, start: "2024" })).toBe("REVIEW_REQUIRED");
+    expect(submissionMatch({ title: "Show", venue: existing.venue, start: "2025" }, { title: "Show", venue: existing.venue, start: "2025" })).toBe("REVIEW_REQUIRED");
+    expect(submissionMatch({ ...existing, start: "2025-03" }, { title: existing.title, venue: existing.venue, start: "2025-06" })).toBe("REVIEW_REQUIRED");
+    expect(submissionMatch(existing, { title: "A different exhibition title here", venue: "Other Gallery", start: "2025" })).toBe("NEW");
+    expect(provenanceLabel([officialMark("https://example.test"), submissionMark("ARTIST_SUBMITTED", null)])).toBe("Artist + official source");
+    expect(provenanceLabel([submissionMark("ARTIST_SUBMITTED", null)])).toBe("Artist added");
+    const people = [
+      { id: "A01", labels: ["Lee Ufan", "이우환"] },
+      { id: "A07", labels: ["Park Seo-Bo", "박서보"] },
+    ];
+    expect(linkParticipant("Lee Ufan", people)).toEqual({ kind: "PILOT_ARTIST", id: "A01", name: "Lee Ufan" });
+    expect(linkParticipant("Avery Demo", people).kind).toBe("UNRESOLVED_PARTICIPANT");
+    expect(linkParticipant("Lee Ufan", people.concat({ id: "L2", labels: ["Lee Ufan"] })).kind).toBe("REVIEW_REQUIRED");
+  });
+});
+
+describe("search snippets", () => {
+  it("rejects a snippet that is not on the page", () => {
     const snippet = buildExhibition({
       title: "From 1998 to Now",
       titleEvidence: "From 1998 to Now",
@@ -566,10 +594,11 @@ describe("isolation", () => {
     expect(combined).not.toMatch(/from ["']next\/navigation["']/);
     expect(combined).not.toMatch(/prisma\/schema\.prisma/);
     const prototype = readFileSync(path.join(pilotRoot(), "view-v2/index.html"), "utf8");
-    expect(prototype).toContain("No accepted exhibition records in ROB yet.");
-    expect(prototype).not.toMatch(/google-analytics|googletagmanager|plausible/);
-    expect(prototype).toContain("localStorage");
-    const script = prototype.slice(prototype.indexOf("<script>") + 8, prototype.lastIndexOf("</script>"));
-    expect(() => new vm.Script(script)).not.toThrow();
+    const client = readFileSync(path.join(pilotRoot(), "view-v2/app.js"), "utf8");
+    expect(client).toContain("No accepted exhibition records in ROB yet.");
+    expect(prototype + client).not.toMatch(/google-analytics|googletagmanager|plausible/);
+    expect(client).toContain("localStorage");
+    expect(client).not.toMatch(/\bfetch\s*\(/);
+    expect(() => new vm.Script(client)).not.toThrow();
   });
 });

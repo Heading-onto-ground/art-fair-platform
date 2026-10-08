@@ -36,4 +36,6 @@ Phase P1-M reads only official pages already classified `ELIGIBLE` for manual re
 
 Phase P2 is a separate pair of tests. P2-A may use a search engine only to discover an official URL, then opens that page. Snippets are not evidence. Its report is `reports/INTERNATIONAL_25_SEARCH_RESCUE.md`. P2-B is the static prototype in `view-v2/`. `view/index.html` stays as the earlier checkpoint. The combined note is `reports/P2_MASTER_REPORT.md`.
 
+Phase P3 does not collect more public-web records. It adds a local hybrid history on top of the records already accepted: one timeline, explicit provenance, and a human-test sheet. Reports: `reports/HYBRID_MODEL_CANARY.md` and `reports/HUMAN_TEST_PROTOCOL.md`.
+
 Page snapshots, if a later step fetches them, go in `.local-snapshots/` and are gitignored.
