@@ -6,6 +6,7 @@ import TopBar from "@/app/components/TopBar";
 import { trackHistory } from "@/lib/history/analytics";
 import type { HistorySearchResult } from "@/lib/history/types";
 import "./history.css";
+import "./home.css";
 
 export default function HistoryHome() {
   const [query, setQuery] = useState("");
