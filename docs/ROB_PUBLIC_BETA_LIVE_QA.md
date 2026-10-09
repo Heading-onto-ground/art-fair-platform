@@ -20,4 +20,6 @@ Passed locally:
 
 SEO on the local build: Lee Ufan and Park Seo-Bo have no noindex tag. Ha Chong-Hyun and Chung Sang-Hwa are `noindex, follow`. The sitemap includes `/artists/lee-ufan` and `/artists/park-seo-bo` and does not include the two low-density artist pages.
 
-Live `https://rob-roleofbridge.com/` was not opened in this pass. Deployment is still required before a live smoke test.
+`https://rob-roleofbridge.com/` was opened after the push. It is still the previous production app: the homepage title is “ROB — Role of Bridge | Global Art Platform” and the page is the activity-certification survey, not artist search. The new history journey was not smoke-tested there.
+
+The push reached `origin/main` (`84a6901`). GitHub’s Vercel status is “Deployment failed,” and no new production deployment was created. The previous production deployment remains GitHub deployment `6842277151` (`82d92b6`, 2026-10-04). That same Vercel failure was already present on the previous main commit. The Vercel CLI on this machine is logged out, so a manual production deploy was not started.
