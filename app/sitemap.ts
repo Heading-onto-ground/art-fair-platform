@@ -151,15 +151,75 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     url(`/community/${p.id}`, p.createdAt, { changeFrequency: "weekly", priority: 0.4 })
   );
 
+  const historyArtists = await safe<{ slug: string; updatedAt: Date }>("history-artists", () =>
+    prisma.$queryRawUnsafe(
+      `SELECT e.slug, e."updatedAt"
+       FROM "ArtistEntity" e
+       WHERE (
+         SELECT COUNT(DISTINCT p."exhibitionId")
+         FROM "HistoryParticipation" p
+         JOIN "Exhibition" x ON x.id = p."exhibitionId"
+         LEFT JOIN "ExhibitionHistoryMeta" m ON m."exhibitionId" = x.id
+         WHERE p."artistEntityId" = e.id
+           AND x."isPublic" = true
+           AND (m."exhibitionId" IS NULL OR m."clearanceStatus" = 'APPROVED')
+       ) >= 3
+       ORDER BY e."updatedAt" DESC
+       LIMIT ${MAX_PER_TYPE}`,
+    ),
+  );
+  const historyArtistPages: Entry[] = historyArtists.map((artist) =>
+    url(`/artists/${encodeURIComponent(artist.slug)}`, artist.updatedAt, { changeFrequency: "weekly", priority: 0.8 }),
+  );
+
+  const historyExhibitions = await safe<{ slug: string }>("history-exhibitions", () =>
+    prisma.$queryRawUnsafe(
+      `SELECT m.slug
+       FROM "ExhibitionHistoryMeta" m
+       JOIN "Exhibition" x ON x.id = m."exhibitionId"
+       WHERE m.slug IS NOT NULL
+         AND m."clearanceStatus" = 'APPROVED'
+         AND x."isPublic" = true
+         AND EXISTS (
+           SELECT 1 FROM "HistoryParticipation" p WHERE p."exhibitionId" = x.id
+         )
+       LIMIT ${MAX_PER_TYPE}`,
+    ),
+  );
+  const historyExhibitionPages: Entry[] = historyExhibitions.map((exhibition) =>
+    url(`/exhibitions/${encodeURIComponent(exhibition.slug)}`, undefined, { changeFrequency: "monthly", priority: 0.6 }),
+  );
+
+  const historySpaces = await safe<{ slug: string }>("history-spaces", () =>
+    prisma.$queryRawUnsafe(
+      `SELECT s.slug
+       FROM "SpaceSlug" s
+       WHERE EXISTS (
+         SELECT 1 FROM "Exhibition" x
+         LEFT JOIN "ExhibitionHistoryMeta" m ON m."exhibitionId" = x.id
+         WHERE x."spaceId" = s."spaceId"
+           AND x."isPublic" = true
+           AND (m."exhibitionId" IS NULL OR m."clearanceStatus" = 'APPROVED')
+       )
+       LIMIT ${MAX_PER_TYPE}`,
+    ),
+  );
+  const historySpacePages: Entry[] = historySpaces.map((space) =>
+    url(`/spaces/${encodeURIComponent(space.slug)}`, undefined, { changeFrequency: "monthly", priority: 0.5 }),
+  );
+
   return [
     ...staticPages,
     ...countryPages,
     ...cityPages,
     ...artistPages,
+    ...historyArtistPages,
     ...galleryPages,
     ...exhibitionPages,
+    ...historyExhibitionPages,
     ...openCallPages,
     ...spacePages,
+    ...historySpacePages,
     ...curatorPages,
     ...communityPages,
   ];

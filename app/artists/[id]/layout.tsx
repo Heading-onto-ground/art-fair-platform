@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
 import { prisma } from "@/lib/prisma";
 import { pageMetadata } from "@/lib/seo";
+import { loadPublicArtist } from "@/lib/history/queries";
+import { artistPageDescription, artistPageTitle } from "@/lib/history/seo";
 
 export async function generateMetadata({
   params,
@@ -13,6 +15,21 @@ export async function generateMetadata({
       "Discover artists and their practice records on ROB — Role of Bridge, a global art platform.",
     path: `/artists/${params.id}`,
   });
+
+  try {
+    const loaded = await loadPublicArtist(params.id);
+    if (loaded.kind === "history" || loaded.kind === "redirect") {
+      return pageMetadata({
+        title: artistPageTitle(loaded.artist.canonicalName),
+        description: artistPageDescription(loaded.artist),
+        path: `/artists/${loaded.artist.slug}`,
+        index: loaded.artist.indexEligible,
+        type: "profile",
+      });
+    }
+  } catch {
+    // History tables may not be applied yet. Fall through to the account profile.
+  }
 
   try {
     const a = await prisma.artistProfile.findFirst({

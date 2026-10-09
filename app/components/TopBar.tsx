@@ -92,7 +92,7 @@ async function fetchMe(options?: { preferCache?: boolean }): Promise<MeResponse 
   }
 }
 
-export default function TopBar() {
+export default function TopBar({ hideOnMobile = false }: { hideOnMobile?: boolean } = {}) {
   const router = useRouter();
   const pathname = usePathname();
   const [me, setMe] = useState<MeResponse | null>(null);
@@ -235,21 +235,22 @@ export default function TopBar() {
 
   // ── Grouped nav entries ──────────────────────────────────────────────────
   const artistNav = useMemo((): NavEntry[] => [
-    { path: "/", label: lang === "ko" ? "홈" : lang === "ja" ? "ホーム" : "HOME" },
-    { path: "/artist/ritual", label: lang === "ko" ? "리추얼" : lang === "ja" ? "リチュアル" : "RITUAL" },
+    { path: "/", label: lang === "ko" ? "검색" : lang === "ja" ? "検索" : "SEARCH" },
+    { path: "/now", label: lang === "ko" ? "지금" : lang === "ja" ? "NOW" : "NOW" },
     { path: "/explore", label: lang === "ko" ? "탐색" : lang === "ja" ? "探索" : "EXPLORE" },
-    { path: "/open-calls", label: t("nav_open_calls", lang) },
-    { path: "/artist/me", label: lang === "ko" ? "마이페이지" : lang === "ja" ? "マイページ" : "MY PAGE" },
-    { path: "/guide?role=artist", label: lang === "ko" ? "가이드" : lang === "ja" ? "ガイド" : "GUIDE" },
-    { path: "/support", label: lang === "ko" ? "고객 지원" : lang === "ja" ? "サポート" : "SUPPORT" },
+    { path: "/discover", label: lang === "ko" ? "발견" : lang === "ja" ? "発見" : "DISCOVER" },
+    { path: "/artist/me", label: lang === "ko" ? "프로필" : lang === "ja" ? "プロフィール" : "PROFILE" },
     {
       label: lang === "ko" ? "더 보기" : lang === "ja" ? "もっと見る" : "MORE",
       items: [
-        { path: "/artist/me#applications", label: t("nav_my_calls", lang) },
-        { path: "/discover", label: lang === "ko" ? "발견" : lang === "ja" ? "発見" : "DISCOVER" },
+        { path: "/exhibitions/new", label: lang === "ko" ? "활동 기록" : "ADD ACTIVITY" },
+        { path: "/artist/ritual", label: lang === "ko" ? "리추얼" : lang === "ja" ? "リチュアル" : "RITUAL" },
+        { path: "/open-calls", label: t("nav_open_calls", lang) },
         { path: "/artists", label: t("nav_artists", lang) },
         { path: "/galleries", label: t("nav_galleries", lang) },
         { path: "/curators", label: lang === "ko" ? "큐레이터" : lang === "ja" ? "キュレーター" : "CURATORS" },
+        { path: "/guide?role=artist", label: lang === "ko" ? "가이드" : lang === "ja" ? "ガイド" : "GUIDE" },
+        { path: "/support", label: lang === "ko" ? "고객 지원" : lang === "ja" ? "サポート" : "SUPPORT" },
         { path: "/community", label: t("nav_community", lang) },
         { path: "/contact", label: lang === "ko" ? "문의" : lang === "ja" ? "お問い合わせ" : "CONTACT" },
       ],
@@ -317,12 +318,13 @@ export default function TopBar() {
 
   function isActive(path: string): boolean {
     const base = path.split("?")[0].split("#")[0];
-    return pathname === base || (base !== "/" && pathname.startsWith(base + "/"));
+    if (base === "/") return pathname === "/" || pathname === "/studio";
+    return pathname === base || pathname.startsWith(base + "/");
   }
 
   return (
     <>
-      <header style={{ position: "sticky", top: 0, zIndex: 50, background: "#FDFBF7", borderBottom: "1px solid #E8E3DB", padding: "14px 20px", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+      <header className={hideOnMobile ? "topbar-hide-mobile" : undefined} style={{ position: "sticky", top: 0, zIndex: 50, background: "#FDFBF7", borderBottom: "1px solid #E8E3DB", padding: "14px 20px", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
         {/* Logo */}
         <div onClick={() => navigate("/")} style={{ cursor: "pointer", display: "flex", alignItems: "baseline", gap: 10, flexShrink: 0 }}>
           <span style={{ fontFamily: S, fontSize: 22, fontWeight: 600, color: "#1A1A1A", letterSpacing: "0.05em" }} suppressHydrationWarning>
@@ -439,10 +441,16 @@ export default function TopBar() {
                 ))}
               </select>
               <button
+                onClick={() => router.push("/now")}
+                style={{ padding: "8px 12px", border: "1px solid #E8E3DB", background: "transparent", color: "#4A4A4A", fontFamily: F, fontSize: 10, fontWeight: 500, letterSpacing: "0.08em", textTransform: "uppercase", cursor: "pointer", marginRight: 8 }}
+              >
+                {lang === "ko" ? "지금" : "Now"}
+              </button>
+              <button
                 onClick={() => router.push("/")}
                 style={{ padding: "8px 12px", border: "1px solid #E8E3DB", background: "transparent", color: "#4A4A4A", fontFamily: F, fontSize: 10, fontWeight: 500, letterSpacing: "0.08em", textTransform: "uppercase", cursor: "pointer", marginRight: 8 }}
               >
-                {lang === "ko" ? "홈" : lang === "ja" ? "ホーム" : "Home"}
+                {lang === "ko" ? "검색" : "Search"}
               </button>
               <button
                 onClick={() => router.push("/about")}
@@ -690,6 +698,18 @@ export default function TopBar() {
           </div>
         ) : (
           <div style={{ padding: "16px 24px" }}>
+            <button
+              onClick={() => navigate("/now")}
+              style={{ width: "100%", padding: "12px", border: "1px solid #E8E3DB", background: "transparent", color: "#4A4A4A", fontFamily: F, fontSize: 10, fontWeight: 500, letterSpacing: "0.09em", textTransform: "uppercase", cursor: "pointer", marginBottom: 8 }}
+            >
+              {lang === "ko" ? "지금" : "Now"}
+            </button>
+            <button
+              onClick={() => navigate("/")}
+              style={{ width: "100%", padding: "12px", border: "1px solid #E8E3DB", background: "transparent", color: "#4A4A4A", fontFamily: F, fontSize: 10, fontWeight: 500, letterSpacing: "0.09em", textTransform: "uppercase", cursor: "pointer", marginBottom: 8 }}
+            >
+              {lang === "ko" ? "검색" : "Search"}
+            </button>
             <button
               onClick={() => navigate("/about")}
               style={{ width: "100%", padding: "12px", border: "1px solid #E8E3DB", background: "transparent", color: "#4A4A4A", fontFamily: F, fontSize: 10, fontWeight: 500, letterSpacing: "0.09em", textTransform: "uppercase", cursor: "pointer", marginBottom: 8 }}
