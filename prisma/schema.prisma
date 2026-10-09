@@ -798,10 +798,16 @@ model ExhibitionHistoryMeta {
   endYear         Int?
   endMonth        Int?
   endDay          Int?
-  clearanceStatus String     @default("REVIEW_REQUIRED") // APPROVED | REVIEW_REQUIRED | REJECTED
-  contributorKind String?    // artist | gallery | institution
+  clearanceStatus String     @default("REVIEW_REQUIRED") // retained; publication does not use this as a license
+  contributorKind String?    // artist | gallery | institution, only after an approved claim
+  publicationStatus String   @default("DRAFT") // DRAFT | PENDING_REVIEW | PUBLIC | REJECTED
+  origin          String     @default("ROB_RESEARCHED") // ROB_RESEARCHED | ARTIST_SUBMITTED | GALLERY_SUBMITTED | INSTITUTION_SUBMITTED | LEGACY_FIRST_PARTY
+  sourceClearance String     @default("NOT_APPLICABLE") // APPROVED | REVIEW_REQUIRED | REJECTED | NOT_APPLICABLE
 
   @@index([clearanceStatus])
+  @@index([publicationStatus])
+  @@index([origin])
+  @@index([sourceClearance])
   @@index([startYear])
 }
 
@@ -847,6 +853,9 @@ model HistorySource {
   sourceType       String
   retrievedAt      DateTime?
   clearanceStatus  String             @default("REVIEW_REQUIRED") // APPROVED | REVIEW_REQUIRED | REJECTED
+  internalUseDecision String          @default("HOLD") // ALLOW_LIMITED | HOLD | BLOCK
+  externalPermission String           @default("NOT_OBTAINED") // GRANTED | NOT_OBTAINED | NOT_APPLICABLE
+  contentScope     String             @default("UNSPECIFIED") // FACTUAL_METADATA_ONLY | EXPRESSIVE_TEXT | IMAGE | DATABASE_BULK_CONTENT | UNSPECIFIED
   createdAt        DateTime           @default(now())
   exhibitions      ExhibitionSource[]
 
@@ -870,9 +879,29 @@ model HistoryImportRecord {
   productionClearance String    @default("UNRESOLVED")
   reviewStatus        String    @default("REVIEW_REQUIRED")
   publishedAt         DateTime?
+  productionEntityId  String?
+  sourceDecision      String?
+  importedAt          DateTime?
+  importedBy          String?
+  sourceUrl           String?
+  sourceFamily        String?
+  internalUseDecision String?
+  externalPermission  String?
+  importVersion       String?
   createdAt           DateTime  @default(now())
 
   @@index([reviewStatus])
+}
+
+model HistoryCorrectionReport {
+  id           String   @id @default(cuid())
+  exhibitionId String?
+  artistSlug   String?
+  kind         String
+  note         String
+  createdAt    DateTime @default(now())
+
+  @@index([createdAt])
 }
 
 model HistorySignal {

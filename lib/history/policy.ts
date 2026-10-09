@@ -21,6 +21,7 @@ export const HISTORY_EVENTS = [
   "CLAIM_SUBMITTED",
   "EXHIBITION_ADD_STARTED",
   "EXHIBITION_ADDED",
+  "REPORT_ISSUE_STARTED",
 ] as const;
 
 export type HistoryEventName = (typeof HISTORY_EVENTS)[number];
@@ -40,6 +41,26 @@ export function artistSitemapEligible(count: number): boolean {
   return isIndexEligible(densityForCount(count));
 }
 
+export type PublicationStatus = "DRAFT" | "PENDING_REVIEW" | "PUBLIC" | "REJECTED";
+export type HistoryOrigin =
+  | "ROB_RESEARCHED"
+  | "ARTIST_SUBMITTED"
+  | "GALLERY_SUBMITTED"
+  | "INSTITUTION_SUBMITTED"
+  | "LEGACY_FIRST_PARTY";
+export type SourceClearance = "APPROVED" | "REVIEW_REQUIRED" | "REJECTED" | "NOT_APPLICABLE";
+export type InternalUseDecision = "ALLOW_LIMITED" | "HOLD" | "BLOCK";
+export type ExternalPermission = "GRANTED" | "NOT_OBTAINED" | "NOT_APPLICABLE";
+export type ContentScope = "FACTUAL_METADATA_ONLY" | "EXPRESSIVE_TEXT" | "IMAGE" | "DATABASE_BULK_CONTENT" | "UNSPECIFIED";
+export type PublicBetaDecision =
+  | "PUBLIC_BETA_FIRST_PARTY_SEED_READY"
+  | "PUBLIC_BETA_CLEARANCE_SEED_READY"
+  | "PUBLIC_BETA_CONTENT_GATE_BLOCKED"
+  | "PUBLIC_BETA_DATABASE_GATE_BLOCKED";
+
+export const USEFUL_ARTIST_MIN = 3;
+export const DENSE_HISTORY_MIN = 8;
+
 export function mayPublishHistoryRecord(input: {
   pilotOnly?: boolean;
   usageStatus?: string | null;
@@ -53,19 +74,180 @@ export function mayPublishHistoryRecord(input: {
   return input.clearance === "APPROVED";
 }
 
-export function contentGateDecision(input: {
-  approvedSources: number;
-  importedExhibitions: number;
-  historyReady: number;
-  rich: number;
-}): "PASS" | "PUBLIC_BETA_CONTENT_GATE_BLOCKED" {
-  const indexEligible = input.historyReady + input.rich;
-  const canDemonstrate =
-    input.approvedSources >= 1 &&
-    input.importedExhibitions >= 1 &&
-    indexEligible >= 1 &&
-    (input.rich >= 1 || input.historyReady >= 2);
-  return canDemonstrate ? "PASS" : "PUBLIC_BETA_CONTENT_GATE_BLOCKED";
+const FIRST_PARTY_ORIGINS: readonly HistoryOrigin[] = [
+  "ARTIST_SUBMITTED",
+  "GALLERY_SUBMITTED",
+  "INSTITUTION_SUBMITTED",
+  "LEGACY_FIRST_PARTY",
+];
+
+export function recordIsPublic(input: {
+  publicationStatus: string;
+  origin: string;
+  sourceClearance: string;
+  internalUseDecision?: string | null;
+  contentScope?: string | null;
+}): boolean {
+  if (input.publicationStatus !== "PUBLIC" || input.sourceClearance === "REJECTED") return false;
+  if (input.origin === "ROB_RESEARCHED") {
+    if (input.sourceClearance === "APPROVED") return true;
+    return input.internalUseDecision === "ALLOW_LIMITED" && input.contentScope === "FACTUAL_METADATA_ONLY";
+  }
+  return (FIRST_PARTY_ORIGINS as readonly string[]).includes(input.origin);
+}
+
+export function limitedPublicFactualDecision(input: {
+  publicPage: boolean;
+  loginRequired: boolean;
+  paywall: boolean;
+  captchaBypass: boolean;
+  technicalCircumvention: boolean;
+  officialArtSource: boolean;
+  factualMetadataOnly: boolean;
+  copiesProse: boolean;
+  copiesImages: boolean;
+  sourceUrlPreserved: boolean;
+  bulkDatabaseClone: boolean;
+  explicitProhibition: boolean;
+  correctionPath: boolean;
+  independentGraph: boolean;
+}): InternalUseDecision {
+  if (input.explicitProhibition || input.loginRequired || input.paywall || input.captchaBypass || input.technicalCircumvention || input.bulkDatabaseClone) {
+    return "BLOCK";
+  }
+  const allowed =
+    input.publicPage &&
+    input.officialArtSource &&
+    input.factualMetadataOnly &&
+    !input.copiesProse &&
+    !input.copiesImages &&
+    input.sourceUrlPreserved &&
+    input.correctionPath &&
+    input.independentGraph;
+  return allowed ? "ALLOW_LIMITED" : "HOLD";
+}
+
+export function visitorSourceLabel(sourceName: string | null | undefined): string {
+  const name = sourceName?.trim();
+  return name ? `Source: ${name}` : "Source not recorded";
+}
+
+export function sourceClearanceForSubmission(hasExternalSource: boolean): SourceClearance {
+  return hasExternalSource ? "REVIEW_REQUIRED" : "NOT_APPLICABLE";
+}
+
+export function firstPartyWrite(input: { claimApproved: boolean; hasExternalSource: boolean }): {
+  publicationStatus: PublicationStatus;
+  origin: "ARTIST_SUBMITTED";
+  sourceClearance: SourceClearance;
+  isPublic: boolean;
+  contributorKind: ContributorKind | null;
+  clearanceStatus: "REVIEW_REQUIRED";
+} {
+  return {
+    origin: "ARTIST_SUBMITTED",
+    publicationStatus: input.claimApproved ? "PUBLIC" : "PENDING_REVIEW",
+    sourceClearance: sourceClearanceForSubmission(input.hasExternalSource),
+    isPublic: input.claimApproved,
+    contributorKind: input.claimApproved ? "artist" : null,
+    clearanceStatus: "REVIEW_REQUIRED",
+  };
+}
+
+export function artistAddedLabel(input: { claimApproved: boolean; sourceClearance: string }): string {
+  if (!input.claimApproved) return "Pending review";
+  if (input.sourceClearance === "APPROVED") return "Artist + official source";
+  return "Artist added";
+}
+
+export function seoIndexEligible(input: { publicationStatus: string; exhibitionCount: number }): boolean {
+  return input.publicationStatus === "PUBLIC" && isIndexEligible(densityForCount(input.exhibitionCount));
+}
+
+export function classifyLegacyExhibition(input: {
+  isPublic: boolean;
+  createdByProfileId: string | null;
+  hasHistoryMeta: boolean;
+  crawlerWritten: boolean;
+}): "LEGACY_FIRST_PARTY" | null {
+  if (input.crawlerWritten || input.hasHistoryMeta || !input.isPublic || !input.createdByProfileId) return null;
+  return "LEGACY_FIRST_PARTY";
+}
+
+export function countBridgePaths(exhibitions: { artistIds: string[] }[]): { paths: number; artists: number } {
+  const artists = new Set<string>();
+  let paths = 0;
+  for (const exhibition of exhibitions) {
+    const ids = [...new Set(exhibition.artistIds.filter(Boolean))];
+    if (ids.length < 2) continue;
+    for (const id of ids) artists.add(id);
+    paths += ids.length * (ids.length - 1);
+  }
+  return { paths, artists: artists.size };
+}
+
+export function betaSeedDecision(input: {
+  artistsAtLeast1: number;
+  artistsAtLeast8: number;
+  bridgePaths: number;
+  spacesWithExhibitions: number;
+}): "PUBLIC_BETA_FIRST_PARTY_SEED_READY" | "PUBLIC_BETA_CONTENT_GATE_BLOCKED" {
+  const ready =
+    input.artistsAtLeast1 >= USEFUL_ARTIST_MIN &&
+    input.artistsAtLeast8 >= 1 &&
+    input.bridgePaths >= 1 &&
+    input.spacesWithExhibitions >= 1;
+  return ready ? "PUBLIC_BETA_FIRST_PARTY_SEED_READY" : "PUBLIC_BETA_CONTENT_GATE_BLOCKED";
+}
+
+export function publicBetaDecision(input: {
+  databaseConfirmed: boolean;
+  recoveryConfirmed: boolean;
+  seed: "PUBLIC_BETA_FIRST_PARTY_SEED_READY" | "PUBLIC_BETA_CONTENT_GATE_BLOCKED";
+  clearanceSeedReady: boolean;
+}): PublicBetaDecision {
+  if (!input.databaseConfirmed || !input.recoveryConfirmed) return "PUBLIC_BETA_DATABASE_GATE_BLOCKED";
+  if (input.seed === "PUBLIC_BETA_FIRST_PARTY_SEED_READY") return input.seed;
+  if (input.clearanceSeedReady) return "PUBLIC_BETA_CLEARANCE_SEED_READY";
+  return "PUBLIC_BETA_CONTENT_GATE_BLOCKED";
+}
+
+export function selectiveImportDecision(input: {
+  usageStatus?: string | null;
+  reviewDecision?: string | null;
+  requestedIds: string[];
+  approvedIds: string[];
+}): { ok: boolean; reason: string } {
+  if (input.requestedIds.length === 0) return { ok: false, reason: "record-id-required" };
+  if (input.reviewDecision !== "APPROVED") return { ok: false, reason: "not-approved" };
+  const approved = new Set(input.approvedIds);
+  if (!input.requestedIds.every((id) => approved.has(id))) return { ok: false, reason: "not-in-approved-set" };
+  return { ok: true, reason: "selective" };
+}
+
+export function selectiveImportLog(input: {
+  pilotRecordId: string;
+  productionEntityId: string | null;
+  importedBy: string;
+  at: string | null;
+}): {
+  pilotRecordId: string;
+  productionEntityId: string | null;
+  sourceDecision: "APPROVED";
+  importedAt: string | null;
+  importedBy: string;
+} {
+  return {
+    pilotRecordId: input.pilotRecordId,
+    productionEntityId: input.productionEntityId,
+    sourceDecision: "APPROVED",
+    importedAt: input.at,
+    importedBy: input.importedBy,
+  };
+}
+
+export function containsDestructiveSchema(source: string): boolean {
+  return /\bDROP\s+(TABLE|COLUMN)\b/i.test(source);
 }
 
 export function slugifyName(name: string): string {

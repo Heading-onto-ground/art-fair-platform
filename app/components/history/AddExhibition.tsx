@@ -50,6 +50,10 @@ export default function AddExhibition() {
       return;
     }
     trackHistory("EXHIBITION_ADDED");
+    if (data.publicationStatus !== "PUBLIC") {
+      setMessage("Saved for review. It is not public, and it is not labeled Artist added, until a claim for this artist is approved.");
+      return;
+    }
     router.push(artistSlug ? `/artists/${artistSlug}` : `/exhibitions/${data.slug}`);
   }
 

@@ -1,6 +1,6 @@
 import type { PrismaClient } from "@prisma/client";
 import { prisma as untypedPrisma } from "@/lib/prisma";
-import { classifyParticipant, uniqueSlug, validateExhibitionInput } from "@/lib/history/policy";
+import { classifyParticipant, firstPartyWrite, uniqueSlug, validateExhibitionInput } from "@/lib/history/policy";
 
 const prisma = untypedPrisma as PrismaClient;
 
@@ -171,6 +171,20 @@ export async function addArtistExhibition(input: {
     }
   }
   const profile = await prisma.artistProfile.findUnique({ where: { userId: input.userId }, select: { id: true } });
+  let claimApproved = false;
+  let ownerId: string | null = null;
+  if (input.artistSlug) {
+    const owner = await prisma.artistEntity.findUnique({ where: { slug: input.artistSlug }, select: { id: true } });
+    if (owner) {
+      ownerId = owner.id;
+      const claim = await prisma.artistEntityClaim.findFirst({
+        where: { artistEntityId: owner.id, userId: input.userId, status: "APPROVED" },
+        select: { id: true },
+      });
+      claimApproved = Boolean(claim);
+    }
+  }
+  const write = firstPartyWrite({ claimApproved, hasExternalSource: Boolean(sourceUrl) });
   const space = await findOrCreateSpace(input.spaceName, input.city, input.country);
   const curator = await findOrCreateCurator(input.curatorName);
   const slug = await nextSlug(
@@ -185,7 +199,7 @@ export async function addArtistExhibition(input: {
       spaceId: space?.id ?? null,
       curatorId: curator?.id ?? null,
       createdBy: profile?.id ?? null,
-      isPublic: true,
+      isPublic: write.isPublic,
       historyMeta: {
         create: {
           slug,
@@ -196,18 +210,18 @@ export async function addArtistExhibition(input: {
           endYear: dates.endYear,
           endMonth: dates.endMonth,
           endDay: dates.endDay,
-          clearanceStatus: "APPROVED",
-          contributorKind: "artist",
+          clearanceStatus: write.clearanceStatus,
+          contributorKind: write.contributorKind,
+          publicationStatus: write.publicationStatus,
+          origin: write.origin,
+          sourceClearance: write.sourceClearance,
         },
       },
     },
   });
 
-  if (input.artistSlug) {
-    const owner = await prisma.artistEntity.findUnique({ where: { slug: input.artistSlug }, select: { id: true } });
-    if (owner) {
-      await prisma.historyParticipation.create({ data: { exhibitionId: exhibition.id, artistEntityId: owner.id } });
-    }
+  if (ownerId && claimApproved) {
+    await prisma.historyParticipation.create({ data: { exhibitionId: exhibition.id, artistEntityId: ownerId } });
   }
 
   for (const label of input.participantNames.map((name) => name.trim()).filter(Boolean)) {
@@ -236,5 +250,5 @@ export async function addArtistExhibition(input: {
     await prisma.exhibitionSource.create({ data: { exhibitionId: exhibition.id, sourceId: source.id } });
   }
 
-  return { ok: true as const, slug, exhibitionId: exhibition.id };
+  return { ok: true as const, slug, exhibitionId: exhibition.id, publicationStatus: write.publicationStatus };
 }

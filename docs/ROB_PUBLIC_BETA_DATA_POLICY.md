@@ -1,19 +1,36 @@
 # ROB public beta data policy
 
-Pilot records are not production records.
+A factual record can be public without an institution approving ROB. External permission and ROB's internal use decision are separate. See `docs/ROB_PUBLIC_WEB_SOURCE_POLICY.md`.
 
-Every pilot exhibition remains `PILOT_ONLY` with `production_clearance = UNRESOLVED`. The 468-record pilot file is not imported by a page, a route, or a script in this phase. `POST /api/admin/history/import` refuses a `PILOT_ONLY` or `UNRESOLVED` body and does not read the pilot dataset even when a body says `APPROVED`.
+`internalUseDecision = ALLOW_LIMITED` with `externalPermission = NOT_OBTAINED` means ROB stored a narrow factual record from a public official page and linked back to it. The visitor label is `Source: [name]`. That label is provenance. It is not a claim that the source approved ROB.
 
-## Clearance
+A factual record can be public without being an official source. Three questions stay separate:
 
-| State | Public history |
-| --- | --- |
-| `APPROVED` | Can be shown and, if the page is dense enough, indexed |
-| `REVIEW_REQUIRED` | Stored, not shown as an official source, not in the history sitemap |
-| `REJECTED` | Not shown |
-| `UNRESOLVED` / `PILOT_ONLY` | Not a production permission |
+1. Publication eligibility: `DRAFT`, `PENDING_REVIEW`, `PUBLIC`, `REJECTED`.
+2. Provenance: `ROB_RESEARCHED`, `ARTIST_SUBMITTED`, `GALLERY_SUBMITTED`, `INSTITUTION_SUBMITTED`, `LEGACY_FIRST_PARTY`.
+3. SEO eligibility: density. A public page may stay `noindex`.
 
-An artist-submitted exhibition is marked artist-added. Its optional source URL stays `REVIEW_REQUIRED` until a person approves that source.
+## Two ways onto the public history
+
+An external documented record is public only when its origin is `ROB_RESEARCHED`, it has an external source, that source clearance is `APPROVED`, and the record itself is accepted.
+
+A first-party record is public when an authorized contributor submitted it and it was accepted. The origin is shown. It does not have to become an official source. With no external source, source clearance is `NOT_APPLICABLE`.
+
+An approved claim on that artist entity is required before the record is public and labeled `Artist added`. Before approval the record stays `PENDING_REVIEW` and is not labeled as the artist. The same rule will apply to gallery and institution submissions.
+
+`Official source` is shown only when an approved external source exists. `Artist added` is never promoted to that label without one. Both together read `Artist + official source`.
+
+## Pilot records
+
+Every pilot exhibition remains `PILOT_ONLY` with `production_clearance = UNRESOLVED` until that specific record is reviewed. The 468-record pilot file is not imported by a page, a route, or a script. `POST /api/admin/history/import` does not read the pilot dataset.
+
+A `PILOT_ONLY` record can be selected only by its own id, and only when that id is in the approved set with review decision `APPROVED`. Approving one record does not approve the rest of its source. The route still does not write while the database target and recovery path are unconfirmed. An import log, when a write is later allowed, keeps the pilot record id, production entity id, source decision, imported time, and process.
+
+`data/production-clearance/source-review.json` is the clearance queue. Rights that are unclear stay `REVIEW_REQUIRED`. Public access and `robots.txt` are not a reuse license. This phase selected no candidates and approved none.
+
+## Legacy first-party records
+
+An existing public `Exhibition` is `LEGACY_FIRST_PARTY` only when `createdBy` is an artist profile and the row was not produced by a crawler. It is not relabeled as an official source. Rows with no creator are not treated as first-party.
 
 ## What is not invented
 
@@ -29,8 +46,8 @@ An artist-submitted exhibition is marked artist-added. Its optional source URL s
 
 ## Launch set
 
-Public beta should open with a few dense, production-cleared histories. It should not open with hundreds of thin names. See `docs/ROB_PUBLIC_BETA_CONTENT_GATE.md`.
+The beta can open on a few real histories and one artist-to-artist exhibition path. It does not need the International 25, curators, rankings, or hundreds of artists. See `docs/ROB_PUBLIC_BETA_CONTENT_GATE.md`.
 
 ## Existing accounts
 
-Backfill creates one entity per existing artist profile and links it. It does not delete works, exhibitions, or accounts. First-party public exhibitions remain visible through the existing `ExhibitionArtist` relation.
+Backfill creates one entity per existing artist profile and links it. It does not delete works, exhibitions, or accounts. It was not run in this phase.

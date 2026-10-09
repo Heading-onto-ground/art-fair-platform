@@ -10,7 +10,9 @@ import {
   type DotMark,
 } from "@/lib/history/display";
 import {
+  countBridgePaths,
   dedupeById,
+  DENSE_HISTORY_MIN,
   densityForCount,
   formatHistoryDate,
   isFilledMarker,
@@ -18,7 +20,10 @@ import {
   isIndexEligible,
   legacyArtistRedirect,
   provenanceLabel,
+  recordIsPublic,
+  visitorSourceLabel,
   type ContributorKind,
+  type HistoryOrigin,
 } from "@/lib/history/policy";
 import type {
   HistoryArtistView,
@@ -35,10 +40,50 @@ const prisma = untypedPrisma as PrismaClient;
 
 const publicExhibitionWhere: Prisma.ExhibitionWhereInput = {
   isPublic: true,
-  OR: [{ historyMeta: { is: null } }, { historyMeta: { is: { clearanceStatus: "APPROVED" } } }],
+  OR: [
+    { historyMeta: { is: null }, createdBy: { not: null } },
+    {
+      historyMeta: {
+        is: {
+          publicationStatus: "PUBLIC",
+          sourceClearance: { not: "REJECTED" },
+          OR: [
+            { origin: { in: ["ARTIST_SUBMITTED", "GALLERY_SUBMITTED", "INSTITUTION_SUBMITTED", "LEGACY_FIRST_PARTY"] } },
+            { origin: "ROB_RESEARCHED", sourceClearance: "APPROVED" },
+          ],
+        },
+      },
+    },
+    {
+      historyMeta: {
+        is: {
+          publicationStatus: "PUBLIC",
+          origin: "ROB_RESEARCHED",
+          sourceClearance: { not: "REJECTED" },
+        },
+      },
+      historySources: {
+        some: {
+          source: {
+            internalUseDecision: "ALLOW_LIMITED",
+            contentScope: "FACTUAL_METADATA_ONLY",
+          },
+        },
+      },
+    },
+  ],
 };
 
-type SourceRow = { id: string; url: string; sourceName: string; sourceType: string; clearanceStatus: string };
+type SourceRow = {
+  id: string;
+  url: string;
+  sourceName: string;
+  sourceType: string;
+  clearanceStatus: string;
+  internalUseDecision: string;
+  externalPermission: string;
+  contentScope: string;
+};
 type ArtistRow = { id: string; slug: string; canonicalName: string; nativeName: string | null };
 type MetaRow = {
   slug: string | null;
@@ -51,6 +96,9 @@ type MetaRow = {
   endDay: number | null;
   clearanceStatus: string;
   contributorKind: string | null;
+  publicationStatus: string;
+  origin: string;
+  sourceClearance: string;
 };
 
 type ExhibitionRow = {
@@ -78,16 +126,42 @@ const exhibitionInclude = {
   unresolvedNames: { select: { label: true, status: true } },
 } satisfies Prisma.ExhibitionInclude;
 
-function contributorOf(row: ExhibitionRow): ContributorKind | null {
-  const kind = row.historyMeta?.contributorKind;
-  if (kind === "artist" || kind === "gallery" || kind === "institution") return kind;
-  return row.createdBy ? "artist" : null;
+function originOf(row: ExhibitionRow): HistoryOrigin {
+  const origin = row.historyMeta?.origin;
+  if (
+    origin === "ROB_RESEARCHED" ||
+    origin === "ARTIST_SUBMITTED" ||
+    origin === "GALLERY_SUBMITTED" ||
+    origin === "INSTITUTION_SUBMITTED" ||
+    origin === "LEGACY_FIRST_PARTY"
+  ) {
+    return origin;
+  }
+  return row.createdBy ? "LEGACY_FIRST_PARTY" : "ROB_RESEARCHED";
 }
 
-function approvedSources(row: ExhibitionRow): HistorySourceView[] {
+function contributorOf(row: ExhibitionRow): ContributorKind | null {
+  const origin = originOf(row);
+  if (origin === "ARTIST_SUBMITTED" || origin === "LEGACY_FIRST_PARTY") return "artist";
+  if (origin === "GALLERY_SUBMITTED") return "gallery";
+  if (origin === "INSTITUTION_SUBMITTED") return "institution";
+  const kind = row.historyMeta?.contributorKind;
+  if (kind === "artist" || kind === "gallery" || kind === "institution") return kind;
+  return null;
+}
+
+function limitedSource(row: ExhibitionRow): SourceRow | null {
+  return (
+    row.historySources
+      .map((join) => join.source)
+      .find((source) => source.internalUseDecision === "ALLOW_LIMITED" && source.contentScope === "FACTUAL_METADATA_ONLY") ?? null
+  );
+}
+
+function visibleSources(row: ExhibitionRow): HistorySourceView[] {
   return row.historySources
     .map((join) => join.source)
-    .filter((source) => source.clearanceStatus === "APPROVED")
+    .filter((source) => source.clearanceStatus === "APPROVED" || (source.internalUseDecision === "ALLOW_LIMITED" && source.contentScope === "FACTUAL_METADATA_ONLY"))
     .map((source) => ({
       id: source.id,
       url: source.url,
@@ -132,7 +206,8 @@ export function toExhibitionView(row: ExhibitionRow): HistoryExhibitionView {
     city: row.city ?? row.space?.city ?? null,
     country: displayCountry(row.country ?? row.space?.country ?? null),
   });
-  const sources = approvedSources(row);
+  const sources = visibleSources(row);
+  const limited = limitedSource(row);
   const artists: HistoryPersonRef[] = row.historyArtists.map((join) => ({
     id: join.artist.id,
     slug: join.artist.slug,
@@ -164,7 +239,13 @@ export function toExhibitionView(row: ExhibitionRow): HistoryExhibitionView {
     curatorSlug: row.curator?.slugRecord?.slug ?? null,
     artists,
     sources,
-    provenance: provenanceLabel({ official: sources.length > 0, contributor: contributorOf(row), conflict: false }),
+    provenance: limited && row.historyMeta?.sourceClearance !== "APPROVED"
+      ? visitorSourceLabel(limited.sourceName)
+      : provenanceLabel({
+          official: row.historyMeta?.sourceClearance === "APPROVED" || (!row.historyMeta && sources.length > 0),
+          contributor: contributorOf(row),
+          conflict: false,
+        }),
     review: place.review,
   };
 }
@@ -379,7 +460,21 @@ export async function loadExhibitionPage(key: string): Promise<HistoryExhibition
     where: { OR: [{ slug: key }, { exhibitionId: key }] },
     include: { exhibition: { include: exhibitionInclude } },
   });
-  if (!meta || !meta.exhibition.isPublic || meta.clearanceStatus !== "APPROVED") return null;
+  const row = meta?.exhibition as ExhibitionRow | undefined;
+  const limited = row ? limitedSource(row) : null;
+  if (
+    !meta ||
+    !meta.exhibition.isPublic ||
+    !recordIsPublic({
+      publicationStatus: meta.publicationStatus,
+      origin: meta.origin,
+      sourceClearance: meta.sourceClearance,
+      internalUseDecision: limited?.internalUseDecision ?? null,
+      contentScope: limited?.contentScope ?? null,
+    })
+  ) {
+    return null;
+  }
   const view = toExhibitionView(meta.exhibition as ExhibitionRow);
   if (!view.slug) return null;
   return {
@@ -441,7 +536,19 @@ export async function listExplore() {
       take: 60,
     }),
     prisma.exhibitionHistoryMeta.findMany({
-      where: { clearanceStatus: "APPROVED", exhibition: { isPublic: true } },
+      where: {
+        publicationStatus: "PUBLIC",
+        exhibition: { isPublic: true },
+        OR: [
+          { origin: { in: ["ARTIST_SUBMITTED", "GALLERY_SUBMITTED", "INSTITUTION_SUBMITTED", "LEGACY_FIRST_PARTY"] }, sourceClearance: { not: "REJECTED" } },
+          { origin: "ROB_RESEARCHED", sourceClearance: "APPROVED" },
+          {
+            origin: "ROB_RESEARCHED",
+            sourceClearance: { not: "REJECTED" },
+            exhibition: { historySources: { some: { source: { internalUseDecision: "ALLOW_LIMITED", contentScope: "FACTUAL_METADATA_ONLY" } } } },
+          },
+        ],
+      },
       include: { exhibition: { select: { title: true, city: true, country: true, startDate: true } } },
       orderBy: { startYear: "desc" },
       take: 40,
@@ -488,22 +595,98 @@ export async function listExplore() {
 }
 
 export async function contentGateCounts() {
-  const [approvedSources, importedExhibitions, artists] = await Promise.all([
-    prisma.historySource.count({ where: { clearanceStatus: "APPROVED" } }),
-    prisma.exhibitionHistoryMeta.count({ where: { clearanceStatus: "APPROVED", exhibition: { isPublic: true } } }),
-    prisma.artistEntity.findMany({
-      select: { participations: { where: { exhibition: publicExhibitionWhere }, select: { exhibitionId: true } } },
+  const [publicRows, reviewRows, entities] = await Promise.all([
+    prisma.exhibition.findMany({
+      where: publicExhibitionWhere,
+      select: {
+        id: true,
+        spaceId: true,
+        createdBy: true,
+        historyMeta: { select: { origin: true, sourceClearance: true, publicationStatus: true } },
+        historyArtists: { select: { artistEntityId: true } },
+        artists: { where: { status: "confirmed" }, select: { artistId: true } },
+      },
     }),
+    prisma.exhibitionHistoryMeta.count({
+      where: {
+        OR: [
+          { publicationStatus: { in: ["DRAFT", "PENDING_REVIEW"] } },
+          { origin: "ROB_RESEARCHED", sourceClearance: { in: ["REVIEW_REQUIRED", "REJECTED"] } },
+          { sourceClearance: "REJECTED" },
+        ],
+      },
+    }),
+    prisma.artistEntity.findMany({ select: { id: true, profileId: true } }),
   ]);
+  const entityByProfile = new Map(entities.filter((entity) => entity.profileId).map((entity) => [entity.profileId as string, entity.id]));
+  const byArtist = new Map<string, Set<string>>();
+  const bridges: { artistIds: string[] }[] = [];
+  const spaces = new Set<string>();
+  let officialSource = 0;
+  let artistAdded = 0;
+  let galleryAdded = 0;
+  let institutionAdded = 0;
+  let legacyFirstParty = 0;
+  for (const row of publicRows) {
+    if (row.spaceId) spaces.add(row.spaceId);
+    const origin = row.historyMeta?.origin ?? (row.createdBy ? "LEGACY_FIRST_PARTY" : null);
+    if (row.historyMeta?.sourceClearance === "APPROVED") officialSource += 1;
+    if (origin === "ARTIST_SUBMITTED") artistAdded += 1;
+    if (origin === "GALLERY_SUBMITTED") galleryAdded += 1;
+    if (origin === "INSTITUTION_SUBMITTED") institutionAdded += 1;
+    if (origin === "LEGACY_FIRST_PARTY") legacyFirstParty += 1;
+    const artistIds = new Set(row.historyArtists.map((item) => item.artistEntityId));
+    for (const participant of row.artists) {
+      const entityId = entityByProfile.get(participant.artistId);
+      if (entityId) artistIds.add(entityId);
+    }
+    if (!row.historyMeta && row.createdBy) {
+      const creator = entityByProfile.get(row.createdBy);
+      if (creator) artistIds.add(creator);
+    }
+    bridges.push({ artistIds: [...artistIds] });
+    for (const artistId of artistIds) {
+      const bucket = byArtist.get(artistId) ?? new Set<string>();
+      bucket.add(row.id);
+      byArtist.set(artistId, bucket);
+    }
+  }
+  const sizes = [...byArtist.values()].map((ids) => ids.size);
+  const atLeast = (min: number) => sizes.filter((count) => count >= min).length;
+  let empty = 0;
+  let lowDensity = 0;
   let historyReady = 0;
   let rich = 0;
-  const counts: number[] = [];
-  for (const artist of artists) {
-    const count = new Set(artist.participations.map((item) => item.exhibitionId)).size;
+  const indexCounts: number[] = [];
+  for (const count of sizes) {
     const density = densityForCount(count);
+    if (density === "EMPTY") empty += 1;
+    if (density === "LOW_DENSITY") lowDensity += 1;
     if (density === "HISTORY_READY") historyReady += 1;
     if (density === "RICH_HISTORY") rich += 1;
-    if (density === "HISTORY_READY" || density === "RICH_HISTORY") counts.push(count);
+    if (density === "HISTORY_READY" || density === "RICH_HISTORY") indexCounts.push(count);
   }
-  return { approvedSources, importedExhibitions, publicArtists: artists.length, historyReady, rich, indexCounts: counts };
+  const bridge = countBridgePaths(bridges);
+  return {
+    publicArtists: atLeast(1),
+    publicRecords: publicRows.length,
+    artistsAtLeast1: atLeast(1),
+    artistsAtLeast3: atLeast(3),
+    artistsAtLeast8: atLeast(DENSE_HISTORY_MIN),
+    artistsAtLeast12: atLeast(12),
+    officialSource,
+    artistAdded,
+    galleryAdded,
+    institutionAdded,
+    legacyFirstParty,
+    conflictReview: reviewRows,
+    empty,
+    lowDensity,
+    historyReady,
+    rich,
+    indexCounts,
+    bridgeArtists: bridge.artists,
+    bridgePaths: bridge.paths,
+    spacesWithExhibitions: spaces.size,
+  };
 }
