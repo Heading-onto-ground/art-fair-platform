@@ -12,6 +12,9 @@ jobs:
   web:
     name: Web (lint, test, build)
     runs-on: ubuntu-latest
+    env:
+      # prisma generate reads DATABASE_URL at install time. CI does not connect.
+      DATABASE_URL: postgresql://postgres:postgres@127.0.0.1:5432/rob_ci
 
     steps:
       - name: Checkout

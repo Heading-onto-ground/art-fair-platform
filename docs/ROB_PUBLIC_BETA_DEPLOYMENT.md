@@ -17,6 +17,8 @@ All of these have to be true:
 
 Use the existing Vercel project. Do not add a host. Do not change the domain. `lib/seo.ts` still defaults to `https://rob-roleofbridge.com`.
 
+Hobby cron jobs may run at most once per day. `crawl-gallery-info` and `crawl-gallery-directory-sources` are daily for that reason. More frequent expressions fail the deployment before the app is published.
+
 There is no separate preview workflow in the repo beyond Vercel's normal deployment. This phase did not create a preview deployment. Local typecheck and unit tests were run instead. A production deploy was not started, so there is no live smoke test.
 
 ## Rollback
