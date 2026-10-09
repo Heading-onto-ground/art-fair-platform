@@ -190,10 +190,21 @@ export default function HistoryExperience({ artist }: { artist: HistoryArtistVie
             <p className="rh-count-lead">{artist.exhibitionCount}</p>
             <p className="rh-count-copy">exhibitions currently documented in ROB</p>
             {artist.birthYear ? <p className="rh-muted">Born {artist.birthYear}</p> : null}
-            <div className="rh-signature" aria-label="History signature showing exhibition density through time">
-              {signature.map((height, index) => (
-                <i key={index} style={{ height: `${4 + height * 5}px` }} />
-              ))}
+            <div className="rh-signature-block">
+              <div
+                className="rh-signature"
+                aria-label={span ? `Exhibition density from ${span.first} to ${span.last}` : "History signature"}
+              >
+                {signature.map((height, index) => (
+                  <i key={index} style={{ height: `${4 + height * 5}px` }} />
+                ))}
+              </div>
+              {span ? (
+                <p className="rh-signature-range">
+                  <span>{span.first}</span>
+                  <span>{span.last}</span>
+                </p>
+              ) : null}
             </div>
           </div>
         </header>
@@ -235,13 +246,13 @@ export default function HistoryExperience({ artist }: { artist: HistoryArtistVie
             </details>
 
             <div className="rh-track-shell">
-              {span ? (
+              {span && visibleGroups.length > 8 ? (
                 <div className="rh-track-range" aria-hidden="true">
                   <span>{windowSpan?.start ?? span.first}</span>
                   <span>{windowSpan?.end ?? span.last}</span>
                 </div>
               ) : null}
-              <div className="rh-track-wrap">
+              <div className={`rh-track-wrap${visibleGroups.length > 0 && visibleGroups.length <= 8 ? " is-sparse" : ""}`}>
                 <div className="rh-axis" />
                 {visibleGroups.map((group) => {
                   const left = windowSpan && windowSpan.end !== windowSpan.start ? ((group.year - windowSpan.start) / (windowSpan.end - windowSpan.start)) * 100 : 0;
@@ -251,7 +262,7 @@ export default function HistoryExperience({ artist }: { artist: HistoryArtistVie
                     <button
                       key={group.year}
                       className={`rh-cluster${active ? " is-active" : ""}`}
-                      style={{ left: `clamp(0px, calc(${left}% - 14px), calc(100% - 28px))` }}
+                      style={{ left: `clamp(0px, calc(${left}% - 22px), calc(100% - 44px))` }}
                       type="button"
                       aria-pressed={active}
                       aria-label={`${group.year}, ${group.count} exhibition${group.count === 1 ? "" : "s"}, ${group.marks.every((mark) => mark === "open") ? "year only" : "dated"}`}
@@ -338,7 +349,7 @@ export default function HistoryExperience({ artist }: { artist: HistoryArtistVie
                         <button key={node.id} className="rh-node rh-node-artist" type="button" onClick={() => followArtist(node.id, selected)}>
                           <span className="rh-node-type">Artist</span>
                           <strong>{node.label}</strong>
-                          <span className="rh-node-arrow" aria-hidden="true">Enter history →</span>
+                          <span className="rh-node-arrow">Enter history →</span>
                         </button>
                       ) : node.kind === "space" && selected.spaceSlug ? (
                         <Link key={node.id} className="rh-node" href={`/spaces/${selected.spaceSlug}`}>
@@ -392,7 +403,7 @@ export default function HistoryExperience({ artist }: { artist: HistoryArtistVie
             ) : null}
 
             <div className="rh-history-foot">
-              <p>Coverage is partial and grows as ROB documents more verified moments.</p>
+              <p>Coverage is partial.</p>
               <Link href={`/history/add?artist=${artist.slug}`} onClick={() => trackHistory("EXHIBITION_ADD_STARTED")}>
                 Add an exhibition →
               </Link>

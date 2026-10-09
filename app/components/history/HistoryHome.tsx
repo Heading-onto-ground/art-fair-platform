@@ -41,7 +41,7 @@ export default function HistoryHome() {
             <h1 className="rh-title">Search an artist.</h1>
             <p className="rh-lead">See their journey. Follow the moments that connect one artist to another.</p>
             <form className="rh-search" onSubmit={onSubmit} role="search">
-              <label className="rh-kicker" htmlFor="artist-search" style={{ position: "absolute", left: -9999 }}>
+              <label className="rh-sr-only" htmlFor="artist-search">
                 Search an artist
               </label>
               <input
@@ -64,6 +64,13 @@ export default function HistoryHome() {
                 Start your own history
               </Link>
             </div>
+            <p className="rh-home-path">
+              <span>Lee Ufan</span>
+              <span aria-hidden="true">→</span>
+              <span>Exhibition</span>
+              <span aria-hidden="true">→</span>
+              <span>Park Seo-Bo</span>
+            </p>
           </div>
 
           <div className="rh-home-map" aria-label="ROB connects artists through documented exhibition moments">

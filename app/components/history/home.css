@@ -302,9 +302,23 @@
   }
 }
 
+.rh-home-path {
+  display: none;
+  margin: 22px 0 0;
+}
+
 @media (max-width: 520px) {
   .rh-home-map {
     display: none;
+  }
+
+  .rh-home-path {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    font-family: var(--font-cormorant), Georgia, serif;
+    font-size: 22px;
+    line-height: 1.1;
   }
 
   .rh-home-hero {
