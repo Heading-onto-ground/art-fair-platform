@@ -30,6 +30,7 @@ model User {
   galleryProfile GalleryProfile?
   curatorProfile CuratorProfile?
   adminSupportThread AdminSupportThread?
+  artistClaims   ArtistEntityClaim[]
 }
 
 // 가입자 ↔ 관리자 플랫폼 내 쪽지 (이메일 아님)
@@ -81,6 +82,7 @@ model ArtistProfile {
   artEvents    ArtEvent[]
   artworks     Artwork[]
   exhibitionEntries ExhibitionArtist[]
+  artistEntity ArtistEntity?
 }
 
 // ========== 맥락 저장 ==========
@@ -611,6 +613,7 @@ model Space {
   website     String?
   createdAt   DateTime     @default(now())
   exhibitions Exhibition[]
+  slugRecord  SpaceSlug?
 }
 
 model Curator {
@@ -620,6 +623,7 @@ model Curator {
   organization String?
   createdAt    DateTime     @default(now())
   exhibitions  Exhibition[]
+  slugRecord   CuratorSlug?
 }
 
 model Exhibition {
@@ -634,11 +638,15 @@ model Exhibition {
   space       Space?             @relation(fields: [spaceId], references: [id])
   curatorId   String?
   curator     Curator?           @relation(fields: [curatorId], references: [id])
-  createdBy   String             // ArtistProfile.id
+  createdBy   String?            // ArtistProfile.id; null for historical records with no account
   isPublic    Boolean            @default(false)
   createdAt   DateTime           @default(now())
   updatedAt   DateTime           @updatedAt
   artists     ExhibitionArtist[]
+  historyMeta ExhibitionHistoryMeta?
+  historySources ExhibitionSource[]
+  historyArtists HistoryParticipation[]
+  unresolvedNames HistoryUnresolvedName[]
 
   @@index([createdBy])
 }
@@ -725,4 +733,154 @@ model LaborSurveyResponse {
   @@unique([campaignId, userId])
   @@index([campaignId])
   @@index([userId])
+}
+
+// ========== ROB public history ==========
+// Artist records exist without a user account. Existing ArtistProfile rows stay intact
+// and may link to one ArtistEntity. Historical exhibitions do not require a creator.
+
+model ArtistEntity {
+  id              String   @id @default(cuid())
+  slug            String   @unique
+  canonicalName   String
+  nativeName      String?
+  birthYear       Int?
+  country         String?
+  city            String?
+  officialWebsite String?
+  profileId       String?  @unique
+  profile         ArtistProfile? @relation(fields: [profileId], references: [id], onDelete: SetNull)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  aliases         ArtistAlias[]
+  claims          ArtistEntityClaim[]
+  participations  HistoryParticipation[]
+
+  @@index([canonicalName])
+}
+
+model ArtistAlias {
+  id             String       @id @default(cuid())
+  artistEntityId String
+  artist         ArtistEntity @relation(fields: [artistEntityId], references: [id], onDelete: Cascade)
+  label          String
+  createdAt      DateTime     @default(now())
+
+  @@index([artistEntityId])
+  @@index([label])
+}
+
+model ArtistEntityClaim {
+  id             String       @id @default(cuid())
+  artistEntityId String
+  userId         String
+  status         String       @default("PENDING") // PENDING | APPROVED | REJECTED
+  note           String?
+  submittedAt    DateTime     @default(now())
+  reviewedAt     DateTime?
+  reviewedBy     String?
+  artist         ArtistEntity @relation(fields: [artistEntityId], references: [id], onDelete: Cascade)
+  user           User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([artistEntityId])
+  @@index([userId])
+  @@index([status])
+}
+
+model ExhibitionHistoryMeta {
+  exhibitionId    String     @id
+  exhibition      Exhibition @relation(fields: [exhibitionId], references: [id], onDelete: Cascade)
+  slug            String?    @unique
+  datePrecision   String     @default("UNKNOWN") // DAY | MONTH | YEAR | UNKNOWN
+  startYear       Int?
+  startMonth      Int?
+  startDay        Int?
+  endYear         Int?
+  endMonth        Int?
+  endDay          Int?
+  clearanceStatus String     @default("REVIEW_REQUIRED") // APPROVED | REVIEW_REQUIRED | REJECTED
+  contributorKind String?    // artist | gallery | institution
+
+  @@index([clearanceStatus])
+  @@index([startYear])
+}
+
+model HistoryParticipation {
+  id             String       @id @default(cuid())
+  exhibitionId   String
+  artistEntityId String
+  exhibition     Exhibition   @relation(fields: [exhibitionId], references: [id], onDelete: Cascade)
+  artist         ArtistEntity @relation(fields: [artistEntityId], references: [id], onDelete: Cascade)
+  createdAt      DateTime     @default(now())
+
+  @@unique([exhibitionId, artistEntityId])
+  @@index([artistEntityId])
+}
+
+model HistoryUnresolvedName {
+  id           String     @id @default(cuid())
+  exhibitionId String
+  exhibition   Exhibition @relation(fields: [exhibitionId], references: [id], onDelete: Cascade)
+  label        String
+  status       String     @default("UNRESOLVED_PARTICIPANT") // REVIEW_REQUIRED | UNRESOLVED_PARTICIPANT
+  createdAt    DateTime   @default(now())
+
+  @@index([exhibitionId])
+}
+
+model SpaceSlug {
+  spaceId String @id
+  space   Space  @relation(fields: [spaceId], references: [id], onDelete: Cascade)
+  slug    String @unique
+}
+
+model CuratorSlug {
+  curatorId String  @id
+  curator   Curator @relation(fields: [curatorId], references: [id], onDelete: Cascade)
+  slug      String  @unique
+}
+
+model HistorySource {
+  id               String             @id @default(cuid())
+  url              String
+  sourceName       String
+  sourceType       String
+  retrievedAt      DateTime?
+  clearanceStatus  String             @default("REVIEW_REQUIRED") // APPROVED | REVIEW_REQUIRED | REJECTED
+  createdAt        DateTime           @default(now())
+  exhibitions      ExhibitionSource[]
+
+  @@index([clearanceStatus])
+}
+
+model ExhibitionSource {
+  exhibitionId String
+  sourceId     String
+  exhibition   Exhibition    @relation(fields: [exhibitionId], references: [id], onDelete: Cascade)
+  source       HistorySource @relation(fields: [sourceId], references: [id], onDelete: Cascade)
+
+  @@id([exhibitionId, sourceId])
+  @@index([sourceId])
+}
+
+model HistoryImportRecord {
+  id                  String    @id @default(cuid())
+  pilotRecordId       String    @unique
+  usageStatus         String    @default("PILOT_ONLY")
+  productionClearance String    @default("UNRESOLVED")
+  reviewStatus        String    @default("REVIEW_REQUIRED")
+  publishedAt         DateTime?
+  createdAt           DateTime  @default(now())
+
+  @@index([reviewStatus])
+}
+
+model HistorySignal {
+  id        String   @id @default(cuid())
+  name      String
+  path      String?
+  createdAt DateTime @default(now())
+
+  @@index([name])
+  @@index([createdAt])
 }
