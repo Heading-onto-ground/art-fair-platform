@@ -1,6 +1,6 @@
 export const VISIBLE_PIPS = 4;
 export const MOMENT_SATELLITE_LIMIT = 7;
-export const JOURNEY_MS = 640;
+export const JOURNEY_MS = 880;
 
 export type ZoomLevel = "ALL" | "DECADE" | "YEAR";
 export type DotMark = "filled" | "open";
