@@ -5,12 +5,17 @@ import { decodeDisplayText, displayCountry, groupByYear, restoredArtistPath, sho
 import { planBackfill } from "@/lib/history/backfill";
 import { isHistoryUnavailable } from "@/lib/history/schemaError";
 import {
+  artistAddedLabel,
   artistSitemapEligible,
+  betaSeedDecision,
+  classifyLegacyExhibition,
   classifyParticipant,
+  containsDestructiveSchema,
   containsRuntimeDdl,
-  contentGateDecision,
+  countBridgePaths,
   dedupeById,
   densityForCount,
+  firstPartyWrite,
   formatHistoryDate,
   isFirstPartyImage,
   isIndexEligible,
@@ -19,6 +24,10 @@ import {
   median,
   omitPrivateClaimFields,
   provenanceLabel,
+  publicBetaDecision,
+  recordIsPublic,
+  selectiveImportDecision,
+  seoIndexEligible,
   sharedIds,
   uniqueSlug,
   validateExhibitionInput,
@@ -122,11 +131,80 @@ describe("ROB public history", () => {
     expect(median([3, 8, 12])).toBe(8);
   });
 
-  it("blocks the content gate when production-cleared history is missing", () => {
-    expect(contentGateDecision({ approvedSources: 0, importedExhibitions: 0, historyReady: 0, rich: 0 })).toBe(
-      "PUBLIC_BETA_CONTENT_GATE_BLOCKED",
+  it("keeps publication, provenance, and indexing separate", () => {
+    const artistAdded = firstPartyWrite({ claimApproved: true, hasExternalSource: false });
+    expect(artistAdded.publicationStatus).toBe("PUBLIC");
+    expect(artistAdded.sourceClearance).toBe("NOT_APPLICABLE");
+    expect(recordIsPublic(artistAdded)).toBe(true);
+    expect(artistAddedLabel({ claimApproved: true, sourceClearance: artistAdded.sourceClearance })).toBe("Artist added");
+    expect(artistAddedLabel({ claimApproved: true, sourceClearance: "NOT_APPLICABLE" })).not.toBe("Official source");
+    expect(provenanceLabel({ official: false, contributor: "artist", conflict: false })).toBe("Artist added");
+
+    expect(recordIsPublic({ publicationStatus: "PUBLIC", origin: "ROB_RESEARCHED", sourceClearance: "REVIEW_REQUIRED" })).toBe(false);
+    expect(recordIsPublic({ publicationStatus: "PUBLIC", origin: "ROB_RESEARCHED", sourceClearance: "APPROVED" })).toBe(true);
+    expect(provenanceLabel({ official: true, contributor: null, conflict: false })).toBe("Official source");
+
+    expect(seoIndexEligible({ publicationStatus: "PUBLIC", exhibitionCount: 1 })).toBe(false);
+    expect(recordIsPublic({ publicationStatus: "PUBLIC", origin: "ARTIST_SUBMITTED", sourceClearance: "NOT_APPLICABLE" })).toBe(true);
+    expect(seoIndexEligible({ publicationStatus: "PUBLIC", exhibitionCount: 8 })).toBe(true);
+
+    const pending = firstPartyWrite({ claimApproved: false, hasExternalSource: false });
+    expect(pending.publicationStatus).toBe("PENDING_REVIEW");
+    expect(pending.isPublic).toBe(false);
+    expect(pending.contributorKind).toBeNull();
+    expect(artistAddedLabel({ claimApproved: false, sourceClearance: "NOT_APPLICABLE" })).toBe("Pending review");
+    expect(recordIsPublic(pending)).toBe(false);
+  });
+
+  it("counts a real artist bridge and does not treat missing ownership as first-party", () => {
+    expect(classifyLegacyExhibition({ isPublic: true, createdByProfileId: "profile-1", hasHistoryMeta: false, crawlerWritten: false })).toBe(
+      "LEGACY_FIRST_PARTY",
     );
-    expect(contentGateDecision({ approvedSources: 2, importedExhibitions: 20, historyReady: 0, rich: 1 })).toBe("PASS");
+    expect(classifyLegacyExhibition({ isPublic: true, createdByProfileId: null, hasHistoryMeta: false, crawlerWritten: false })).toBeNull();
+    expect(classifyLegacyExhibition({ isPublic: true, createdByProfileId: "profile-1", hasHistoryMeta: false, crawlerWritten: true })).toBeNull();
+    expect(countBridgePaths([{ artistIds: ["a", "a", "b"] }, { artistIds: ["a"] }])).toEqual({ paths: 2, artists: 2 });
+    expect(
+      betaSeedDecision({ artistsAtLeast1: 3, artistsAtLeast8: 1, bridgePaths: 1, spacesWithExhibitions: 1 }),
+    ).toBe("PUBLIC_BETA_FIRST_PARTY_SEED_READY");
+    expect(
+      betaSeedDecision({ artistsAtLeast1: 20, artistsAtLeast8: 4, bridgePaths: 0, spacesWithExhibitions: 6 }),
+    ).toBe("PUBLIC_BETA_CONTENT_GATE_BLOCKED");
+    expect(
+      publicBetaDecision({
+        databaseConfirmed: false,
+        recoveryConfirmed: false,
+        seed: "PUBLIC_BETA_FIRST_PARTY_SEED_READY",
+        clearanceSeedReady: false,
+      }),
+    ).toBe("PUBLIC_BETA_DATABASE_GATE_BLOCKED");
+  });
+
+  it("imports one approved pilot record and refuses the rest of the file", () => {
+    expect(
+      selectiveImportDecision({
+        usageStatus: "PILOT_ONLY",
+        reviewDecision: "REVIEW_REQUIRED",
+        requestedIds: ["record-1"],
+        approvedIds: [],
+      }).ok,
+    ).toBe(false);
+    expect(
+      selectiveImportDecision({
+        usageStatus: "PILOT_ONLY",
+        reviewDecision: "APPROVED",
+        requestedIds: ["record-1", "record-2"],
+        approvedIds: ["record-1"],
+      }).reason,
+    ).toBe("not-in-approved-set");
+    expect(
+      selectiveImportDecision({
+        usageStatus: "PILOT_ONLY",
+        reviewDecision: "APPROVED",
+        requestedIds: ["record-1"],
+        approvedIds: ["record-1"],
+      }).ok,
+    ).toBe(true);
+    expect(mayPublishHistoryRecord({ pilotOnly: true, clearance: "APPROVED" })).toBe(false);
   });
 
   it("normalizes only unambiguous display values", () => {
@@ -158,5 +236,9 @@ describe("ROB public history", () => {
       expect(containsRuntimeDdl(source)).toBe(false);
       expect(source.includes("exhibitions.json")).toBe(false);
     }
+    const sql = readFileSync(path.resolve("prisma/sql/add-rob-public-beta-history.sql"), "utf8");
+    expect(containsDestructiveSchema(sql)).toBe(false);
+    expect(sql.includes("publicationStatus")).toBe(true);
+    expect(sql.includes("NOT_APPLICABLE")).toBe(true);
   });
 });

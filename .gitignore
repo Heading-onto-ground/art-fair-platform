@@ -47,6 +47,9 @@ next-env.d.ts
 .vercel
 .env*.local
 
+# local database backups (contain user data; never commit)
+backups/
+
 # local credential exports (never commit)
 scripts/output/*.csv
 scripts/output/*.txt
@@ -54,3 +57,9 @@ scripts/partners.csv
 
 # Cursor editor
 .cursor/
+
+# local launcher isolation
+.logs/
+
+# Art history pilot: fetched page bodies stay local and are not product data.
+experiments/art-history-pilot/.local-snapshots/

@@ -1,12 +1,14 @@
 # ROB public beta deployment
 
-Do not deploy this phase. The content gate is blocked.
+The launch seed is imported. Deploy only after the build, local QA, and the post-import backup all pass. The local transaction-pooler URL was repaired from the same Supabase project. Vercel Production credentials were not changed.
+
+The additive history schema and artist-entity backfill are on the confirmed production database. The local `.env.local` port 6543 credential is still rejected. Deployed runtime uses Vercel's Production `DATABASE_URL`. Repair the local transaction-pooler URI from the same Supabase project before relying on local app runtime. Do not change that production credential as part of this repair.
 
 ## Before a later deploy
 
 All of these have to be true:
 
-- `docs/ROB_PUBLIC_BETA_CONTENT_GATE.md` is no longer `PUBLIC_BETA_CONTENT_GATE_BLOCKED`
+- The content-gate decision is `PUBLIC_BETA_FIRST_PARTY_SEED_READY` or `PUBLIC_BETA_CLEARANCE_SEED_READY`
 - The database host was confirmed and a backup exists
 - `prisma/sql/add-rob-public-beta-history.sql` was applied to that database
 - The artist backfill was run only after that confirmation

@@ -1,24 +1,39 @@
 import { NextResponse } from "next/server";
 import { requireAdminSession } from "@/lib/apiGuards";
-import { mayPublishHistoryRecord } from "@/lib/history/policy";
+import { selectiveImportDecision, selectiveImportLog } from "@/lib/history/policy";
 
 export const dynamic = "force-dynamic";
 
-// Staging gate only. This route never reads the pilot dataset and never publishes PILOT_ONLY rows.
+function idList(value: unknown): string[] {
+  if (!Array.isArray(value)) return [];
+  return value.filter((item): item is string => typeof item === "string" && item.trim().length > 0);
+}
+
+// Selective gate only. This route never reads the pilot dataset and never writes a row.
 export async function POST(req: Request) {
   const { error } = requireAdminSession();
   if (error) return error;
   const body = await req.json().catch(() => null);
-  const allowed = mayPublishHistoryRecord({
-    pilotOnly: Boolean(body?.pilotOnly) || body?.usageStatus === "PILOT_ONLY",
-    usageStatus: typeof body?.usageStatus === "string" ? body.usageStatus : null,
-    clearance: typeof body?.clearance === "string" ? body.clearance : null,
+  const requestedIds = idList(body?.recordIds);
+  const decision = selectiveImportDecision({
+    usageStatus: typeof body?.usageStatus === "string" ? body.usageStatus : body?.pilotOnly ? "PILOT_ONLY" : null,
+    reviewDecision: typeof body?.reviewDecision === "string" ? body.reviewDecision : null,
+    requestedIds,
+    approvedIds: idList(body?.approvedRecordIds),
   });
-  if (!allowed) {
-    return NextResponse.json({ imported: false, error: "PUBLIC_BETA_CONTENT_GATE_BLOCKED" }, { status: 409 });
+  if (!decision.ok) {
+    return NextResponse.json({ imported: false, error: decision.reason }, { status: 409 });
   }
+  const logs = requestedIds.map((pilotRecordId) =>
+    selectiveImportLog({
+      pilotRecordId,
+      productionEntityId: null,
+      importedBy: "admin-history-import",
+      at: null,
+    }),
+  );
   return NextResponse.json(
-    { imported: false, error: "Approved records stay staged until a reviewed import is explicitly run." },
+    { imported: false, error: "PUBLIC_BETA_DATABASE_GATE_BLOCKED", logs },
     { status: 409 },
   );
 }

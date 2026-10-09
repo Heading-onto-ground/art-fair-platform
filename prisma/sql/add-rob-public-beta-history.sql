@@ -57,11 +57,20 @@ CREATE TABLE IF NOT EXISTS "ExhibitionHistoryMeta" (
   "endMonth" INTEGER,
   "endDay" INTEGER,
   "clearanceStatus" TEXT NOT NULL DEFAULT 'REVIEW_REQUIRED',
-  "contributorKind" TEXT
+  "contributorKind" TEXT,
+  "publicationStatus" TEXT NOT NULL DEFAULT 'DRAFT',
+  "origin" TEXT NOT NULL DEFAULT 'ROB_RESEARCHED',
+  "sourceClearance" TEXT NOT NULL DEFAULT 'NOT_APPLICABLE'
 );
 CREATE UNIQUE INDEX IF NOT EXISTS "ExhibitionHistoryMeta_slug_key" ON "ExhibitionHistoryMeta"("slug");
 CREATE INDEX IF NOT EXISTS "ExhibitionHistoryMeta_clearanceStatus_idx" ON "ExhibitionHistoryMeta"("clearanceStatus");
+CREATE INDEX IF NOT EXISTS "ExhibitionHistoryMeta_publicationStatus_idx" ON "ExhibitionHistoryMeta"("publicationStatus");
+CREATE INDEX IF NOT EXISTS "ExhibitionHistoryMeta_origin_idx" ON "ExhibitionHistoryMeta"("origin");
+CREATE INDEX IF NOT EXISTS "ExhibitionHistoryMeta_sourceClearance_idx" ON "ExhibitionHistoryMeta"("sourceClearance");
 CREATE INDEX IF NOT EXISTS "ExhibitionHistoryMeta_startYear_idx" ON "ExhibitionHistoryMeta"("startYear");
+ALTER TABLE "ExhibitionHistoryMeta" ADD COLUMN IF NOT EXISTS "publicationStatus" TEXT NOT NULL DEFAULT 'DRAFT';
+ALTER TABLE "ExhibitionHistoryMeta" ADD COLUMN IF NOT EXISTS "origin" TEXT NOT NULL DEFAULT 'ROB_RESEARCHED';
+ALTER TABLE "ExhibitionHistoryMeta" ADD COLUMN IF NOT EXISTS "sourceClearance" TEXT NOT NULL DEFAULT 'NOT_APPLICABLE';
 
 CREATE TABLE IF NOT EXISTS "HistoryParticipation" (
   "id" TEXT PRIMARY KEY,
@@ -118,8 +127,16 @@ CREATE TABLE IF NOT EXISTS "HistoryImportRecord" (
   "productionClearance" TEXT NOT NULL DEFAULT 'UNRESOLVED',
   "reviewStatus" TEXT NOT NULL DEFAULT 'REVIEW_REQUIRED',
   "publishedAt" TIMESTAMP(3),
+  "productionEntityId" TEXT,
+  "sourceDecision" TEXT,
+  "importedAt" TIMESTAMP(3),
+  "importedBy" TEXT,
   "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
+ALTER TABLE "HistoryImportRecord" ADD COLUMN IF NOT EXISTS "productionEntityId" TEXT;
+ALTER TABLE "HistoryImportRecord" ADD COLUMN IF NOT EXISTS "sourceDecision" TEXT;
+ALTER TABLE "HistoryImportRecord" ADD COLUMN IF NOT EXISTS "importedAt" TIMESTAMP(3);
+ALTER TABLE "HistoryImportRecord" ADD COLUMN IF NOT EXISTS "importedBy" TEXT;
 CREATE UNIQUE INDEX IF NOT EXISTS "HistoryImportRecord_pilotRecordId_key" ON "HistoryImportRecord"("pilotRecordId");
 CREATE INDEX IF NOT EXISTS "HistoryImportRecord_reviewStatus_idx" ON "HistoryImportRecord"("reviewStatus");
 

@@ -2,8 +2,7 @@
 
 Additive only. No existing table or column is dropped.
 
-The database target was not confirmed in this phase, so this SQL was not applied.
-Do not guess which database `DATABASE_URL` points at. Read the host, take a backup from that provider, then apply the file once.
+The local env files name a Supabase pooler on port 6543, database `postgres`. Login was rejected, so the target is `DATABASE_TARGET_UNCONFIRMED` and recovery is `DATABASE_RECOVERY_UNCONFIRMED`. This SQL was not applied. Do not apply it until both are confirmed. The file only adds tables and columns. It does not drop a table or a column.
 
 ## Apply order
 
@@ -22,7 +21,7 @@ It links each `ArtistProfile` that does not already have an entity. It does not 
   - `ArtistEntity` — canonical artist. No `userId`. Optional unique `profileId` points at one existing `ArtistProfile`.
   - `ArtistAlias`
   - `ArtistEntityClaim` — `PENDING`, `APPROVED`, `REJECTED`. The note is admin-only.
-  - `ExhibitionHistoryMeta` — slug, date precision, year/month/day parts, clearance, contributor kind.
+  - `ExhibitionHistoryMeta` — slug, date precision, year/month/day parts, `publicationStatus`, `origin`, and `sourceClearance`. `NOT_APPLICABLE` is the source clearance when no external source is required.
   - `HistoryParticipation` — artist entity to exhibition. Existing `ExhibitionArtist` rows are untouched.
   - `HistoryUnresolvedName` — ambiguous or unknown participant labels. No fake user is created.
   - `SpaceSlug`, `CuratorSlug`
@@ -35,10 +34,12 @@ It links each `ArtistProfile` that does not already have an entity. It does not 
 `DAY`, `MONTH`, `YEAR`, `UNKNOWN` live on `ExhibitionHistoryMeta`.
 Year-only history does not write `Exhibition.startDate`, so the product does not invent 1 January or 31 December.
 
-## Clearance
+## Publication, origin, and source clearance
 
-`APPROVED`, `REVIEW_REQUIRED`, `REJECTED`.
-A submitted source URL stays `REVIEW_REQUIRED` until a person reviews it. It is not shown as an official source before that.
+Publication is `DRAFT`, `PENDING_REVIEW`, `PUBLIC`, or `REJECTED`.
+Origin is `ROB_RESEARCHED`, `ARTIST_SUBMITTED`, `GALLERY_SUBMITTED`, `INSTITUTION_SUBMITTED`, or `LEGACY_FIRST_PARTY`.
+External source clearance is `APPROVED`, `REVIEW_REQUIRED`, `REJECTED`, or `NOT_APPLICABLE`.
+A submitted source URL stays `REVIEW_REQUIRED` until a person reviews it. It is not shown as an official source before that. A first-party record without a URL is `NOT_APPLICABLE`, not `APPROVED`.
 
 ## Indexes
 

@@ -24,6 +24,10 @@ Participants are matched by exact canonical name, native name, or alias. One mat
 
 ## Provenance
 
+Publication, provenance, and indexing are separate. A public artist-added exhibition does not need an official source, and a public thin page can stay `noindex`.
+
+An artist submission is public and labeled `Artist added` only after an approved claim for that artist entity. Before that it is `PENDING_REVIEW`. A researched record is public only after its external source is `APPROVED`.
+
 Visitor-facing labels are text, not color:
 
 - Official source
