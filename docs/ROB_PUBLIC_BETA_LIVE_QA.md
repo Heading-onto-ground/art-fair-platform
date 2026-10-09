@@ -20,6 +20,18 @@ Passed locally:
 
 SEO on the local build: Lee Ufan and Park Seo-Bo have no noindex tag. Ha Chong-Hyun and Chung Sang-Hwa are `noindex, follow`. The sitemap includes `/artists/lee-ufan` and `/artists/park-seo-bo` and does not include the two low-density artist pages.
 
-`https://rob-roleofbridge.com/` was opened after the push. It is still the previous production app: the homepage title is “ROB — Role of Bridge | Global Art Platform” and the page is the activity-certification survey, not artist search. The new history journey was not smoke-tested there.
+Live smoke test on `https://rob-roleofbridge.com/` after production deployment `ca14407` (GitHub deployment `6962848342`):
 
-The push reached `origin/main` (`84a6901`). GitHub’s Vercel status is “Deployment failed,” and no new production deployment was created. The previous production deployment remains GitHub deployment `6842277151` (`82d92b6`, 2026-10-04). That same Vercel failure was already present on the previous main commit. The Vercel CLI on this machine is logged out, so a manual production deploy was not started.
+- Homepage is “Search an artist. See their journey.”
+- Search Lee Ufan returns 이우환 and 8 documented exhibitions
+- 2025 moment opens The Making of Modern Korean Art at Tina Kim Gallery, New York
+- Park Seo-Bo bridge opens a history of 3 documented exhibitions, with Back through that exhibition
+- Back restores Lee Ufan, year 2025, and the same moment
+- Source is Kukje Gallery, linking to `seq=190` and `seq=181`
+- Report an issue is on the source panel
+- Ha Chong-Hyun and Chung Sang-Hwa are `noindex`; Lee Ufan is index-eligible with canonical `https://rob-roleofbridge.com/artists/lee-ufan`
+- Sitemap includes the two history-ready artist pages
+- `/now`, `/login`, `/history/start`, `/about/data`, and `/spaces/kukje-gallery` return 200
+- 390px layout does not overflow
+
+Rollback target if the new app misbehaves: GitHub deployment `6842277151`, SHA `82d92b6`.
