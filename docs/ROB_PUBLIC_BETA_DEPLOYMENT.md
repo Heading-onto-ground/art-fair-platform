@@ -2,7 +2,7 @@
 
 The launch seed is imported. Deploy only after the build, local QA, and the post-import backup all pass. The local transaction-pooler URL was repaired from the same Supabase project. Vercel Production credentials were not changed.
 
-The additive history schema and artist-entity backfill are on the confirmed production database. The local `.env.local` port 6543 credential is still rejected. Deployed runtime uses Vercel's Production `DATABASE_URL`. Repair the local transaction-pooler URI from the same Supabase project before relying on local app runtime. Do not change that production credential as part of this repair.
+The additive history schema and artist-entity backfill are on the confirmed production database. Local runtime uses that same project through the repaired `.env.local` transaction pooler. Deployed runtime uses Vercel's Production `DATABASE_URL`. Do not change that production credential.
 
 ## Before a later deploy
 
