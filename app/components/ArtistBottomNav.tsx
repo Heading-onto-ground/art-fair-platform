@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { useRouter, usePathname } from "next/navigation";
 import { F, colors } from "@/lib/design";
 
-type Tab = "home" | "ritual" | "explore" | "calls" | "profile";
+type Tab = "home" | "ritual" | "explore" | "calls" | "profile" | "now";
 
 type Props = {
   lang: string;
