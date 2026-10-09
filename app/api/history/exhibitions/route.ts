@@ -40,7 +40,7 @@ export async function POST(req: Request) {
       sourceUrl: typeof body.sourceUrl === "string" ? body.sourceUrl : null,
     });
     if (!result.ok) return NextResponse.json({ error: result.error }, { status: 400 });
-    return NextResponse.json({ slug: result.slug });
+    return NextResponse.json({ slug: result.slug, publicationStatus: result.publicationStatus });
   } catch (err) {
     if (isMissingHistorySchema(err)) {
       return NextResponse.json({ error: "History records are not available until the schema is applied." }, { status: 503 });

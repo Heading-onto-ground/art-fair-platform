@@ -5,6 +5,7 @@ import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import TopBar from "@/app/components/TopBar";
 import { trackHistory } from "@/lib/history/analytics";
+import ReportIssue from "@/app/components/history/ReportIssue";
 import {
   JOURNEY_MS,
   careerSpan,
@@ -292,7 +293,7 @@ export default function HistoryExperience({ artist }: { artist: HistoryArtistVie
                 </p>
                 {sourcesOpen ? (
                   <div>
-                    {selected.sources.length === 0 ? <p>No approved source is attached.</p> : null}
+                    {selected.sources.length === 0 ? <p>No source is attached.</p> : null}
                     {selected.sources.map((source) => (
                       <p key={source.id}>
                         <a href={source.url} onClick={() => trackHistory("SOURCE_OPENED")}>
@@ -300,6 +301,7 @@ export default function HistoryExperience({ artist }: { artist: HistoryArtistVie
                         </a>
                       </p>
                     ))}
+                    <ReportIssue exhibitionId={selected.id} artistSlug={artist.slug} />
                     {selected.review ? <p>Data under review</p> : null}
                   </div>
                 ) : null}

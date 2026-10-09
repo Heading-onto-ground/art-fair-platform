@@ -1,6 +1,7 @@
 import Link from "next/link";
 import TopBar from "@/app/components/TopBar";
 import type { HistoryExhibitionPage } from "@/lib/history/types";
+import ReportIssue from "@/app/components/history/ReportIssue";
 import "./history.css";
 
 export default function HistoryExhibition({ record }: { record: HistoryExhibitionPage }) {
@@ -31,10 +32,11 @@ export default function HistoryExhibition({ record }: { record: HistoryExhibitio
         {record.curatorName ? <p>Curator: {record.curatorName}</p> : null}
         <details>
           <summary>{record.provenance}</summary>
-          {record.sources.length === 0 ? <p>No approved source is attached.</p> : null}
+          {record.sources.length === 0 ? <p>No source is attached.</p> : null}
           {record.sources.map((source) => (
             <p key={source.id}><a href={source.url}>{source.sourceName}</a></p>
           ))}
+          <ReportIssue exhibitionId={record.id} />
         </details>
       </main>
     </div>
