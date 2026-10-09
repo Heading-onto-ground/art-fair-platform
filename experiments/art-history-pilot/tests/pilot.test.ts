@@ -481,7 +481,8 @@ describe("search rescue rules", () => {
       start: { value: "2025-05-01", precision: "day" },
       end: { value: "2025-10-26", precision: "day" },
     });
-    expect(dateFromEvidence("2021-05-22 ~ 2021-09-26").start?.value).toBe("2021-05-22");
+    const ranged = dateFromEvidence("2021-05-22 ~ 2021-09-26");
+    expect(ranged.status === "ok" ? ranged.start.value : null).toBe("2021-05-22");
     const cards = exhibitionsFromCards(
       ["Kimsooja, Meta-Painting, Tschudi Gallery, Zürich, Switzerland", "20 December 2025 – 14 March 2026"].join("\n"),
       ["Kimsooja"],

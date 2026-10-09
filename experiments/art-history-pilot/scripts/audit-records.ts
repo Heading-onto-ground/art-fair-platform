@@ -18,7 +18,7 @@ for (const record of accepted) {
 console.log("hosts", Object.fromEntries(hosts));
 const withCurator = accepted.filter((record) => record.curatorNames.length > 0).length;
 const withCo = accepted.filter((record) => record.artistNames.length > 1).length;
-const colonVenues = accepted.filter((record) => record.venueName.includes(":"));
+const colonVenues = accepted.filter((record) => record.venueName?.includes(":"));
 console.log("curator", withCurator, "multiName", withCo, "colonVenues", colonVenues.length);
 const seed = buildSeedArtists().filter((artist) => artist.cohort === "INTERNATIONAL");
 const byName = new Map<string, string>();
@@ -32,7 +32,7 @@ const multiSeed = accepted.filter((record) => {
 console.log("recordsNamingTwoSeedArtists", multiSeed.length);
 console.log("--- junk ---");
 for (const record of odd.slice(0, 15)) {
-  console.log(record.status, record.title.slice(0, 100), "|", record.venueName.slice(0, 80));
+  console.log(record.status, record.title.slice(0, 100), "|", record.venueName?.slice(0, 80));
 }
 console.log("--- kimsooja ---");
 const kim = new Set(["김수자", "Kimsooja", "Kim Sooja"]);

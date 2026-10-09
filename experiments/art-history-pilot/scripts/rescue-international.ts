@@ -269,7 +269,7 @@ async function main(): Promise<void> {
         ];
         const record = buildExhibition({
           title: hit.title,
-          titleEvidence: evidenceFor(hit.title),
+          titleEvidence: evidenceFor(hit.title) ?? hit.title,
           dateEvidence: page.includes(hit.year) ? hit.year : null,
           venue: hit.venue,
           venueEvidence: evidenceFor(hit.venue),
