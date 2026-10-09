@@ -26,6 +26,10 @@ function plural(count: number) {
   return `${count} documented shared exhibition${count === 1 ? "" : "s"}`;
 }
 
+function eventLocation(exhibition: HistoryExhibitionView) {
+  return [exhibition.spaceName, exhibition.city, exhibition.country].filter(Boolean).join(" · ");
+}
+
 export default function HistoryExperience({ artist }: { artist: HistoryArtistView }) {
   const router = useRouter();
   const pathname = usePathname();
@@ -151,39 +155,49 @@ export default function HistoryExperience({ artist }: { artist: HistoryArtistVie
         INITIAL_CONSTELLATION,
       )
     : null;
+  const visibleConnectedArtists = satellites?.visible.filter((node) => node.kind === "artist") ?? [];
 
   return (
     <div className="rh-page">
       <TopBar />
       {journeyOn && !reduceMotion && viaExhibition ? (
-        <div className="rh-journey" role="status">
+        <div className="rh-journey" role="status" aria-live="polite">
+          <span className="rh-journey-label">Moving through a documented exhibition</span>
           <p>{from?.split("-").filter(Boolean).map((part) => part.charAt(0).toUpperCase() + part.slice(1)).join(" ")}</p>
           <span className="rh-line" />
-          <p>{viaExhibition.title}</p>
+          <strong>{viaExhibition.title}</strong>
           <span className="rh-line" />
           <p>{artist.canonicalName}</p>
         </div>
       ) : null}
       <main className="rh-wrap" id="main-content">
         {from ? (
-          <p>
-            <button className="rh-text-button" type="button" onClick={goBack}>
-              Back
+          <div className="rh-trail">
+            <button className="rh-back" type="button" onClick={goBack}>
+              ← Back
             </button>
-            {viaExhibition ? <span> · You came here through {viaExhibition.title}</span> : null}
-          </p>
+            {viaExhibition ? <span>You came here through <strong>{viaExhibition.title}</strong></span> : null}
+          </div>
         ) : null}
-        <h1 className="rh-title">{artist.canonicalName}</h1>
-        {artist.nativeName ? <p className="rh-native">{artist.nativeName}</p> : null}
-        <p>
-          {artist.birthYear ? `Born ${artist.birthYear}. ` : null}
-          {artist.exhibitionCount} documented exhibitions
-        </p>
-        <div className="rh-signature" aria-hidden="true">
-          {signature.map((height, index) => (
-            <i key={index} style={{ height: `${4 + height * 5}px` }} />
-          ))}
-        </div>
+
+        <header className="rh-artist-header">
+          <div>
+            <p className="rh-kicker">Artist history</p>
+            <h1 className="rh-title">{artist.canonicalName}</h1>
+            {artist.nativeName ? <p className="rh-native">{artist.nativeName}</p> : null}
+          </div>
+          <div className="rh-artist-summary">
+            <p className="rh-count-lead">{artist.exhibitionCount}</p>
+            <p className="rh-count-copy">exhibitions currently documented in ROB</p>
+            {artist.birthYear ? <p className="rh-muted">Born {artist.birthYear}</p> : null}
+            <div className="rh-signature" aria-label="History signature showing exhibition density through time">
+              {signature.map((height, index) => (
+                <i key={index} style={{ height: `${4 + height * 5}px` }} />
+              ))}
+            </div>
+          </div>
+        </header>
+
         <div className="rh-tabs" role="tablist" aria-label="Artist">
           {(["history", "connections", "works", "about"] as const).map((item) => (
             <button key={item} className="rh-tab" type="button" role="tab" aria-selected={tab === item} onClick={() => setTab(item)}>
@@ -193,94 +207,163 @@ export default function HistoryExperience({ artist }: { artist: HistoryArtistVie
         </div>
 
         {tab === "history" ? (
-          <section>
-            <div className="rh-zoom" role="group" aria-label="Timeline level">
-              {(["ALL", "DECADE", "YEAR"] as const).map((level) => (
-                <button key={level} type="button" aria-pressed={zoom === level} onClick={() => setZoom(level)}>
-                  {level}
-                </button>
-              ))}
-            </div>
-            <p className="rh-legend">Open circles are year-only. Filled circles include a month or a day. A number is the count for that year.</p>
-            {span ? (
-              <p>
-                {artist.exhibitionCount} documented exhibitions, {span.first}–{span.last}.
-                {zoom === "DECADE" && windowSpan ? ` Showing ${windowSpan.start}–${windowSpan.end}. The documented career runs ${span.first}–${span.last}.` : ""}
-              </p>
-            ) : (
-              <p>No documented exhibitions yet.</p>
-            )}
-            <div className="rh-track-wrap">
-              <div className="rh-axis" />
-              {visibleGroups.map((group) => {
-                const left = windowSpan && windowSpan.end !== windowSpan.start ? ((group.year - windowSpan.start) / (windowSpan.end - windowSpan.start)) * 100 : 0;
-                const only = group.count === 1 ? artist.exhibitions.find((exhibition) => exhibition.id === group.ids[0]) : null;
-                return (
-                  <button
-                    key={group.year}
-                    className="rh-cluster"
-                    style={{ left: `clamp(0px, calc(${left}% - 7px), calc(100% - 14px))` }}
-                    type="button"
-                    aria-label={`${group.year}, ${group.count} exhibition${group.count === 1 ? "" : "s"}, ${group.marks.every((mark) => mark === "open") ? "year only" : "dated"}`}
-                    onClick={() => openYear(group.year, only?.id)}
-                  >
-                    <span className="rh-stack">
-                      {group.marks.slice(0, group.visible).map((mark, index) => (
-                        <i key={index} className={mark === "open" ? "rh-pip open" : "rh-pip"} />
-                      ))}
-                      {group.count > 4 ? <span className="rh-count">{group.count}</span> : null}
-                    </span>
-                  </button>
-                );
-              })}
-            </div>
-            <div className="rh-vertical">
-              {visibleGroups.map((group) => (
-                <button key={group.year} className="rh-year-row" type="button" onClick={() => openYear(group.year, group.count === 1 ? group.ids[0] : undefined)}>
-                  <span>{group.year}</span>
-                  <span>{group.count}</span>
-                </button>
-              ))}
-            </div>
-            {yearEvents.length > 0 ? (
-              <div className="rh-branch">
-                <p>{yearEvents.length} documented exhibitions</p>
-                {yearEvents.map((exhibition) => (
-                  <button key={exhibition.id} className="rh-text-button" type="button" onClick={() => openYear(exhibition.year ?? focus ?? 0, exhibition.id)}>
-                    {exhibition.title}
-                    {exhibition.spaceName ? ` · ${exhibition.spaceName}` : ""}
+          <section className="rh-history-section">
+            <div className="rh-history-toolbar">
+              <div>
+                <p className="rh-kicker">History</p>
+                {span ? (
+                  <p className="rh-timeline-summary">
+                    {span.first}–{span.last}
+                    {zoom === "DECADE" && windowSpan ? <span> · viewing {windowSpan.start}–{windowSpan.end}</span> : null}
+                  </p>
+                ) : (
+                  <p className="rh-timeline-summary">No documented exhibitions yet</p>
+                )}
+              </div>
+              <div className="rh-zoom" role="group" aria-label="Timeline level">
+                {(["ALL", "DECADE", "YEAR"] as const).map((level) => (
+                  <button key={level} type="button" aria-pressed={zoom === level} onClick={() => setZoom(level)}>
+                    {level}
                   </button>
                 ))}
               </div>
+            </div>
+
+            <details className="rh-timeline-help">
+              <summary>How to read this timeline</summary>
+              <p>Open circles mark year-only records. Filled circles include a month or day. A number is the count for that year.</p>
+            </details>
+
+            <div className="rh-track-shell">
+              {span ? (
+                <div className="rh-track-range" aria-hidden="true">
+                  <span>{windowSpan?.start ?? span.first}</span>
+                  <span>{windowSpan?.end ?? span.last}</span>
+                </div>
+              ) : null}
+              <div className="rh-track-wrap">
+                <div className="rh-axis" />
+                {visibleGroups.map((group) => {
+                  const left = windowSpan && windowSpan.end !== windowSpan.start ? ((group.year - windowSpan.start) / (windowSpan.end - windowSpan.start)) * 100 : 0;
+                  const only = group.count === 1 ? artist.exhibitions.find((exhibition) => exhibition.id === group.ids[0]) : null;
+                  const active = focus === group.year;
+                  return (
+                    <button
+                      key={group.year}
+                      className={`rh-cluster${active ? " is-active" : ""}`}
+                      style={{ left: `clamp(0px, calc(${left}% - 14px), calc(100% - 28px))` }}
+                      type="button"
+                      aria-pressed={active}
+                      aria-label={`${group.year}, ${group.count} exhibition${group.count === 1 ? "" : "s"}, ${group.marks.every((mark) => mark === "open") ? "year only" : "dated"}`}
+                      onClick={() => openYear(group.year, only?.id)}
+                    >
+                      <span className="rh-stack">
+                        {group.marks.slice(0, group.visible).map((mark, index) => (
+                          <i key={index} className={mark === "open" ? "rh-pip open" : "rh-pip"} />
+                        ))}
+                        {group.count > 4 ? <span className="rh-count">{group.count}</span> : null}
+                      </span>
+                      <span className="rh-cluster-year">{group.year}</span>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            <div className="rh-vertical">
+              {visibleGroups.map((group) => (
+                <button key={group.year} className={`rh-year-row${focus === group.year ? " is-active" : ""}`} type="button" onClick={() => openYear(group.year, group.count === 1 ? group.ids[0] : undefined)}>
+                  <span className="rh-year-dot" aria-hidden="true" />
+                  <span className="rh-year-label">{group.year}</span>
+                  <span className="rh-year-count">{group.count} {group.count === 1 ? "exhibition" : "exhibitions"}</span>
+                </button>
+              ))}
+            </div>
+
+            {yearEvents.length > 0 ? (
+              <div className="rh-branch">
+                <div className="rh-branch-heading">
+                  <span>{focus}</span>
+                  <span>{yearEvents.length} documented {yearEvents.length === 1 ? "exhibition" : "exhibitions"}</span>
+                </div>
+                <div className="rh-event-list">
+                  {yearEvents.map((exhibition) => (
+                    <button
+                      key={exhibition.id}
+                      className={`rh-event-card${selected?.id === exhibition.id ? " is-selected" : ""}`}
+                      type="button"
+                      aria-pressed={selected?.id === exhibition.id}
+                      onClick={() => openYear(exhibition.year ?? focus ?? 0, exhibition.id)}
+                    >
+                      <span className="rh-event-dot" aria-hidden="true" />
+                      <span className="rh-event-copy">
+                        <strong>{exhibition.title}</strong>
+                        <span>{eventLocation(exhibition) || exhibition.dateLabel}</span>
+                      </span>
+                      <span className="rh-event-arrow" aria-hidden="true">→</span>
+                    </button>
+                  ))}
+                </div>
+              </div>
             ) : null}
+
             {selected && place ? (
               <article className="rh-moment">
-                <h2>{place.title}</h2>
-                <p>{selected.dateLabel}</p>
-                {place.place ? <p>{place.place}</p> : null}
-                <div className="rh-constellation">
-                  {satellites?.visible.map((node) =>
-                    node.kind === "artist" ? (
-                      <button key={node.id} className="rh-text-button" type="button" onClick={() => followArtist(node.id, selected)}>
-                        {node.label}
-                      </button>
-                    ) : node.kind === "space" && selected.spaceSlug ? (
-                      <Link key={node.id} href={`/spaces/${selected.spaceSlug}`}>
-                        {node.label}
-                      </Link>
-                    ) : (
-                      <span key={node.id}>{node.label}</span>
-                    ),
-                  )}
+                <div className="rh-moment-heading">
+                  <div>
+                    <p className="rh-kicker">Moment</p>
+                    <h2>{place.title}</h2>
+                  </div>
+                  <div className="rh-moment-meta">
+                    <span>{selected.dateLabel}</span>
+                    {place.place ? <span>{place.place}</span> : null}
+                  </div>
                 </div>
+
+                {visibleConnectedArtists.length > 0 ? (
+                  <p className="rh-moment-intro">Continue through this exhibition into another artist&apos;s history.</p>
+                ) : (
+                  <p className="rh-moment-intro">This documented moment currently connects the artist to its recorded place.</p>
+                )}
+
+                <div className="rh-constellation" aria-label="Documented connections from this exhibition">
+                  <div className="rh-core-node">
+                    <span>{selected.year}</span>
+                    <strong>{artist.canonicalName}</strong>
+                  </div>
+                  <span className="rh-constellation-line" aria-hidden="true" />
+                  <div className="rh-satellites">
+                    {satellites?.visible.map((node) =>
+                      node.kind === "artist" ? (
+                        <button key={node.id} className="rh-node rh-node-artist" type="button" onClick={() => followArtist(node.id, selected)}>
+                          <span className="rh-node-type">Artist</span>
+                          <strong>{node.label}</strong>
+                          <span className="rh-node-arrow" aria-hidden="true">Enter history →</span>
+                        </button>
+                      ) : node.kind === "space" && selected.spaceSlug ? (
+                        <Link key={node.id} className="rh-node" href={`/spaces/${selected.spaceSlug}`}>
+                          <span className="rh-node-type">Space</span>
+                          <strong>{node.label}</strong>
+                        </Link>
+                      ) : (
+                        <span key={node.id} className="rh-node">
+                          <span className="rh-node-type">{node.kind}</span>
+                          <strong>{node.label}</strong>
+                        </span>
+                      ),
+                    )}
+                  </div>
+                </div>
+
                 {satellites && satellites.hiddenArtists > 0 ? (
-                  <button className="rh-text-button" type="button" onClick={() => setExpanded(true)}>
-                    + {satellites.hiddenArtists} artists
+                  <button className="rh-link-button" type="button" onClick={() => setExpanded(true)}>
+                    Show {satellites.hiddenArtists} more {satellites.hiddenArtists === 1 ? "artist" : "artists"}
                   </button>
                 ) : null}
-                <p>
+
+                <div className="rh-source-row">
                   <button
-                    className="rh-text-button"
+                    className="rh-source-button"
                     type="button"
                     aria-expanded={sourcesOpen}
                     onClick={() => {
@@ -288,16 +371,16 @@ export default function HistoryExperience({ artist }: { artist: HistoryArtistVie
                       trackHistory("SOURCE_OPENED");
                     }}
                   >
-                    {selected.provenance}
+                    {selected.provenance} <span aria-hidden="true">{sourcesOpen ? "−" : "+"}</span>
                   </button>
-                </p>
+                </div>
                 {sourcesOpen ? (
-                  <div>
+                  <div className="rh-source-panel">
                     {selected.sources.length === 0 ? <p>No source is attached.</p> : null}
                     {selected.sources.map((source) => (
                       <p key={source.id}>
                         <a href={source.url} onClick={() => trackHistory("SOURCE_OPENED")}>
-                          {source.sourceName}
+                          {source.sourceName} ↗
                         </a>
                       </p>
                     ))}
@@ -307,52 +390,73 @@ export default function HistoryExperience({ artist }: { artist: HistoryArtistVie
                 ) : null}
               </article>
             ) : null}
-            <p>
+
+            <div className="rh-history-foot">
+              <p>Coverage is partial and grows as ROB documents more verified moments.</p>
               <Link href={`/history/add?artist=${artist.slug}`} onClick={() => trackHistory("EXHIBITION_ADD_STARTED")}>
-                Add an exhibition
+                Add an exhibition →
               </Link>
-            </p>
+            </div>
           </section>
         ) : null}
 
         {tab === "connections" ? (
-          <section>
-            <h2>Artists</h2>
+          <section className="rh-tab-panel">
+            <div className="rh-section-heading">
+              <p className="rh-kicker">Documented connections</p>
+              <h2>Artists</h2>
+            </div>
             {artist.artists.length === 0 ? <p>No documented shared exhibitions yet.</p> : null}
-            {artist.artists.map((person) => (
-              <article key={person.id} className="rh-card">
-                <Link href={`/artists/${person.slug}`}>{person.name}</Link>
-                {person.nativeName ? <span> {person.nativeName}</span> : null}
-                <p>{plural(person.count)}</p>
-                <ul>
-                  {person.exhibitions.map((exhibition) => (
-                    <li key={exhibition.id}>{exhibition.title}</li>
-                  ))}
-                </ul>
-              </article>
-            ))}
-            <h2>Spaces</h2>
+            <div className="rh-card-grid">
+              {artist.artists.map((person) => (
+                <article key={person.id} className="rh-card">
+                  <Link className="rh-card-link" href={`/artists/${person.slug}`}>{person.name}</Link>
+                  {person.nativeName ? <span className="rh-muted"> {person.nativeName}</span> : null}
+                  <p>{plural(person.count)}</p>
+                  <ul>
+                    {person.exhibitions.map((exhibition) => (
+                      <li key={exhibition.id}>{exhibition.title}</li>
+                    ))}
+                  </ul>
+                </article>
+              ))}
+            </div>
+            <div className="rh-section-heading">
+              <p className="rh-kicker">Documented places</p>
+              <h2>Spaces</h2>
+            </div>
             {artist.spaces.length === 0 ? <p>No documented spaces yet.</p> : null}
-            {artist.spaces.map((space) => (
-              <article key={space.id} className="rh-card">
-                {space.slug ? <Link href={`/spaces/${space.slug}`}>{space.name}</Link> : <span>{space.name}</span>}
-                <p>{plural(space.count)}</p>
-              </article>
-            ))}
-            <h2>Curators</h2>
+            <div className="rh-card-grid">
+              {artist.spaces.map((space) => (
+                <article key={space.id} className="rh-card">
+                  {space.slug ? <Link className="rh-card-link" href={`/spaces/${space.slug}`}>{space.name}</Link> : <span>{space.name}</span>}
+                  <p>{plural(space.count)}</p>
+                </article>
+              ))}
+            </div>
+            <div className="rh-section-heading">
+              <p className="rh-kicker">Documented curators</p>
+              <h2>Curators</h2>
+            </div>
             {artist.curators.length === 0 ? <p>No documented curator is attached.</p> : null}
-            {artist.curators.map((curator) => (
-              <article key={curator.id} className="rh-card">
-                <span>{curator.name}</span>
-                <p>{plural(curator.count)}</p>
-              </article>
-            ))}
+            <div className="rh-card-grid">
+              {artist.curators.map((curator) => (
+                <article key={curator.id} className="rh-card">
+                  <span>{curator.name}</span>
+                  <p>{plural(curator.count)}</p>
+                </article>
+              ))}
+            </div>
           </section>
         ) : null}
 
         {tab === "works" ? (
-          <section>
-            {artist.worksHref ? <p><Link href={artist.worksHref}>Open the existing portfolio</Link></p> : null}
+          <section className="rh-tab-panel">
+            <div className="rh-section-heading">
+              <p className="rh-kicker">First-party archive</p>
+              <h2>Works</h2>
+            </div>
+            {artist.worksHref ? <p><Link href={artist.worksHref}>Open the existing portfolio →</Link></p> : null}
             {artist.works.length === 0 ? <p>No first-party works are public on this page.</p> : null}
             <ul className="rh-list">
               {artist.works.map((work) => (
@@ -366,14 +470,18 @@ export default function HistoryExperience({ artist }: { artist: HistoryArtistVie
         ) : null}
 
         {tab === "about" ? (
-          <section>
-            <p>ROB shows documented exhibitions. It does not write a biography.</p>
+          <section className="rh-tab-panel rh-about-panel">
+            <div className="rh-section-heading">
+              <p className="rh-kicker">About this record</p>
+              <h2>{artist.canonicalName}</h2>
+            </div>
+            <p>ROB maps documented exhibitions and connections through time. It does not write a biography.</p>
             {artist.birthYear ? <p>Born {artist.birthYear}</p> : null}
             {artist.city || artist.country ? <p>{[artist.city, artist.country].filter(Boolean).join(", ")}</p> : null}
-            {artist.officialWebsite ? <p><a href={artist.officialWebsite}>Official website</a></p> : null}
+            {artist.officialWebsite ? <p><a href={artist.officialWebsite}>Official website ↗</a></p> : null}
             <p>
               <Link href={`/history/start?artist=${artist.slug}`} onClick={() => trackHistory("CLAIM_STARTED")}>
-                Claim this page
+                Claim this page →
               </Link>
             </p>
           </section>
