@@ -68,7 +68,7 @@ const MomentCard = memo(function MomentCard({
         <Text style={styles.tag}>{item.medium}</Text>
       </View>
       <ReactionBar
-        moment={{ ...item, reactions: item.reactions ?? {}, myReaction: item.myReaction ?? null }}
+        moment={{ ...item, reactions: item.reactions, myReaction: item.myReaction ?? null }}
         onReactionUpdate={(id, reactions, myReaction) => {
           onReactionUpdate?.(id, reactions, myReaction);
           onRefresh?.();
