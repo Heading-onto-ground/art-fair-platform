@@ -1,0 +1,278 @@
+{
+  "phase": "PB5",
+  "imported": false,
+  "productionDecision": "REVIEW_REQUIRED",
+  "uniqueExhibitionCount": 10,
+  "countsAreProductionSubsetOnly": true,
+  "sources": [
+    {
+      "sourceUrl": "https://www.kukjegallery.com/artists/view?seq=190",
+      "records": [
+        {
+          "pilotRecordId": "bc8f64303d116e0d",
+          "role": "density",
+          "facts": {
+            "contentClass": "FACTUAL_METADATA",
+            "artistNames": ["Lee Ufan"],
+            "title": "Relatum",
+            "year": "2026",
+            "datePrecision": "YEAR",
+            "venue": "Palais des Papes",
+            "city": "Avignon",
+            "country": "France",
+            "curator": null,
+            "sourceUrl": "https://www.kukjegallery.com/artists/view?seq=190"
+          },
+          "explicitParticipants": ["Lee Ufan"],
+          "participantEvidence": "The line is under Selected Solo Exhibitions on the Lee Ufan page.",
+          "artistEntities": ["A01"],
+          "space": "Palais des Papes"
+        },
+        {
+          "pilotRecordId": "1980e5fc233eef24",
+          "role": "density",
+          "facts": {
+            "contentClass": "FACTUAL_METADATA",
+            "artistNames": ["Lee Ufan"],
+            "title": "Lee Ufan",
+            "year": "2026",
+            "datePrecision": "YEAR",
+            "venue": "San Marco Art Centre (SMAC)",
+            "city": "Venice",
+            "country": "Italy",
+            "curator": null,
+            "sourceUrl": "https://www.kukjegallery.com/artists/view?seq=190"
+          },
+          "explicitParticipants": ["Lee Ufan"],
+          "participantEvidence": "The exhibition line names Lee Ufan.",
+          "dataQuality": "The stored pilot city includes the collateral-event clause. The same line also says Venice, Italy.",
+          "artistEntities": ["A01"],
+          "space": "San Marco Art Centre (SMAC)"
+        },
+        {
+          "pilotRecordId": "35bcf9a88a4ee7e8",
+          "role": "density",
+          "facts": {
+            "contentClass": "FACTUAL_METADATA",
+            "artistNames": ["Lee Ufan"],
+            "title": "Silentium (Muksiam)",
+            "year": "2025",
+            "datePrecision": "YEAR",
+            "venue": "Hoam Museum of Art",
+            "city": "Yongin",
+            "country": "Korea",
+            "curator": null,
+            "sourceUrl": "https://www.kukjegallery.com/artists/view?seq=190"
+          },
+          "explicitParticipants": ["Lee Ufan"],
+          "participantEvidence": "The line is under Selected Solo Exhibitions on the Lee Ufan page.",
+          "artistEntities": ["A01"],
+          "space": "Hoam Museum of Art"
+        },
+        {
+          "pilotRecordId": "51503adf8d332052",
+          "role": "density",
+          "facts": {
+            "contentClass": "FACTUAL_METADATA",
+            "artistNames": ["Lee Ufan"],
+            "title": "Lee Ufan: Quiet Resonance",
+            "year": "2024",
+            "datePrecision": "YEAR",
+            "venue": "Art Gallery of New South Wales",
+            "city": "Sydney",
+            "country": "Australia",
+            "curator": null,
+            "sourceUrl": "https://www.kukjegallery.com/artists/view?seq=190"
+          },
+          "explicitParticipants": ["Lee Ufan"],
+          "participantEvidence": "The exhibition line names Lee Ufan.",
+          "artistEntities": ["A01"],
+          "space": "Art Gallery of New South Wales"
+        },
+        {
+          "pilotRecordId": "5a900216e528fa10",
+          "role": "space",
+          "facts": {
+            "contentClass": "FACTUAL_METADATA",
+            "artistNames": ["Lee Ufan"],
+            "title": "Lee Ufan",
+            "year": "2023",
+            "datePrecision": "YEAR",
+            "venue": "Kukje Gallery",
+            "city": "Seoul",
+            "country": "Korea",
+            "curator": null,
+            "sourceUrl": "https://www.kukjegallery.com/artists/view?seq=190"
+          },
+          "explicitParticipants": ["Lee Ufan"],
+          "participantEvidence": "The exhibition line names Lee Ufan.",
+          "artistEntities": ["A01"],
+          "space": "Kukje Gallery"
+        },
+        {
+          "pilotRecordId": "e8400acc7425b2fa",
+          "role": "density",
+          "facts": {
+            "contentClass": "FACTUAL_METADATA",
+            "artistNames": ["Lee Ufan"],
+            "title": "Lee Ufan: Watercolor and Drawing",
+            "year": "2023",
+            "datePrecision": "YEAR",
+            "venue": "Sekigahara Ningenmura Quotidian Museum of Art",
+            "city": "Gifu",
+            "country": "Japan",
+            "curator": null,
+            "sourceUrl": "https://www.kukjegallery.com/artists/view?seq=190"
+          },
+          "explicitParticipants": ["Lee Ufan"],
+          "participantEvidence": "The exhibition line names Lee Ufan.",
+          "artistEntities": ["A01"],
+          "space": "Sekigahara Ningenmura Quotidian Museum of Art"
+        },
+        {
+          "pilotRecordId": "692ef776fc1c1154",
+          "role": "density",
+          "facts": {
+            "contentClass": "FACTUAL_METADATA",
+            "artistNames": ["Lee Ufan"],
+            "title": "Lee Ufan",
+            "year": "2022",
+            "datePrecision": "YEAR",
+            "venue": "Hyogo Prefectural Museum of Art",
+            "city": "Kobe",
+            "country": "Japan",
+            "curator": null,
+            "sourceUrl": "https://www.kukjegallery.com/artists/view?seq=190"
+          },
+          "explicitParticipants": ["Lee Ufan"],
+          "participantEvidence": "The exhibition line names Lee Ufan.",
+          "artistEntities": ["A01"],
+          "space": "Hyogo Prefectural Museum of Art"
+        },
+        {
+          "pilotRecordId": "e36e8dee259d6973",
+          "role": "bridge",
+          "facts": {
+            "contentClass": "FACTUAL_METADATA",
+            "artistNames": ["Lee Ufan", "Park Seo-Bo"],
+            "title": "The Making of Modern Korean Art: The Letters of Kim Tschang-Yeul, Kim Whanki, Lee Ufan, and Park Seo-Bo, 1961-1982",
+            "year": "2025",
+            "datePrecision": "YEAR",
+            "venue": "Tina Kim Gallery",
+            "city": "New York",
+            "country": "US",
+            "curator": null,
+            "sourceUrl": "https://www.kukjegallery.com/artists/view?seq=190"
+          },
+          "explicitParticipants": ["Lee Ufan", "Park Seo-Bo"],
+          "namedInTitleNotInLaunchSet": ["Kim Tschang-Yeul", "Kim Whanki"],
+          "participantEvidence": "Both launch names appear in the exhibition line.",
+          "alsoStatedOn": ["https://www.kukjegallery.com/artists/view?seq=181"],
+          "artistEntities": ["A01", "A07"],
+          "space": "Tina Kim Gallery"
+        }
+      ]
+    },
+    {
+      "sourceUrl": "https://www.kukjegallery.com/artists/view?seq=181",
+      "records": [
+        {
+          "pilotRecordId": "e36e8dee259d6973",
+          "role": "bridge",
+          "facts": {
+            "contentClass": "FACTUAL_METADATA",
+            "artistNames": ["Lee Ufan", "Park Seo-Bo"],
+            "title": "The Making of Modern Korean Art: The Letters of Kim Tschang-Yeul, Kim Whanki, Lee Ufan, and Park Seo-Bo, 1961-1982",
+            "year": "2025",
+            "datePrecision": "YEAR",
+            "venue": "Tina Kim Gallery",
+            "city": "New York",
+            "country": "US",
+            "curator": null,
+            "sourceUrl": "https://www.kukjegallery.com/artists/view?seq=181"
+          },
+          "explicitParticipants": ["Lee Ufan", "Park Seo-Bo"],
+          "namedInTitleNotInLaunchSet": ["Kim Tschang-Yeul", "Kim Whanki"],
+          "participantEvidence": "Both launch names appear in the exhibition line.",
+          "artistEntities": ["A01", "A07"],
+          "space": "Tina Kim Gallery"
+        },
+        {
+          "pilotRecordId": "8ea06079c8153993",
+          "role": "bridge",
+          "facts": {
+            "contentClass": "FACTUAL_METADATA",
+            "artistNames": ["Park Seo-Bo", "Ha Chong-Hyun"],
+            "title": "Contemporary Art Before the Contemporary: Chung Chang-Sub, Kim Tschang-Yeul, Park Seo-Bo, Ha Chong-Hyun, Kim Hyung Dae, Youn Myeungro",
+            "year": "1994",
+            "datePrecision": "YEAR",
+            "venue": "Gallery 63",
+            "city": "Seoul",
+            "country": "Korea",
+            "curator": null,
+            "sourceUrl": "https://www.kukjegallery.com/artists/view?seq=181"
+          },
+          "explicitParticipants": ["Park Seo-Bo", "Ha Chong-Hyun"],
+          "namedInTitleNotInLaunchSet": ["Chung Chang-Sub", "Kim Tschang-Yeul", "Kim Hyung Dae", "Youn Myeungro"],
+          "participantEvidence": "Both launch names appear in the exhibition line.",
+          "artistEntities": ["A07", "A08"],
+          "space": "Gallery 63"
+        },
+        {
+          "pilotRecordId": "2f9dc15e3fab4c6b",
+          "role": "bridge",
+          "facts": {
+            "contentClass": "FACTUAL_METADATA",
+            "artistNames": ["Park Seo-Bo", "Ha Chong-Hyun", "Chung Sang-Hwa"],
+            "title": "Kim Tschang-Yeul, Park Seo-Bo, Yun Hyongkeun, Chung Sang-Hwa, Chung Chang-Sub, Ha Chong-Hyun",
+            "year": "1992",
+            "datePrecision": "YEAR",
+            "venue": "Ingong Gallery",
+            "city": "Seoul",
+            "country": "Korea",
+            "curator": null,
+            "sourceUrl": "https://www.kukjegallery.com/artists/view?seq=181"
+          },
+          "explicitParticipants": ["Park Seo-Bo", "Ha Chong-Hyun", "Chung Sang-Hwa"],
+          "namedInTitleNotInLaunchSet": ["Kim Tschang-Yeul", "Yun Hyongkeun", "Chung Chang-Sub"],
+          "participantEvidence": "All three launch names appear in the exhibition line.",
+          "artistEntities": ["A07", "A08", "A10"],
+          "space": "Ingong Gallery"
+        }
+      ]
+    }
+  ],
+  "minimumLaunchSubset": {
+    "reason": "Eight Lee Ufan records are the smallest dense history, and they already include the Tina Kim bridge. The other two bridges are the only records that add Ha Chong-Hyun and Chung Sang-Hwa. Removing one of those drops a bridge.",
+    "uniquePilotRecordIds": [
+      "bc8f64303d116e0d",
+      "1980e5fc233eef24",
+      "35bcf9a88a4ee7e8",
+      "51503adf8d332052",
+      "5a900216e528fa10",
+      "e8400acc7425b2fa",
+      "692ef776fc1c1154",
+      "e36e8dee259d6973",
+      "8ea06079c8153993",
+      "2f9dc15e3fab4c6b"
+    ],
+    "productionCounts": {
+      "exhibitions": 10,
+      "Lee Ufan": 8,
+      "Park Seo-Bo": 3,
+      "Ha Chong-Hyun": 2,
+      "Chung Sang-Hwa": 1
+    },
+    "pilotCountsNotForDisplay": {
+      "Lee Ufan": 130,
+      "Park Seo-Bo": 87,
+      "Ha Chong-Hyun": 52,
+      "Chung Sang-Hwa": 4
+    }
+  },
+  "alternativeGreenSources": {
+    "candidateRecords": "None of the 10 records has a source URL other than the two Kukje pages.",
+    "wikidata": "Stored identity files confirm QIDs for these four artists. They do not contain these exhibition lines. Lee Ufan has 2 stored participant-in statements and Chung Sang-Hwa has 3. Those statements are not these launch exhibitions. Park Seo-Bo and Ha Chong-Hyun have 0.",
+    "openGovernmentData": "No stored open-government response covers these records."
+  }
+}

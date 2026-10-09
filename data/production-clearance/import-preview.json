@@ -1,0 +1,42 @@
+{
+  "imported": false,
+  "policy": {
+    "internalUseDecision": "ALLOW_LIMITED",
+    "externalPermission": "NOT_OBTAINED",
+    "contentScope": "FACTUAL_METADATA_ONLY",
+    "sourceFamily": "kukjegallery.com",
+    "sourceName": "Kukje Gallery",
+    "sourceType": "OFFICIAL_GALLERY_PAGE"
+  },
+  "artistsToCreate": [],
+  "artistsReused": [
+    "Lee Ufan",
+    "Park Seo-Bo",
+    "Ha Chong-Hyun",
+    "Chung Sang-Hwa"
+  ],
+  "blocked": [],
+  "exhibitions": 10,
+  "spacesToCreate": 0,
+  "participations": 14,
+  "sources": 2,
+  "bridgePaths": 10,
+  "skipped": [],
+  "productionCounts": {
+    "Lee Ufan": 8,
+    "Park Seo-Bo": 3,
+    "Ha Chong-Hyun": 2,
+    "Chung Sang-Hwa": 1
+  },
+  "pilotCountsNotUsed": {
+    "Lee Ufan": 130,
+    "Park Seo-Bo": 87,
+    "Ha Chong-Hyun": 52,
+    "Chung Sang-Hwa": 4
+  },
+  "before": {
+    "users": 189,
+    "profiles": 116,
+    "exhibitions": 23
+  }
+}

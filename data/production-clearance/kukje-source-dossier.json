@@ -1,0 +1,120 @@
+{
+  "phase": "PB5",
+  "decision": "KUKJE_CLEARANCE_READY_FOR_HUMAN_DECISION",
+  "imported": false,
+  "productionClearanceChanged": false,
+  "retrievedAt": "2026-10-09T09:10:00.000Z",
+  "legalConclusion": false,
+  "sources": [
+    {
+      "sourceUrl": "https://www.kukjegallery.com/artists/view?seq=190",
+      "pageTitle": "Lee Ufan",
+      "sourceFamily": "kukjegallery.com",
+      "sourceType": "artist-page exhibition list",
+      "retrievedAt": "2026-10-09T09:10:00.000Z",
+      "browserPublicAccess": true,
+      "loginRequired": false,
+      "paywall": false,
+      "captcha": false,
+      "automatedAccessStatus": "Public page returned HTTP 200. robots.txt says User-agent: * Allow: /. That rule is not a reuse license.",
+      "robotsObservation": "User-agent: * Allow: /",
+      "reuseLicenseEvidence": null,
+      "termsEvidence": "No Terms of Use page was found. /terms, /privacy, /legal, /copyright, /privacy-policy, and /terms-of-use redirect to the homepage. The homepage and /about do not link a Terms, Privacy, or Legal document. A missing terms page is not permission.",
+      "copyrightNoticeEvidence": "The public site menu shows: © KUKJE GALLERY. All Rights Reserved. This reserves rights. It is not a license for ROB's proposed use, and it does not state a ban on factual exhibition metadata.",
+      "imageUseRestrictions": {
+        "scope": "IMAGES_ONLY",
+        "onThisUrl": "The page displays artwork images. Those images are out of scope. No image file or image address is stored.",
+        "pressMaterials": "Separate Kukje press PDFs restrict images: credit the artist and relevant parties, and do not edit images without prior permission. One Korean press PDF also limits images to promotional use during the exhibition. Those sentences are image rules. They are not a license or a ban for factual exhibition metadata."
+      },
+      "factualMetadataNeeded": [
+        "artist name",
+        "exhibition title",
+        "year",
+        "venue",
+        "city",
+        "country",
+        "participating artists named in the exhibition line",
+        "source URL"
+      ],
+      "expressiveContentNeeded": [],
+      "contentClasses": {
+        "FACTUAL_METADATA": "Selected solo and group exhibition lines: title, year, venue, city, country, and names written in that line.",
+        "EXPRESSIVE_CONTENT": "Biography, education, awards, collection list, artwork captions, press-clipping titles, and installation-view credits. None of this is proposed for storage."
+      },
+      "proposedROBUse": "Store the minimum factual exhibition lines used by the launch subset, link each record to this URL, and show text, timeline, and names only.",
+      "productionDecision": "REVIEW_REQUIRED",
+      "reviewerNotes": "Public access and the absence of an open license do not decide reuse. No written permission is recorded. A human decision is still required."
+    },
+    {
+      "sourceUrl": "https://www.kukjegallery.com/artists/view?seq=181",
+      "pageTitle": "Park Seo-Bo",
+      "sourceFamily": "kukjegallery.com",
+      "sourceType": "artist-page exhibition list",
+      "retrievedAt": "2026-10-09T09:10:00.000Z",
+      "browserPublicAccess": true,
+      "loginRequired": false,
+      "paywall": false,
+      "captcha": false,
+      "automatedAccessStatus": "Public page returned HTTP 200. robots.txt says User-agent: * Allow: /. That rule is not a reuse license.",
+      "robotsObservation": "User-agent: * Allow: /",
+      "reuseLicenseEvidence": null,
+      "termsEvidence": "Same site finding as the other candidate URL. No Terms, Privacy, or Legal document was found. A missing terms page is not permission.",
+      "copyrightNoticeEvidence": "The public site menu shows: © KUKJE GALLERY. All Rights Reserved.",
+      "imageUseRestrictions": {
+        "scope": "IMAGES_ONLY",
+        "onThisUrl": "The page displays artwork images. Those images are out of scope. No image file is stored.",
+        "pressMaterials": "The same image-only press rules apply to the Kukje source family. They are not extended to every factual line on this page, and they are not permission to reuse the page."
+      },
+      "factualMetadataNeeded": [
+        "artist name",
+        "exhibition title",
+        "year",
+        "venue",
+        "city",
+        "country",
+        "participating artists named in the exhibition line",
+        "source URL"
+      ],
+      "expressiveContentNeeded": [],
+      "contentClasses": {
+        "FACTUAL_METADATA": "Selected exhibition lines needed for the two additional bridge records, plus the shared Tina Kim line.",
+        "EXPRESSIVE_CONTENT": "Biography, education, awards, collection list, artwork captions, and press-clipping titles. None of this is proposed for storage."
+      },
+      "proposedROBUse": "Store only the bridge exhibition lines that this page states, link back to this URL, and do not reproduce images or prose.",
+      "productionDecision": "REVIEW_REQUIRED",
+      "reviewerNotes": "The two bridge lines name their participants in the exhibition title. Other artists named in those titles are not added as launch entities."
+    }
+  ],
+  "siteSearch": {
+    "termsOfUse": "not found",
+    "privacyPolicy": "not found",
+    "copyrightPage": "not found",
+    "legalPage": "not found",
+    "copyrightNotice": "© KUKJE GALLERY. All Rights Reserved.",
+    "privacyIsNotReusePermission": true,
+    "robotsIsNotALicense": true,
+    "missingTermsIsNotPermission": true
+  },
+  "pressImageEvidence": [
+    {
+      "url": "https://www.kukjegallery.com/upload/press/d_Jean_Michel_Basquiat_en.pdf",
+      "scope": "IMAGES_ONLY",
+      "notice": "Use of images must clearly credit the artist and other relevant parties, and image editing cannot be performed without prior permission."
+    },
+    {
+      "url": "https://www.kukjegallery.com/upload/press/5_Gathering_Clouds_kr.pdf",
+      "scope": "IMAGES_ONLY",
+      "notice": "Images in the press material require the attached credit, are limited to promotional use during the exhibition, and may not be edited."
+    }
+  ],
+  "suggestedContact": {
+    "email": "kukje@kukjegallery.com",
+    "whereSeen": "Public Seoul and Busan footer on the candidate pages and the homepage.",
+    "sent": false
+  },
+  "scenarios": {
+    "A": "Written permission or a clear applicable license can move these records to APPROVED after a person confirms it.",
+    "B": "No permission and no applicable license. This is the current state. Records stay REVIEW_REQUIRED and are not imported.",
+    "C": "An explicit term that prohibits this factual-metadata use would mark the source REJECTED. The current copyright notice and the image-only press rules do not do that."
+  }
+}

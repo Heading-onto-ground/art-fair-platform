@@ -1,0 +1,166 @@
+{
+  "status": "NOT_REVIEWED",
+  "reason": "Existing production first-party history does not meet the public beta minimum. This file selects a small pilot subset for human clearance. Nothing here is imported or approved.",
+  "bridgeExhibitionIds": [
+    "e36e8dee259d6973",
+    "8ea06079c8153993",
+    "2f9dc15e3fab4c6b"
+  ],
+  "artists": [
+    {
+      "pilotId": "A01",
+      "artistName": "이우환",
+      "romanizedName": "Lee Ufan",
+      "pilotAcceptedExhibitionCount": 130,
+      "launchExhibitionCount": 8,
+      "launchExhibitionIds": [
+        "bc8f64303d116e0d",
+        "1980e5fc233eef24",
+        "35bcf9a88a4ee7e8",
+        "51503adf8d332052",
+        "5a900216e528fa10",
+        "e8400acc7425b2fa",
+        "692ef776fc1c1154",
+        "e36e8dee259d6973"
+      ],
+      "sourceFamilies": [
+        "kukjegallery.com"
+      ],
+      "sourceUrlCount": 1,
+      "sharedExhibitionIds": [
+        "e36e8dee259d6973"
+      ],
+      "spaces": [
+        "Art Gallery of New South Wales",
+        "Hoam Museum of Art",
+        "Hyogo Prefectural Museum of Art",
+        "Kukje Gallery",
+        "Palais des Papes",
+        "San Marco Art Centre (SMAC)",
+        "Sekigahara Ningenmura Quotidian Museum of Art",
+        "Tina Kim Gallery"
+      ],
+      "warnings": [
+        "Pilot history has 130 accepted exhibitions. The launch subset has 8."
+      ],
+      "productionClearanceStatus": "NOT_REVIEWED"
+    },
+    {
+      "pilotId": "A07",
+      "artistName": "박서보",
+      "romanizedName": "Park Seo-Bo",
+      "pilotAcceptedExhibitionCount": 87,
+      "launchExhibitionCount": 3,
+      "launchExhibitionIds": [
+        "e36e8dee259d6973",
+        "8ea06079c8153993",
+        "2f9dc15e3fab4c6b"
+      ],
+      "sourceFamilies": [
+        "kukjegallery.com"
+      ],
+      "sourceUrlCount": 2,
+      "sharedExhibitionIds": [
+        "e36e8dee259d6973",
+        "8ea06079c8153993",
+        "2f9dc15e3fab4c6b"
+      ],
+      "spaces": [
+        "Gallery 63",
+        "Ingong Gallery",
+        "Tina Kim Gallery"
+      ],
+      "warnings": [
+        "Pilot history has 87 accepted exhibitions. The launch subset has 3."
+      ],
+      "productionClearanceStatus": "NOT_REVIEWED"
+    },
+    {
+      "pilotId": "A08",
+      "artistName": "하종현",
+      "romanizedName": "Ha Chong-Hyun",
+      "pilotAcceptedExhibitionCount": 52,
+      "launchExhibitionCount": 2,
+      "launchExhibitionIds": [
+        "8ea06079c8153993",
+        "2f9dc15e3fab4c6b"
+      ],
+      "sourceFamilies": [
+        "kukjegallery.com"
+      ],
+      "sourceUrlCount": 1,
+      "sharedExhibitionIds": [
+        "8ea06079c8153993",
+        "2f9dc15e3fab4c6b"
+      ],
+      "spaces": [
+        "Gallery 63",
+        "Ingong Gallery"
+      ],
+      "warnings": [
+        "Pilot history has 52 accepted exhibitions. The launch subset has 2."
+      ],
+      "productionClearanceStatus": "NOT_REVIEWED"
+    },
+    {
+      "pilotId": "A10",
+      "artistName": "정상화",
+      "romanizedName": "Chung Sang-Hwa",
+      "pilotAcceptedExhibitionCount": 4,
+      "launchExhibitionCount": 1,
+      "launchExhibitionIds": [
+        "2f9dc15e3fab4c6b"
+      ],
+      "sourceFamilies": [
+        "kukjegallery.com"
+      ],
+      "sourceUrlCount": 1,
+      "sharedExhibitionIds": [
+        "2f9dc15e3fab4c6b"
+      ],
+      "spaces": [
+        "Ingong Gallery"
+      ],
+      "warnings": [
+        "Pilot history has 4 accepted exhibitions. The launch subset has 1."
+      ],
+      "productionClearanceStatus": "NOT_REVIEWED"
+    }
+  ],
+  "sources": [
+    {
+      "sourceUrl": "https://www.kukjegallery.com/artists/view?seq=181",
+      "sourceFamily": "kukjegallery.com",
+      "sourceType": "webpage",
+      "accessStatus": "retrieved-during-pilot",
+      "licenseEvidence": null,
+      "termsReview": "REVIEW_REQUIRED",
+      "recordScope": [
+        "8ea06079c8153993",
+        "2f9dc15e3fab4c6b"
+      ],
+      "decision": "NOT_REVIEWED",
+      "notes": "Reuse is not decided. A public page and robots.txt are not a license, and a missing open-data license is not a rejection."
+    },
+    {
+      "sourceUrl": "https://www.kukjegallery.com/artists/view?seq=190",
+      "sourceFamily": "kukjegallery.com",
+      "sourceType": "webpage",
+      "accessStatus": "retrieved-during-pilot",
+      "licenseEvidence": null,
+      "termsReview": "REVIEW_REQUIRED",
+      "recordScope": [
+        "bc8f64303d116e0d",
+        "1980e5fc233eef24",
+        "35bcf9a88a4ee7e8",
+        "51503adf8d332052",
+        "5a900216e528fa10",
+        "e8400acc7425b2fa",
+        "692ef776fc1c1154",
+        "e36e8dee259d6973"
+      ],
+      "decision": "NOT_REVIEWED",
+      "notes": "Reuse is not decided. A public page and robots.txt are not a license, and a missing open-data license is not a rejection."
+    }
+  ]
+}

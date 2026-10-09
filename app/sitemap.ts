@@ -162,7 +162,24 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
          LEFT JOIN "ExhibitionHistoryMeta" m ON m."exhibitionId" = x.id
          WHERE p."artistEntityId" = e.id
            AND x."isPublic" = true
-           AND (m."exhibitionId" IS NULL OR m."clearanceStatus" = 'APPROVED')
+           AND (
+             (m."exhibitionId" IS NULL AND x."createdBy" IS NOT NULL)
+             OR (
+               m."publicationStatus" = 'PUBLIC'
+               AND m."sourceClearance" <> 'REJECTED'
+               AND (
+                 m."origin" <> 'ROB_RESEARCHED'
+                 OR m."sourceClearance" = 'APPROVED'
+                 OR EXISTS (
+                   SELECT 1 FROM "ExhibitionSource" es
+                   JOIN "HistorySource" hs ON hs.id = es."sourceId"
+                   WHERE es."exhibitionId" = x.id
+                     AND hs."internalUseDecision" = 'ALLOW_LIMITED'
+                     AND hs."contentScope" = 'FACTUAL_METADATA_ONLY'
+                 )
+               )
+             )
+           )
        ) >= 3
        ORDER BY e."updatedAt" DESC
        LIMIT ${MAX_PER_TYPE}`,
@@ -178,8 +195,20 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
        FROM "ExhibitionHistoryMeta" m
        JOIN "Exhibition" x ON x.id = m."exhibitionId"
        WHERE m.slug IS NOT NULL
-         AND m."clearanceStatus" = 'APPROVED'
+         AND m."publicationStatus" = 'PUBLIC'
          AND x."isPublic" = true
+         AND m."sourceClearance" <> 'REJECTED'
+         AND (
+           m."origin" <> 'ROB_RESEARCHED'
+           OR m."sourceClearance" = 'APPROVED'
+           OR EXISTS (
+             SELECT 1 FROM "ExhibitionSource" es
+             JOIN "HistorySource" hs ON hs.id = es."sourceId"
+             WHERE es."exhibitionId" = x.id
+               AND hs."internalUseDecision" = 'ALLOW_LIMITED'
+               AND hs."contentScope" = 'FACTUAL_METADATA_ONLY'
+           )
+         )
          AND EXISTS (
            SELECT 1 FROM "HistoryParticipation" p WHERE p."exhibitionId" = x.id
          )
@@ -199,7 +228,24 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
          LEFT JOIN "ExhibitionHistoryMeta" m ON m."exhibitionId" = x.id
          WHERE x."spaceId" = s."spaceId"
            AND x."isPublic" = true
-           AND (m."exhibitionId" IS NULL OR m."clearanceStatus" = 'APPROVED')
+           AND (
+             (m."exhibitionId" IS NULL AND x."createdBy" IS NOT NULL)
+             OR (
+               m."publicationStatus" = 'PUBLIC'
+               AND m."sourceClearance" <> 'REJECTED'
+               AND (
+                 m."origin" <> 'ROB_RESEARCHED'
+                 OR m."sourceClearance" = 'APPROVED'
+                 OR EXISTS (
+                   SELECT 1 FROM "ExhibitionSource" es
+                   JOIN "HistorySource" hs ON hs.id = es."sourceId"
+                   WHERE es."exhibitionId" = x.id
+                     AND hs."internalUseDecision" = 'ALLOW_LIMITED'
+                     AND hs."contentScope" = 'FACTUAL_METADATA_ONLY'
+                 )
+               )
+             )
+           )
        )
        LIMIT ${MAX_PER_TYPE}`,
     ),

@@ -1,0 +1,5 @@
+{
+  "status": "NOT_SELECTED",
+  "reason": "Production exhibition counts were not read because the database login was rejected. No pilot candidate was selected, and no source was marked APPROVED.",
+  "sources": []
+}
