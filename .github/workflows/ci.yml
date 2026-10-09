@@ -74,6 +74,9 @@ jobs:
 
       - name: Build (web export)
         run: npm run build
+        env:
+          # E2E signs in with any password. That path is the beta client, not the API login.
+          EXPO_PUBLIC_BETA: "1"
 
       - name: Install Playwright browsers
         run: npx playwright install --with-deps chromium

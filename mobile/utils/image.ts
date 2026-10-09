@@ -3,7 +3,7 @@
  * Aggressive resize/compress to avoid OOM on Expo Go.
  */
 
-import * as FileSystem from "expo-file-system";
+import * as FileSystem from "expo-file-system/legacy";
 import * as ImageManipulator from "expo-image-manipulator";
 
 const MAX_SIZE = 480; // max width/height (Expo Go memory limit)

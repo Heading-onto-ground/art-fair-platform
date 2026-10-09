@@ -10,9 +10,10 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import { login as apiLogin, clearSession, getStoredSession } from "@/services/api/authService";
 
 const SESSION_KEY = "@rob_session";
+// Read the public env directly so Expo can inline it. Optional chaining keeps
+// the web bundle from seeing EXPO_PUBLIC_BETA.
 const IS_BETA =
-  (typeof process !== "undefined" && process.env?.EXPO_PUBLIC_BETA === "1") ||
-  (typeof process !== "undefined" && process.env?.EXPO_PUBLIC_BETA === "true");
+  process.env.EXPO_PUBLIC_BETA === "1" || process.env.EXPO_PUBLIC_BETA === "true";
 
 interface AuthState {
   isLoggedIn: boolean;

@@ -127,7 +127,6 @@ const dict: Record<string, Record<Lang, string>> = {
   failedSaveRetry: { en: "Failed to save. Please try again.", ko: "저장 실패. 다시 시도하세요." },
   langEn: { en: "English", ko: "English" },
   langKo: { en: "한국어", ko: "한국어" },
-  sendBetaFeedback: { en: "Send Beta Feedback", ko: "베타 피드백 보내기" },
   practice: { en: "Practice", ko: "작업" },
   home: { en: "Home", ko: "홈" },
   moment: { en: "Moment", ko: "순간" },

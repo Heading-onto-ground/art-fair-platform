@@ -25,7 +25,7 @@ interface ReactionBarProps {
 export function ReactionBar({ moment, onReactionUpdate }: ReactionBarProps) {
   const [loading, setLoading] = useState(false);
   const reqIdRef = useRef(0);
-  const reactions = moment.reactions ?? {};
+  const reactions: Record<string, number> = { ...(moment.reactions ?? {}) };
   const myReaction = moment.myReaction ?? null;
 
   const doOptimisticUpdate = (t: ReactionType) => {

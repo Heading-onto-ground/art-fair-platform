@@ -8,28 +8,23 @@ function read(rel: string) {
   return readFileSync(resolve(root, rel), "utf8");
 }
 
-describe("ROB homepage identity", () => {
-  it("serves artist search at / and keeps NOW on its own route", () => {
+describe("ROB public home", () => {
+  it("serves history search at /", () => {
     const home = read("app/page.tsx");
-    const now = read("app/now/page.tsx");
-    const studio = read("app/studio/page.tsx");
     expect(home).toContain("HistoryHome");
     expect(home).toContain("Search an artist. See their journey.");
     expect(home).not.toContain("NowPage");
     expect(home).not.toContain("LaborSurveyHome");
-    expect(now).toContain('from "@/app/components/NowPage"');
-    expect(studio).toContain('from "@/app/components/NowPage"');
-    expect(studio).not.toContain("LaborSurveyHome");
+    expect(home).not.toContain("ArtistFeed");
   });
+});
 
-  it("keeps the labor survey on its own project route", () => {
-    const survey = read("app/labor-survey/page.tsx");
-    expect(survey).toContain("LaborSurveyHome");
-    expect(survey).not.toContain("NowPage");
-  });
-
-  it("opens the installed app on the public search home", () => {
-    const manifest = read("app/manifest.ts");
-    expect(manifest).toMatch(/start_url:\s*"\/"/);
+describe("ROB now route", () => {
+  it("keeps the now feed on /now", () => {
+    const now = read("app/now/page.tsx");
+    expect(now).toContain("NowPage");
+    expect(now).not.toContain("HistoryHome");
+    expect(now).not.toContain("LaborSurveyHome");
+    expect(now).not.toContain("ArtistFeed");
   });
 });

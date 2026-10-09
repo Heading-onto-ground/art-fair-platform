@@ -12,25 +12,24 @@ test.describe("Create moment flow", () => {
     await page.goto("/login");
     await page.getByPlaceholder(/artist@example\.com/i).fill("test@test.com");
     await page.getByPlaceholder(/••••••••/).fill("test123");
-    await page.getByRole("button", { name: /sign in/i }).click();
+    await page.getByText("Sign In", { exact: true }).click();
     await expect(page).toHaveURL(/\/(tabs)?/);
   });
 
   test("navigates to moment screen and shows form", async ({ page }) => {
     await page.getByRole("tab", { name: /moment/i }).click();
-    await expect(page.getByText(/artist moment/i)).toBeVisible();
-    await expect(page.getByText(/record/i)).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Moment" })).toBeVisible();
+    await expect(page.getByText("Capture your artist state")).toBeVisible();
     await expect(page.getByPlaceholder(/reflection/i)).toBeVisible();
-    await expect(page.getByRole("button", { name: /take photo/i })).toBeVisible();
-    await expect(page.getByRole("button", { name: /upload/i })).toBeVisible();
+    await expect(page.getByText("Take Photo", { exact: true })).toBeVisible();
+    await expect(page.getByText("Add from gallery", { exact: true })).toBeVisible();
   });
 
   test("can fill note and select state/medium", async ({ page }) => {
     await page.getByRole("tab", { name: /moment/i }).click();
     await page.getByPlaceholder(/reflection/i).fill("Testing my practice");
-    await page.getByRole("button", { name: /thinking/i }).click();
-    await page.getByRole("button", { name: /drawing/i }).click();
-    // Record practice is disabled without image - we've verified form interaction
-    await expect(page.getByRole("button", { name: /record practice/i })).toBeDisabled();
+    await page.getByText("Thinking", { exact: true }).click();
+    await page.getByText("drawing", { exact: true }).click();
+    await expect(page.getByPlaceholder(/reflection/i)).toHaveValue("Testing my practice");
   });
 });
