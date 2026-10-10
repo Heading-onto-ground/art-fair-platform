@@ -1,4 +1,6 @@
 import { NextResponse } from "next/server";
+import { revalidateTag } from "next/cache";
+import { PUBLIC_HISTORY_CACHE_TAG } from "@/lib/history/publicGraph";
 import type { PrismaClient } from "@prisma/client";
 import { prisma as untypedPrisma } from "@/lib/prisma";
 import { requireAdminSession } from "@/lib/apiGuards";
@@ -49,6 +51,7 @@ export async function PATCH(req: Request) {
   try {
     const result = await reviewClaim({ id: body.id, status: body.status, reviewedBy: admin.email });
     if (!result.ok) return NextResponse.json({ error: result.error }, { status: 400 });
+    revalidateTag(PUBLIC_HISTORY_CACHE_TAG);
     return NextResponse.json({ status: result.claim.status });
   } catch (err) {
     if (isMissingHistorySchema(err)) {

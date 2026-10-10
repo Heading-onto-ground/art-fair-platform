@@ -1,7 +1,7 @@
 import { existsSync, readFileSync, readdirSync } from "fs";
 import path from "path";
 import { describe, expect, it } from "vitest";
-import { JOURNEY_MS, clusterByDecade, decodeDisplayText, displayCountry, groupByYear, historyCoverageCopy, historyPresentation, restoredArtistPath, shouldPlayJourney, uncertainDisplay } from "@/lib/history/display";
+import { HISTORY_PENDING_OVERLAY_MS, JOURNEY_MS, clusterByDecade, decodeDisplayText, displayCountry, followArtistHref, groupByYear, historyCoverageCopy, historyPresentation, parseHistoryReturn, restoredArtistPath, returnArtistHref, shouldPlayJourney, shouldRetryScroll, uncertainDisplay } from "@/lib/history/display";
 import { publicHistoryImage, selectExplicitFirstPartyHero } from "@/lib/history/images";
 import { planBackfill } from "@/lib/history/backfill";
 import { isHistoryUnavailable } from "@/lib/history/schemaError";
@@ -293,12 +293,56 @@ describe("ROB public history", () => {
     const experience = readFileSync(path.resolve("app/components/history/HistoryExperience.tsx"), "utf8");
     const loading = readFileSync(path.resolve("app/artists/[id]/loading.tsx"), "utf8");
     expect(experience).toContain("router.prefetch");
+    expect(experience).toContain("followArtistHref");
+    expect(experience).toContain("useTransition");
+    expect(experience).toContain("startTransition");
+    expect(experience).toContain("sessionStorage");
+    expect(experience).toContain("rh-nav-overlay");
+    expect(experience).toContain("--rh-overlay-delay");
     expect(experience).toContain("rh-chronology");
     expect(experience).toContain("dataset.nav");
     expect(experience).not.toMatch(/documented career|career runs|inactive/i);
+    expect(experience).not.toContain("router.prefetch(`/artists/${");
     expect(loading).toContain("rh-progress");
     expect(loading).toContain("rh-skel");
     expect(loading).not.toContain("CardSkeleton");
+  });
+
+  it("prefetches the follow href and keeps scroll restoration bounded", () => {
+    const href = followArtistHref("park-seo-bo", "lee-ufan", "making-of-modern-korean-art");
+    expect(href).toBe("/artists/park-seo-bo?from=lee-ufan&via=making-of-modern-korean-art");
+    const back = returnArtistHref({ from: "lee-ufan", via: "making-of-modern-korean-art", srcZoom: "year", srcFocus: "2025" });
+    expect(back).toBe("/artists/lee-ufan?event=making-of-modern-korean-art&zoom=year&focus=2025");
+    expect(back).not.toContain("scroll=");
+    expect(parseHistoryReturn(JSON.stringify({ zoom: "year", focus: "2025", scroll: 720 }))).toEqual({
+      zoom: "year",
+      focus: "2025",
+      scroll: 720,
+    });
+    expect(parseHistoryReturn("not-json")).toBeNull();
+    expect(shouldRetryScroll(0, 640, 0)).toBe(true);
+    expect(shouldRetryScroll(0, 720, 3)).toBe(true);
+    expect(shouldRetryScroll(963, 965, 1)).toBe(false);
+    expect(shouldRetryScroll(0, 965, 4)).toBe(false);
+    expect(HISTORY_PENDING_OVERLAY_MS).toBeGreaterThanOrEqual(150);
+    expect(HISTORY_PENDING_OVERLAY_MS).toBeLessThanOrEqual(250);
+
+    const queries = readFileSync(path.resolve("lib/history/queries.ts"), "utf8");
+    const graph = readFileSync(path.resolve("lib/history/publicGraph.ts"), "utf8");
+    const page = readFileSync(path.resolve("app/artists/[id]/page.tsx"), "utf8");
+    const layout = readFileSync(path.resolve("app/artists/[id]/layout.tsx"), "utf8");
+    expect(page).toContain("loadPublicArtist");
+    expect(layout).toContain("loadPublicArtist");
+    expect(page).toContain('dynamic = "force-dynamic"');
+    expect(queries).toContain("unstable_cache");
+    expect(queries).toContain("export const loadPublicArtist = cache(");
+    expect(queries).toContain("typeof reactCache");
+    expect(queries).not.toContain("exhibitionsForEntity");
+    expect(graph).not.toMatch(/passwordHash|\bemail\b|\bbio\b|profileImage/);
+    expect(readFileSync(path.resolve("app/api/history/exhibitions/route.ts"), "utf8")).toContain("revalidateTag");
+    expect(readFileSync(path.resolve("app/api/history/artists/route.ts"), "utf8")).toContain("revalidateTag");
+    expect(readFileSync(path.resolve("app/api/admin/history/claims/route.ts"), "utf8")).toContain("revalidateTag");
+    expect(readFileSync(path.resolve("app/api/history/claims/route.ts"), "utf8")).not.toContain("revalidateTag");
   });
 
   it("keeps navigation available when motion is reduced", () => {

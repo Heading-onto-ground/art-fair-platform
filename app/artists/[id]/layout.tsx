@@ -4,6 +4,9 @@ import { pageMetadata } from "@/lib/seo";
 import { loadPublicArtist } from "@/lib/history/queries";
 import { artistPageDescription, artistPageTitle } from "@/lib/history/seo";
 
+export const preferredRegion = "bom1";
+export const runtime = "nodejs";
+
 export async function generateMetadata({
   params,
 }: {

@@ -1,5 +1,7 @@
 import { NextResponse } from "next/server";
+import { revalidateTag } from "next/cache";
 import { enforceRateLimit, requireUserSession } from "@/lib/apiGuards";
+import { PUBLIC_HISTORY_CACHE_TAG } from "@/lib/history/publicGraph";
 import { isMissingHistorySchema } from "@/lib/history/schemaError";
 import { addArtistExhibition } from "@/lib/history/mutate";
 
@@ -40,6 +42,7 @@ export async function POST(req: Request) {
       sourceUrl: typeof body.sourceUrl === "string" ? body.sourceUrl : null,
     });
     if (!result.ok) return NextResponse.json({ error: result.error }, { status: 400 });
+    revalidateTag(PUBLIC_HISTORY_CACHE_TAG);
     return NextResponse.json({ slug: result.slug, publicationStatus: result.publicationStatus });
   } catch (err) {
     if (isMissingHistorySchema(err)) {

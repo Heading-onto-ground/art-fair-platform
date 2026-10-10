@@ -3,6 +3,8 @@
 import TopBar from "@/app/components/TopBar";
 import "@/app/components/history/history.css";
 
+// Same-segment client navigations keep this file unmounted.
+// HistoryExperience draws rh-nav-overlay when that transition stays pending.
 export default function ArtistPublicLoading() {
   return (
     <div className="rh-page">
