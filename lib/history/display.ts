@@ -1,6 +1,13 @@
 export const VISIBLE_PIPS = 4;
 export const MOMENT_SATELLITE_LIMIT = 7;
-export const JOURNEY_MS = 880;
+/** Arrival hint only. Navigation is not delayed for this animation. */
+export const JOURNEY_MS = 280;
+/** 0–5 documented records. A long axis would look like an inactive career. */
+export const SPARSE_HISTORY_MAX = 5;
+/** 6–20 documented records keep the interactive timeline. 21+ is clustered. */
+export const TIMELINE_HISTORY_MAX = 20;
+
+export type HistoryPresentation = "sparse" | "timeline" | "dense";
 
 export type ZoomLevel = "ALL" | "DECADE" | "YEAR";
 export type DotMark = "filled" | "open";
@@ -210,4 +217,63 @@ export function journeyStops(from: string, via: string, to: string): [string, st
 
 export function shouldPlayJourney(reduceMotion: boolean): boolean {
   return !reduceMotion;
+}
+
+export function historyPresentation(recordCount: number): HistoryPresentation {
+  const count = Number.isFinite(recordCount) ? Math.max(0, Math.floor(recordCount)) : 0;
+  if (count <= SPARSE_HISTORY_MAX) return "sparse";
+  if (count <= TIMELINE_HISTORY_MAX) return "timeline";
+  return "dense";
+}
+
+export type DecadeCluster = {
+  decade: number;
+  count: number;
+  start: number;
+  end: number;
+};
+
+export function clusterByDecade(groups: { year: number; count: number }[]): DecadeCluster[] {
+  const map = new Map<number, { count: number; start: number; end: number }>();
+  for (const group of groups) {
+    const decade = Math.floor(group.year / 10) * 10;
+    const current = map.get(decade) ?? { count: 0, start: group.year, end: group.year };
+    current.count += group.count;
+    current.start = Math.min(current.start, group.year);
+    current.end = Math.max(current.end, group.year);
+    map.set(decade, current);
+  }
+  return [...map.entries()]
+    .sort((left, right) => left[0] - right[0])
+    .map(([decade, value]) => ({ decade, ...value }));
+}
+
+/**
+ * Copy for the history a visitor can see. Sparse coverage never prints a
+ * year range, because "1994–2025" reads as an empty career.
+ */
+export function historyCoverageCopy(input: { count: number; years: number[] }) {
+  const count = Number.isFinite(input.count) ? Math.max(0, Math.floor(input.count)) : 0;
+  const dated = input.years.filter((year) => Number.isFinite(year)).sort((left, right) => left - right);
+  const presentation = historyPresentation(count);
+  const countNoun =
+    presentation === "sparse"
+      ? `${count === 1 ? "record" : "records"} currently documented in ROB`
+      : `${count === 1 ? "exhibition" : "exhibitions"} currently documented in ROB`;
+  const range = presentation === "sparse" || dated.length === 0 ? null : `${dated[0]}–${dated[dated.length - 1]}`;
+  const gapNote = presentation === "sparse" ? "Years without a row are not years without activity." : null;
+  const rangeLabel = range ? `Documented years ${range}` : null;
+  const rendered = ["Partial history", `${count} ${countNoun}`, gapNote, rangeLabel].filter(Boolean).join(" ");
+  const impliesInactivity =
+    /inactive|no (?:exhibitions|activity|records|shows) between|career\s+\d{4}/i.test(rendered) ||
+    (presentation === "sparse" && /\d{4}\s*[–-]\s*\d{4}/.test(rendered));
+  return {
+    presentation,
+    partialLabel: "Partial history",
+    countNoun,
+    rangeLabel,
+    chronologyYears: presentation === "sparse" ? dated : [],
+    gapNote,
+    impliesInactivity,
+  };
 }

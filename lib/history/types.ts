@@ -1,3 +1,4 @@
+import type { HistoryImage } from "@/lib/history/images";
 import type { HistoryDensity } from "@/lib/history/policy";
 
 export type HistorySearchResult = {
@@ -43,6 +44,7 @@ export type HistoryExhibitionView = {
   sources: HistorySourceView[];
   provenance: string;
   review: boolean;
+  coverImage: HistoryImage | null;
 };
 
 export type HistoryConnection = {
@@ -72,6 +74,7 @@ export type HistoryArtistView = {
   exhibitionCount: number;
   density: HistoryDensity;
   indexEligible: boolean;
+  heroImage: HistoryImage | null;
   worksHref: string | null;
   exhibitions: HistoryExhibitionView[];
   artists: HistoryConnection[];
