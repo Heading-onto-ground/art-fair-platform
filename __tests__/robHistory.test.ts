@@ -1,7 +1,8 @@
 import { existsSync, readFileSync, readdirSync } from "fs";
 import path from "path";
 import { describe, expect, it } from "vitest";
-import { decodeDisplayText, displayCountry, groupByYear, restoredArtistPath, shouldPlayJourney, uncertainDisplay } from "@/lib/history/display";
+import { JOURNEY_MS, clusterByDecade, decodeDisplayText, displayCountry, groupByYear, historyCoverageCopy, historyPresentation, restoredArtistPath, shouldPlayJourney, uncertainDisplay } from "@/lib/history/display";
+import { publicHistoryImage, selectExplicitFirstPartyHero } from "@/lib/history/images";
 import { planBackfill } from "@/lib/history/backfill";
 import { isHistoryUnavailable } from "@/lib/history/schemaError";
 import {
@@ -213,6 +214,91 @@ describe("ROB public history", () => {
     expect(displayCountry("North Korea")).toBe("North Korea");
     expect(uncertainDisplay("Tokyo G1995")).toBe(true);
     expect(isFirstPartyImage("https://example.com/painting.jpg")).toBe(false);
+  });
+
+  it("does not draw a career across sparse ROB records", () => {
+    const park = historyCoverageCopy({ count: 3, years: [2025, 1992, 1994] });
+    expect(park.presentation).toBe("sparse");
+    expect(historyPresentation(0)).toBe("sparse");
+    expect(historyPresentation(5)).toBe("sparse");
+    expect(historyPresentation(6)).toBe("timeline");
+    expect(historyPresentation(8)).toBe("timeline");
+    expect(historyPresentation(20)).toBe("timeline");
+    expect(historyPresentation(21)).toBe("dense");
+    expect(park.chronologyYears).toEqual([1992, 1994, 2025]);
+    expect(park.rangeLabel).toBeNull();
+    expect(park.partialLabel).toBe("Partial history");
+    expect(park.countNoun).toBe("records currently documented in ROB");
+    expect(park.gapNote).toBe("Years without a row are not years without activity.");
+    expect(park.impliesInactivity).toBe(false);
+    expect([park.partialLabel, park.countNoun, park.gapNote, park.rangeLabel].join(" ")).not.toMatch(/1994\s*[–-]\s*2025|career/i);
+
+    const lee = historyCoverageCopy({ count: 8, years: [2022, 2023, 2024, 2025, 2026] });
+    expect(lee.presentation).toBe("timeline");
+    expect(lee.rangeLabel).toBe("Documented years 2022–2026");
+    expect(lee.countNoun).toBe("exhibitions currently documented in ROB");
+    expect(lee.impliesInactivity).toBe(false);
+
+    expect(clusterByDecade([{ year: 1992, count: 1 }, { year: 1994, count: 1 }, { year: 2008, count: 4 }])).toEqual([
+      { decade: 1990, count: 2, start: 1992, end: 1994 },
+      { decade: 2000, count: 4, start: 2008, end: 2008 },
+    ]);
+    expect(JOURNEY_MS).toBeGreaterThanOrEqual(200);
+    expect(JOURNEY_MS).toBeLessThanOrEqual(350);
+  });
+
+  it("renders only images with a known rights state", () => {
+    const blob = "https://works.public.blob.vercel-storage.com/painting.jpg";
+    expect(selectExplicitFirstPartyHero([{ id: "work-1", isPublic: true, imageUrl: blob, title: "Ecriture" }], null)).toBeNull();
+    expect(selectExplicitFirstPartyHero([{ id: "work-1", isPublic: false, imageUrl: blob }], "work-1")).toBeNull();
+    expect(selectExplicitFirstPartyHero([{ id: "work-1", isPublic: true, imageUrl: "https://gallery.example/a.jpg" }], "work-1")).toBeNull();
+    expect(selectExplicitFirstPartyHero([{ id: "work-1", isPublic: true, imageUrl: blob, title: "Ecriture" }], "work-1")).toMatchObject({
+      provenance: "FIRST_PARTY",
+      url: blob,
+      alt: "Ecriture",
+    });
+    expect(publicHistoryImage({
+      url: "https://upload.wikimedia.org/wikipedia/commons/a.jpg",
+      alt: "Open portrait",
+      provenance: "OPEN_LICENSE",
+      creator: null,
+      license: "CC BY 4.0",
+      licenseUrl: "https://creativecommons.org/licenses/by/4.0/",
+      sourceUrl: "https://commons.wikimedia.org/wiki/File:A.jpg",
+      attribution: "Artist, CC BY 4.0",
+    })).toBeNull();
+    expect(publicHistoryImage({
+      url: "https://upload.wikimedia.org/wikipedia/commons/a.jpg",
+      alt: "Open portrait",
+      provenance: "OPEN_LICENSE",
+      creator: "Artist",
+      license: "CC BY 4.0",
+      licenseUrl: "https://creativecommons.org/licenses/by/4.0/",
+      sourceUrl: "https://commons.wikimedia.org/wiki/File:A.jpg",
+      attribution: "Artist, CC BY 4.0",
+    })?.provenance).toBe("OPEN_LICENSE");
+    expect(publicHistoryImage({
+      url: "https://museum.example/permission.jpg",
+      alt: "Permitted still",
+      provenance: "PERMISSION_GRANTED",
+      creator: null,
+      license: null,
+      licenseUrl: null,
+      sourceUrl: null,
+      attribution: "Museum grant",
+    })).toBeNull();
+  });
+
+  it("keeps artist navigation from waiting on the arrival animation", () => {
+    const experience = readFileSync(path.resolve("app/components/history/HistoryExperience.tsx"), "utf8");
+    const loading = readFileSync(path.resolve("app/artists/[id]/loading.tsx"), "utf8");
+    expect(experience).toContain("router.prefetch");
+    expect(experience).toContain("rh-chronology");
+    expect(experience).toContain("dataset.nav");
+    expect(experience).not.toMatch(/documented career|career runs|inactive/i);
+    expect(loading).toContain("rh-progress");
+    expect(loading).toContain("rh-skel");
+    expect(loading).not.toContain("CardSkeleton");
   });
 
   it("keeps navigation available when motion is reduced", () => {

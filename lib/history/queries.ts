@@ -247,6 +247,7 @@ export function toExhibitionView(row: ExhibitionRow): HistoryExhibitionView {
           conflict: false,
         }),
     review: place.review,
+    coverImage: null,
   };
 }
 
@@ -367,6 +368,7 @@ async function presentArtist(entity: {
     exhibitionCount: exhibitions.length,
     density,
     indexEligible: isIndexEligible(density),
+    heroImage: null,
     worksHref: entity.profile?.artistId ? `/artist/public/${entity.profile.artistId}` : null,
     exhibitions,
     ...links,

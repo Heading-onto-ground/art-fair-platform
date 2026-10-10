@@ -71,6 +71,7 @@
 .rh-cluster:focus-visible,
 .rh-tab:focus-visible,
 .rh-event-card:focus-visible,
+.rh-chronology-card:focus-visible,
 .rh-node:focus-visible,
 .rh-year-row:focus-visible,
 .rh-zoom button:focus-visible,
@@ -91,6 +92,7 @@
 .rh-cluster,
 .rh-year-row,
 .rh-event-card,
+.rh-chronology-card,
 .rh-node,
 .rh-zoom button {
   font: inherit;
@@ -106,6 +108,7 @@
 .rh-cluster,
 .rh-year-row,
 .rh-event-card,
+.rh-chronology-card,
 .rh-node,
 .rh-source-panel button {
   text-transform: none;
@@ -776,6 +779,159 @@
   background: #181818;
 }
 
+.rh-progress {
+  position: fixed;
+  top: 0;
+  left: 0;
+  z-index: 80;
+  width: 100%;
+  height: 2px;
+  pointer-events: none;
+  opacity: 0;
+}
+
+html[data-nav="pending"] .rh-progress,
+.rh-progress.is-active {
+  opacity: 1;
+}
+
+.rh-progress span {
+  display: block;
+  width: 42%;
+  height: 100%;
+  background: #181818;
+  transform: scaleX(0.2);
+  transform-origin: left center;
+}
+
+html[data-nav="pending"] .rh-progress span,
+.rh-progress.is-active span {
+  animation: rh-progress 280ms ease-out forwards;
+}
+
+@keyframes rh-progress {
+  from { transform: scaleX(0.2); }
+  to { transform: scaleX(2.5); }
+}
+
+.rh-node.is-pending {
+  background: #181818;
+  color: #f7f4ef;
+}
+
+.rh-partial {
+  margin: 16px 0 0;
+  color: #756f67;
+  font-size: 12px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+.rh-gap-note {
+  max-width: 460px;
+  margin: 8px 0 0;
+  color: #6f6961;
+  font-size: 15px;
+  line-height: 1.45;
+}
+
+.rh-artist-aside {
+  display: grid;
+  gap: 18px;
+  align-content: end;
+}
+
+.rh-still {
+  margin: 0;
+}
+
+.rh-still img {
+  display: block;
+  width: 100%;
+  max-height: 460px;
+  object-fit: cover;
+  background: #e6e0d6;
+}
+
+.rh-still figcaption {
+  margin-top: 8px;
+  color: #756f67;
+  font-size: 12px;
+}
+
+.rh-moment .rh-still {
+  margin-bottom: 22px;
+}
+
+.rh-chronology {
+  list-style: none;
+  margin: 8px 0 28px;
+  padding: 0;
+}
+
+.rh-chronology li {
+  display: grid;
+  grid-template-columns: 92px minmax(0, 1fr);
+  gap: 18px;
+  align-items: start;
+  padding: 22px 0;
+  border-top: 1px solid #d8d2c8;
+}
+
+.rh-chronology-year {
+  font-family: var(--font-cormorant), Georgia, serif;
+  font-size: 32px;
+  line-height: 1;
+}
+
+.rh-chronology-card {
+  display: grid;
+  gap: 6px;
+  width: 100%;
+  border: 0;
+  padding: 0;
+  text-align: left;
+}
+
+.rh-chronology-card strong {
+  font-family: var(--font-cormorant), Georgia, serif;
+  font-size: clamp(22px, 2.4vw, 32px);
+  font-weight: 500;
+  line-height: 1.15;
+}
+
+.rh-chronology-card span {
+  color: #6f6961;
+  font-size: 14px;
+  line-height: 1.4;
+}
+
+.rh-chronology-card.is-selected strong {
+  text-decoration: underline;
+  text-underline-offset: 4px;
+}
+
+.rh-skel {
+  background: #e6e0d6;
+}
+
+.rh-skel-title {
+  height: 72px;
+  width: min(460px, 86%);
+  margin: 14px 0 18px;
+}
+
+.rh-skel-line {
+  height: 14px;
+  width: 220px;
+  margin-bottom: 28px;
+}
+
+.rh-skel-row {
+  height: 64px;
+  margin-top: 12px;
+}
+
 .rh-tab-panel {
   display: grid;
   gap: 20px;
@@ -1046,9 +1202,32 @@
   }
 }
 
+@media (max-width: 640px) {
+  .rh-chronology li {
+    grid-template-columns: 72px minmax(0, 1fr);
+    gap: 12px;
+  }
+
+  .rh-chronology-year {
+    font-size: 26px;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .rh-journey {
     display: none !important;
+  }
+
+  .rh-progress span,
+  html[data-nav="pending"] .rh-progress span,
+  .rh-progress.is-active span {
+    animation: none;
+    transform: none;
+    width: 100%;
+  }
+
+  .rh-node.is-pending {
+    transition: none;
   }
 
   .rh-button,
