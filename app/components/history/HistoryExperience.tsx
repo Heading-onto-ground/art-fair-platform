@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState, useTransition } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, useTransition } from "react";
 import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import TopBar from "@/app/components/TopBar";
@@ -88,11 +88,56 @@ function clearScrollTarget(slug: string) {
   }
 }
 
-function HistoryStill({ image }: { image: HistoryImage }) {
+function sourceCredit(url: string | null): string | null {
+  if (!url) return null;
+  try {
+    return new URL(url).hostname.endsWith("wikimedia.org") ? "Wikimedia Commons" : new URL(url).hostname;
+  } catch {
+    return null;
+  }
+}
+
+const HERO_LOAD_MS = 8000;
+
+function HistoryStill({ image, onFail }: { image: HistoryImage; onFail?: () => void }) {
+  const credit = sourceCredit(image.sourceUrl);
+  const imgRef = useRef<HTMLImageElement>(null);
+  useEffect(() => {
+    if (!onFail) return;
+    const node = imgRef.current;
+    // A cached image can finish before React attaches onLoad/onError.
+    if (node?.complete) {
+      if (node.naturalWidth === 0) onFail();
+      return;
+    }
+    const timer = window.setTimeout(() => {
+      const current = imgRef.current;
+      if (current?.complete && current.naturalWidth > 0) return;
+      onFail();
+    }, HERO_LOAD_MS);
+    return () => window.clearTimeout(timer);
+  }, [image.url, onFail]);
   return (
     <figure className="rh-still">
-      <img src={image.url} alt={image.alt} />
-      {image.attribution ? <figcaption>{image.attribution}</figcaption> : null}
+      <img
+        ref={imgRef}
+        src={image.url}
+        srcSet={image.srcSet || undefined}
+        sizes={image.srcSet ? "(max-width: 800px) 62vw, 360px" : undefined}
+        width={image.width ?? undefined}
+        height={image.height ?? undefined}
+        alt={image.alt}
+        decoding="async"
+        fetchPriority={onFail ? "high" : undefined}
+        onError={() => onFail?.()}
+      />
+      {image.attribution || image.license || credit ? (
+        <figcaption>
+          {image.attribution ? <span>{image.attribution}</span> : null}
+          {image.license && image.licenseUrl ? <a href={image.licenseUrl}>{image.license}</a> : null}
+          {credit && image.sourceUrl ? <a href={image.sourceUrl}>{credit}</a> : null}
+        </figcaption>
+      ) : null}
     </figure>
   );
 }
@@ -107,7 +152,12 @@ export default function HistoryExperience({ artist }: { artist: HistoryArtistVie
   const [journeyOn, setJourneyOn] = useState(false);
   const [reduceMotion, setReduceMotion] = useState(false);
   const [pendingSlug, setPendingSlug] = useState<string | null>(null);
+  const [failedHeroUrl, setFailedHeroUrl] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
+  const hero = artist.heroImage && failedHeroUrl !== artist.heroImage.url ? artist.heroImage : null;
+  const dropHero = useCallback(() => {
+    if (artist.heroImage) setFailedHeroUrl(artist.heroImage.url);
+  }, [artist.heroImage]);
 
   const from = searchParams.get("from");
   const via = searchParams.get("via");
@@ -330,6 +380,23 @@ export default function HistoryExperience({ artist }: { artist: HistoryArtistVie
       )
     : null;
   const visibleConnectedArtists = satellites?.visible.filter((node) => node.kind === "artist") ?? [];
+  const summary = (
+    <div className="rh-artist-summary">
+      <p className="rh-count-lead">{artist.exhibitionCount}</p>
+      <p className="rh-count-copy">{coverage.countNoun}</p>
+      {artist.birthYear ? <p className="rh-muted">Born {artist.birthYear}</p> : null}
+      {presentation === "sparse" ? null : (
+        <div className="rh-signature-block">
+          <div className="rh-signature" aria-label={coverage.rangeLabel ?? "Documented exhibition density"}>
+            {signature.map((height, index) => (
+              <i key={index} style={{ height: `${4 + height * 5}px` }} />
+            ))}
+          </div>
+          {coverage.rangeLabel ? <p className="rh-signature-range">{coverage.rangeLabel}</p> : null}
+        </div>
+      )}
+    </div>
+  );
 
   return (
     <div className="rh-page" style={{ ["--rh-overlay-delay" as string]: `${HISTORY_PENDING_OVERLAY_MS}ms` }}>
@@ -365,34 +432,15 @@ export default function HistoryExperience({ artist }: { artist: HistoryArtistVie
           </div>
         ) : null}
 
-        <header className={`rh-artist-header${artist.heroImage ? " has-hero" : ""}`}>
+        <header className={`rh-artist-header${hero ? " has-hero" : ""}`}>
           <div>
             <p className="rh-kicker">Artist history</p>
             <h1 className="rh-title">{artist.canonicalName}</h1>
             {artist.nativeName ? <p className="rh-native">{artist.nativeName}</p> : null}
             <p className="rh-partial">{coverage.partialLabel}</p>
+            {hero ? summary : null}
           </div>
-          <div className="rh-artist-aside">
-          {artist.heroImage ? <HistoryStill image={artist.heroImage} /> : null}
-          <div className="rh-artist-summary">
-            <p className="rh-count-lead">{artist.exhibitionCount}</p>
-            <p className="rh-count-copy">{coverage.countNoun}</p>
-            {artist.birthYear ? <p className="rh-muted">Born {artist.birthYear}</p> : null}
-            {presentation === "sparse" ? null : (
-              <div className="rh-signature-block">
-                <div
-                  className="rh-signature"
-                  aria-label={coverage.rangeLabel ?? "Documented exhibition density"}
-                >
-                  {signature.map((height, index) => (
-                    <i key={index} style={{ height: `${4 + height * 5}px` }} />
-                  ))}
-                </div>
-                {coverage.rangeLabel ? <p className="rh-signature-range">{coverage.rangeLabel}</p> : null}
-              </div>
-            )}
-          </div>
-          </div>
+          {hero ? <HistoryStill image={hero} onFail={dropHero} /> : <div className="rh-artist-aside">{summary}</div>}
         </header>
 
         <div className="rh-tabs" role="tablist" aria-label="Artist">

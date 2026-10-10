@@ -78,6 +78,7 @@
 .rh-timeline-help summary:focus-visible,
 .rh-card-link:focus-visible,
 .rh-result-link:focus-visible,
+.rh-still figcaption a:focus-visible,
 .rh-home a:focus-visible {
   outline: 2px solid #181818;
   outline-offset: 3px;
@@ -190,6 +191,11 @@
   align-items: end;
   padding: 18px 0 34px;
   border-bottom: 1px solid #d8d2c8;
+}
+
+.rh-artist-header.has-hero {
+  grid-template-columns: minmax(0, 1fr) minmax(220px, 360px);
+  align-items: end;
 }
 
 .rh-artist-summary {
@@ -863,6 +869,8 @@ html[data-nav="pending"] .rh-progress span,
 
 .rh-still {
   margin: 0;
+  min-width: 0;
+  max-width: 100%;
 }
 
 .rh-still img {
@@ -874,9 +882,28 @@ html[data-nav="pending"] .rh-progress span,
 }
 
 .rh-still figcaption {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 2px 12px;
   margin-top: 8px;
   color: #756f67;
   font-size: 12px;
+  line-height: 1.4;
+}
+
+.rh-still figcaption a {
+  color: inherit;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.rh-artist-header.has-hero .rh-still img {
+  aspect-ratio: 1;
+  width: 100%;
+  max-height: none;
+  object-fit: contain;
+  object-position: center;
+  background: transparent;
 }
 
 .rh-moment .rh-still {
@@ -1013,9 +1040,16 @@ html[data-nav="pending"] .rh-progress span,
   }
 
   .rh-artist-header,
+  .rh-artist-header.has-hero,
   .rh-moment-heading {
-    grid-template-columns: 1fr;
+    grid-template-columns: minmax(0, 1fr);
+    align-items: start;
     gap: 22px;
+  }
+
+  .rh-artist-header.has-hero .rh-still {
+    width: min(240px, 62vw);
+    max-width: 240px;
   }
 
   .rh-artist-summary {

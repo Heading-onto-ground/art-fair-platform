@@ -19,6 +19,10 @@ export type HistoryImage = {
   licenseUrl: string | null;
   sourceUrl: string | null;
   attribution: string | null;
+  /** Responsive candidates. The default url is one of these, never a larger original. */
+  srcSet?: string | null;
+  width?: number | null;
+  height?: number | null;
 };
 
 export type FirstPartyWorkCandidate = {

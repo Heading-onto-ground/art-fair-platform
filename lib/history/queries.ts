@@ -33,6 +33,7 @@ import {
   type ContributorKind,
   type HistoryOrigin,
 } from "@/lib/history/policy";
+import { publishedArtistHero } from "@/lib/history/imageRegistry";
 import type {
   HistoryArtistView,
   HistoryConnection,
@@ -369,7 +370,7 @@ function viewFromGraph(graph: PublicHistoryGraph): HistoryArtistView {
     exhibitionCount: exhibitions.length,
     density,
     indexEligible: isIndexEligible(density),
-    heroImage: null,
+    heroImage: publishedArtistHero(graph.entity.slug),
     worksHref: graph.entity.profileArtistId ? `/artist/public/${graph.entity.profileArtistId}` : null,
     exhibitions,
     ...links,
@@ -407,7 +408,7 @@ export async function loadPublicArtistFromDatabase(key: string): Promise<
 
 const loadCachedPublicArtist = unstable_cache(
   async (key: string) => loadPublicArtistFromDatabase(key),
-  ["rob-public-artist-history"],
+  ["rob-public-artist-history", "image-canary"],
   { revalidate: PUBLIC_HISTORY_REVALIDATE_SECONDS, tags: [PUBLIC_HISTORY_CACHE_TAG] },
 );
 
