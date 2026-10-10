@@ -1,5 +1,14 @@
 import type { Prisma, PrismaClient } from "@prisma/client";
+import { cache as reactCache } from "react";
+import { unstable_cache } from "next/cache";
 import { prisma as untypedPrisma } from "@/lib/prisma";
+import {
+  PUBLIC_HISTORY_CACHE_TAG,
+  PUBLIC_HISTORY_REVALIDATE_SECONDS,
+  queryPublicHistory,
+  type PublicGraphExhibition,
+  type PublicHistoryGraph,
+} from "@/lib/history/publicGraph";
 import {
   careerSpan,
   decodeDisplayText,
@@ -11,7 +20,6 @@ import {
 } from "@/lib/history/display";
 import {
   countBridgePaths,
-  dedupeById,
   DENSE_HISTORY_MIN,
   densityForCount,
   formatHistoryDate,
@@ -301,28 +309,6 @@ function connectionsFor(selfId: string, exhibitions: HistoryExhibitionView[]) {
   return { artists: byCount([...artists.values()]), spaces: byCount([...spaces.values()]), curators: byCount([...curators.values()]) };
 }
 
-async function exhibitionsForEntity(entityId: string, profileId: string | null): Promise<HistoryExhibitionView[]> {
-  const [participations, firstParty] = await Promise.all([
-    prisma.historyParticipation.findMany({
-      where: { artistEntityId: entityId, exhibition: publicExhibitionWhere },
-      include: { exhibition: { include: exhibitionInclude } },
-    }),
-    profileId
-      ? prisma.exhibitionArtist.findMany({
-          where: { artistId: profileId, status: "confirmed", exhibition: publicExhibitionWhere },
-          include: { exhibition: { include: exhibitionInclude } },
-        })
-      : Promise.resolve([]),
-  ]);
-  const rows = dedupeById([
-    ...participations.map((row) => row.exhibition),
-    ...firstParty.map((row) => row.exhibition),
-  ]);
-  return rows
-    .map((row) => toExhibitionView(row as ExhibitionRow))
-    .sort((a, b) => (a.year ?? 9999) - (b.year ?? 9999) || a.title.localeCompare(b.title));
-}
-
 export function signatureFor(exhibitions: { year: number | null; precision: string; id: string }[]): number[] {
   const groups = groupByYear(
     exhibitions.map((exhibition) => ({
@@ -334,45 +320,60 @@ export function signatureFor(exhibitions: { year: number | null; precision: stri
   return signatureColumns(groups.map((group) => group.count));
 }
 
-async function presentArtist(entity: {
-  id: string;
-  slug: string;
-  canonicalName: string;
-  nativeName: string | null;
-  birthYear: number | null;
-  country: string | null;
-  city: string | null;
-  officialWebsite: string | null;
-  profileId: string | null;
-  profile: { artistId: string } | null;
-}): Promise<HistoryArtistView> {
-  const exhibitions = await exhibitionsForEntity(entity.id, entity.profileId);
-  const links = connectionsFor(entity.id, exhibitions);
-  const density = densityForCount(exhibitions.length);
-  const works = entity.profileId
-    ? await prisma.artwork.findMany({
-        where: { artistId: entity.profileId, isPublic: true },
-        select: { id: true, title: true, imageUrl: true },
-        orderBy: { createdAt: "desc" },
-        take: 24,
-      })
-    : [];
+function graphToRow(exhibition: PublicGraphExhibition): ExhibitionRow {
   return {
-    slug: entity.slug,
-    canonicalName: decodeDisplayText(entity.canonicalName),
-    nativeName: entity.nativeName ? decodeDisplayText(entity.nativeName) : null,
-    birthYear: entity.birthYear,
-    country: displayCountry(entity.country),
-    city: entity.city ? decodeDisplayText(entity.city) : null,
-    officialWebsite: entity.officialWebsite,
+    id: exhibition.id,
+    title: exhibition.title,
+    startDate: exhibition.startDate ? new Date(exhibition.startDate) : null,
+    endDate: exhibition.endDate ? new Date(exhibition.endDate) : null,
+    city: exhibition.city,
+    country: exhibition.country,
+    createdBy: exhibition.createdBy,
+    space: exhibition.space
+      ? {
+          id: exhibition.space.id,
+          name: exhibition.space.name,
+          city: exhibition.space.city,
+          country: exhibition.space.country,
+          slugRecord: exhibition.space.slug ? { slug: exhibition.space.slug } : null,
+        }
+      : null,
+    curator: exhibition.curator
+      ? {
+          id: exhibition.curator.id,
+          name: exhibition.curator.name,
+          slugRecord: exhibition.curator.slug ? { slug: exhibition.curator.slug } : null,
+        }
+      : null,
+    historyMeta: exhibition.meta,
+    historySources: exhibition.sources.map((source) => ({ source })),
+    historyArtists: exhibition.artists.map((artist) => ({ artist })),
+    unresolvedNames: exhibition.unresolved,
+  };
+}
+
+function viewFromGraph(graph: PublicHistoryGraph): HistoryArtistView {
+  const exhibitions = graph.exhibitions
+    .map((exhibition) => toExhibitionView(graphToRow(exhibition)))
+    .sort((left, right) => (left.year ?? 9999) - (right.year ?? 9999) || left.title.localeCompare(right.title));
+  const links = connectionsFor(graph.entity.id, exhibitions);
+  const density = densityForCount(exhibitions.length);
+  return {
+    slug: graph.entity.slug,
+    canonicalName: decodeDisplayText(graph.entity.canonicalName),
+    nativeName: graph.entity.nativeName ? decodeDisplayText(graph.entity.nativeName) : null,
+    birthYear: graph.entity.birthYear,
+    country: displayCountry(graph.entity.country),
+    city: graph.entity.city ? decodeDisplayText(graph.entity.city) : null,
+    officialWebsite: graph.entity.officialWebsite,
     exhibitionCount: exhibitions.length,
     density,
     indexEligible: isIndexEligible(density),
     heroImage: null,
-    worksHref: entity.profile?.artistId ? `/artist/public/${entity.profile.artistId}` : null,
+    worksHref: graph.entity.profileArtistId ? `/artist/public/${graph.entity.profileArtistId}` : null,
     exhibitions,
     ...links,
-    works: works.map((work) => ({
+    works: graph.works.map((work) => ({
       id: work.id,
       title: work.title?.trim() || "Untitled",
       year: null,
@@ -381,30 +382,43 @@ async function presentArtist(entity: {
   };
 }
 
-export async function loadPublicArtist(key: string): Promise<
+export async function loadPublicArtistFromDatabase(key: string): Promise<
   { kind: "missing" } | { kind: "redirect"; to: string; artist: HistoryArtistView } | { kind: "history"; artist: HistoryArtistView }
 > {
-  const direct = await prisma.artistEntity.findUnique({
-    where: { slug: key },
-    include: { profile: { select: { artistId: true, userId: true } } },
-  });
-  if (direct) return { kind: "history", artist: await presentArtist(direct) };
-
-  const profile = await prisma.artistProfile.findFirst({
-    where: { OR: [{ userId: key }, { artistId: key }] },
-    include: { artistEntity: { include: { profile: { select: { artistId: true, userId: true } } } } },
-  });
-  if (!profile?.artistEntity) return { kind: "missing" };
-  const artist = await presentArtist(profile.artistEntity);
+  const started = performance.now();
+  const graph = await queryPublicHistory(prisma, key);
+  const queryMs = Math.round(performance.now() - started);
+  if (process.env.ROB_HISTORY_PERF === "1") {
+    console.info(
+      `ROB_PERF request=public-artist artist=${key} graph=${queryMs} exhibitions=${graph?.exhibitions.length ?? 0} works=${graph?.works.length ?? 0}`,
+    );
+  }
+  if (!graph) return { kind: "missing" };
+  const artist = viewFromGraph(graph);
   const to = legacyArtistRedirect({
     requested: key,
-    userId: profile.userId,
-    artistId: profile.artistId,
+    userId: graph.entity.profileUserId,
+    artistId: graph.entity.profileArtistId,
     slug: artist.slug,
   });
   if (to) return { kind: "redirect", to, artist };
   return { kind: "history", artist };
 }
+
+const loadCachedPublicArtist = unstable_cache(
+  async (key: string) => loadPublicArtistFromDatabase(key),
+  ["rob-public-artist-history"],
+  { revalidate: PUBLIC_HISTORY_REVALIDATE_SECONDS, tags: [PUBLIC_HISTORY_CACHE_TAG] },
+);
+
+function cache<CachedFunction extends (key: string) => Promise<Awaited<ReturnType<typeof loadPublicArtistFromDatabase>>>>(
+  fn: CachedFunction,
+): CachedFunction {
+  // Next's server React provides cache(). The public React build used by scripts does not.
+  return typeof reactCache === "function" ? reactCache(fn) : fn;
+}
+
+export const loadPublicArtist = cache((key: string) => loadCachedPublicArtist(key));
 
 export async function searchArtists(rawQuery: string): Promise<HistorySearchResult[]> {
   const query = rawQuery.trim();

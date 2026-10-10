@@ -1,5 +1,7 @@
 import { NextResponse } from "next/server";
+import { revalidateTag } from "next/cache";
 import { enforceRateLimit, requireUserSession } from "@/lib/apiGuards";
+import { PUBLIC_HISTORY_CACHE_TAG } from "@/lib/history/publicGraph";
 import { isMissingHistorySchema } from "@/lib/history/schemaError";
 import { createArtistRecord } from "@/lib/history/mutate";
 import { prisma } from "@/lib/prisma";
@@ -31,6 +33,7 @@ export async function POST(req: Request) {
       profileId: profile?.id ?? null,
     });
     if (!created.ok) return NextResponse.json({ error: created.error }, { status: 400 });
+    revalidateTag(PUBLIC_HISTORY_CACHE_TAG);
     return NextResponse.json({ slug: created.artist.slug });
   } catch (err) {
     if (isMissingHistorySchema(err)) {

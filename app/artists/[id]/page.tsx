@@ -7,7 +7,11 @@ import { artistJsonLd } from "@/lib/history/seo";
 import { isMissingHistorySchema } from "@/lib/history/schemaError";
 import { SITE_URL } from "@/lib/seo";
 
+// The same route still renders legacy account profiles, which are not public
+// history. Keep the route dynamic and cache only the public history load.
 export const dynamic = "force-dynamic";
+export const preferredRegion = "bom1";
+export const runtime = "nodejs";
 
 export default async function ArtistPage({ params }: { params: { id: string } }) {
   try {

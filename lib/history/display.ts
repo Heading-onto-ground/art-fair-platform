@@ -195,6 +195,43 @@ export function momentSatellites(
   return { visible: visible.slice(0, expanded ? visible.length : limit), hiddenArtists: Math.max(0, input.artists.length - artists.length) };
 }
 
+export function followArtistHref(destinationSlug: string, fromSlug: string, via: string): string {
+  const params = new URLSearchParams();
+  params.set("from", fromSlug);
+  params.set("via", via);
+  return `/artists/${destinationSlug}?${params.toString()}`;
+}
+
+export function returnArtistHref(input: {
+  from: string;
+  via: string | null;
+  srcZoom: string | null;
+  srcFocus: string | null;
+}): string {
+  return restoredArtistPath({ ...input, srcScroll: null });
+}
+
+export const HISTORY_PENDING_OVERLAY_MS = 200;
+
+export function parseHistoryReturn(raw: string | null): { zoom: string | null; focus: string | null; scroll: number | null } | null {
+  if (!raw) return null;
+  try {
+    const parsed = JSON.parse(raw) as { zoom?: unknown; focus?: unknown; scroll?: unknown };
+    const scroll = typeof parsed.scroll === "number" ? parsed.scroll : Number(parsed.scroll);
+    return {
+      zoom: typeof parsed.zoom === "string" ? parsed.zoom : null,
+      focus: typeof parsed.focus === "string" ? parsed.focus : null,
+      scroll: Number.isFinite(scroll) ? scroll : null,
+    };
+  } catch {
+    return null;
+  }
+}
+
+export function shouldRetryScroll(actual: number, target: number, attempt: number): boolean {
+  return attempt < 4 && Math.abs(actual - target) > 2;
+}
+
 export function restoredArtistPath(input: {
   from: string;
   via: string | null;

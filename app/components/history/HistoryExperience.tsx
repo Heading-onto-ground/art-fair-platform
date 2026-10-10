@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, useTransition } from "react";
 import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import TopBar from "@/app/components/TopBar";
@@ -8,13 +8,17 @@ import { trackHistory } from "@/lib/history/analytics";
 import ReportIssue from "@/app/components/history/ReportIssue";
 import {
   JOURNEY_MS,
+  HISTORY_PENDING_OVERLAY_MS,
   careerSpan,
   clusterByDecade,
+  followArtistHref,
   groupByYear,
   historyCoverageCopy,
   momentPlace,
   momentSatellites,
-  restoredArtistPath,
+  parseHistoryReturn,
+  returnArtistHref,
+  shouldRetryScroll,
   signatureColumns,
   zoomSpan,
   type DotMark,
@@ -31,6 +35,57 @@ function plural(count: number) {
 
 function eventLocation(exhibition: HistoryExhibitionView) {
   return [exhibition.spaceName, exhibition.city, exhibition.country].filter(Boolean).join(" · ");
+}
+
+function returnStorageKey(from: string, via: string) {
+  return `rob-history-return:${from}:${via}`;
+}
+
+function saveHistoryReturn(from: string, via: string, state: { zoom: string | null; focus: string | null; scroll: number }) {
+  try {
+    sessionStorage.setItem(returnStorageKey(from, via), JSON.stringify(state));
+  } catch {
+    // Storage can be unavailable. Zoom and year still travel on the return URL.
+  }
+}
+
+function readHistoryReturn(from: string, via: string) {
+  try {
+    return parseHistoryReturn(sessionStorage.getItem(returnStorageKey(from, via)));
+  } catch {
+    return null;
+  }
+}
+
+let pendingScroll: { slug: string; value: number } | null = null;
+
+function rememberScroll(slug: string, value: number) {
+  pendingScroll = { slug, value };
+  try {
+    sessionStorage.setItem(`rob-history-scroll:${slug}`, String(value));
+  } catch {
+    // The return URL still restores the artist, year, and Moment.
+  }
+}
+
+function scrollTargetFor(slug: string): number | null {
+  if (pendingScroll?.slug === slug) return pendingScroll.value;
+  try {
+    const raw = sessionStorage.getItem(`rob-history-scroll:${slug}`);
+    const value = Number(raw);
+    return raw && Number.isFinite(value) ? value : null;
+  } catch {
+    return null;
+  }
+}
+
+function clearScrollTarget(slug: string) {
+  if (pendingScroll?.slug === slug) pendingScroll = null;
+  try {
+    sessionStorage.removeItem(`rob-history-scroll:${slug}`);
+  } catch {
+    // Leaving the stored offset is harmless on the next visit.
+  }
 }
 
 function HistoryStill({ image }: { image: HistoryImage }) {
@@ -52,6 +107,7 @@ export default function HistoryExperience({ artist }: { artist: HistoryArtistVie
   const [journeyOn, setJourneyOn] = useState(false);
   const [reduceMotion, setReduceMotion] = useState(false);
   const [pendingSlug, setPendingSlug] = useState<string | null>(null);
+  const [isPending, startTransition] = useTransition();
 
   const from = searchParams.get("from");
   const via = searchParams.get("via");
@@ -108,23 +164,71 @@ export default function HistoryExperience({ artist }: { artist: HistoryArtistVie
 
   useEffect(() => {
     if (!selected) return;
+    const viaKey = selected.slug || selected.id;
     for (const person of selected.artists) {
-      if (person.slug && person.slug !== artist.slug) router.prefetch(`/artists/${person.slug}`);
+      if (person.slug && person.slug !== artist.slug) router.prefetch(followArtistHref(person.slug, artist.slug, viaKey));
     }
   }, [selected, artist.slug, router]);
+
+  useEffect(() => {
+    if (!from) return;
+    const stored = via ? readHistoryReturn(from, via) : null;
+    router.prefetch(returnArtistHref({
+      from,
+      via,
+      srcZoom: stored?.zoom ?? searchParams.get("srcZoom"),
+      srcFocus: stored?.focus ?? searchParams.get("srcFocus"),
+    }));
+  }, [from, via, router, searchParams]);
 
   useEffect(() => {
     trackHistory("ARTIST_OPENED", `/artists/${artist.slug}`);
     if (from) trackHistory("SECOND_ARTIST_REACHED", `/artists/${artist.slug}`);
     const media = window.matchMedia("(prefers-reduced-motion: reduce)");
     setReduceMotion(media.matches);
-    const rawScroll = searchParams.get("scroll");
-    const scroll = Number(rawScroll);
-    if (rawScroll && Number.isFinite(scroll)) requestAnimationFrame(() => window.scrollTo(0, scroll));
-    if (!(from && via) || media.matches) return;
+    const queryScroll = searchParams.get("scroll");
+    const storedScroll = scrollTargetFor(artist.slug);
+    if (storedScroll != null) clearScrollTarget(artist.slug);
+    const scroll = queryScroll != null && Number.isFinite(Number(queryScroll)) ? Number(queryScroll) : storedScroll;
+    const timers: number[] = [];
+    let frame = 0;
+    let cancelled = false;
+    if (scroll != null && Number.isFinite(scroll)) {
+      let attempt = 0;
+      const apply = () => {
+        if (cancelled) return;
+        window.scrollTo(0, scroll);
+        attempt += 1;
+        if (Math.abs(window.scrollY - scroll) <= 2) {
+          clearScrollTarget(artist.slug);
+          return;
+        }
+        if (shouldRetryScroll(window.scrollY, scroll, attempt)) frame = requestAnimationFrame(apply);
+      };
+      frame = requestAnimationFrame(apply);
+      for (const delay of [50, 150]) {
+        timers.push(window.setTimeout(() => {
+          if (cancelled) return;
+          if (Math.abs(window.scrollY - scroll) > 2) window.scrollTo(0, scroll);
+          else clearScrollTarget(artist.slug);
+        }, delay));
+      }
+    }
+    if (!(from && via) || media.matches) {
+      return () => {
+        cancelled = true;
+        if (frame) cancelAnimationFrame(frame);
+        for (const timer of timers) window.clearTimeout(timer);
+      };
+    }
     setJourneyOn(true);
-    const timer = window.setTimeout(() => setJourneyOn(false), JOURNEY_MS);
-    return () => window.clearTimeout(timer);
+    const journey = window.setTimeout(() => setJourneyOn(false), JOURNEY_MS);
+    return () => {
+      cancelled = true;
+      if (frame) cancelAnimationFrame(frame);
+      for (const timer of timers) window.clearTimeout(timer);
+      window.clearTimeout(journey);
+    };
     // The journey plays once per arrival. Zoom changes must not replay it.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [artist.slug, from, via]);
@@ -162,37 +266,49 @@ export default function HistoryExperience({ artist }: { artist: HistoryArtistVie
   }
 
   function warmArtist(slug: string) {
-    if (slug) router.prefetch(`/artists/${slug}`);
+    if (!selected || !slug) return;
+    router.prefetch(followArtistHref(slug, artist.slug, selected.slug || selected.id));
   }
 
   function followArtist(slug: string, exhibition: HistoryExhibitionView) {
+    const viaKey = exhibition.slug || exhibition.id;
+    const href = followArtistHref(slug, artist.slug, viaKey);
+    saveHistoryReturn(artist.slug, viaKey, {
+      zoom: zoom === "ALL" ? null : zoom.toLowerCase(),
+      focus: focus == null ? null : String(focus),
+      scroll: window.scrollY,
+    });
     markPending(slug);
-    warmArtist(slug);
-    trackHistory("CONNECTION_FOLLOWED", `/artists/${slug}`);
-    const params = new URLSearchParams();
-    params.set("from", artist.slug);
-    params.set("via", exhibition.slug || exhibition.id);
-    if (zoom !== "ALL") params.set("srcZoom", zoom.toLowerCase());
-    if (focus != null) params.set("srcFocus", String(focus));
-    params.set("srcScroll", String(window.scrollY));
-    router.push(`/artists/${slug}?${params.toString()}`);
+    router.prefetch(href);
+    trackHistory("CONNECTION_FOLLOWED", href);
+    startTransition(() => {
+      router.push(href);
+    });
   }
 
   function goBack() {
     markPending("back");
     if (!from) {
-      router.back();
+      startTransition(() => {
+        router.back();
+      });
       return;
     }
-    const href = restoredArtistPath({
+    const stored = via ? readHistoryReturn(from, via) : null;
+    const href = returnArtistHref({
       from,
       via,
-      srcZoom: searchParams.get("srcZoom"),
-      srcFocus: searchParams.get("srcFocus"),
-      srcScroll: searchParams.get("srcScroll"),
+      srcZoom: stored?.zoom ?? searchParams.get("srcZoom"),
+      srcFocus: stored?.focus ?? searchParams.get("srcFocus"),
     });
+    const rawLegacy = searchParams.get("srcScroll");
+    const legacyScroll = rawLegacy == null ? null : Number(rawLegacy);
+    const scrollValue = stored?.scroll ?? (legacyScroll != null && Number.isFinite(legacyScroll) ? legacyScroll : null);
+    if (scrollValue != null) rememberScroll(from, scrollValue);
     router.prefetch(href);
-    router.push(href);
+    startTransition(() => {
+      router.push(href, { scroll: false });
+    });
   }
 
   const place = selected
@@ -216,9 +332,17 @@ export default function HistoryExperience({ artist }: { artist: HistoryArtistVie
   const visibleConnectedArtists = satellites?.visible.filter((node) => node.kind === "artist") ?? [];
 
   return (
-    <div className="rh-page">
+    <div className="rh-page" style={{ ["--rh-overlay-delay" as string]: `${HISTORY_PENDING_OVERLAY_MS}ms` }}>
       <div className="rh-progress" role="progressbar" aria-hidden={pendingSlug ? undefined : true} aria-label="Opening history">
         <span />
+      </div>
+      <div className="rh-nav-overlay" data-pending={isPending || pendingSlug ? "1" : "0"} aria-hidden="true">
+        <p className="rh-kicker">Artist history</p>
+        <div className="rh-skel rh-skel-title" />
+        <div className="rh-skel rh-skel-line" />
+        <div className="rh-skel rh-skel-row" />
+        <div className="rh-skel rh-skel-row" />
+        <div className="rh-skel rh-skel-row" />
       </div>
       <TopBar />
       {journeyOn && !reduceMotion && viaExhibition ? (
@@ -469,6 +593,7 @@ export default function HistoryExperience({ artist }: { artist: HistoryArtistVie
                           aria-busy={pendingSlug === node.id}
                           onMouseEnter={() => warmArtist(node.id)}
                           onFocus={() => warmArtist(node.id)}
+                          onTouchStart={() => warmArtist(node.id)}
                           onClick={() => followArtist(node.id, selected)}
                         >
                           <span className="rh-node-type">Artist</span>
