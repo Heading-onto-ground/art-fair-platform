@@ -3,6 +3,7 @@ import path from "path";
 import { describe, expect, it } from "vitest";
 import { HISTORY_PENDING_OVERLAY_MS, JOURNEY_MS, clusterByDecade, decodeDisplayText, displayCountry, followArtistHref, groupByYear, historyCoverageCopy, historyPresentation, parseHistoryReturn, restoredArtistPath, returnArtistHref, shouldPlayJourney, shouldRetryScroll, uncertainDisplay } from "@/lib/history/display";
 import { publicHistoryImage, selectExplicitFirstPartyHero } from "@/lib/history/images";
+import { HISTORY_IMAGE_REGISTRY, publishedArtistHero } from "@/lib/history/imageRegistry";
 import { planBackfill } from "@/lib/history/backfill";
 import { isHistoryUnavailable } from "@/lib/history/schemaError";
 import {
@@ -287,6 +288,53 @@ describe("ROB public history", () => {
       sourceUrl: null,
       attribution: "Museum grant",
     })).toBeNull();
+  });
+
+  it("publishes only the rights-cleared artist hero", () => {
+    const original = "https://upload.wikimedia.org/wikipedia/commons/2/25/Lee_Ufan.jpg";
+    const lee = publishedArtistHero("lee-ufan");
+    expect(lee).toMatchObject({
+      provenance: "OPEN_LICENSE",
+      creator: "Andrew Tupalev",
+      license: "CC BY-SA 4.0",
+      attribution: "Photo: Andrew Tupalev",
+      alt: "Portrait of Lee Ufan",
+      url: "https://upload.wikimedia.org/wikipedia/commons/thumb/2/25/Lee_Ufan.jpg/500px-Lee_Ufan.jpg",
+      sourceUrl: "https://commons.wikimedia.org/wiki/File:Lee_Ufan.jpg",
+    });
+    expect(lee?.url).not.toBe(original);
+    expect(lee?.srcSet?.split(", ").some((part) => part.startsWith(original))).toBe(false);
+    expect(lee?.srcSet).toContain("330px-Lee_Ufan.jpg 330w");
+    expect(lee?.srcSet).toContain("960px-Lee_Ufan.jpg 960w");
+    expect(HISTORY_IMAGE_REGISTRY.find((asset) => asset.artistSlug === "lee-ufan")).toMatchObject({
+      assetUrl: original,
+      framing: "full-frame",
+      alt: "Portrait of Lee Ufan",
+    });
+    expect(publishedArtistHero("park-seo-bo")).toBeNull();
+    expect(publishedArtistHero("ha-chong-hyun")).toBeNull();
+    expect(publishedArtistHero("chung-sang-hwa")).toBeNull();
+
+    const park = HISTORY_IMAGE_REGISTRY.find((asset) => asset.artistSlug === "park-seo-bo");
+    expect(park).toMatchObject({
+      purpose: "ARTIST_HERO",
+      provenance: "OPEN_LICENSE",
+      license: "CC BY-SA 4.0",
+      secondaryRightsStatus: "REVIEW_REQUIRED",
+      publicationStatus: "HOLD",
+    });
+    expect(HISTORY_IMAGE_REGISTRY.some((asset) => asset.purpose === "MOMENT_COVER")).toBe(false);
+    expect(HISTORY_IMAGE_REGISTRY.every((asset) => ["FIRST_PARTY", "OPEN_LICENSE", "PERMISSION_GRANTED"].includes(asset.provenance))).toBe(true);
+
+    const queries = readFileSync(path.resolve("lib/history/queries.ts"), "utf8");
+    expect(queries).toContain("publishedArtistHero");
+    expect(queries).toContain("coverImage: null");
+    const experience = readFileSync(path.resolve("app/components/history/HistoryExperience.tsx"), "utf8");
+    expect(experience).toContain("selected.coverImage");
+    expect(experience).toContain("onError");
+    expect(experience).toContain("node.naturalWidth === 0");
+    expect(experience).not.toContain("heroImage={selected");
+    expect(experience).not.toContain("Park_Seo-Bo");
   });
 
   it("keeps artist navigation from waiting on the arrival animation", () => {
