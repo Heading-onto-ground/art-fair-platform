@@ -102,17 +102,33 @@ const HERO_LOAD_MS = 8000;
 function HistoryStill({ image, onFail }: { image: HistoryImage; onFail?: () => void }) {
   const credit = sourceCredit(image.sourceUrl);
   const imgRef = useRef<HTMLImageElement>(null);
+  const reportedUrl = useRef<string | null>(null);
+  const reportHero = (name: "ARTIST_HERO_LOADED" | "ARTIST_HERO_FAILED") => {
+    if (!onFail || reportedUrl.current === image.url) return;
+    reportedUrl.current = image.url;
+    trackHistory(name);
+  };
   useEffect(() => {
     if (!onFail) return;
     const node = imgRef.current;
     // A cached image can finish before React attaches onLoad/onError.
     if (node?.complete) {
-      if (node.naturalWidth === 0) onFail();
+      if (node.naturalWidth === 0) {
+        reportHero("ARTIST_HERO_FAILED");
+        onFail();
+      } else {
+        reportHero("ARTIST_HERO_LOADED");
+      }
       return;
     }
     const timer = window.setTimeout(() => {
       const current = imgRef.current;
-      if (current?.complete && current.naturalWidth > 0) return;
+      if (current?.complete && current.naturalWidth > 0) {
+        reportHero("ARTIST_HERO_LOADED");
+        return;
+      }
+      if (reportedUrl.current === image.url) return;
+      reportHero("ARTIST_HERO_FAILED");
       onFail();
     }, HERO_LOAD_MS);
     return () => window.clearTimeout(timer);
@@ -129,7 +145,13 @@ function HistoryStill({ image, onFail }: { image: HistoryImage; onFail?: () => v
         alt={image.alt}
         decoding="async"
         fetchPriority={onFail ? "high" : undefined}
-        onError={() => onFail?.()}
+        onLoad={(event) => {
+          if (event.currentTarget.naturalWidth > 0) reportHero("ARTIST_HERO_LOADED");
+        }}
+        onError={() => {
+          reportHero("ARTIST_HERO_FAILED");
+          onFail?.();
+        }}
       />
       {image.attribution || image.license || credit ? (
         <figcaption>

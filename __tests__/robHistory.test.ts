@@ -333,6 +333,8 @@ describe("ROB public history", () => {
     expect(experience).toContain("selected.coverImage");
     expect(experience).toContain("onError");
     expect(experience).toContain("node.naturalWidth === 0");
+    expect(experience).toContain("ARTIST_HERO_LOADED");
+    expect(experience).toContain("ARTIST_HERO_FAILED");
     expect(experience).not.toContain("heroImage={selected");
     expect(experience).not.toContain("Park_Seo-Bo");
   });
