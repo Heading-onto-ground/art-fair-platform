@@ -74,7 +74,7 @@ const publicExhibitionWhere: Prisma.ExhibitionWhereInput = {
       historySources: {
         some: {
           source: {
-            internalUseDecision: "ALLOW_LIMITED",
+            internalUseDecision: { in: ["ALLOW_LIMITED", "FACTUAL_USE_OK"] },
             contentScope: "FACTUAL_METADATA_ONLY",
           },
         },
@@ -163,14 +163,14 @@ function limitedSource(row: ExhibitionRow): SourceRow | null {
   return (
     row.historySources
       .map((join) => join.source)
-      .find((source) => source.internalUseDecision === "ALLOW_LIMITED" && source.contentScope === "FACTUAL_METADATA_ONLY") ?? null
+      .find((source) => (source.internalUseDecision === "ALLOW_LIMITED" || source.internalUseDecision === "FACTUAL_USE_OK") && source.contentScope === "FACTUAL_METADATA_ONLY") ?? null
   );
 }
 
 function visibleSources(row: ExhibitionRow): HistorySourceView[] {
   return row.historySources
     .map((join) => join.source)
-    .filter((source) => source.clearanceStatus === "APPROVED" || (source.internalUseDecision === "ALLOW_LIMITED" && source.contentScope === "FACTUAL_METADATA_ONLY"))
+    .filter((source) => source.clearanceStatus === "APPROVED" || ((source.internalUseDecision === "ALLOW_LIMITED" || source.internalUseDecision === "FACTUAL_USE_OK") && source.contentScope === "FACTUAL_METADATA_ONLY"))
     .map((source) => ({
       id: source.id,
       url: source.url,
@@ -562,11 +562,21 @@ export async function listExplore() {
           {
             origin: "ROB_RESEARCHED",
             sourceClearance: { not: "REJECTED" },
-            exhibition: { historySources: { some: { source: { internalUseDecision: "ALLOW_LIMITED", contentScope: "FACTUAL_METADATA_ONLY" } } } },
+            exhibition: { historySources: { some: { source: { internalUseDecision: { in: ["ALLOW_LIMITED", "FACTUAL_USE_OK"] }, contentScope: "FACTUAL_METADATA_ONLY" } } } },
           },
         ],
       },
-      include: { exhibition: { select: { title: true, city: true, country: true, startDate: true } } },
+      include: {
+        exhibition: {
+          select: {
+            title: true,
+            city: true,
+            country: true,
+            startDate: true,
+            historyArtists: { select: { artist: { select: { slug: true, canonicalName: true } } } },
+          },
+        },
+      },
       orderBy: { startYear: "desc" },
       take: 40,
     }),
@@ -599,6 +609,18 @@ export async function listExplore() {
       title: decodeDisplayText(row.exhibition.title),
       year: row.startYear,
     })),
+    paths: exhibitions
+      .map((row) => ({
+        slug: row.slug,
+        title: decodeDisplayText(row.exhibition.title),
+        year: row.startYear,
+        artists: row.exhibition.historyArtists.map((item) => ({
+          slug: item.artist.slug,
+          name: decodeDisplayText(item.artist.canonicalName),
+        })),
+      }))
+      .filter((row) => row.artists.length >= 2)
+      .slice(0, 6),
     spaces: spaces.map((row) => ({
       slug: row.slug,
       name: decodeDisplayText(row.space.name),

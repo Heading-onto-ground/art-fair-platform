@@ -1,0 +1,102 @@
+{
+  "sourceName": "PARKSEOBO FOUNDATION",
+  "sourceUrl": "https://parkseobofoundation.org/BIO_EN",
+  "retrievedAt": "2026-10-11",
+  "extractionMethod": "manual factual line from the public biography",
+  "internalUseDecision": "ALLOW_LIMITED",
+  "productDecision": "FACTUAL_USE_OK",
+  "externalPermission": "NOT_OBTAINED",
+  "contentScope": "FACTUAL_METADATA_ONLY",
+  "records": [
+    {
+      "pilotRecordId": "psbf-2023-white-cube-west-palm-beach",
+      "title": "Park Seo-Bo",
+      "year": 2023,
+      "venue": "White Cube West Palm Beach",
+      "city": "West Palm Beach",
+      "country": "USA",
+      "participants": ["Park Seo-Bo"]
+    },
+    {
+      "pilotRecordId": "psbf-2022-tokyo-gallery",
+      "title": "Park Seo-Bo",
+      "year": 2022,
+      "venue": "Tokyo Gallery",
+      "city": "Tokyo",
+      "country": "Japan",
+      "participants": ["Park Seo-Bo"]
+    },
+    {
+      "pilotRecordId": "psbf-2021-kukje",
+      "title": "Park Seo-Bo",
+      "year": 2021,
+      "venue": "Kukje Gallery",
+      "city": "Seoul",
+      "country": "Korea",
+      "participants": ["Park Seo-Bo"]
+    },
+    {
+      "pilotRecordId": "psbf-2021-chateau-la-coste",
+      "title": "Park Seo-Bo",
+      "year": 2021,
+      "venue": "Château La Coste",
+      "city": "Le Puy-Sainte-Réparade",
+      "country": "France",
+      "participants": ["Park Seo-Bo"]
+    },
+    {
+      "pilotRecordId": "psbf-2021-white-cube-bermondsey",
+      "title": "Park Seo-Bo",
+      "year": 2021,
+      "venue": "White Cube Bermondsey",
+      "city": "London",
+      "country": "UK",
+      "participants": ["Park Seo-Bo"]
+    },
+    {
+      "pilotRecordId": "psbf-2019-mmca-retrospective",
+      "title": "Retrospective Park Seo-Bo: The Untiring Endeavorer",
+      "year": 2019,
+      "venue": "National Museum of Modern and Contemporary Art",
+      "city": "Seoul",
+      "country": "Korea",
+      "participants": ["Park Seo-Bo"]
+    },
+    {
+      "pilotRecordId": "psbf-2019-perrotin-paris",
+      "title": "Park Seo-Bo",
+      "year": 2019,
+      "venue": "Galerie Perrotin",
+      "city": "Paris",
+      "country": "France",
+      "participants": ["Park Seo-Bo"]
+    },
+    {
+      "pilotRecordId": "psbf-2017-white-cube-london",
+      "title": "Park Seo-Bo Ecriture 1983-1992",
+      "year": 2017,
+      "venue": "White Cube",
+      "city": "London",
+      "country": "UK",
+      "participants": ["Park Seo-Bo"]
+    },
+    {
+      "pilotRecordId": "psbf-2009-johyun",
+      "title": "Kim Tschang-Yeul + Park Seo-Bo + Lee Ufan",
+      "year": 2009,
+      "venue": "Johyun Gallery",
+      "city": "Busan",
+      "country": "Korea",
+      "participants": ["Park Seo-Bo", "Lee Ufan", "Kim Tschang-Yeul"]
+    },
+    {
+      "pilotRecordId": "psbf-2005-mainz-monochrom",
+      "title": "Das Koreanische Monochrom: Park Seo-Bo / Lee Ufan / Kim, Guirin / Yun Hyong-Keun",
+      "year": 2005,
+      "venue": "Galerie Dr. Dorothea van der Kölen",
+      "city": "Mainz",
+      "country": "Germany",
+      "participants": ["Park Seo-Bo", "Lee Ufan", "Kim, Guirin", "Yun Hyong-Keun"]
+    }
+  ]
+}

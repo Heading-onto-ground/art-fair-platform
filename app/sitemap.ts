@@ -174,7 +174,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
                    SELECT 1 FROM "ExhibitionSource" es
                    JOIN "HistorySource" hs ON hs.id = es."sourceId"
                    WHERE es."exhibitionId" = x.id
-                     AND hs."internalUseDecision" = 'ALLOW_LIMITED'
+                     AND hs."internalUseDecision" IN ('ALLOW_LIMITED', 'FACTUAL_USE_OK')
                      AND hs."contentScope" = 'FACTUAL_METADATA_ONLY'
                  )
                )
@@ -205,7 +205,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
              SELECT 1 FROM "ExhibitionSource" es
              JOIN "HistorySource" hs ON hs.id = es."sourceId"
              WHERE es."exhibitionId" = x.id
-               AND hs."internalUseDecision" = 'ALLOW_LIMITED'
+               AND hs."internalUseDecision" IN ('ALLOW_LIMITED', 'FACTUAL_USE_OK')
                AND hs."contentScope" = 'FACTUAL_METADATA_ONLY'
            )
          )
@@ -240,7 +240,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
                    SELECT 1 FROM "ExhibitionSource" es
                    JOIN "HistorySource" hs ON hs.id = es."sourceId"
                    WHERE es."exhibitionId" = x.id
-                     AND hs."internalUseDecision" = 'ALLOW_LIMITED'
+                     AND hs."internalUseDecision" IN ('ALLOW_LIMITED', 'FACTUAL_USE_OK')
                      AND hs."contentScope" = 'FACTUAL_METADATA_ONLY'
                  )
                )
