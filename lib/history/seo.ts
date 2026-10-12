@@ -18,12 +18,13 @@ export function artistPageDescription(artist: Pick<HistoryArtistView, "canonical
   return `${artist.canonicalName}.${native}${born} ${artist.exhibitionCount} documented exhibitions on ROB.`;
 }
 
-export function artistJsonLd(input: { name: string; nativeName: string | null; url: string; birthYear: number | null }) {
+export function artistJsonLd(input: { name: string; nativeName: string | null; aliases?: string[]; url: string; birthYear: number | null }) {
+  const alternateName = [input.nativeName, ...(input.aliases ?? [])].filter((name): name is string => Boolean(name) && name !== input.name);
   return {
     "@context": "https://schema.org",
     "@type": "Person",
     name: input.name,
-    ...(input.nativeName ? { alternateName: input.nativeName } : {}),
+    ...(alternateName.length ? { alternateName } : {}),
     url: input.url,
     ...(input.birthYear ? { birthDate: String(input.birthYear) } : {}),
   };

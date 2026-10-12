@@ -353,6 +353,7 @@ export default function HistoryExperience({ artist }: { artist: HistoryArtistVie
     markPending(slug);
     router.prefetch(href);
     trackHistory("CONNECTION_FOLLOWED", href);
+    trackHistory("CONNECTED_ARTIST_OPENED", href);
     startTransition(() => {
       router.push(href);
     });
@@ -684,6 +685,12 @@ export default function HistoryExperience({ artist }: { artist: HistoryArtistVie
                     )}
                   </div>
                 </div>
+
+                {selected.unresolved.length > 0 ? (
+                  <p className="rh-muted">
+                    Also recorded: {selected.unresolved.map((name) => name.label).join(", ")}
+                  </p>
+                ) : null}
 
                 {satellites && satellites.hiddenArtists > 0 ? (
                   <button className="rh-link-button" type="button" onClick={() => setExpanded(true)}>

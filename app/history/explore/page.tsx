@@ -1,5 +1,7 @@
 import Link from "next/link";
 import TopBar from "@/app/components/TopBar";
+import ExploreTrack from "@/app/components/history/ExploreTrack";
+import PathList from "@/app/components/history/PathList";
 import { listExplore } from "@/lib/history/queries";
 import { isMissingHistorySchema } from "@/lib/history/schemaError";
 import "@/app/components/history/history.css";
@@ -7,7 +9,7 @@ import "@/app/components/history/history.css";
 export const dynamic = "force-dynamic";
 
 export default async function HistoryExplorePage() {
-  let data = { artists: [] as { slug: string; canonicalName: string; nativeName: string | null; exhibitionCount: number }[], exhibitions: [] as { slug: string | null; title: string; year: number | null }[], paths: [] as { slug: string | null; title: string; year: number | null; artists: { slug: string; name: string }[] }[], spaces: [] as { slug: string; name: string; city: string | null; country: string | null }[], decades: [] as number[], cities: [] as string[], countries: [] as string[] };
+  let data: Awaited<ReturnType<typeof listExplore>> | null = null;
   let unavailable = false;
   try {
     data = await listExplore();
@@ -15,63 +17,76 @@ export default async function HistoryExplorePage() {
     unavailable = isMissingHistorySchema(error);
     if (!unavailable) console.error("history explore failed", error);
   }
+  const artists = data?.artists ?? [];
+  const moments = data?.moments ?? [];
+  const routes = data?.routes ?? [];
+  const spaces = data?.spaces ?? [];
   return (
     <div className="rh-page">
       <TopBar />
+      <ExploreTrack />
       <main className="rh-wrap">
+        <p className="rh-kicker">Explore</p>
         <h1 className="rh-title">Explore the art world</h1>
         {unavailable ? <p>Documented records will appear after the history schema is applied.</p> : null}
-        {data.paths.length > 0 ? (
-          <>
-            <h2>Follow a documented path</h2>
+
+        {artists.length > 0 ? (
+          <section>
+            <h2>Journeys</h2>
             <ul className="rh-list">
-              {data.paths.map((path) => (
-                <li key={path.slug || path.title}>
-                  {path.year ? `${path.year} · ` : ""}
-                  {path.slug ? <Link href={`/exhibitions/${path.slug}`}>{path.title}</Link> : path.title}
+              {artists.map((artist) => (
+                <li key={artist.slug}>
+                  <Link href={`/artists/${artist.slug}`}>{artist.canonicalName}</Link>
+                  {artist.nativeName ? ` ${artist.nativeName}` : ""}
                   <div>
-                    {path.artists.map((artist, index) => (
+                    {artist.firstYear && artist.lastYear ? `${artist.firstYear}–${artist.lastYear} · ` : ""}
+                    {artist.exhibitionCount} exhibitions currently documented
+                  </div>
+                </li>
+              ))}
+            </ul>
+          </section>
+        ) : null}
+
+        {moments.length > 0 ? (
+          <section>
+            <h2>Moments</h2>
+            <ul className="rh-list">
+              {moments.map((moment) => (
+                <li key={moment.id}>
+                  <div>{moment.year ?? "Year not recorded"}</div>
+                  {moment.slug ? <Link href={`/exhibitions/${moment.slug}`}>{moment.title}</Link> : <strong>{moment.title}</strong>}
+                  {moment.place ? <div>{moment.place}</div> : null}
+                  <div>
+                    {moment.artists.map((artist, index) => (
                       <span key={artist.slug}>
                         {index > 0 ? " · " : ""}
                         <Link href={`/artists/${artist.slug}`}>{artist.name}</Link>
                       </span>
                     ))}
                   </div>
+                  {moment.slug ? <div><Link href={`/exhibitions/${moment.slug}`}>Explore this moment →</Link></div> : null}
                 </li>
               ))}
             </ul>
-          </>
+          </section>
         ) : null}
-        <h2>Artists</h2>
-        <ul className="rh-list">
-          {data.artists.map((artist) => (
-            <li key={artist.slug}>
-              <Link href={`/artists/${artist.slug}`}>{artist.canonicalName}</Link>
-              {artist.nativeName ? ` ${artist.nativeName}` : ""} · {artist.exhibitionCount} documented exhibitions
-            </li>
-          ))}
-        </ul>
-        <h2>Exhibitions</h2>
-        <ul className="rh-list">
-          {data.exhibitions.map((exhibition) => (
-            <li key={exhibition.slug || exhibition.title}>
-              {exhibition.slug ? <Link href={`/exhibitions/${exhibition.slug}`}>{exhibition.title}</Link> : exhibition.title}
-              {exhibition.year ? ` · ${exhibition.year}` : ""}
-            </li>
-          ))}
-        </ul>
-        <h2>Spaces</h2>
-        <ul className="rh-list">
-          {data.spaces.map((space) => (
-            <li key={space.slug}>
-              <Link href={`/spaces/${space.slug}`}>{space.name}</Link>
-              {space.city || space.country ? ` · ${[space.city, space.country].filter(Boolean).join(", ")}` : ""}
-            </li>
-          ))}
-        </ul>
-        {data.decades.length > 0 ? <p>Decades: {data.decades.join(", ")}</p> : null}
-        {data.cities.length > 0 ? <p>Cities: {data.cities.join(", ")}</p> : null}
-        {data.countries.length > 0 ? <p>Countries: {data.countries.join(", ")}</p> : null}
+
+        <PathList routes={routes} />
+
+        {spaces.length > 0 ? (
+          <section>
+            <h2>Spaces</h2>
+            <ul className="rh-list">
+              {spaces.map((space) => (
+                <li key={space.slug}>
+                  <Link href={`/spaces/${space.slug}`}>{space.name}</Link>
+                  <div>{space.count} documented exhibitions</div>
+                </li>
+              ))}
+            </ul>
+          </section>
+        ) : null}
       </main>
     </div>
   );

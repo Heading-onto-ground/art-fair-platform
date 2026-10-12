@@ -30,8 +30,9 @@ describe("Park Seo-Bo foundation factual subset", () => {
 
   it("matches only exact known names and skips the three production records", () => {
     expect(matchKnownArtist("Lee Ufan")).toBe("lee-ufan");
-    expect(matchKnownArtist("Lee U Fan")).toBeNull();
-    expect(matchKnownArtist("Chung Sang Hwa")).toBeNull();
+    expect(matchKnownArtist("Lee U Fan")).toBe("lee-ufan");
+    expect(matchKnownArtist("Chung Sang Hwa")).toBe("chung-sang-hwa");
+    expect(matchKnownArtist("Lee Fan")).toBeNull();
     expect(isProductionDuplicate({ year: 1992, venue: "Ingong Gallery" })).toBe(true);
     expect(isProductionDuplicate({ year: 1994, venue: "Gallery 63" })).toBe(true);
     expect(isProductionDuplicate({ year: 2025, venue: "Tina Kim Gallery" })).toBe(true);
@@ -39,7 +40,7 @@ describe("Park Seo-Bo foundation factual subset", () => {
     expect(file.records.some((row) => isProductionDuplicate(row))).toBe(false);
     const mainz = file.records.find((row) => row.pilotRecordId === "psbf-2005-mainz-monochrom");
     const classified = classifyParticipants(mainz?.participants ?? []);
-    expect(classified.matched).toEqual(["park-seo-bo", "lee-ufan"]);
-    expect(classified.unresolved).toEqual(["Kim, Guirin", "Yun Hyong-Keun"]);
+    expect(classified.matched).toEqual(["park-seo-bo", "lee-ufan", "yun-hyong-keun"]);
+    expect(classified.unresolved).toEqual(["Kim, Guirin"]);
   });
 });

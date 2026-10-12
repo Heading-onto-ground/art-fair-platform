@@ -1,28 +1,52 @@
 # ROB graph density
 
-Updated 2026-10-11 after the Park Seo-Bo Foundation subset.
+Updated 2026-10-12 after identity aliases and the graph batch.
 
-The earlier `ROB_HISTORY_DENSITY_SOURCE_BLOCKED` reading is not the standing decision. Public factual exhibition lines from the foundation biography were stored with a source URL. The biography list itself was not copied.
+The 2026-10-11 foundation subset remains. This pass added verified aliases, linked names that were already on imported exhibitions, and 16 sourced exhibitions. The biography and CV lists were not copied wholesale.
 
 ## Counts
 
 | Artist | Documented exhibitions | Presentation | Density |
 | --- | ---: | --- | --- |
-| Park Seo-Bo | 13 | timeline | RICH_HISTORY |
-| Lee Ufan | 10 | timeline | HISTORY_READY |
-| Ha Chong-Hyun | 2 | sparse chronology | LOW_DENSITY |
-| Chung Sang-Hwa | 1 | sparse chronology | LOW_DENSITY |
+| Ha Chong-Hyun | 18 | timeline | RICH_HISTORY |
+| Park Seo-Bo | 14 | timeline | RICH_HISTORY |
+| Lee Ufan | 11 | timeline | HISTORY_READY |
+| Chung Sang-Hwa | 8 | timeline | HISTORY_READY |
+| Yun Hyong-keun | 7 | timeline | HISTORY_READY |
+| Kim Tschang-Yeul | 3 | sparse chronology | HISTORY_READY |
+| Chung Chang-Sup | 1 | one shared exhibition | LOW_DENSITY |
+| Kim Whanki | 1 | one shared exhibition | LOW_DENSITY |
+| Kwon Young-Woo | 1 | one shared exhibition | LOW_DENSITY |
 
-Users and artist profiles were unchanged by the import: 189 users, 116 profiles.
+Users and artist profiles were unchanged: 189 users, 116 profiles. Public exhibitions are 49. Participations are 74.
 
-## Shared exhibitions
+## Graph
 
-- 1992 Ingong Gallery, Seoul: Park Seo-Bo, Ha Chong-Hyun, Chung Sang-Hwa
-- 1994 Gallery 63, Seoul: Park Seo-Bo, Ha Chong-Hyun
-- 2005 Das Koreanische Monochrom, Mainz: Park Seo-Bo, Lee Ufan. Kim Guirin and Yun Hyong-Keun remain unresolved.
-- 2009 Johyun Gallery, Busan: Park Seo-Bo, Lee Ufan. Kim Tschang-Yeul remains unresolved.
-- 2025 The Making of Modern Korean Art, Tina Kim Gallery, New York: Lee Ufan, Park Seo-Bo
+| Measure | Value |
+| --- | ---: |
+| Connected artists in the Korean cluster | 9 |
+| Isolated artists outside that cluster | 4 |
+| Average documented exhibitions per artist with a public record | 5.69 |
+| Shared exhibitions | 15 |
+| Direct artist pairs | 30 |
+| Three-artist routes across two exhibitions | 32 |
+| Connected components among artists who share an exhibition | 1 |
+| Largest component | 9 |
 
-New Artist → Exhibition → Artist paths from this import: Park Seo-Bo and Lee Ufan through the 2005 Mainz exhibition, and again through the 2009 Busan exhibition.
+The four isolated public artists are earlier records: 이목, 최진주, Bowon Han, and 윤수. They are not ranked against the cluster.
 
-Ha Chong-Hyun and Chung Sang-Hwa were not expanded.
+There is no artist-importance score.
+
+## Shared moments that extend the cluster
+
+- 2016 When Process Becomes Form, Villa Empain, Brussels: Lee Ufan, Park Seo-Bo, Ha Chong-Hyun, Chung Sang-Hwa, Chung Chang-Sup, Kim Whanki, Kwon Young-Woo
+- 1992 Ingong Gallery, Seoul: Park Seo-Bo, Ha Chong-Hyun, Chung Sang-Hwa, Yun Hyong-keun, Kim Tschang-Yeul
+- 2005 Das Koreanische Monochrom, Mainz: Park Seo-Bo, Lee Ufan, Yun Hyong-keun. Kim, Guirin stays unresolved.
+- 2009 Johyun Gallery, Busan: Park Seo-Bo, Lee Ufan, Kim Tschang-Yeul
+- 2017 Rhythm in Monochrome, Tokyo Opera City Art Gallery: Ha Chong-Hyun, Chung Sang-Hwa, Yun Hyong-keun
+
+One documented walk: Lee Ufan → 2005 Mainz → Park Seo-Bo → 1992 Ingong Gallery → Yun Hyong-keun → 2017 Rhythm in Monochrome → Ha Chong-Hyun.
+
+## Sources
+
+Ha Chong-Hyun lines come from the Tina Kim Gallery CV PDF. Yun Hyong-keun lines come from the PKM Gallery CV. Chung Sang-Hwa lines that overlap those shows come from the Lévy Gorvy CV PDF. The 2016 Brussels participant list comes from the Tina Kim Gallery exhibition page. Identity for Yun Hyong-keun and Kim Tschang-Yeul also uses the PKM estate page and the PYO Gallery artist page. No images were copied.

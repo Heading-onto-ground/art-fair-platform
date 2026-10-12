@@ -24,6 +24,7 @@ export type PublicHistoryGraph = {
     profileId: string | null;
     profileArtistId: string | null;
     profileUserId: string | null;
+    aliases: string[];
   };
   exhibitions: PublicGraphExhibition[];
   works: { id: string; title: string | null; imageUrl: string }[];
@@ -91,7 +92,15 @@ export async function queryPublicHistory(prisma: PrismaClient, key: string): Pro
         ap."userId" AS "profileUserId"
       FROM "ArtistEntity" ae
       LEFT JOIN "ArtistProfile" ap ON ap.id = ae."profileId"
-      WHERE ae.slug = ${key} OR ap."userId" = ${key} OR ap."artistId" = ${key}
+      WHERE ae.slug = ${key}
+        OR ap."userId" = ${key}
+        OR ap."artistId" = ${key}
+        OR EXISTS (
+          SELECT 1 FROM "ArtistAlias" al
+          WHERE al."artistEntityId" = ae.id
+            AND length(${key}) > 1
+            AND trim(both '-' from regexp_replace(lower(al.label), '[^a-z0-9]+', '-', 'g')) = ${key}
+        )
       ORDER BY CASE WHEN ae.slug = ${key} THEN 0 ELSE 1 END, ae.slug
       LIMIT 1
     ),
@@ -115,7 +124,7 @@ export async function queryPublicHistory(prisma: PrismaClient, key: string): Pro
                   FROM "ExhibitionSource" limited_link
                   JOIN "HistorySource" limited_source ON limited_source.id = limited_link."sourceId"
                   WHERE limited_link."exhibitionId" = ex.id
-                    AND limited_source."internalUseDecision" = 'ALLOW_LIMITED'
+                    AND limited_source."internalUseDecision" IN ('ALLOW_LIMITED', 'FACTUAL_USE_OK')
                     AND limited_source."contentScope" = 'FACTUAL_METADATA_ONLY'
                 )
               )
@@ -148,7 +157,12 @@ export async function queryPublicHistory(prisma: PrismaClient, key: string): Pro
           'officialWebsite', matched."officialWebsite",
           'profileId', matched."profileId",
           'profileArtistId', matched."profileArtistId",
-          'profileUserId', matched."profileUserId"
+          'profileUserId', matched."profileUserId",
+          'aliases', COALESCE((
+            SELECT jsonb_agg(al.label ORDER BY al.label)
+            FROM "ArtistAlias" al
+            WHERE al."artistEntityId" = matched.id
+          ), '[]'::jsonb)
         )
         FROM matched
       ),
