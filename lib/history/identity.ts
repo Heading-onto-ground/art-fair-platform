@@ -75,3 +75,36 @@ export function resolveArtistSlug(label: string, names: { slug: string; labels: 
   const hit = names.find((artist) => artist.labels.some((name) => aliasLookupEqual(name, label)));
   return hit?.slug ?? null;
 }
+
+/** URL slug for an alias label. Hangul-only labels do not become a latin slug. */
+export function aliasUrlSlug(label: string): string {
+  return label
+    .normalize("NFKD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "");
+}
+
+/**
+ * Canonical slug when the requested URL slug is a verified alias and not already canonical.
+ * "lee-u-fan" resolves to "lee-ufan". "lee-ufan" and "lee-fan" do not redirect.
+ */
+export function aliasSlugRedirect(slug: string): string | null {
+  const requested = slug.normalize("NFKC").trim().toLowerCase();
+  if (!requested) return null;
+  for (const alias of VERIFIED_ALIASES) {
+    const aliasSlug = aliasUrlSlug(alias.label);
+    if (!aliasSlug) continue;
+    if (aliasSlug === requested && alias.slug !== requested) return alias.slug;
+  }
+  return null;
+}
+
+/** Privacy-safe missing-search key. Email-shaped queries are dropped. */
+export function searchDemandQuery(value: string): string | null {
+  const normalized = normalizeArtistLookup(value);
+  if (normalized.length < 3 || normalized.length > 80) return null;
+  if (normalized.includes("@")) return null;
+  return normalized;
+}
