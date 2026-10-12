@@ -84,12 +84,18 @@ describe("growth ingestion", () => {
   it("keeps comma spellings and builds a frontier without an importance rank", () => {
     const frontier = buildGraphFrontier({
       snapshot,
-      demand: [{ query: "kim, guirin", count: 2 }, { query: "park seo-bo", count: 4 }],
+      demand: [
+        { query: "kim, guirin", count: 2 },
+        { query: "park seo-bo", count: 4 },
+        { query: "someone new", count: 1 },
+      ],
     });
-    expect(frontier.some((row) => row.artist === "Kim, Guirin" && row.reason === "UNRESOLVED_PARTICIPANT")).toBe(true);
+    const guirin = frontier.find((row) => row.artist === "Kim, Guirin" && row.reason === "UNRESOLVED_PARTICIPANT");
+    expect(guirin?.searchDemand).toBe(2);
+    expect(frontier.some((row) => row.artist === "kim, guirin")).toBe(false);
     expect(frontier.some((row) => row.artist === "park seo-bo")).toBe(false);
     expect(frontier.some((row) => row.reason === "ISOLATED_ARTIST" && row.artist === "bowon-han")).toBe(true);
-    expect(frontier.some((row) => row.reason === "SEARCHED_MISSING_ARTIST")).toBe(true);
+    expect(frontier.some((row) => row.reason === "SEARCHED_MISSING_ARTIST" && row.artist === "someone new" && row.searchDemand === 1)).toBe(true);
     expect(frontier.map((row) => row.artist)).not.toContain("importance");
   });
 });

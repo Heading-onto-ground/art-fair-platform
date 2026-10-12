@@ -33,7 +33,11 @@ export default async function HistoryHealthPage() {
           {report.noResultSearches.length === 0 ? <p>No missing-artist searches yet.</p> : null}
           <ul>
             {report.noResultSearches.map((row) => (
-              <li key={row.query}>{row.query} · {row.count} · {row.lastSearched ?? "time not recorded"}</li>
+              <li key={row.query}>
+                {row.query} · {row.count} · {row.lastSearched ?? "time not recorded"}
+                {row.possibleAlias ? ` · alias ${row.possibleAlias}` : ""}
+                {row.unresolvedCandidate ? ` · unresolved ${row.unresolvedCandidate}` : ""}
+              </li>
             ))}
           </ul>
           <h2>Graph frontier</h2>
