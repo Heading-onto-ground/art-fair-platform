@@ -1,3 +1,4 @@
+import { pluralCount } from "@/lib/history/copy";
 import type { HistoryArtistView, HistoryExhibitionPage, HistorySpacePage } from "@/lib/history/types";
 
 export function artistPageTitle(name: string): string {
@@ -15,7 +16,7 @@ export function spacePageTitle(name: string): string {
 export function artistPageDescription(artist: Pick<HistoryArtistView, "canonicalName" | "nativeName" | "exhibitionCount" | "birthYear">): string {
   const native = artist.nativeName ? ` ${artist.nativeName}.` : "";
   const born = artist.birthYear ? ` Born ${artist.birthYear}.` : "";
-  return `${artist.canonicalName}.${native}${born} ${artist.exhibitionCount} documented exhibitions on ROB.`;
+  return `${artist.canonicalName}.${native}${born} ${pluralCount(artist.exhibitionCount, "documented exhibition")} on ROB.`;
 }
 
 export function artistJsonLd(input: { name: string; nativeName: string | null; aliases?: string[]; url: string; birthYear: number | null }) {

@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { aliasSlugRedirect } from "@/lib/history/identity";
 import { PROTECTED_PREFIXES } from "@/lib/routes";
 
 // Admin routes (require admin session cookie)
@@ -34,6 +35,22 @@ function applySecurityHeaders(res: NextResponse, isProduction: boolean, allowFra
 export function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl;
   const isProduction = process.env.NODE_ENV === "production";
+
+  const artistPath = pathname.match(/^\/artists\/([^/]+)$/);
+  if (artistPath) {
+    let requested = artistPath[1];
+    try {
+      requested = decodeURIComponent(requested);
+    } catch {
+      requested = artistPath[1];
+    }
+    const canonical = aliasSlugRedirect(requested);
+    if (canonical) {
+      const url = req.nextUrl.clone();
+      url.pathname = `/artists/${canonical}`;
+      return applySecurityHeaders(NextResponse.redirect(url, 308), isProduction);
+    }
+  }
 
   // ── Embeddable widget routes (public, iframe-able) ────────────────────────
   if (pathname.startsWith("/embed/")) {

@@ -1,5 +1,6 @@
 import Link from "next/link";
 import TopBar from "@/app/components/TopBar";
+import { pluralCount } from "@/lib/history/copy";
 import type { HistorySpacePage } from "@/lib/history/types";
 import "./history.css";
 
@@ -11,7 +12,7 @@ export default function HistorySpace({ record }: { record: HistorySpacePage }) {
         <p className="rh-kicker">Space</p>
         <h1 className="rh-title">{record.name}</h1>
         <p>{[record.city, record.country].filter(Boolean).join(", ") || "Location not recorded"}</p>
-        <p>{record.exhibitions.length} documented exhibitions</p>
+        <p>{pluralCount(record.exhibitions.length, "documented exhibition")}</p>
         {record.exhibitions.length === 0 ? <p>No documented exhibitions yet.</p> : null}
         <ol className="rh-list">
           {record.exhibitions.map((exhibition) => (

@@ -2,6 +2,7 @@ import Link from "next/link";
 import TopBar from "@/app/components/TopBar";
 import ExploreTrack from "@/app/components/history/ExploreTrack";
 import PathList from "@/app/components/history/PathList";
+import { pluralCount } from "@/lib/history/copy";
 import { listExplore } from "@/lib/history/queries";
 import { isMissingHistorySchema } from "@/lib/history/schemaError";
 import "@/app/components/history/history.css";
@@ -40,7 +41,7 @@ export default async function HistoryExplorePage() {
                   {artist.nativeName ? ` ${artist.nativeName}` : ""}
                   <div>
                     {artist.firstYear && artist.lastYear ? `${artist.firstYear}–${artist.lastYear} · ` : ""}
-                    {artist.exhibitionCount} exhibitions currently documented
+                    {pluralCount(artist.exhibitionCount, "exhibition")} currently documented
                   </div>
                 </li>
               ))}
@@ -81,7 +82,7 @@ export default async function HistoryExplorePage() {
               {spaces.map((space) => (
                 <li key={space.slug}>
                   <Link href={`/spaces/${space.slug}`}>{space.name}</Link>
-                  <div>{space.count} documented exhibitions</div>
+                  <div>{pluralCount(space.count, "documented exhibition")}</div>
                 </li>
               ))}
             </ul>

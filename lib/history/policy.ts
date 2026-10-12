@@ -10,6 +10,7 @@ export type ContributorKind = "artist" | "gallery" | "institution";
 export const HISTORY_EVENTS = [
   "SEARCH_STARTED",
   "SEARCH_PERFORMED",
+  "SEARCH_NO_RESULT",
   "SEARCH_RESULT_OPENED",
   "ARTIST_OPENED",
   "ARTIST_HERO_LOADED",

@@ -25,12 +25,13 @@ import {
   type ZoomLevel,
 } from "@/lib/history/display";
 import type { HistoryImage } from "@/lib/history/images";
+import { pluralCount } from "@/lib/history/copy";
 import { INITIAL_CONSTELLATION, isFilledMarker } from "@/lib/history/policy";
 import type { HistoryArtistView, HistoryExhibitionView } from "@/lib/history/types";
 import "./history.css";
 
 function plural(count: number) {
-  return `${count} documented shared exhibition${count === 1 ? "" : "s"}`;
+  return pluralCount(count, "documented shared exhibition");
 }
 
 function eventLocation(exhibition: HistoryExhibitionView) {
@@ -544,7 +545,7 @@ export default function HistoryExperience({ artist }: { artist: HistoryArtistVie
                           className="rh-cluster"
                           style={{ left: `clamp(0px, calc(${left}% - 22px), calc(100% - 44px))` }}
                           type="button"
-                          aria-label={`${cluster.decade}s, ${cluster.count} documented exhibitions`}
+                          aria-label={`${cluster.decade}s, ${pluralCount(cluster.count, "documented exhibition")}`}
                           onClick={() => replaceQuery({ zoom: "decade", focus: String(cluster.decade), event: null })}
                         >
                           <span className="rh-stack">

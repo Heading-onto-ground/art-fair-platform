@@ -4,6 +4,7 @@ import { Fragment, FormEvent, KeyboardEvent, useEffect, useRef, useState } from 
 import Link from "next/link";
 import TopBar from "@/app/components/TopBar";
 import { trackHistory } from "@/lib/history/analytics";
+import { pluralCount } from "@/lib/history/copy";
 import type { HistorySearchResult } from "@/lib/history/types";
 import "./history.css";
 import "./home.css";
@@ -131,7 +132,7 @@ export default function HistoryHome({ discovery = null }: { discovery?: Discover
                         >
                           <strong>{artist.canonicalName}</strong>
                           {artist.nativeName ? <span> {artist.nativeName}</span> : null}
-                          <span> · {artist.exhibitionCount} exhibitions currently documented</span>
+                          <span> · {pluralCount(artist.exhibitionCount, "exhibition")} currently documented</span>
                         </button>
                       </li>
                     ))}
@@ -155,7 +156,7 @@ export default function HistoryHome({ discovery = null }: { discovery?: Discover
               <p className="rh-muted">
                 Start here · <Link href={`/artists/${discovery.journey.slug}`}>{discovery.journey.canonicalName}</Link>
                 {discovery.journey.nativeName ? ` ${discovery.journey.nativeName}` : ""}
-                {` · ${discovery.journey.exhibitionCount} exhibitions currently documented`}
+                {` · ${pluralCount(discovery.journey.exhibitionCount, "exhibition")} currently documented`}
               </p>
             ) : null}
             {query.trim() === "" ? (
@@ -248,7 +249,7 @@ export default function HistoryHome({ discovery = null }: { discovery?: Discover
                     </span>
                     <span className="rh-result-meta">
                       {artist.birthYear ? <span>Born {artist.birthYear}</span> : null}
-                      <span>{artist.exhibitionCount} exhibitions currently documented</span>
+                      <span>{pluralCount(artist.exhibitionCount, "exhibition")} currently documented</span>
                     </span>
                     <span className="rh-signature" aria-label="History signature">
                       {artist.signature.map((height, index) => (
