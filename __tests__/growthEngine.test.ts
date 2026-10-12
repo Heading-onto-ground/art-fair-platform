@@ -133,6 +133,53 @@ describe("path diversity", () => {
     const starts = new Set(picked.map((route) => route.artists[0]?.slug));
     expect(starts.size).toBeGreaterThan(1);
   });
+
+  it("keeps a readable path when older exhibitions have long titles", () => {
+    const paths = buildDocumentedPaths([
+      {
+        id: "long",
+        slug: "long",
+        title: "A very long exhibition title that exceeds forty two characters easily",
+        year: 1992,
+        artists: [
+          { slug: "ha-chong-hyun", name: "Ha Chong-Hyun" },
+          { slug: "park-seo-bo", name: "Park Seo-Bo" },
+        ],
+      },
+      {
+        id: "also-long",
+        slug: "also-long",
+        title: "Also long enough to exceed the forty two character limit now",
+        year: 1994,
+        artists: [
+          { slug: "park-seo-bo", name: "Park Seo-Bo" },
+          { slug: "lee-ufan", name: "Lee Ufan" },
+        ],
+      },
+      {
+        id: "one",
+        slug: "one",
+        title: "Short One",
+        year: 2012,
+        artists: [
+          { slug: "ha-chong-hyun", name: "Ha Chong-Hyun" },
+          { slug: "chung-sang-hwa", name: "Chung Sang-Hwa" },
+        ],
+      },
+      {
+        id: "two",
+        slug: "two",
+        title: "Short Two",
+        year: 2023,
+        artists: [
+          { slug: "chung-sang-hwa", name: "Chung Sang-Hwa" },
+          { slug: "yun-hyong-keun", name: "Yun Hyong-keun" },
+        ],
+      },
+    ], 1);
+    expect(paths).toHaveLength(1);
+    expect(paths[0]?.exhibitions.every((show) => show.title.length <= 42)).toBe(true);
+  });
 });
 
 describe("exploration depth", () => {
