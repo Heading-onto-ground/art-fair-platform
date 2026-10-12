@@ -1,4 +1,4 @@
-import { mayRelinkUnresolvedName, normalizeArtistLookup, resolveArtistSlug } from "@/lib/history/identity";
+import { aliasLookupEqual, mayRelinkUnresolvedName, normalizeArtistLookup, resolveArtistSlug } from "@/lib/history/identity";
 
 export type SourceClass =
   | "FOUNDATION"
@@ -308,6 +308,8 @@ export function buildGraphFrontier(input: {
   for (const value of ids.values()) sizes.set(value, (sizes.get(value) ?? 0) + 1);
   let largest = 0;
   for (const size of sizes.values()) largest = Math.max(largest, size);
+  const demandFor = (labels: string[]) =>
+    input.demand.reduce((sum, row) => (labels.some((label) => aliasLookupEqual(label, row.query)) ? sum + row.count : sum), 0);
   const rows: FrontierRow[] = [];
   for (const name of input.snapshot.unresolved) {
     if (!mayRelinkUnresolvedName(name.exhibitionTitle)) continue;
@@ -318,7 +320,7 @@ export function buildGraphFrontier(input: {
       currentRecords: 0,
       currentComponent: 0,
       sharedMomentSource: name.exhibitionTitle,
-      searchDemand: 0,
+      searchDemand: demandFor([name.label]),
       candidateSources: [],
       priority: 1,
     });
@@ -327,6 +329,7 @@ export function buildGraphFrontier(input: {
     const component = ids.get(artist.slug) ?? 0;
     const size = sizes.get(component) ?? 1;
     const records = artist.exhibitionIds.length;
+    const searchDemand = demandFor(artist.labels);
     if (size <= 1) {
       rows.push({
         artist: artist.slug,
@@ -334,7 +337,7 @@ export function buildGraphFrontier(input: {
         currentRecords: records,
         currentComponent: size,
         sharedMomentSource: null,
-        searchDemand: 0,
+        searchDemand,
         candidateSources: [],
         priority: 4,
       });
@@ -345,7 +348,7 @@ export function buildGraphFrontier(input: {
         currentRecords: records,
         currentComponent: size,
         sharedMomentSource: null,
-        searchDemand: 0,
+        searchDemand,
         candidateSources: [],
         priority: 2,
       });
@@ -353,6 +356,12 @@ export function buildGraphFrontier(input: {
   }
   for (const demand of input.demand) {
     if (resolveArtistSlug(demand.query, names)) continue;
+    const unresolvedHit = input.snapshot.unresolved.some(
+      (name) => mayRelinkUnresolvedName(name.exhibitionTitle) && !resolveArtistSlug(name.label, names) && aliasLookupEqual(name.label, demand.query),
+    );
+    if (unresolvedHit) continue;
+    const knownLabel = input.snapshot.artists.some((artist) => artist.labels.some((label) => aliasLookupEqual(label, demand.query)));
+    if (knownLabel) continue;
     rows.push({
       artist: demand.query,
       reason: "SEARCHED_MISSING_ARTIST",

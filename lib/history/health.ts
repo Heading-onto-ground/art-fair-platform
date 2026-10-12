@@ -1,6 +1,7 @@
 import type { PrismaClient } from "@prisma/client";
 import { prisma as untypedPrisma } from "@/lib/prisma";
 import { buildGraphFrontier, largestComponentSize, type FrontierRow, type GrowthSnapshot } from "@/lib/history/growth";
+import { aliasLookupEqual, resolveVerifiedAlias } from "@/lib/history/identity";
 import { densityForCount } from "@/lib/history/policy";
 import { publicExhibitionWhere } from "@/lib/history/queries";
 
@@ -17,7 +18,13 @@ export type HistoryHealth = {
   twoHopPairs: number;
   threeArtistRoutes: number;
   unresolvedParticipants: string[];
-  noResultSearches: { query: string; count: number; lastSearched: string | null }[];
+  noResultSearches: {
+    query: string;
+    count: number;
+    lastSearched: string | null;
+    possibleAlias: string | null;
+    unresolvedCandidate: string | null;
+  }[];
   frontier: FrontierRow[];
 };
 
@@ -124,7 +131,11 @@ export async function loadHistoryHealth(): Promise<HistoryHealth> {
     twoHopPairs: pairs.size,
     threeArtistRoutes,
     unresolvedParticipants: [...new Set(snapshot.unresolved.map((row) => row.label))].sort(),
-    noResultSearches: demand.slice(0, 20),
+    noResultSearches: demand.slice(0, 20).map((row) => ({
+      ...row,
+      possibleAlias: resolveVerifiedAlias(row.query),
+      unresolvedCandidate: snapshot.unresolved.find((name) => aliasLookupEqual(name.label, row.query))?.label ?? null,
+    })),
     frontier: frontier.slice(0, 40),
   };
 }
