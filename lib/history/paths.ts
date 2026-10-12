@@ -55,7 +55,12 @@ export function buildDocumentedPaths(shows: PathShow[], limit = 6): DocumentedPa
       }
     }
   }
-  found.sort((left, right) => (left.exhibitions[0]?.year ?? 9999) - (right.exhibitions[0]?.year ?? 9999) || left.id.localeCompare(right.id));
+  found.sort((left, right) => {
+    const rank = (path: DocumentedPath) => (path.exhibitions.every((show) => show.title.length <= 42) ? 0 : 1);
+    return rank(left) - rank(right)
+      || (left.exhibitions[0]?.year ?? 9999) - (right.exhibitions[0]?.year ?? 9999)
+      || left.id.localeCompare(right.id);
+  });
   return found.slice(0, limit);
 }
 
