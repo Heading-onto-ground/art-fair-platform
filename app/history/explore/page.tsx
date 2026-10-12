@@ -7,7 +7,7 @@ import "@/app/components/history/history.css";
 export const dynamic = "force-dynamic";
 
 export default async function HistoryExplorePage() {
-  let data = { artists: [] as { slug: string; canonicalName: string; nativeName: string | null; exhibitionCount: number }[], exhibitions: [] as { slug: string | null; title: string; year: number | null }[], spaces: [] as { slug: string; name: string; city: string | null; country: string | null }[], decades: [] as number[], cities: [] as string[], countries: [] as string[] };
+  let data = { artists: [] as { slug: string; canonicalName: string; nativeName: string | null; exhibitionCount: number }[], exhibitions: [] as { slug: string | null; title: string; year: number | null }[], paths: [] as { slug: string | null; title: string; year: number | null; artists: { slug: string; name: string }[] }[], spaces: [] as { slug: string; name: string; city: string | null; country: string | null }[], decades: [] as number[], cities: [] as string[], countries: [] as string[] };
   let unavailable = false;
   try {
     data = await listExplore();
@@ -19,8 +19,29 @@ export default async function HistoryExplorePage() {
     <div className="rh-page">
       <TopBar />
       <main className="rh-wrap">
-        <h1 className="rh-title">Explore</h1>
+        <h1 className="rh-title">Explore the art world</h1>
         {unavailable ? <p>Documented records will appear after the history schema is applied.</p> : null}
+        {data.paths.length > 0 ? (
+          <>
+            <h2>Follow a documented path</h2>
+            <ul className="rh-list">
+              {data.paths.map((path) => (
+                <li key={path.slug || path.title}>
+                  {path.year ? `${path.year} · ` : ""}
+                  {path.slug ? <Link href={`/exhibitions/${path.slug}`}>{path.title}</Link> : path.title}
+                  <div>
+                    {path.artists.map((artist, index) => (
+                      <span key={artist.slug}>
+                        {index > 0 ? " · " : ""}
+                        <Link href={`/artists/${artist.slug}`}>{artist.name}</Link>
+                      </span>
+                    ))}
+                  </div>
+                </li>
+              ))}
+            </ul>
+          </>
+        ) : null}
         <h2>Artists</h2>
         <ul className="rh-list">
           {data.artists.map((artist) => (

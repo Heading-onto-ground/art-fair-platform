@@ -67,7 +67,7 @@ export default function HistoryHome() {
             <p className="rh-home-path">
               <span>Lee Ufan</span>
               <span aria-hidden="true">→</span>
-              <span>Exhibition</span>
+              <span>The Making of Modern Korean Art</span>
               <span aria-hidden="true">→</span>
               <span>Park Seo-Bo</span>
             </p>
@@ -81,7 +81,7 @@ export default function HistoryHome() {
             <div className="rh-home-map-line" aria-hidden="true" />
             <div className="rh-home-event">
               <span>Exhibition</span>
-              <strong>A documented moment</strong>
+              <strong>The Making of Modern Korean Art</strong>
             </div>
             <div className="rh-home-map-line" aria-hidden="true" />
             <div className="rh-home-person rh-home-person-b">

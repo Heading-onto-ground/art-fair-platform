@@ -41,3 +41,13 @@ The public label is `Source: Kukje Gallery`, with a link to the page that was re
 ## Kukje launch family
 
 `kukjegallery.com` is `ALLOW_LIMITED` with `externalPermission = NOT_OBTAINED` and `contentScope = FACTUAL_METADATA_ONLY`. The launch uses 10 exhibition records from two already-reviewed artist pages. It does not import the rest of either CV.
+
+## Factual use
+
+`FACTUAL_USE_OK` is the product name for the same narrow use as `ALLOW_LIMITED`. Public queries accept both stored values. `REVIEW` is `HOLD`. `DO_NOT_USE` is `BLOCK`.
+
+A public page's year, exhibition title, venue, city, country, and explicitly named participants may be stored when the page needs no login, paywall, or access-control bypass. ROB keeps the source URL and retrieval date, and it rebuilds its own graph. It does not copy biography prose, curatorial essays, reviews, artist statements, or images.
+
+`All Rights Reserved` by itself is not a ban on recording one exhibition fact. A member terms page that forbids infringing intellectual property, without a clause about factual exhibition lines, is not that ban either. An explicit ban on copying the site's text, an automated-collection ban, or a request to reproduce one source catalogue in full stays `DO_NOT_USE` or `REVIEW`.
+
+ROB does not mirror one CV. A source with hundreds of lines contributes a small high-confidence subset. The same fact from a second official page is a separate source decision.

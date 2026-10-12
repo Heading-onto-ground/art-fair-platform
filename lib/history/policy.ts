@@ -51,7 +51,14 @@ export type HistoryOrigin =
   | "INSTITUTION_SUBMITTED"
   | "LEGACY_FIRST_PARTY";
 export type SourceClearance = "APPROVED" | "REVIEW_REQUIRED" | "REJECTED" | "NOT_APPLICABLE";
-export type InternalUseDecision = "ALLOW_LIMITED" | "HOLD" | "BLOCK";
+export type InternalUseDecision = "ALLOW_LIMITED" | "FACTUAL_USE_OK" | "HOLD" | "BLOCK";
+
+/** Stored values that may publish factual metadata. FACTUAL_USE_OK is the current name of ALLOW_LIMITED. */
+export const FACTUAL_USE_DECISIONS = ["ALLOW_LIMITED", "FACTUAL_USE_OK"] as const;
+
+export function isFactualUseOk(decision: string | null | undefined): boolean {
+  return decision === "ALLOW_LIMITED" || decision === "FACTUAL_USE_OK";
+}
 export type ExternalPermission = "GRANTED" | "NOT_OBTAINED" | "NOT_APPLICABLE";
 export type ContentScope = "FACTUAL_METADATA_ONLY" | "EXPRESSIVE_TEXT" | "IMAGE" | "DATABASE_BULK_CONTENT" | "UNSPECIFIED";
 export type PublicBetaDecision =
@@ -93,7 +100,7 @@ export function recordIsPublic(input: {
   if (input.publicationStatus !== "PUBLIC" || input.sourceClearance === "REJECTED") return false;
   if (input.origin === "ROB_RESEARCHED") {
     if (input.sourceClearance === "APPROVED") return true;
-    return input.internalUseDecision === "ALLOW_LIMITED" && input.contentScope === "FACTUAL_METADATA_ONLY";
+    return isFactualUseOk(input.internalUseDecision) && input.contentScope === "FACTUAL_METADATA_ONLY";
   }
   return (FIRST_PARTY_ORIGINS as readonly string[]).includes(input.origin);
 }
