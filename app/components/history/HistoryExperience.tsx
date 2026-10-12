@@ -4,7 +4,7 @@ import { useCallback, useEffect, useMemo, useRef, useState, useTransition } from
 import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import TopBar from "@/app/components/TopBar";
-import { trackHistory } from "@/lib/history/analytics";
+import { rememberExplorationDepth, trackHistory } from "@/lib/history/analytics";
 import ReportIssue from "@/app/components/history/ReportIssue";
 import {
   JOURNEY_MS,
@@ -256,7 +256,10 @@ export default function HistoryExperience({ artist }: { artist: HistoryArtistVie
 
   useEffect(() => {
     trackHistory("ARTIST_OPENED", `/artists/${artist.slug}`);
+    const depth = rememberExplorationDepth(artist.slug);
     if (from) trackHistory("SECOND_ARTIST_REACHED", `/artists/${artist.slug}`);
+    if (depth === 3) trackHistory("THIRD_ARTIST_REACHED", `/artists/${artist.slug}`);
+    if (depth === 4) trackHistory("FOURTH_ARTIST_REACHED", `/artists/${artist.slug}`);
     const media = window.matchMedia("(prefers-reduced-motion: reduce)");
     setReduceMotion(media.matches);
     const queryScroll = searchParams.get("scroll");

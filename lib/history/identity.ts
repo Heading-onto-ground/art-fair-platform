@@ -34,6 +34,11 @@ export const VERIFIED_ALIASES: readonly VerifiedAlias[] = [
   { slug: "kim-tschang-yeul", label: "김창열", language: "ko", script: "Hang", source: "PYO Gallery artist page" },
   { slug: "kim-tschang-yeul", label: "Kim Tschangyeul", language: "en", script: "Latn", source: "PYO Gallery heading" },
   { slug: "chung-chang-sup", label: "Chung Chang-Sup", language: "en", script: "Latn", source: "Tina Kim Gallery, When Process Becomes Form, 2016" },
+  { slug: "chung-chang-sup", label: "Chung Chang-Sub", language: "en", script: "Latn", source: "Encyves Wiki English name Chung Chang-sub for 정창섭, 1927-2011" },
+  { slug: "chung-chang-sup", label: "정창섭", language: "ko", script: "Hang", source: "Encyves Wiki representative name for Chung Chang-sub, 1927-2011" },
+  { slug: "kim-guiline", label: "Kim Guiline", language: "en", script: "Latn", source: "Kukje Gallery, The Art of Dansaekhwa, 2014" },
+  { slug: "kim-guiline", label: "김기린", language: "ko", script: "Hang", source: "Kukje Gallery Korean exhibition text, The Art of Dansaekhwa, 2014" },
+  { slug: "kim-guiline", label: "Kim Gui-line", language: "en", script: "Latn", source: "Seoul Museum of Art collection page, Kim Gui-line, born 1936" },
   { slug: "kim-whanki", label: "Kim Whanki", language: "en", script: "Latn", source: "Tina Kim Gallery, When Process Becomes Form, 2016" },
   { slug: "kwon-young-woo", label: "Kwon Young-Woo", language: "en", script: "Latn", source: "Tina Kim Gallery, When Process Becomes Form, 2016" },
 ];

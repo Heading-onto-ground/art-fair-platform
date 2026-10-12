@@ -18,10 +18,12 @@ describe("artist identity lookup", () => {
   });
 
   it("does not merge unverified spellings", () => {
-    expect(resolveVerifiedAlias("Chung Chang-Sub")).toBeNull();
+    expect(resolveVerifiedAlias("Chung Chang-Sub")).toBe("chung-chang-sup");
+    expect(aliasLookupEqual("Chung Chang-Sup", "Chung Chang-Sub")).toBe(false);
     expect(resolveVerifiedAlias("Kim, Guirin")).toBeNull();
     expect(resolveVerifiedAlias("Park, Seo-Bo")).toBeNull();
-    expect(aliasLookupEqual("Chung Chang-Sup", "Chung Chang-Sub")).toBe(false);
+    expect(resolveVerifiedAlias("Kim Guiline")).toBe("kim-guiline");
+    expect(resolveVerifiedAlias("김기린")).toBe("kim-guiline");
   });
 
   it("does not match a shorter name by deleting letters", () => {
