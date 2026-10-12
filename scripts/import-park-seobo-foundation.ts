@@ -126,20 +126,21 @@ async function main() {
         [exhibitionId, slug, record.year],
       );
       await client.query(`INSERT INTO "ExhibitionSource" ("exhibitionId", "sourceId") VALUES ($1, $2) ON CONFLICT DO NOTHING`, [exhibitionId, sourceId]);
-      for (const key of classified.matched) {
-        const artistId = keyToId[key];
-        if (!artistId) continue;
+      for (const label of record.participants) {
+        const key = classifyParticipants([label]).matched[0];
+        const artistId = key ? keyToId[key] : undefined;
+        if (!artistId) {
+          await client.query(
+            `INSERT INTO "HistoryUnresolvedName" (id, "exhibitionId", label, status, "createdAt")
+             VALUES ($1, $2, $3, 'UNRESOLVED_PARTICIPANT', NOW())`,
+            [randomUUID(), exhibitionId, label],
+          );
+          continue;
+        }
         await client.query(
           `INSERT INTO "HistoryParticipation" (id, "exhibitionId", "artistEntityId", "createdAt")
            VALUES ($1, $2, $3, NOW()) ON CONFLICT DO NOTHING`,
           [randomUUID(), exhibitionId, artistId],
-        );
-      }
-      for (const label of classified.unresolved) {
-        await client.query(
-          `INSERT INTO "HistoryUnresolvedName" (id, "exhibitionId", label, status, "createdAt")
-           VALUES ($1, $2, $3, 'UNRESOLVED_PARTICIPANT', NOW())`,
-          [randomUUID(), exhibitionId, label],
         );
       }
       await client.query(

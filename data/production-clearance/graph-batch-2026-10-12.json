@@ -1,0 +1,371 @@
+{
+  "importVersion": "graph-v1",
+  "artists": [
+    {
+      "slug": "yun-hyong-keun",
+      "canonicalName": "Yun Hyong-keun",
+      "nativeName": "윤형근",
+      "birthYear": 1928,
+      "country": "Korea",
+      "officialWebsite": "https://www.pkmgallery.com/artists/estate-of-yun-hyong-keun/featured-works"
+    },
+    {
+      "slug": "kim-tschang-yeul",
+      "canonicalName": "Kim Tschang-Yeul",
+      "nativeName": "김창열",
+      "birthYear": 1929,
+      "country": "Korea",
+      "officialWebsite": "https://www.pyogallery.com/artist/kim-tschangyeul"
+    },
+    {
+      "slug": "chung-chang-sup",
+      "canonicalName": "Chung Chang-Sup",
+      "nativeName": null,
+      "birthYear": 1927,
+      "country": null,
+      "officialWebsite": null
+    },
+    {
+      "slug": "kim-whanki",
+      "canonicalName": "Kim Whanki",
+      "nativeName": null,
+      "birthYear": 1913,
+      "country": null,
+      "officialWebsite": null
+    },
+    {
+      "slug": "kwon-young-woo",
+      "canonicalName": "Kwon Young-Woo",
+      "nativeName": null,
+      "birthYear": 1926,
+      "country": null,
+      "officialWebsite": null
+    }
+  ],
+  "facts": [
+    { "slug": "ha-chong-hyun", "birthYear": 1935, "country": "Korea" },
+    { "slug": "chung-sang-hwa", "birthYear": 1932, "country": "Korea" },
+    { "slug": "lee-ufan", "birthYear": 1936 },
+    { "slug": "park-seo-bo", "birthYear": 1931 },
+    { "slug": "yun-hyong-keun", "birthYear": 1928, "country": "Korea" },
+    { "slug": "kim-tschang-yeul", "birthYear": 1929, "country": "Korea" }
+  ],
+  "records": [
+    {
+      "pilotRecordId": "graph-2016-when-process",
+      "title": "When Process Becomes Form: Dansaekhwa and Korean Abstraction",
+      "year": 2016,
+      "venue": "Villa Empain",
+      "city": "Brussels",
+      "country": "Belgium",
+      "participants": ["Chung Chang-Sup", "Chung Sang-Hwa", "Ha Chong-Hyun", "Kim Whanki", "Kwon Young-Woo", "Lee Ufan", "Park Seo-Bo"],
+      "sources": [
+        {
+          "sourceName": "Tina Kim Gallery",
+          "sourceUrl": "https://tinakimgallery.com/exhibitions/113-when-process-becomes-form-dansaekhwa-and-korean-abstraction-the-boghossian-foundation/",
+          "sourceType": "OFFICIAL_GALLERY_PAGE"
+        },
+        {
+          "sourceName": "Tina Kim Gallery",
+          "sourceUrl": "https://tinakimgallery.com/usr/library/documents/main/artists/35/ha-chong-hyun_cv_2025.pdf",
+          "sourceType": "OFFICIAL_GALLERY_PAGE"
+        }
+      ]
+    },
+    {
+      "pilotRecordId": "graph-2017-rhythm-in-monochrome",
+      "title": "Rhythm in Monochrome: Korean Abstract Painting",
+      "year": 2017,
+      "venue": "Tokyo Opera City Art Gallery",
+      "city": "Tokyo",
+      "country": "Japan",
+      "participants": ["Ha Chong-Hyun", "Yun Hyong-keun", "Chung Sang-Hwa"],
+      "sources": [
+        {
+          "sourceName": "Tina Kim Gallery",
+          "sourceUrl": "https://tinakimgallery.com/usr/library/documents/main/artists/35/ha-chong-hyun_cv_2025.pdf",
+          "sourceType": "OFFICIAL_GALLERY_PAGE"
+        },
+        {
+          "sourceName": "PKM Gallery",
+          "sourceUrl": "https://www.pkmgallery.com/attachment/en/5d5eccf1a5aa2ced538b4567/TextOneColumnWithFile/6a7ac3fd0c764108f707b5f6",
+          "sourceType": "OFFICIAL_GALLERY_PAGE"
+        },
+        {
+          "sourceName": "Lévy Gorvy",
+          "sourceUrl": "https://levygorvy.com/wp-content/uploads/2017/02/Chung-CV-10.1.19_-Updated-Jul-20.pdf",
+          "sourceType": "OFFICIAL_GALLERY_PAGE"
+        }
+      ]
+    },
+    {
+      "pilotRecordId": "graph-2015-mmca-highlights",
+      "title": "MMCA Collection Highlights: Untitled",
+      "year": 2015,
+      "venue": "National Museum of Modern and Contemporary Art",
+      "city": "Gwacheon",
+      "country": "Korea",
+      "participants": ["Ha Chong-Hyun", "Yun Hyong-keun", "Chung Sang-Hwa"],
+      "sources": [
+        {
+          "sourceName": "Tina Kim Gallery",
+          "sourceUrl": "https://tinakimgallery.com/usr/library/documents/main/artists/35/ha-chong-hyun_cv_2025.pdf",
+          "sourceType": "OFFICIAL_GALLERY_PAGE"
+        },
+        {
+          "sourceName": "PKM Gallery",
+          "sourceUrl": "https://www.pkmgallery.com/attachment/en/5d5eccf1a5aa2ced538b4567/TextOneColumnWithFile/6a7ac3fd0c764108f707b5f6",
+          "sourceType": "OFFICIAL_GALLERY_PAGE"
+        },
+        {
+          "sourceName": "Lévy Gorvy",
+          "sourceUrl": "https://levygorvy.com/wp-content/uploads/2017/02/Chung-CV-10.1.19_-Updated-Jul-20.pdf",
+          "sourceType": "OFFICIAL_GALLERY_PAGE"
+        }
+      ]
+    },
+    {
+      "pilotRecordId": "graph-2023-geometric-abstraction",
+      "title": "Geometric Abstraction in Korean Art",
+      "year": 2023,
+      "venue": "National Museum of Modern and Contemporary Art",
+      "city": "Gwacheon",
+      "country": "Korea",
+      "participants": ["Ha Chong-Hyun", "Yun Hyong-keun"],
+      "sources": [
+        {
+          "sourceName": "Tina Kim Gallery",
+          "sourceUrl": "https://tinakimgallery.com/usr/library/documents/main/artists/35/ha-chong-hyun_cv_2025.pdf",
+          "sourceType": "OFFICIAL_GALLERY_PAGE"
+        },
+        {
+          "sourceName": "PKM Gallery",
+          "sourceUrl": "https://www.pkmgallery.com/attachment/en/5d5eccf1a5aa2ced538b4567/TextOneColumnWithFile/6a7ac3fd0c764108f707b5f6",
+          "sourceType": "OFFICIAL_GALLERY_PAGE"
+        }
+      ]
+    },
+    {
+      "pilotRecordId": "graph-2000-plane-as-spirits",
+      "title": "Plane as Spirits",
+      "year": 2000,
+      "venue": "Busan Museum of Art",
+      "city": "Busan",
+      "country": "Korea",
+      "participants": ["Ha Chong-Hyun", "Yun Hyong-keun"],
+      "sources": [
+        {
+          "sourceName": "Tina Kim Gallery",
+          "sourceUrl": "https://tinakimgallery.com/usr/library/documents/main/artists/35/ha-chong-hyun_cv_2025.pdf",
+          "sourceType": "OFFICIAL_GALLERY_PAGE"
+        },
+        {
+          "sourceName": "PKM Gallery",
+          "sourceUrl": "https://www.pkmgallery.com/attachment/en/5d5eccf1a5aa2ced538b4567/TextOneColumnWithFile/6a7ac3fd0c764108f707b5f6",
+          "sourceType": "OFFICIAL_GALLERY_PAGE"
+        }
+      ]
+    },
+    {
+      "pilotRecordId": "graph-2017-ascetic-path",
+      "title": "The Ascetic Path: Korean Dansaekhwa",
+      "year": 2017,
+      "venue": "Erarta Museum of Contemporary Art",
+      "city": "Saint Petersburg",
+      "country": "Russia",
+      "participants": ["Ha Chong-Hyun", "Yun Hyong-keun"],
+      "sources": [
+        {
+          "sourceName": "Tina Kim Gallery",
+          "sourceUrl": "https://tinakimgallery.com/usr/library/documents/main/artists/35/ha-chong-hyun_cv_2025.pdf",
+          "sourceType": "OFFICIAL_GALLERY_PAGE"
+        },
+        {
+          "sourceName": "PKM Gallery",
+          "sourceUrl": "https://www.pkmgallery.com/attachment/en/5d5eccf1a5aa2ced538b4567/TextOneColumnWithFile/6a7ac3fd0c764108f707b5f6",
+          "sourceType": "OFFICIAL_GALLERY_PAGE"
+        }
+      ]
+    },
+    {
+      "pilotRecordId": "graph-2014-art-of-dansaekhwa",
+      "title": "The Art of Dansaekhwa",
+      "year": 2014,
+      "venue": "Kukje Gallery",
+      "city": "Seoul",
+      "country": "Korea",
+      "participants": ["Ha Chong-Hyun", "Chung Sang-Hwa"],
+      "sources": [
+        {
+          "sourceName": "Tina Kim Gallery",
+          "sourceUrl": "https://tinakimgallery.com/usr/library/documents/main/artists/35/ha-chong-hyun_cv_2025.pdf",
+          "sourceType": "OFFICIAL_GALLERY_PAGE"
+        },
+        {
+          "sourceName": "Lévy Gorvy",
+          "sourceUrl": "https://levygorvy.com/wp-content/uploads/2017/02/Chung-CV-10.1.19_-Updated-Jul-20.pdf",
+          "sourceType": "OFFICIAL_GALLERY_PAGE"
+        }
+      ]
+    },
+    {
+      "pilotRecordId": "graph-2012-dansaekhwa-monochrome",
+      "title": "Dansaekhwa: Korean Monochrome Painting",
+      "year": 2012,
+      "venue": "National Museum of Modern and Contemporary Art",
+      "city": "Gwacheon",
+      "country": "Korea",
+      "participants": ["Ha Chong-Hyun", "Chung Sang-Hwa"],
+      "sources": [
+        {
+          "sourceName": "Tina Kim Gallery",
+          "sourceUrl": "https://tinakimgallery.com/usr/library/documents/main/artists/35/ha-chong-hyun_cv_2025.pdf",
+          "sourceType": "OFFICIAL_GALLERY_PAGE"
+        },
+        {
+          "sourceName": "Lévy Gorvy",
+          "sourceUrl": "https://levygorvy.com/wp-content/uploads/2017/02/Chung-CV-10.1.19_-Updated-Jul-20.pdf",
+          "sourceType": "OFFICIAL_GALLERY_PAGE"
+        }
+      ]
+    },
+    {
+      "pilotRecordId": "graph-2015-hyundai-45",
+      "title": "Korean Abstract Painting: 45th Anniversary of Gallery Hyundai",
+      "year": 2015,
+      "venue": "Gallery Hyundai",
+      "city": "Seoul",
+      "country": "Korea",
+      "participants": ["Ha Chong-Hyun", "Chung Sang-Hwa"],
+      "sources": [
+        {
+          "sourceName": "Tina Kim Gallery",
+          "sourceUrl": "https://tinakimgallery.com/usr/library/documents/main/artists/35/ha-chong-hyun_cv_2025.pdf",
+          "sourceType": "OFFICIAL_GALLERY_PAGE"
+        },
+        {
+          "sourceName": "Lévy Gorvy",
+          "sourceUrl": "https://levygorvy.com/wp-content/uploads/2017/02/Chung-CV-10.1.19_-Updated-Jul-20.pdf",
+          "sourceType": "OFFICIAL_GALLERY_PAGE"
+        }
+      ]
+    },
+    {
+      "pilotRecordId": "graph-2018-powerlong",
+      "title": "Korean Abstract Art: Kim Whanki and Dansaekhwa",
+      "year": 2018,
+      "venue": "Powerlong Art Museum",
+      "city": "Shanghai",
+      "country": "China",
+      "participants": ["Ha Chong-Hyun", "Chung Sang-Hwa"],
+      "sources": [
+        {
+          "sourceName": "Tina Kim Gallery",
+          "sourceUrl": "https://tinakimgallery.com/usr/library/documents/main/artists/35/ha-chong-hyun_cv_2025.pdf",
+          "sourceType": "OFFICIAL_GALLERY_PAGE"
+        },
+        {
+          "sourceName": "Lévy Gorvy",
+          "sourceUrl": "https://levygorvy.com/wp-content/uploads/2017/02/Chung-CV-10.1.19_-Updated-Jul-20.pdf",
+          "sourceType": "OFFICIAL_GALLERY_PAGE"
+        }
+      ]
+    },
+    {
+      "pilotRecordId": "graph-ha-2025-light-into-color",
+      "title": "Light Into Color",
+      "year": 2025,
+      "venue": "Château La Coste",
+      "city": "Provence",
+      "country": "France",
+      "participants": ["Ha Chong-Hyun"],
+      "sources": [
+        {
+          "sourceName": "Tina Kim Gallery",
+          "sourceUrl": "https://tinakimgallery.com/usr/library/documents/main/artists/35/ha-chong-hyun_cv_2025.pdf",
+          "sourceType": "OFFICIAL_GALLERY_PAGE"
+        }
+      ]
+    },
+    {
+      "pilotRecordId": "graph-ha-2025-5975",
+      "title": "Ha Chong-Hyun 5975",
+      "year": 2025,
+      "venue": "Art Sonje Center",
+      "city": "Seoul",
+      "country": "Korea",
+      "participants": ["Ha Chong-Hyun"],
+      "sources": [
+        {
+          "sourceName": "Tina Kim Gallery",
+          "sourceUrl": "https://tinakimgallery.com/usr/library/documents/main/artists/35/ha-chong-hyun_cv_2025.pdf",
+          "sourceType": "OFFICIAL_GALLERY_PAGE"
+        }
+      ]
+    },
+    {
+      "pilotRecordId": "graph-ha-2024-conjunction",
+      "title": "50 Years of Conjunction",
+      "year": 2024,
+      "venue": "Tina Kim Gallery",
+      "city": "New York",
+      "country": "USA",
+      "participants": ["Ha Chong-Hyun"],
+      "sources": [
+        {
+          "sourceName": "Tina Kim Gallery",
+          "sourceUrl": "https://tinakimgallery.com/usr/library/documents/main/artists/35/ha-chong-hyun_cv_2025.pdf",
+          "sourceType": "OFFICIAL_GALLERY_PAGE"
+        }
+      ]
+    },
+    {
+      "pilotRecordId": "graph-ha-2022-venice",
+      "title": "Ha Chong-Hyun: Collateral Event of the 59th International Art Exhibition – La Biennale di Venezia",
+      "year": 2022,
+      "venue": "Palazzetto Tito",
+      "city": "Venice",
+      "country": "Italy",
+      "participants": ["Ha Chong-Hyun"],
+      "sources": [
+        {
+          "sourceName": "Tina Kim Gallery",
+          "sourceUrl": "https://tinakimgallery.com/usr/library/documents/main/artists/35/ha-chong-hyun_cv_2025.pdf",
+          "sourceType": "OFFICIAL_GALLERY_PAGE"
+        }
+      ]
+    },
+    {
+      "pilotRecordId": "graph-ha-2021-return-to-color",
+      "title": "Ha Chong-Hyun: Return to Color",
+      "year": 2021,
+      "venue": "Tina Kim Gallery",
+      "city": "New York",
+      "country": "USA",
+      "participants": ["Ha Chong-Hyun"],
+      "sources": [
+        {
+          "sourceName": "Tina Kim Gallery",
+          "sourceUrl": "https://tinakimgallery.com/usr/library/documents/main/artists/35/ha-chong-hyun_cv_2025.pdf",
+          "sourceType": "OFFICIAL_GALLERY_PAGE"
+        }
+      ]
+    },
+    {
+      "pilotRecordId": "graph-ha-2018-conjunction",
+      "title": "Ha Chong-Hyun: Conjunction",
+      "year": 2018,
+      "venue": "Tina Kim Gallery",
+      "city": "New York",
+      "country": "USA",
+      "participants": ["Ha Chong-Hyun"],
+      "sources": [
+        {
+          "sourceName": "Tina Kim Gallery",
+          "sourceUrl": "https://tinakimgallery.com/usr/library/documents/main/artists/35/ha-chong-hyun_cv_2025.pdf",
+          "sourceType": "OFFICIAL_GALLERY_PAGE"
+        }
+      ]
+    }
+  ]
+}

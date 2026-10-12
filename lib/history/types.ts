@@ -42,6 +42,7 @@ export type HistoryExhibitionView = {
   curatorSlug: string | null;
   artists: HistoryPersonRef[];
   sources: HistorySourceView[];
+  unresolved: { label: string; status: string }[];
   provenance: string;
   review: boolean;
   coverImage: HistoryImage | null;
@@ -71,6 +72,7 @@ export type HistoryArtistView = {
   country: string | null;
   city: string | null;
   officialWebsite: string | null;
+  aliases: string[];
   exhibitionCount: number;
   density: HistoryDensity;
   indexEligible: boolean;

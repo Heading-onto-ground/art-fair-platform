@@ -1,11 +1,20 @@
 import type { Metadata } from "next";
 import HistoryHome from "@/app/components/history/HistoryHome";
+import { loadHomeDiscovery } from "@/lib/history/queries";
 
 export const metadata: Metadata = {
   title: { absolute: "Search an artist. See their journey. | ROB" },
   description: "Search an artist and see their documented exhibition history on ROB.",
 };
 
-export default function HomePage() {
-  return <HistoryHome />;
+export const dynamic = "force-dynamic";
+
+export default async function HomePage() {
+  let discovery = null;
+  try {
+    discovery = await loadHomeDiscovery();
+  } catch (error) {
+    console.error("home discovery failed", error);
+  }
+  return <HistoryHome discovery={discovery} />;
 }

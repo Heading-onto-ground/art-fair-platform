@@ -44,6 +44,41 @@
   display: flex;
   gap: 10px;
   max-width: 820px;
+  align-items: flex-start;
+}
+
+.rh-search-wrap {
+  position: relative;
+  flex: 1;
+}
+
+.rh-suggest {
+  position: absolute;
+  z-index: 4;
+  left: 0;
+  right: 0;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  border: 1px solid #232323;
+  background: #f7f4ef;
+}
+
+.rh-suggest button {
+  display: block;
+  width: 100%;
+  min-height: 44px;
+  padding: 12px 16px;
+  border: 0;
+  border-top: 1px solid #e4ddd3;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+}
+
+.rh-suggest button[aria-selected="true"] {
+  background: #fff;
 }
 
 .rh-search input,

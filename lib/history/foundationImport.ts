@@ -1,3 +1,5 @@
+import { resolveVerifiedAlias } from "@/lib/history/identity";
+
 export type FoundationCandidate = {
   pilotRecordId: string;
   title: string;
@@ -10,21 +12,12 @@ export type FoundationCandidate = {
   sourceUrl: string;
 };
 
-const KNOWN_ARTISTS: { key: string; names: string[] }[] = [
-  { key: "lee-ufan", names: ["Lee Ufan", "이우환"] },
-  { key: "park-seo-bo", names: ["Park Seo-Bo", "박서보"] },
-  { key: "ha-chong-hyun", names: ["Ha Chong-Hyun", "하종현"] },
-  { key: "chung-sang-hwa", names: ["Chung Sang-Hwa", "정상화"] },
-];
-
 export function normName(value: string): string {
   return value.trim().toLowerCase();
 }
 
 export function matchKnownArtist(label: string): string | null {
-  const norm = normName(label);
-  const hit = KNOWN_ARTISTS.find((artist) => artist.names.some((name) => normName(name) === norm));
-  return hit?.key ?? null;
+  return resolveVerifiedAlias(label);
 }
 
 export function termsBlockFactualMetadata(text: string): boolean {

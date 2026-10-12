@@ -22,6 +22,7 @@ export default async function ArtistPage({ params }: { params: { id: string } })
         name: loaded.artist.canonicalName,
         nativeName: loaded.artist.nativeName,
         url: `${SITE_URL}/artists/${loaded.artist.slug}`,
+        aliases: loaded.artist.aliases,
         birthYear: loaded.artist.birthYear,
       });
       return (

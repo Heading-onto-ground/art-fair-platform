@@ -26,13 +26,14 @@ import {
   isFilledMarker,
   isFirstPartyImage,
   isIndexEligible,
-  legacyArtistRedirect,
   provenanceLabel,
   recordIsPublic,
   visitorSourceLabel,
   type ContributorKind,
   type HistoryOrigin,
 } from "@/lib/history/policy";
+import { aliasLookupEqual, aliasLookupPrefix } from "@/lib/history/identity";
+import { buildDocumentedPaths } from "@/lib/history/paths";
 import { publishedArtistHero } from "@/lib/history/imageRegistry";
 import type {
   HistoryArtistView,
@@ -247,6 +248,7 @@ export function toExhibitionView(row: ExhibitionRow): HistoryExhibitionView {
     curatorName: row.curator ? decodeDisplayText(row.curator.name) : null,
     curatorSlug: row.curator?.slugRecord?.slug ?? null,
     artists,
+    unresolved: (row.unresolvedNames ?? []).map((name) => ({ label: name.label, status: name.status })),
     sources,
     provenance: limited && row.historyMeta?.sourceClearance !== "APPROVED"
       ? visitorSourceLabel(limited.sourceName)
@@ -367,6 +369,7 @@ function viewFromGraph(graph: PublicHistoryGraph): HistoryArtistView {
     country: displayCountry(graph.entity.country),
     city: graph.entity.city ? decodeDisplayText(graph.entity.city) : null,
     officialWebsite: graph.entity.officialWebsite,
+    aliases: Array.isArray(graph.entity.aliases) ? graph.entity.aliases : [],
     exhibitionCount: exhibitions.length,
     density,
     indexEligible: isIndexEligible(density),
@@ -396,19 +399,13 @@ export async function loadPublicArtistFromDatabase(key: string): Promise<
   }
   if (!graph) return { kind: "missing" };
   const artist = viewFromGraph(graph);
-  const to = legacyArtistRedirect({
-    requested: key,
-    userId: graph.entity.profileUserId,
-    artistId: graph.entity.profileArtistId,
-    slug: artist.slug,
-  });
-  if (to) return { kind: "redirect", to, artist };
+  if (artist.slug && artist.slug !== key) return { kind: "redirect", to: `/artists/${artist.slug}`, artist };
   return { kind: "history", artist };
 }
 
 const loadCachedPublicArtist = unstable_cache(
   async (key: string) => loadPublicArtistFromDatabase(key),
-  ["rob-public-artist-history", "image-canary"],
+  ["rob-public-artist-history", "identity-v1"],
   { revalidate: PUBLIC_HISTORY_REVALIDATE_SECONDS, tags: [PUBLIC_HISTORY_CACHE_TAG] },
 );
 
@@ -425,14 +422,8 @@ export async function searchArtists(rawQuery: string): Promise<HistorySearchResu
   const query = rawQuery.trim();
   if (query.length < 1) return [];
   const rows = await prisma.artistEntity.findMany({
-    where: {
-      OR: [
-        { canonicalName: { contains: query, mode: "insensitive" } },
-        { nativeName: { contains: query, mode: "insensitive" } },
-        { aliases: { some: { label: { contains: query, mode: "insensitive" } } } },
-      ],
-    },
     include: {
+      aliases: { select: { label: true } },
       profile: {
         select: {
           exhibitionEntries: {
@@ -447,9 +438,20 @@ export async function searchArtists(rawQuery: string): Promise<HistorySearchResu
       },
     },
     orderBy: { canonicalName: "asc" },
-    take: 20,
+    take: 300,
   });
-  return rows.map((row) => {
+  const matched = rows
+    .map((row) => {
+      const labels = [row.canonicalName, row.nativeName, ...row.aliases.map((alias) => alias.label)].filter((label): label is string => Boolean(label));
+      const exact = labels.some((label) => aliasLookupEqual(label, query));
+      const prefix = labels.some((label) => aliasLookupPrefix(query, label));
+      return { row, exact, prefix };
+    })
+    .filter((item) => item.exact || item.prefix)
+    .sort((left, right) => Number(right.exact) - Number(left.exact) || left.row.canonicalName.localeCompare(right.row.canonicalName))
+    .slice(0, 8)
+    .map((item) => item.row);
+  return matched.map((row) => {
     const dated = row.participations.map((item) => {
       const exhibition = item.exhibition;
       const meta = exhibition.historyMeta;
@@ -546,11 +548,16 @@ export async function loadSpacePage(key: string): Promise<HistorySpacePage | nul
 }
 
 export async function listExplore() {
-  const [artists, exhibitions, spaces] = await Promise.all([
+  const [artists, exhibitions] = await Promise.all([
     prisma.artistEntity.findMany({
-      include: { participations: { where: { exhibition: publicExhibitionWhere }, select: { exhibitionId: true } } },
+      where: { participations: { some: { exhibition: publicExhibitionWhere } } },
+      include: {
+        participations: {
+          where: { exhibition: publicExhibitionWhere },
+          select: { exhibitionId: true, exhibition: { select: { historyMeta: { select: { startYear: true } } } } },
+        },
+      },
       orderBy: { canonicalName: "asc" },
-      take: 60,
     }),
     prisma.exhibitionHistoryMeta.findMany({
       where: {
@@ -574,16 +581,12 @@ export async function listExplore() {
             country: true,
             startDate: true,
             historyArtists: { select: { artist: { select: { slug: true, canonicalName: true } } } },
+            space: { select: { name: true, city: true, country: true, slugRecord: { select: { slug: true } } } },
           },
         },
       },
       orderBy: { startYear: "desc" },
-      take: 40,
-    }),
-    prisma.spaceSlug.findMany({
-      include: { space: { select: { name: true, city: true, country: true } } },
-      take: 40,
-      orderBy: { slug: "asc" },
+      take: 120,
     }),
   ]);
   const decades = new Set<number>();
@@ -597,20 +600,46 @@ export async function listExplore() {
   }
   return {
     artists: artists
-      .map((artist) => ({
-        slug: artist.slug,
-        canonicalName: decodeDisplayText(artist.canonicalName),
-        nativeName: artist.nativeName,
-        exhibitionCount: new Set(artist.participations.map((item) => item.exhibitionId)).size,
-      }))
+      .map((artist) => {
+        const years = artist.participations
+          .map((item) => item.exhibition.historyMeta?.startYear)
+          .filter((year): year is number => year != null);
+        return {
+          slug: artist.slug,
+          canonicalName: decodeDisplayText(artist.canonicalName),
+          nativeName: artist.nativeName,
+          exhibitionCount: new Set(artist.participations.map((item) => item.exhibitionId)).size,
+          firstYear: years.length > 0 ? Math.min(...years) : null,
+          lastYear: years.length > 0 ? Math.max(...years) : null,
+        };
+      })
       .filter((artist) => artist.exhibitionCount > 0),
     exhibitions: exhibitions.map((row) => ({
       slug: row.slug,
       title: decodeDisplayText(row.exhibition.title),
       year: row.startYear,
     })),
-    paths: exhibitions
-      .map((row) => ({
+    moments: exhibitions
+      .map((row) => {
+        const artists = row.exhibition.historyArtists.map((item) => ({
+          slug: item.artist.slug,
+          name: decodeDisplayText(item.artist.canonicalName),
+        }));
+        const space = row.exhibition.space;
+        return {
+          id: row.exhibitionId,
+          slug: row.slug,
+          title: decodeDisplayText(row.exhibition.title),
+          year: row.startYear,
+          place: [space?.name, space?.city || row.exhibition.city, displayCountry(space?.country || row.exhibition.country)].filter(Boolean).join(" · "),
+          artists,
+        };
+      })
+      .filter((row) => row.artists.length >= 2)
+      .slice(0, 8),
+    routes: buildDocumentedPaths(
+      exhibitions.map((row) => ({
+        id: row.exhibitionId,
         slug: row.slug,
         title: decodeDisplayText(row.exhibition.title),
         year: row.startYear,
@@ -618,19 +647,33 @@ export async function listExplore() {
           slug: item.artist.slug,
           name: decodeDisplayText(item.artist.canonicalName),
         })),
-      }))
-      .filter((row) => row.artists.length >= 2)
-      .slice(0, 6),
-    spaces: spaces.map((row) => ({
-      slug: row.slug,
-      name: decodeDisplayText(row.space.name),
-      city: row.space.city,
-      country: displayCountry(row.space.country),
-    })),
+      })),
+    ),
+    spaces: [...exhibitions.reduce((counts, row) => {
+      const space = row.exhibition.space;
+      const slug = space?.slugRecord?.slug;
+      if (!space || !slug) return counts;
+      const current = counts.get(slug) ?? { slug, name: decodeDisplayText(space.name), city: space.city, country: displayCountry(space.country), count: 0 };
+      current.count += 1;
+      counts.set(slug, current);
+      return counts;
+    }, new Map<string, { slug: string; name: string; city: string | null; country: string | null; count: number }>()).values()]
+      .filter((space) => space.count >= 2)
+      .sort((left, right) => right.count - left.count || left.name.localeCompare(right.name))
+      .slice(0, 8),
     decades: decades.size >= 2 ? [...decades].sort((a, b) => a - b) : [],
     cities: cities.size >= 2 ? [...cities].sort() : [],
     countries: countries.size >= 2 ? [...countries].sort() : [],
   };
+}
+
+export async function loadHomeDiscovery() {
+  const data = await listExplore();
+  const moment = [...data.moments].sort((left, right) => right.artists.length - left.artists.length || (right.year ?? 0) - (left.year ?? 0))[0] ?? null;
+  const shortRoutes = data.routes.filter((route) => route.artists.length >= 3 && route.exhibitions.every((show) => show.title.length <= 40));
+  const route = shortRoutes.sort((left, right) => (right.exhibitions[0]?.year ?? 0) - (left.exhibitions[0]?.year ?? 0))[0] ?? data.routes.find((item) => item.artists.length >= 3) ?? data.routes[0] ?? null;
+  const journey = data.artists.find((artist) => artist.slug === route?.artists[0]?.slug) ?? data.artists[0] ?? null;
+  return { journey, moment, route };
 }
 
 export async function contentGateCounts() {
