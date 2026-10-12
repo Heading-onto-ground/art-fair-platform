@@ -33,7 +33,7 @@ import {
   type HistoryOrigin,
 } from "@/lib/history/policy";
 import { aliasLookupEqual, aliasLookupPrefix } from "@/lib/history/identity";
-import { buildDocumentedPaths } from "@/lib/history/paths";
+import { buildDocumentedPaths, selectDiversePaths } from "@/lib/history/paths";
 import { publishedArtistHero } from "@/lib/history/imageRegistry";
 import type {
   HistoryArtistView,
@@ -48,7 +48,7 @@ import type {
 
 const prisma = untypedPrisma as PrismaClient;
 
-const publicExhibitionWhere: Prisma.ExhibitionWhereInput = {
+export const publicExhibitionWhere: Prisma.ExhibitionWhereInput = {
   isPublic: true,
   OR: [
     { historyMeta: { is: null }, createdBy: { not: null } },
@@ -405,7 +405,7 @@ export async function loadPublicArtistFromDatabase(key: string): Promise<
 
 const loadCachedPublicArtist = unstable_cache(
   async (key: string) => loadPublicArtistFromDatabase(key),
-  ["rob-public-artist-history", "identity-v1"],
+  ["rob-public-artist-history", "growth-v1"],
   { revalidate: PUBLIC_HISTORY_REVALIDATE_SECONDS, tags: [PUBLIC_HISTORY_CACHE_TAG] },
 );
 
@@ -631,7 +631,11 @@ export async function listExplore() {
           lastYear: years.length > 0 ? Math.max(...years) : null,
         };
       })
-      .filter((artist) => artist.exhibitionCount > 0),
+      .filter((artist) => artist.exhibitionCount > 0)
+      .sort((left, right) => {
+        const rank = (count: number) => (densityForCount(count) === "LOW_DENSITY" || densityForCount(count) === "EMPTY" ? 1 : 0);
+        return rank(left.exhibitionCount) - rank(right.exhibitionCount) || left.canonicalName.localeCompare(right.canonicalName);
+      }),
     exhibitions: exhibitions.map((row) => ({
       slug: row.slug,
       title: decodeDisplayText(row.exhibition.title),
@@ -655,7 +659,7 @@ export async function listExplore() {
       })
       .filter((row) => row.artists.length >= 2)
       .slice(0, 8),
-    routes: [...readable, ...documented.filter((route) => !readable.includes(route))].slice(0, 6),
+    routes: selectDiversePaths(readable.length > 0 ? readable : documented, 6),
     homeRoute,
     spaces: [...exhibitions.reduce((counts, row) => {
       const space = row.exhibition.space;

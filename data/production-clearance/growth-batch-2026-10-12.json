@@ -1,0 +1,138 @@
+{
+  "importVersion": "growth-v1",
+  "job": {
+    "sourceId": "growth-2026-10-12-kukje-slag",
+    "sourceName": "Kukje Gallery and SLAG&RX",
+    "sourceUrl": "https://www.kukjegallery.com/exhibitions/view?seq=168",
+    "sourceClass": "GALLERY_CV",
+    "targetArtists": ["kim-guiline", "chung-chang-sup"],
+    "retrievedAt": "2026-10-12",
+    "extractionMode": "MANUAL_FACT_LINES",
+    "contentScope": "FACTUAL_METADATA_ONLY",
+    "notes": "Kim Guiline is created from the Kukje exhibition page participant list and the Gallery Hyundai name 김기린, born 1936. Kim, Guirin stays unresolved. The 2014 end date is not stored because the Kukje exhibition page says 19 October and the Kukje press PDF says 5 October. Chung Chang-Sub is an alias of Chung Chang-Sup from the Encyves Wiki English name for 정창섭, 1927-2011."
+  },
+  "artists": [
+    {
+      "slug": "kim-guiline",
+      "canonicalName": "Kim Guiline",
+      "nativeName": "김기린",
+      "birthYear": 1936,
+      "country": null,
+      "officialWebsite": "https://www.galleryhyundai.com/artist/view/20000000019"
+    }
+  ],
+  "enrichments": [
+    {
+      "pilotRecordId": "enrich-2014-art-of-dansaekhwa",
+      "title": "The Art of Dansaekhwa",
+      "year": 2014,
+      "space": "Kukje Gallery",
+      "participants": ["Chung Chang-Sup", "Chung Sang-Hwa", "Ha Chong-Hyun", "Kim Guiline", "Lee Ufan", "Park Seo-Bo", "Yun Hyong-Keun"],
+      "sourceName": "Kukje Gallery",
+      "sourceUrl": "https://www.kukjegallery.com/exhibitions/view?seq=168",
+      "evidenceShort": "The exhibition presents the works of Chung Chang-Sup, Chung Sang-Hwa, Ha Chong-Hyun, Kim Guiline, Lee Ufan, Park Seo-Bo, and Yun Hyong-Keun."
+    },
+    {
+      "pilotRecordId": "enrich-2012-korean-monochrome",
+      "title": "Dansaekhwa: Korean Monochrome Painting",
+      "year": 2012,
+      "space": "MMCA",
+      "participants": ["Kim Guiline"],
+      "sourceName": "SLAG&RX",
+      "sourceUrl": "https://www.slaggallery.com/chelsea_art_gallery/artists/kim-guiline/documents/resume",
+      "evidenceShort": "2012 Dansaekhwa: Korean Monochrome Painting, National Museum of Modern and Contemporary Art - MMCA, Gwacheon, South Korea."
+    },
+    {
+      "pilotRecordId": "enrich-2015-gallery-hyundai-45",
+      "title": "Korean Abstract Painting: 45th Anniversary of Gallery Hyundai",
+      "year": 2015,
+      "space": "Gallery Hyundai",
+      "participants": ["Kim Guiline"],
+      "sourceName": "SLAG&RX",
+      "sourceUrl": "https://www.slaggallery.com/chelsea_art_gallery/artists/kim-guiline/documents/resume",
+      "evidenceShort": "2015 Korean Abstract Painting: 45th Anniversary of Gallery Hyundai, Seoul, South Korea."
+    }
+  ],
+  "records": [
+    {
+      "pilotRecordId": "kg-2024-peintures-paris",
+      "title": "Peintures, 1975-2015",
+      "year": 2024,
+      "venue": "RX&SLAG Paris",
+      "city": "Paris",
+      "country": "France",
+      "participants": ["Kim Guiline"],
+      "evidenceShort": "2024 Peintures, 1975-2015, RX&SLAG Paris, Paris, France."
+    },
+    {
+      "pilotRecordId": "kg-2024-undeclared-fields",
+      "title": "Undeclared Fields",
+      "year": 2024,
+      "venue": "Hyundai Gallery",
+      "city": "Seoul",
+      "country": "Korea",
+      "participants": ["Kim Guiline"],
+      "evidenceShort": "2024 Undeclared Fields, Hyundai Gallery, Seoul, South Korea."
+    },
+    {
+      "pilotRecordId": "kg-2017-selected-works",
+      "title": "Kim Guiline – Selected Works: 1967-2008",
+      "year": 2017,
+      "venue": "Lehmann Maupin Gallery",
+      "city": "New York",
+      "country": "USA",
+      "participants": ["Kim Guiline"],
+      "evidenceShort": "2017 Kim Guiline – Selected Works : 1967-2008, Lehmann Maupin Gallery, New York, USA."
+    },
+    {
+      "pilotRecordId": "kg-2016-filling-emptying",
+      "title": "Dansaekwha: the Beauty of Filling and Emptying",
+      "year": 2016,
+      "venue": "Ujong Museum of Art",
+      "city": "Boseong",
+      "country": "Korea",
+      "participants": ["Kim Guiline"],
+      "evidenceShort": "2016 Dansaekwha : the Beauty of Filling and Emptying, Ujong Museum of Art, Boseong, South Korea."
+    },
+    {
+      "pilotRecordId": "kg-2015-color-pool",
+      "title": "Color Pool",
+      "year": 2015,
+      "venue": "Gyeonggi Museum of Modern Art",
+      "city": "Ansan",
+      "country": "Korea",
+      "participants": ["Kim Guiline"],
+      "evidenceShort": "2015 Color Pool, Gyeonggi Museum of Modern Art, Ansan, South Korea."
+    },
+    {
+      "pilotRecordId": "kg-2008-korean-abstract",
+      "title": "Korean Abstract Art: 1958-2008",
+      "year": 2008,
+      "venue": "Seoul Museum of Art",
+      "city": "Seoul",
+      "country": "Korea",
+      "participants": ["Kim Guiline"],
+      "evidenceShort": "2008 Korean Abstract Art:1958-2008, Seoul Museum of Art Seosomun Main Branch, Seoul, South Korea."
+    },
+    {
+      "pilotRecordId": "kg-1994-ecole-de-seoul",
+      "title": "École de Séoul",
+      "year": 1994,
+      "venue": "MMCA",
+      "city": "Gwacheon",
+      "country": "Korea",
+      "participants": ["Kim Guiline"],
+      "evidenceShort": "1994 École de Séoul, National Museum of Modern and Contemporary Art, Korea – MMCA, Gwacheon, South Korea."
+    },
+    {
+      "pilotRecordId": "kg-1979-sao-paulo",
+      "title": "15th São Paulo Biennale",
+      "year": 1979,
+      "venue": "São Paulo Biennale",
+      "city": "São Paulo",
+      "country": "Brazil",
+      "participants": ["Kim Guiline"],
+      "evidenceShort": "1979 15th São Paulo Biennale, São Paulo, Brazil."
+    }
+  ]
+}
