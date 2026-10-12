@@ -598,6 +598,24 @@ export async function listExplore() {
     const country = displayCountry(row.exhibition.country);
     if (country) countries.add(country);
   }
+  const documented = buildDocumentedPaths(
+    exhibitions.map((row) => ({
+      id: row.exhibitionId,
+      slug: row.slug,
+      title: decodeDisplayText(row.exhibition.title),
+      year: row.startYear,
+      artists: row.exhibition.historyArtists.map((item) => ({
+        slug: item.artist.slug,
+        name: decodeDisplayText(item.artist.canonicalName),
+      })),
+    })),
+    40,
+  );
+  const readable = documented.filter((route) => route.artists.length >= 3 && route.exhibitions.every((show) => show.title.length <= 42));
+  const homeRoute = readable.sort((left, right) => (right.exhibitions[0]?.year ?? 0) - (left.exhibitions[0]?.year ?? 0))[0]
+    ?? documented.find((route) => route.artists.length >= 3)
+    ?? documented[0]
+    ?? null;
   return {
     artists: artists
       .map((artist) => {
@@ -637,18 +655,8 @@ export async function listExplore() {
       })
       .filter((row) => row.artists.length >= 2)
       .slice(0, 8),
-    routes: buildDocumentedPaths(
-      exhibitions.map((row) => ({
-        id: row.exhibitionId,
-        slug: row.slug,
-        title: decodeDisplayText(row.exhibition.title),
-        year: row.startYear,
-        artists: row.exhibition.historyArtists.map((item) => ({
-          slug: item.artist.slug,
-          name: decodeDisplayText(item.artist.canonicalName),
-        })),
-      })),
-    ),
+    routes: [...readable, ...documented.filter((route) => !readable.includes(route))].slice(0, 6),
+    homeRoute,
     spaces: [...exhibitions.reduce((counts, row) => {
       const space = row.exhibition.space;
       const slug = space?.slugRecord?.slug;
@@ -670,8 +678,7 @@ export async function listExplore() {
 export async function loadHomeDiscovery() {
   const data = await listExplore();
   const moment = [...data.moments].sort((left, right) => right.artists.length - left.artists.length || (right.year ?? 0) - (left.year ?? 0))[0] ?? null;
-  const shortRoutes = data.routes.filter((route) => route.artists.length >= 3 && route.exhibitions.every((show) => show.title.length <= 40));
-  const route = shortRoutes.sort((left, right) => (right.exhibitions[0]?.year ?? 0) - (left.exhibitions[0]?.year ?? 0))[0] ?? data.routes.find((item) => item.artists.length >= 3) ?? data.routes[0] ?? null;
+  const route = data.homeRoute;
   const journey = data.artists.find((artist) => artist.slug === route?.artists[0]?.slug) ?? data.artists[0] ?? null;
   return { journey, moment, route };
 }

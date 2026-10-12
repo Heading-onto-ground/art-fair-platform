@@ -13,6 +13,10 @@ export const dynamic = "force-dynamic";
 export const preferredRegion = "bom1";
 export const runtime = "nodejs";
 
+function isNextRedirect(error: unknown): boolean {
+  return typeof error === "object" && error !== null && "digest" in error && String((error as { digest?: unknown }).digest).startsWith("NEXT_REDIRECT");
+}
+
 export default async function ArtistPage({ params }: { params: { id: string } }) {
   try {
     const loaded = await loadPublicArtist(params.id);
@@ -35,6 +39,7 @@ export default async function ArtistPage({ params }: { params: { id: string } })
       );
     }
   } catch (error) {
+    if (isNextRedirect(error)) throw error;
     if (!isMissingHistorySchema(error)) console.error("history artist page failed", error);
   }
   return <RegisteredArtistPage />;
