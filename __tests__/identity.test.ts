@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { aliasLookupEqual, aliasLookupPrefix, mayRelinkUnresolvedName, normalizeArtistLookup, resolveArtistSlug, resolveVerifiedAlias } from "@/lib/history/identity";
+import { aliasLookupEqual, aliasLookupPrefix, labelAppearsInTitle, mayRelinkUnresolvedName, normalizeArtistLookup, resolveArtistSlug, resolveVerifiedAlias, shouldRelinkUnresolved } from "@/lib/history/identity";
 import { buildDocumentedPaths } from "@/lib/history/paths";
 
 describe("artist identity lookup", () => {
@@ -36,6 +36,19 @@ describe("artist identity lookup", () => {
   it("does not relink letter authors as exhibition participants", () => {
     expect(mayRelinkUnresolvedName("The Making of Modern Korean Art: The Letters of Kim Tschang-Yeul, Kim Whanki, Lee Ufan, and Park Seo-Bo, 1961-1982")).toBe(false);
     expect(mayRelinkUnresolvedName("Kim Tschang-Yeul + Park Seo-Bo + Lee Ufan")).toBe(true);
+  });
+
+  it("does not relink a name that only appears in the exhibition title", () => {
+    const title = "Contemporary Art Before the Contemporary: Chung Chang-Sub, Kim Tschang-Yeul, Park Seo-Bo, Ha Chong-Hyun, Kim Hyung Dae, Youn Myeungro";
+    expect(labelAppearsInTitle("Youn Myeungro", title)).toBe(true);
+    expect(labelAppearsInTitle("Kim Hyung Dae", title)).toBe(true);
+    expect(shouldRelinkUnresolved("Youn Myeungro", title)).toBe(false);
+    expect(shouldRelinkUnresolved("Kim, Guirin", "Das Koreanische Monochrom: Park Seo-Bo / Lee Ufan / Kim, Guirin / Yun Hyong-Keun")).toBe(false);
+    expect(shouldRelinkUnresolved("Kim Guiline", "The Art of Dansaekhwa")).toBe(true);
+    expect(resolveVerifiedAlias("김형대")).toBe("kim-hyung-dae");
+    expect(resolveVerifiedAlias("윤명로")).toBe("youn-myeungro");
+    expect(resolveVerifiedAlias("Kim, Guirin")).toBeNull();
+    expect(resolveVerifiedAlias("Youn Myeung-Ro")).toBeNull();
   });
 
   it("resolves a database alias without creating another artist", () => {

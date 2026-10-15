@@ -1,0 +1,172 @@
+{
+  "importVersion": "growth-v2",
+  "job": {
+    "sourceId": "growth-2026-10-15-frontier",
+    "sourceName": "Kukje Gallery, Monthly Art, National Academy of Arts",
+    "sourceUrl": "https://www.kukjegallery.com/exhibitions/view?seq=181",
+    "sourceClass": "GALLERY_CV",
+    "targetArtists": ["youn-myeungro", "kim-whanki", "kwon-young-woo"],
+    "retrievedAt": "2026-10-15",
+    "extractionMode": "MANUAL_FACT_LINES",
+    "contentScope": "FACTUAL_METADATA_ONLY",
+    "notes": "Youn Myeungro is created from the National Academy of Arts page (윤명로, Youn Myeungro) and joined through After Drawing. Kim Hyung Dae is identified on the Academy page (김형대, Kim Hyung Dae) and is not given an entity, because no accepted exhibition connects him. Kim, Guirin stays unresolved. Title-only names on the 1992 Ingong and 1994 Gallery 63 records are detached. The 2014 Kukje end date is not changed."
+  },
+  "artists": [
+    {
+      "slug": "youn-myeungro",
+      "canonicalName": "Youn Myeungro",
+      "nativeName": "윤명로",
+      "birthYear": null,
+      "country": "Korea",
+      "officialWebsite": "https://www.naa.go.kr/member/view?memb_id=359"
+    },
+    {
+      "slug": "kwon-young-woo",
+      "canonicalName": "Kwon Young-Woo",
+      "nativeName": "권영우",
+      "birthYear": 1926,
+      "country": "Korea",
+      "officialWebsite": "https://www.kukjegallery.com/artists/view?seq=351"
+    }
+  ],
+  "enrichments": [
+    {
+      "pilotRecordId": "enrich-2018-powerlong-kwon",
+      "title": "Korean Abstract Art: Kim Whanki and Dansaekhwa",
+      "year": 2018,
+      "space": "Powerlong Museum",
+      "participants": ["Kwon Young-Woo"],
+      "sourceName": "Kukje Gallery",
+      "sourceUrl": "https://www.kukjegallery.com/artists/view?seq=351",
+      "evidenceShort": "2018 Korean Abstract Art: Kim Whanki and Dansaekhwa, Powerlong Museum, Shanghai, China."
+    },
+    {
+      "pilotRecordId": "enrich-2015-hyundai-45-kwon",
+      "title": "Korean Abstract Painting: 45th Anniversary of Gallery Hyundai",
+      "year": 2015,
+      "space": "Gallery Hyundai",
+      "participants": ["Kwon Young-Woo"],
+      "sourceName": "Kukje Gallery",
+      "sourceUrl": "https://www.kukjegallery.com/artists/view?seq=351",
+      "evidenceShort": "2015 Korean Abstract Painting- 45th Anniversary of Gallery Hyundai, Gallery Hyundai, Seoul, Korea."
+    },
+    {
+      "pilotRecordId": "enrich-2017-rhythm-kwon",
+      "title": "Rhythm in Monochrome: Korean Abstract Painting",
+      "year": 2017,
+      "space": "Tokyo Opera City Art Gallery",
+      "participants": ["Kwon Young-Woo"],
+      "sourceName": "Kukje Gallery",
+      "sourceUrl": "https://www.kukjegallery.com/artists/view?seq=351",
+      "evidenceShort": "2017 Rhythm in Monochrome: Korean Abstract Painting, Tokyo Opera City Art Gallery, Tokyo, Japan."
+    }
+  ],
+  "records": [
+    {
+      "pilotRecordId": "after-drawing-2016",
+      "title": "After Drawing",
+      "year": 2016,
+      "startMonth": 5,
+      "startDay": 26,
+      "endYear": 2016,
+      "endMonth": 7,
+      "endDay": 10,
+      "datePrecision": "DAY",
+      "venue": "Gallery Hyundai",
+      "city": "Seoul",
+      "country": "Korea",
+      "participants": ["Kim Guiline", "Kim Tschang-Yeul", "Kim Whanki", "Park Seo-Bo", "Youn Myeungro", "Lee Ufan", "Chung Sang-Hwa", "Lee Seung Jio"],
+      "sourceName": "Monthly Art",
+      "sourceType": "PRESS_LISTING",
+      "sourceUrl": "https://monthlyart.com/priview-10/",
+      "evidenceShort": "AFTER DRAWING, Gallery Hyundai, 5.26~7.10. The listing names 김기린, 김창열, 김환기, 박서보, 윤명로, 이승조, 이우환, 정상화. Lee Seung Jio stays unresolved."
+    },
+    {
+      "pilotRecordId": "dansaekhwa-venice-2015",
+      "title": "Dansaekhwa",
+      "year": 2015,
+      "startMonth": 5,
+      "startDay": 8,
+      "endYear": 2015,
+      "endMonth": 8,
+      "endDay": 15,
+      "datePrecision": "DAY",
+      "venue": "Palazzo Contarini-Polignac",
+      "city": "Venice",
+      "country": "Italy",
+      "participants": ["Chung Chang-Sup", "Chung Sang-Hwa", "Ha Chong-Hyun", "Kim Whanki", "Kwon Young-Woo", "Lee Ufan", "Park Seo-Bo"],
+      "sourceName": "Kukje Gallery",
+      "sourceUrl": "https://www.kukjegallery.com/exhibitions/view?seq=181",
+      "evidenceShort": "Dansaekhwa, collateral event of the 56th Venice Biennale, May 8–August 15, 2015, Palazzo Contarini-Polignac. Artists: Chung Chang-Sup, Chung Sang-Hwa, Ha Chong-Hyun, Kim Whanki, Kwon Young-Woo, Lee Ufan, and Park Seo-Bo."
+    },
+    {
+      "pilotRecordId": "landlord-colors-2019",
+      "title": "Landlord Colors: On Art, Economy, and Materiality",
+      "year": 2019,
+      "startMonth": 6,
+      "startDay": 22,
+      "endYear": 2019,
+      "endMonth": 10,
+      "endDay": 6,
+      "datePrecision": "DAY",
+      "venue": "Cranbrook Art Museum",
+      "city": "Bloomfield Hills",
+      "country": "US",
+      "participants": ["Kwon Young-Woo", "Park Seo-Bo", "Lee Ufan", "Ha Chong-Hyun", "Yun Hyong-Keun", "Park Hyun-Ki"],
+      "sourceName": "Kukje Gallery",
+      "sourceUrl": "https://www.kukjegallery.com/news/view?seq=762",
+      "evidenceShort": "June 22–October 6, 2019, Cranbrook Art Museum. The news page names Kwon Young-Woo, Park Seo-Bo, Park Hyun-Ki, Yun Hyong-Keun, Lee Ufan, and Ha Chong-Hyun. Park Hyun-Ki stays unresolved."
+    },
+    {
+      "pilotRecordId": "two-breaths-2024",
+      "title": "Two Breaths",
+      "year": 2024,
+      "venue": "Kim Tschang-Yeul Art Museum",
+      "city": "Jeju",
+      "country": "Korea",
+      "participants": ["Kwon Young-Woo", "Kim Tschang-Yeul"],
+      "sourceName": "Kukje Gallery",
+      "sourceUrl": "https://www.kukjegallery.com/artists/view?seq=351",
+      "evidenceShort": "2024 Two Breaths Kwon Young-Woo · Kim Tschang-Yeul, Kim Tschang-Yeul Art Museum, Jeju, Korea."
+    }
+  ],
+  "detachments": [
+    {
+      "title": "Contemporary Art Before the Contemporary: Chung Chang-Sub, Kim Tschang-Yeul, Park Seo-Bo, Ha Chong-Hyun, Kim Hyung Dae, Youn Myeungro",
+      "year": 1994,
+      "slug": "chung-chang-sup",
+      "restoreLabel": "Chung Chang-Sub"
+    },
+    {
+      "title": "Contemporary Art Before the Contemporary: Chung Chang-Sub, Kim Tschang-Yeul, Park Seo-Bo, Ha Chong-Hyun, Kim Hyung Dae, Youn Myeungro",
+      "year": 1994,
+      "slug": "kim-tschang-yeul",
+      "restoreLabel": "Kim Tschang-Yeul"
+    },
+    {
+      "title": "Kim Tschang-Yeul, Park Seo-Bo, Yun Hyongkeun, Chung Sang-Hwa, Chung Chang-Sub, Ha Chong-Hyun",
+      "year": 1992,
+      "slug": "chung-chang-sup",
+      "restoreLabel": "Chung Chang-Sub"
+    },
+    {
+      "title": "Kim Tschang-Yeul, Park Seo-Bo, Yun Hyongkeun, Chung Sang-Hwa, Chung Chang-Sub, Ha Chong-Hyun",
+      "year": 1992,
+      "slug": "kim-tschang-yeul",
+      "restoreLabel": "Kim Tschang-Yeul"
+    },
+    {
+      "title": "Kim Tschang-Yeul, Park Seo-Bo, Yun Hyongkeun, Chung Sang-Hwa, Chung Chang-Sub, Ha Chong-Hyun",
+      "year": 1992,
+      "slug": "yun-hyong-keun",
+      "restoreLabel": "Yun Hyongkeun"
+    }
+  ],
+  "titleMentions": [
+    {
+      "title": "Contemporary Art Before the Contemporary: Chung Chang-Sub, Kim Tschang-Yeul, Park Seo-Bo, Ha Chong-Hyun, Kim Hyung Dae, Youn Myeungro",
+      "year": 1994,
+      "labels": ["Kim Hyung Dae", "Youn Myeungro"]
+    }
+  ]
+}

@@ -67,6 +67,11 @@ export const VERIFIED_SPACES: readonly VerifiedSpace[] = [
     canonicalName: "National Museum of Modern and Contemporary Art",
     aliases: ["National Museum of Modern and Contemporary Art", "MMCA"],
   },
+  {
+    slug: "powerlong-art-museum",
+    canonicalName: "Powerlong Art Museum",
+    aliases: ["Powerlong Art Museum", "Powerlong Museum"],
+  },
 ];
 
 export type GrowthArtist = {
@@ -103,6 +108,32 @@ export type GraphValue = {
   connectsTwoComponents: boolean;
   chronologyValue: "NEW_YEAR" | "DENSIFY" | "NONE";
 };
+
+export const FRONTIER_STATES = [
+  "UNRESOLVED_IDENTITY",
+  "IDENTITY_VERIFIED",
+  "SOURCE_DISCOVERY",
+  "CANDIDATES_READY",
+  "IMPORTED",
+  "NO_GO",
+] as const;
+
+export type FrontierStatus = (typeof FRONTIER_STATES)[number];
+
+export function frontierStatus(input: {
+  noGo?: boolean;
+  imported?: boolean;
+  candidatesReady?: boolean;
+  sourceFound?: boolean;
+  identityVerified?: boolean;
+}): FrontierStatus {
+  if (input.noGo) return "NO_GO";
+  if (input.imported) return "IMPORTED";
+  if (input.candidatesReady) return "CANDIDATES_READY";
+  if (input.sourceFound) return "SOURCE_DISCOVERY";
+  if (input.identityVerified) return "IDENTITY_VERIFIED";
+  return "UNRESOLVED_IDENTITY";
+}
 
 export type FrontierReason =
   | "UNRESOLVED_PARTICIPANT"

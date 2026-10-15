@@ -1,7 +1,7 @@
 import { createHash, randomUUID } from "crypto";
 import { mkdirSync, readFileSync, writeFileSync } from "fs";
 import { Client } from "pg";
-import { VERIFIED_ALIASES, mayRelinkUnresolvedName, normalizeArtistLookup, resolveArtistSlug } from "../lib/history/identity";
+import { VERIFIED_ALIASES, labelAppearsInTitle, mayRelinkUnresolvedName, normalizeArtistLookup, resolveArtistSlug, shouldRelinkUnresolved } from "../lib/history/identity";
 import { previewCandidates, resolveVerifiedSpace, sameVerifiedSpace, type FactualCandidate, type GrowthSnapshot } from "../lib/history/growth";
 import { uniqueSlug } from "../lib/history/policy";
 
@@ -34,6 +34,22 @@ type RecordPlan = {
   country: string;
   participants: string[];
   evidenceShort: string;
+  sourceName?: string;
+  sourceUrl?: string;
+  sourceType?: string;
+  datePrecision?: "DAY" | "MONTH" | "YEAR";
+  startMonth?: number | null;
+  startDay?: number | null;
+  endYear?: number | null;
+  endMonth?: number | null;
+  endDay?: number | null;
+};
+
+type DetachPlan = {
+  title: string;
+  year: number;
+  slug: string;
+  restoreLabel: string;
 };
 
 type BatchFile = {
@@ -42,6 +58,8 @@ type BatchFile = {
   artists: ArtistPlan[];
   enrichments: Enrichment[];
   records: RecordPlan[];
+  detachments?: DetachPlan[];
+  titleMentions?: { title: string; year: number; labels: string[] }[];
 };
 
 const SLAG_URL = "https://www.slaggallery.com/chelsea_art_gallery/artists/kim-guiline/documents/resume";
@@ -56,23 +74,24 @@ function databaseUrl(): string {
 }
 
 function candidateFrom(record: Enrichment | RecordPlan, space: string, city: string | null, country: string | null, sourceUrl: string): FactualCandidate {
+  const dated = "datePrecision" in record ? record : null;
   return {
     artistNames: record.participants,
     title: record.title,
     startYear: record.year,
-    startMonth: null,
-    startDay: null,
-    endYear: null,
-    endMonth: null,
-    endDay: null,
-    datePrecision: "YEAR",
+    startMonth: dated?.startMonth ?? null,
+    startDay: dated?.startDay ?? null,
+    endYear: dated?.endYear ?? null,
+    endMonth: dated?.endMonth ?? null,
+    endDay: dated?.endDay ?? null,
+    datePrecision: dated?.datePrecision ?? "YEAR",
     space,
     city,
     country,
     curatorNames: [],
-    sourceName: "sourceName" in record ? record.sourceName : "SLAG&RX",
+    sourceName: "sourceName" in record && record.sourceName ? record.sourceName : "SLAG&RX",
     sourceUrl,
-    retrievedAt: "2026-10-12",
+    retrievedAt: "2026-10-15",
     evidenceShort: record.evidenceShort,
     externalIds: [],
     pilotRecordId: record.pilotRecordId,
@@ -113,7 +132,9 @@ async function main() {
     console.log("REFUSED");
     process.exit(1);
   }
-  const file = JSON.parse(readFileSync("data/production-clearance/growth-batch-2026-10-12.json", "utf8")) as BatchFile;
+  const fileArg = process.argv.find((item) => item.startsWith("--file="));
+  const filePath = fileArg?.slice("--file=".length) || "data/production-clearance/growth-batch-2026-10-12.json";
+  const file = JSON.parse(readFileSync(filePath, "utf8")) as BatchFile;
   const client = new Client({ connectionString: databaseUrl(), ssl: { rejectUnauthorized: false } });
   await client.connect();
   try {
@@ -135,10 +156,11 @@ async function main() {
        FROM "HistoryParticipation" p
        JOIN "ArtistEntity" a ON a.id = p."artistEntityId"`,
     );
-    const unresolved = await client.query<{ id: string; label: string; exhibitionId: string; title: string }>(
-      `SELECT u.id, u.label, u."exhibitionId", e.title
+    const unresolved = await client.query<{ id: string; label: string; exhibitionId: string; title: string; status: string; year: number | null }>(
+      `SELECT u.id, u.label, u."exhibitionId", u.status, e.title, m."startYear" AS year
        FROM "HistoryUnresolvedName" u
-       JOIN "Exhibition" e ON e.id = u."exhibitionId"`,
+       JOIN "Exhibition" e ON e.id = u."exhibitionId"
+       LEFT JOIN "ExhibitionHistoryMeta" m ON m."exhibitionId" = e.id`,
     );
     const labels = new Map<string, string[]>();
     for (const row of entities.rows) labels.set(row.slug, [row.canonicalName, row.nativeName].filter((value): value is string => Boolean(value)));
@@ -178,13 +200,19 @@ async function main() {
     const names = snapshot.artists.map((artist) => ({ slug: artist.slug, labels: artist.labels }));
     const candidates = [
       ...file.enrichments.map((row) => candidateFrom(row, row.space, null, null, row.sourceUrl)),
-      ...file.records.map((row) => candidateFrom(row, row.venue, row.city, row.country, SLAG_URL)),
+      ...file.records.map((row) => candidateFrom(row, row.venue, row.city, row.country, row.sourceUrl || SLAG_URL)),
     ];
     const previews = previewCandidates(candidates, snapshot);
     const relinks = unresolved.rows.flatMap((row) => {
+      if (row.status !== "UNRESOLVED_PARTICIPANT") return [{ label: row.label, title: row.title, decision: "HELD" }];
       if (!mayRelinkUnresolvedName(row.title)) return [{ label: row.label, title: row.title, decision: "EXCLUDED_LETTER_AUTHORS" }];
+      if (labelAppearsInTitle(row.label, row.title)) return [{ label: row.label, title: row.title, decision: "TITLE_MENTION" }];
       const slug = resolveArtistSlug(row.label, names);
       return [{ label: row.label, title: row.title, decision: slug ?? "UNRESOLVED" }];
+    });
+    const detachPreview = (file.detachments ?? []).map((item) => {
+      const show = snapshot.exhibitions.find((exhibition) => exhibition.year === item.year && normalizeArtistLookup(exhibition.title) === normalizeArtistLookup(item.title));
+      return { ...item, found: Boolean(show), currentlyLinked: Boolean(show?.artistSlugs.includes(item.slug)) };
     });
     const report = {
       imported: false,
@@ -193,6 +221,7 @@ async function main() {
       profiles: before.rows[0].profiles,
       previews,
       relinks,
+      detachPreview,
       newArtists: file.artists.filter((artist) => !entities.rows.some((row) => row.slug === artist.slug)).map((artist) => artist.slug),
     };
     if (preview) {
@@ -208,7 +237,16 @@ async function main() {
     try {
     const slugToId = new Map(entities.rows.map((row) => [row.slug, row.id]));
     for (const artist of file.artists) {
-      if (slugToId.has(artist.slug)) continue;
+      const existingId = slugToId.get(artist.slug);
+      if (existingId) {
+        if (artist.nativeName) {
+          await client.query(
+            `UPDATE "ArtistEntity" SET "nativeName" = $2, "updatedAt" = NOW() WHERE id = $1 AND "nativeName" IS NULL`,
+            [existingId, artist.nativeName],
+          );
+        }
+        continue;
+      }
       const id = randomUUID();
       await client.query(
         `INSERT INTO "ArtistEntity" (id, slug, "canonicalName", "nativeName", "birthYear", country, "officialWebsite", "createdAt", "updatedAt")
@@ -235,15 +273,15 @@ async function main() {
     const spaceRows = await client.query<{ id: string; name: string; city: string | null }>(`SELECT id, name, city FROM "Space"`);
     const spaceSlugs = new Set((await client.query<{ slug: string }>(`SELECT slug FROM "SpaceSlug"`)).rows.map((row) => row.slug));
     const exhibitionSlugs = new Set((await client.query<{ slug: string }>(`SELECT slug FROM "ExhibitionHistoryMeta" WHERE slug IS NOT NULL`)).rows.map((row) => row.slug));
-    async function sourceIdFor(url: string, name: string) {
+    async function sourceIdFor(url: string, name: string, sourceType = "OFFICIAL_GALLERY_PAGE") {
       const existing = sourceIds.get(url);
       if (existing) return existing;
       const id = randomUUID();
       await client.query(
         `INSERT INTO "HistorySource"
            (id, url, "sourceName", "sourceType", "retrievedAt", "clearanceStatus", "internalUseDecision", "externalPermission", "contentScope", "createdAt")
-         VALUES ($1, $2, $3, 'OFFICIAL_GALLERY_PAGE', NOW(), 'REVIEW_REQUIRED', 'ALLOW_LIMITED', 'NOT_OBTAINED', 'FACTUAL_METADATA_ONLY', NOW())`,
-        [id, url, name],
+         VALUES ($1, $2, $3, $4, NOW(), 'REVIEW_REQUIRED', 'ALLOW_LIMITED', 'NOT_OBTAINED', 'FACTUAL_METADATA_ONLY', NOW())`,
+        [id, url, name, sourceType],
       );
       sourceIds.set(url, id);
       return id;
@@ -279,6 +317,8 @@ async function main() {
         }
       }
       if (item.decision === "NEW" && record) {
+        const recordSourceUrl = record.sourceUrl || SLAG_URL;
+        const recordSourceName = record.sourceName || "SLAG&RX";
         let spaceId = spaceIdFor(record.venue, record.city);
         if (!spaceId) {
           spaceId = randomUUID();
@@ -299,11 +339,11 @@ async function main() {
         exhibitionSlugs.add(slug);
         await client.query(
           `INSERT INTO "ExhibitionHistoryMeta"
-             ("exhibitionId", slug, "datePrecision", "startYear", "publicationStatus", origin, "sourceClearance", "clearanceStatus")
-           VALUES ($1, $2, 'YEAR', $3, 'PUBLIC', 'ROB_RESEARCHED', 'NOT_APPLICABLE', 'REVIEW_REQUIRED')`,
-          [exhibitionId, slug, record.year],
+             ("exhibitionId", slug, "datePrecision", "startYear", "startMonth", "startDay", "endYear", "endMonth", "endDay", "publicationStatus", origin, "sourceClearance", "clearanceStatus")
+           VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, 'PUBLIC', 'ROB_RESEARCHED', 'NOT_APPLICABLE', 'REVIEW_REQUIRED')`,
+          [exhibitionId, slug, record.datePrecision ?? "YEAR", record.year, record.startMonth ?? null, record.startDay ?? null, record.endYear ?? null, record.endMonth ?? null, record.endDay ?? null],
         );
-        const sourceId = await sourceIdFor(SLAG_URL, "SLAG&RX");
+        const sourceId = await sourceIdFor(recordSourceUrl, recordSourceName, record.sourceType || "OFFICIAL_GALLERY_PAGE");
         await client.query(`INSERT INTO "ExhibitionSource" ("exhibitionId", "sourceId") VALUES ($1, $2) ON CONFLICT DO NOTHING`, [exhibitionId, sourceId]);
         for (const slug of item.resolved) {
           const artistId = slugToId.get(slug);
@@ -319,14 +359,47 @@ async function main() {
           `INSERT INTO "HistoryImportRecord"
              (id, "pilotRecordId", "usageStatus", "productionClearance", "reviewStatus", "productionEntityId", "sourceDecision", "importedAt", "importedBy", "sourceUrl", "sourceFamily", "internalUseDecision", "externalPermission", "importVersion", "createdAt")
            VALUES ($1, $2, 'PRODUCTION', 'ALLOW_LIMITED', 'ALLOW_LIMITED', $3, 'ALLOW_LIMITED', NOW(), 'growth-batch', $4, 'growth-v1', 'ALLOW_LIMITED', 'NOT_OBTAINED', $5, NOW())`,
-          [randomUUID(), record.pilotRecordId, exhibitionId, SLAG_URL, file.importVersion],
+          [randomUUID(), record.pilotRecordId, exhibitionId, recordSourceUrl, file.importVersion],
         );
+        for (const label of item.unresolved) {
+          await client.query(
+            `INSERT INTO "HistoryUnresolvedName" (id, "exhibitionId", label, status, "createdAt") VALUES ($1, $2, $3, 'UNRESOLVED_PARTICIPANT', NOW())`,
+            [randomUUID(), exhibitionId, label],
+          );
+        }
         exhibitionsWritten += 1;
+      }
+    }
+    let detached = 0;
+    for (const item of file.detachments ?? []) {
+      const show = snapshot.exhibitions.find((exhibition) => exhibition.year === item.year && normalizeArtistLookup(exhibition.title) === normalizeArtistLookup(item.title));
+      const artistId = show ? slugToId.get(item.slug) : undefined;
+      if (!show || !artistId || !show.artistSlugs.includes(item.slug)) continue;
+      if (!labelAppearsInTitle(item.restoreLabel, show.title)) throw new Error(`DETACH_NOT_IN_TITLE ${item.slug}`);
+      const removed = await client.query(`DELETE FROM "HistoryParticipation" WHERE "exhibitionId" = $1 AND "artistEntityId" = $2`, [show.id, artistId]);
+      detached += removed.rowCount ?? 0;
+      const already = unresolved.rows.some((row) => row.exhibitionId === show.id && row.label === item.restoreLabel);
+      if (!already) {
+        await client.query(
+          `INSERT INTO "HistoryUnresolvedName" (id, "exhibitionId", label, status, "createdAt") VALUES ($1, $2, $3, 'TITLE_MENTION', NOW())`,
+          [randomUUID(), show.id, item.restoreLabel],
+        );
+      }
+    }
+    for (const mention of file.titleMentions ?? []) {
+      const show = snapshot.exhibitions.find((exhibition) => exhibition.year === mention.year && normalizeArtistLookup(exhibition.title) === normalizeArtistLookup(mention.title));
+      if (!show) continue;
+      for (const label of mention.labels) {
+        if (!labelAppearsInTitle(label, show.title)) throw new Error(`MENTION_NOT_IN_TITLE ${label}`);
+        await client.query(
+          `UPDATE "HistoryUnresolvedName" SET status = 'TITLE_MENTION' WHERE "exhibitionId" = $1 AND label = $2 AND status = 'UNRESOLVED_PARTICIPANT'`,
+          [show.id, label],
+        );
       }
     }
     let relinked = 0;
     for (const row of unresolved.rows) {
-      if (!mayRelinkUnresolvedName(row.title)) continue;
+      if (!shouldRelinkUnresolved(row.label, row.title, row.status)) continue;
       const slug = resolveArtistSlug(row.label, names);
       const artistId = slug ? slugToId.get(slug) : undefined;
       if (!artistId) continue;
@@ -347,7 +420,7 @@ async function main() {
       process.exit(1);
     }
     await client.query("COMMIT");
-    console.log(JSON.stringify({ imported: true, exhibitionsWritten, participationsWritten, aliasesWritten, relinked, backup: saved, users: after.rows[0].users }));
+    console.log(JSON.stringify({ imported: true, exhibitionsWritten, participationsWritten, aliasesWritten, relinked, detached, backup: saved, users: after.rows[0].users }));
     } catch (error) {
       await client.query("ROLLBACK");
       throw error;
