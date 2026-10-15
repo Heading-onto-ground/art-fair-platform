@@ -8,6 +8,8 @@ export const metadata: Metadata = {
 };
 
 export const dynamic = "force-dynamic";
+export const preferredRegion = "bom1";
+export const runtime = "nodejs";
 
 export default async function HomePage() {
   let discovery = null;

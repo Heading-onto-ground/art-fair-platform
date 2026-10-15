@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { pluralCount } from "@/lib/history/copy";
 import { aliasSlugRedirect, searchDemandQuery } from "@/lib/history/identity";
-import { HISTORY_EVENTS } from "@/lib/history/policy";
+import { HISTORY_EVENTS, missingSearchEvent } from "@/lib/history/policy";
 
 describe("count copy", () => {
   it("uses the singular word for one and the plural for more", () => {
@@ -44,5 +44,8 @@ describe("missing search demand", () => {
     expect(searchDemandQuery("le")).toBeNull();
     expect(searchDemandQuery("artist@example.com")).toBeNull();
     expect(HISTORY_EVENTS).toContain("SEARCH_NO_RESULT");
+    expect(missingSearchEvent(false)).toBe("SEARCH_NO_RESULT");
+    expect(missingSearchEvent(true)).toBe("SEARCH_NO_RESULT_OPERATOR");
+    expect(HISTORY_EVENTS).not.toContain("SEARCH_NO_RESULT_OPERATOR");
   });
 });

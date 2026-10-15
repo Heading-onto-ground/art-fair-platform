@@ -8,6 +8,8 @@ import { isMissingHistorySchema } from "@/lib/history/schemaError";
 import "@/app/components/history/history.css";
 
 export const dynamic = "force-dynamic";
+export const preferredRegion = "bom1";
+export const runtime = "nodejs";
 
 export default async function HistoryExplorePage() {
   let data: Awaited<ReturnType<typeof listExplore>> | null = null;
