@@ -3,6 +3,35 @@ import { isHistoryEvent, type HistoryEventName } from "@/lib/history/policy";
 const SEEN_ARTISTS = "rob-history-artists";
 
 /** Session depth without a user id. Repeating an artist does not increase the depth. */
+export type JourneyDepthReport = {
+  oneArtist: number;
+  twoArtists: number;
+  threeArtists: number;
+  fourOrMore: number;
+  openedToSecond: number | null;
+  secondToThird: number | null;
+  thirdToFourth: number | null;
+};
+
+/** Event totals. These are not unique people; the beacon stores no visitor id. */
+export function journeyDepthFromCounts(counts: {
+  opened: number;
+  second: number;
+  third: number;
+  fourth: number;
+}): JourneyDepthReport {
+  const ratio = (part: number, whole: number) => (whole > 0 ? Math.round((part / whole) * 1000) / 1000 : null);
+  return {
+    oneArtist: counts.opened,
+    twoArtists: counts.second,
+    threeArtists: counts.third,
+    fourOrMore: counts.fourth,
+    openedToSecond: ratio(counts.second, counts.opened),
+    secondToThird: ratio(counts.third, counts.second),
+    thirdToFourth: ratio(counts.fourth, counts.third),
+  };
+}
+
 export function nextExplorationDepth(seen: string[], slug: string): { seen: string[]; depth: number } {
   const next = seen.includes(slug) ? [...seen] : [...seen, slug];
   const capped = next.slice(-8);
