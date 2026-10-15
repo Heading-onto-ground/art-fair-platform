@@ -7,6 +7,11 @@ export type DatePrecision = "DAY" | "MONTH" | "YEAR" | "UNKNOWN";
 export type ParticipantStatus = "LINKED" | "REVIEW_REQUIRED" | "UNRESOLVED_PARTICIPANT";
 export type ContributorKind = "artist" | "gallery" | "institution";
 
+/** Operator checks stay out of the public missing-artist demand count. */
+export function missingSearchEvent(operator: boolean): "SEARCH_NO_RESULT" | "SEARCH_NO_RESULT_OPERATOR" {
+  return operator ? "SEARCH_NO_RESULT_OPERATOR" : "SEARCH_NO_RESULT";
+}
+
 export const HISTORY_EVENTS = [
   "SEARCH_STARTED",
   "SEARCH_PERFORMED",

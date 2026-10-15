@@ -5,6 +5,7 @@ import { prisma as untypedPrisma } from "@/lib/prisma";
 import {
   PUBLIC_HISTORY_CACHE_TAG,
   PUBLIC_HISTORY_REVALIDATE_SECONDS,
+  queryExploreSummary,
   queryPublicHistory,
   type PublicGraphExhibition,
   type PublicHistoryGraph,
@@ -547,127 +548,66 @@ export async function loadSpacePage(key: string): Promise<HistorySpacePage | nul
   };
 }
 
-export async function listExplore() {
-  const [artists, exhibitions] = await Promise.all([
-    prisma.artistEntity.findMany({
-      where: { participations: { some: { exhibition: publicExhibitionWhere } } },
-      include: {
-        participations: {
-          where: { exhibition: publicExhibitionWhere },
-          select: { exhibitionId: true, exhibition: { select: { historyMeta: { select: { startYear: true } } } } },
-        },
-      },
-      orderBy: { canonicalName: "asc" },
-    }),
-    prisma.exhibitionHistoryMeta.findMany({
-      where: {
-        publicationStatus: "PUBLIC",
-        exhibition: { isPublic: true },
-        OR: [
-          { origin: { in: ["ARTIST_SUBMITTED", "GALLERY_SUBMITTED", "INSTITUTION_SUBMITTED", "LEGACY_FIRST_PARTY"] }, sourceClearance: { not: "REJECTED" } },
-          { origin: "ROB_RESEARCHED", sourceClearance: "APPROVED" },
-          {
-            origin: "ROB_RESEARCHED",
-            sourceClearance: { not: "REJECTED" },
-            exhibition: { historySources: { some: { source: { internalUseDecision: { in: ["ALLOW_LIMITED", "FACTUAL_USE_OK"] }, contentScope: "FACTUAL_METADATA_ONLY" } } } },
-          },
-        ],
-      },
-      include: {
-        exhibition: {
-          select: {
-            title: true,
-            city: true,
-            country: true,
-            startDate: true,
-            historyArtists: { select: { artist: { select: { slug: true, canonicalName: true } } } },
-            space: { select: { name: true, city: true, country: true, slugRecord: { select: { slug: true } } } },
-          },
-        },
-      },
-      orderBy: { startYear: "desc" },
-      take: 120,
-    }),
-  ]);
+export const PUBLIC_EXPLORE_CACHE_KEY = ["rob-public-explore", "explore-v1"] as const;
+
+export async function loadExplorePayload() {
+  const summary = await queryExploreSummary(prisma);
   const decades = new Set<number>();
   const cities = new Set<string>();
   const countries = new Set<string>();
-  for (const row of exhibitions) {
-    if (row.startYear) decades.add(Math.floor(row.startYear / 10) * 10);
-    if (row.exhibition.city) cities.add(decodeDisplayText(row.exhibition.city));
-    const country = displayCountry(row.exhibition.country);
+  const shows = summary.exhibitions.map((row) => {
+    const city = row.city ? decodeDisplayText(row.city) : null;
+    const country = displayCountry(row.country);
+    if (row.year) decades.add(Math.floor(row.year / 10) * 10);
+    if (city) cities.add(city);
     if (country) countries.add(country);
-  }
-  const documented = buildDocumentedPaths(
-    exhibitions.map((row) => ({
-      id: row.exhibitionId,
+    const artists = row.artists.map((artist) => ({ slug: artist.slug, name: decodeDisplayText(artist.name) }));
+    const space = row.space;
+    return {
+      id: row.id,
       slug: row.slug,
-      title: decodeDisplayText(row.exhibition.title),
-      year: row.startYear,
-      artists: row.exhibition.historyArtists.map((item) => ({
-        slug: item.artist.slug,
-        name: decodeDisplayText(item.artist.canonicalName),
-      })),
-    })),
-    40,
-  );
+      title: decodeDisplayText(row.title),
+      year: row.year,
+      place: [space?.name ? decodeDisplayText(space.name) : null, space?.city || city, displayCountry(space?.country || row.country)].filter(Boolean).join(" · "),
+      artists,
+      space: space?.slug
+        ? { slug: space.slug, name: decodeDisplayText(space.name), city: space.city, country: displayCountry(space.country) }
+        : null,
+    };
+  });
+  const documented = buildDocumentedPaths(shows, 40);
   const readable = documented.filter((route) => route.artists.length >= 3 && route.exhibitions.every((show) => show.title.length <= 42));
   const homeRoute = readable.sort((left, right) => (right.exhibitions[0]?.year ?? 0) - (left.exhibitions[0]?.year ?? 0))[0]
     ?? documented.find((route) => route.artists.length >= 3)
     ?? documented[0]
     ?? null;
   return {
-    artists: artists
-      .map((artist) => {
-        const years = artist.participations
-          .map((item) => item.exhibition.historyMeta?.startYear)
-          .filter((year): year is number => year != null);
-        return {
-          slug: artist.slug,
-          canonicalName: decodeDisplayText(artist.canonicalName),
-          nativeName: artist.nativeName,
-          exhibitionCount: new Set(artist.participations.map((item) => item.exhibitionId)).size,
-          firstYear: years.length > 0 ? Math.min(...years) : null,
-          lastYear: years.length > 0 ? Math.max(...years) : null,
-        };
-      })
+    artists: summary.artists
+      .map((artist) => ({
+        slug: artist.slug,
+        canonicalName: decodeDisplayText(artist.canonicalName),
+        nativeName: artist.nativeName,
+        exhibitionCount: artist.exhibitionCount,
+        firstYear: artist.firstYear,
+        lastYear: artist.lastYear,
+      }))
       .filter((artist) => artist.exhibitionCount > 0)
       .sort((left, right) => {
         const rank = (count: number) => (densityForCount(count) === "LOW_DENSITY" || densityForCount(count) === "EMPTY" ? 1 : 0);
         return rank(left.exhibitionCount) - rank(right.exhibitionCount) || left.canonicalName.localeCompare(right.canonicalName);
       }),
-    exhibitions: exhibitions.map((row) => ({
-      slug: row.slug,
-      title: decodeDisplayText(row.exhibition.title),
-      year: row.startYear,
-    })),
-    moments: exhibitions
-      .map((row) => {
-        const artists = row.exhibition.historyArtists.map((item) => ({
-          slug: item.artist.slug,
-          name: decodeDisplayText(item.artist.canonicalName),
-        }));
-        const space = row.exhibition.space;
-        return {
-          id: row.exhibitionId,
-          slug: row.slug,
-          title: decodeDisplayText(row.exhibition.title),
-          year: row.startYear,
-          place: [space?.name, space?.city || row.exhibition.city, displayCountry(space?.country || row.exhibition.country)].filter(Boolean).join(" · "),
-          artists,
-        };
-      })
+    exhibitions: shows.map((row) => ({ slug: row.slug, title: row.title, year: row.year })),
+    moments: shows
       .filter((row) => row.artists.length >= 2)
-      .slice(0, 8),
+      .slice(0, 8)
+      .map((row) => ({ id: row.id, slug: row.slug, title: row.title, year: row.year, place: row.place, artists: row.artists })),
     routes: selectDiversePaths(readable.length > 0 ? readable : documented, 6),
     homeRoute,
-    spaces: [...exhibitions.reduce((counts, row) => {
-      const space = row.exhibition.space;
-      const slug = space?.slugRecord?.slug;
-      if (!space || !slug) return counts;
-      const current = counts.get(slug) ?? { slug, name: decodeDisplayText(space.name), city: space.city, country: displayCountry(space.country), count: 0 };
+    spaces: [...shows.reduce((counts, row) => {
+      if (!row.space) return counts;
+      const current = counts.get(row.space.slug) ?? { ...row.space, count: 0 };
       current.count += 1;
-      counts.set(slug, current);
+      counts.set(row.space.slug, current);
       return counts;
     }, new Map<string, { slug: string; name: string; city: string | null; country: string | null; count: number }>()).values()]
       .filter((space) => space.count >= 2)
@@ -677,6 +617,22 @@ export async function listExplore() {
     cities: cities.size >= 2 ? [...cities].sort() : [],
     countries: countries.size >= 2 ? [...countries].sort() : [],
   };
+}
+
+export const publicExploreCache = {
+  key: PUBLIC_EXPLORE_CACHE_KEY,
+  revalidate: PUBLIC_HISTORY_REVALIDATE_SECONDS,
+  tags: [PUBLIC_HISTORY_CACHE_TAG],
+};
+
+const loadCachedExplore = unstable_cache(
+  async () => loadExplorePayload(),
+  [...publicExploreCache.key],
+  { revalidate: publicExploreCache.revalidate, tags: [...publicExploreCache.tags] },
+);
+
+export async function listExplore() {
+  return loadCachedExplore();
 }
 
 export async function loadHomeDiscovery() {

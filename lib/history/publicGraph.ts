@@ -264,3 +264,155 @@ export async function queryPublicHistory(prisma: PrismaClient, key: string): Pro
   `;
   return asGraph(rows[0]?.graph);
 }
+
+export type ExploreSummaryArtist = {
+  slug: string;
+  canonicalName: string;
+  nativeName: string | null;
+  exhibitionCount: number;
+  firstYear: number | null;
+  lastYear: number | null;
+};
+
+export type ExploreSummaryShow = {
+  id: string;
+  slug: string | null;
+  title: string;
+  year: number | null;
+  city: string | null;
+  country: string | null;
+  space: { name: string; city: string | null; country: string | null; slug: string | null } | null;
+  artists: { slug: string; name: string }[];
+};
+
+export type ExploreSummary = {
+  artists: ExploreSummaryArtist[];
+  exhibitions: ExploreSummaryShow[];
+};
+
+/** One round trip for the public Explore summary. The page shows six paths, not the whole graph. */
+export async function queryExploreSummary(prisma: PrismaClient): Promise<ExploreSummary> {
+  const rows = await prisma.$queryRaw<Array<{ summary: unknown }>>`
+    WITH visible AS (
+      SELECT ex.id
+      FROM "Exhibition" ex
+      LEFT JOIN "ExhibitionHistoryMeta" meta ON meta."exhibitionId" = ex.id
+      WHERE ex."isPublic" = true
+        AND (
+          (meta."exhibitionId" IS NULL AND ex."createdBy" IS NOT NULL)
+          OR (
+            meta."publicationStatus" = 'PUBLIC'
+            AND meta."sourceClearance" <> 'REJECTED'
+            AND (
+              meta.origin IN ('ARTIST_SUBMITTED', 'GALLERY_SUBMITTED', 'INSTITUTION_SUBMITTED', 'LEGACY_FIRST_PARTY')
+              OR (meta.origin = 'ROB_RESEARCHED' AND meta."sourceClearance" = 'APPROVED')
+              OR (
+                meta.origin = 'ROB_RESEARCHED'
+                AND EXISTS (
+                  SELECT 1
+                  FROM "ExhibitionSource" limited_link
+                  JOIN "HistorySource" limited_source ON limited_source.id = limited_link."sourceId"
+                  WHERE limited_link."exhibitionId" = ex.id
+                    AND limited_source."internalUseDecision" IN ('ALLOW_LIMITED', 'FACTUAL_USE_OK')
+                    AND limited_source."contentScope" = 'FACTUAL_METADATA_ONLY'
+                )
+              )
+            )
+          )
+        )
+    ),
+    artists AS (
+      SELECT
+        ae.slug,
+        ae."canonicalName",
+        ae."nativeName",
+        COUNT(DISTINCT hp."exhibitionId")::int AS "exhibitionCount",
+        MIN(meta."startYear") AS "firstYear",
+        MAX(meta."startYear") AS "lastYear"
+      FROM "ArtistEntity" ae
+      JOIN "HistoryParticipation" hp ON hp."artistEntityId" = ae.id
+      JOIN visible ON visible.id = hp."exhibitionId"
+      LEFT JOIN "ExhibitionHistoryMeta" meta ON meta."exhibitionId" = hp."exhibitionId"
+      GROUP BY ae.id, ae.slug, ae."canonicalName", ae."nativeName"
+    ),
+    shows AS (
+      SELECT
+        ex.id,
+        meta.slug,
+        ex.title,
+        meta."startYear" AS year,
+        ex.city,
+        ex.country,
+        CASE WHEN space.id IS NULL THEN NULL ELSE jsonb_build_object(
+          'name', space.name,
+          'city', space.city,
+          'country', space.country,
+          'slug', (SELECT ss.slug FROM "SpaceSlug" ss WHERE ss."spaceId" = space.id ORDER BY ss.slug LIMIT 1)
+        ) END AS space,
+        COALESCE((
+          SELECT jsonb_agg(jsonb_build_object(
+            'slug', artist.slug,
+            'name', artist."canonicalName"
+          ) ORDER BY participation.id)
+          FROM "HistoryParticipation" participation
+          JOIN "ArtistEntity" artist ON artist.id = participation."artistEntityId"
+          WHERE participation."exhibitionId" = ex.id
+        ), '[]'::jsonb) AS artists
+      FROM "ExhibitionHistoryMeta" meta
+      JOIN "Exhibition" ex ON ex.id = meta."exhibitionId" AND ex."isPublic" = true
+      JOIN visible ON visible.id = ex.id
+      LEFT JOIN "Space" space ON space.id = ex."spaceId"
+      WHERE meta."publicationStatus" = 'PUBLIC'
+        AND meta."sourceClearance" <> 'REJECTED'
+        AND (
+          meta.origin IN ('ARTIST_SUBMITTED', 'GALLERY_SUBMITTED', 'INSTITUTION_SUBMITTED', 'LEGACY_FIRST_PARTY')
+          OR (meta.origin = 'ROB_RESEARCHED' AND meta."sourceClearance" = 'APPROVED')
+          OR (
+            meta.origin = 'ROB_RESEARCHED'
+            AND EXISTS (
+              SELECT 1
+              FROM "ExhibitionSource" limited_link
+              JOIN "HistorySource" limited_source ON limited_source.id = limited_link."sourceId"
+              WHERE limited_link."exhibitionId" = ex.id
+                AND limited_source."internalUseDecision" IN ('ALLOW_LIMITED', 'FACTUAL_USE_OK')
+                AND limited_source."contentScope" = 'FACTUAL_METADATA_ONLY'
+            )
+          )
+        )
+      ORDER BY meta."startYear" DESC NULLS FIRST, ex.id
+      LIMIT 120
+    )
+    SELECT jsonb_build_object(
+      'artists', COALESCE((
+        SELECT jsonb_agg(jsonb_build_object(
+          'slug', artists.slug,
+          'canonicalName', artists."canonicalName",
+          'nativeName', artists."nativeName",
+          'exhibitionCount', artists."exhibitionCount",
+          'firstYear', artists."firstYear",
+          'lastYear', artists."lastYear"
+        ))
+        FROM artists
+      ), '[]'::jsonb),
+      'exhibitions', COALESCE((
+        SELECT jsonb_agg(jsonb_build_object(
+          'id', shows.id,
+          'slug', shows.slug,
+          'title', shows.title,
+          'year', shows.year,
+          'city', shows.city,
+          'country', shows.country,
+          'space', shows.space,
+          'artists', shows.artists
+        ) ORDER BY shows.year DESC NULLS FIRST, shows.id)
+        FROM shows
+      ), '[]'::jsonb)
+    ) AS summary
+  `;
+  const parsed = rows[0]?.summary;
+  const summary = (typeof parsed === "string" ? JSON.parse(parsed) : parsed) as ExploreSummary | undefined;
+  return {
+    artists: summary?.artists ?? [],
+    exhibitions: summary?.exhibitions ?? [],
+  };
+}
