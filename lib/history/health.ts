@@ -1,7 +1,10 @@
 import type { PrismaClient } from "@prisma/client";
 import { prisma as untypedPrisma } from "@/lib/prisma";
-import { buildGraphFrontier, largestComponentSize, type FrontierRow, type GrowthSnapshot } from "@/lib/history/growth";
+import { journeyDepthFromCounts, type JourneyDepthReport } from "@/lib/history/analytics";
+import { namedFrontier, type NamedFrontier } from "@/lib/history/frontierCases";
+import { buildGraphFrontier, largestComponentSize, type FrontierRow, type FrontierStatus, type GrowthSnapshot } from "@/lib/history/growth";
 import { aliasLookupEqual, resolveVerifiedAlias } from "@/lib/history/identity";
+import { buildDocumentedPaths } from "@/lib/history/paths";
 import { densityForCount } from "@/lib/history/policy";
 import { publicExhibitionWhere } from "@/lib/history/queries";
 
@@ -16,27 +19,33 @@ export type HistoryHealth = {
   sharedExhibitions: number;
   largestComponent: number;
   twoHopPairs: number;
+  documentedPaths: number;
+  readablePaths: number;
   threeArtistRoutes: number;
   unresolvedParticipants: string[];
   noResultSearches: {
     query: string;
     count: number;
+    operatorCount: number;
     lastSearched: string | null;
     possibleAlias: string | null;
     unresolvedCandidate: string | null;
+    frontierStatus: FrontierStatus | null;
   }[];
+  journey: JourneyDepthReport;
+  namedFrontier: NamedFrontier[];
   frontier: FrontierRow[];
 };
 
 export async function loadHistoryHealth(): Promise<HistoryHealth> {
-  const [exhibitions, unresolved, signals] = await Promise.all([
+  const [exhibitions, unresolved, signals, operatorSignals, depthSignals] = await Promise.all([
     prisma.exhibition.findMany({
       where: publicExhibitionWhere,
       select: {
         id: true,
         title: true,
         space: { select: { name: true } },
-        historyMeta: { select: { startYear: true } },
+        historyMeta: { select: { startYear: true, slug: true } },
         historyArtists: {
           select: {
             artist: {
@@ -59,6 +68,19 @@ export async function loadHistoryHealth(): Promise<HistoryHealth> {
       where: { name: "SEARCH_NO_RESULT" },
       _count: { _all: true },
       _max: { createdAt: true },
+    }),
+    prisma.historySignal.groupBy({
+      by: ["path"],
+      where: { name: "SEARCH_NO_RESULT_OPERATOR" },
+      _count: { _all: true },
+      _max: { createdAt: true },
+    }),
+    prisma.historySignal.groupBy({
+      by: ["name"],
+      where: {
+        name: { in: ["ARTIST_OPENED", "SECOND_ARTIST_REACHED", "THIRD_ARTIST_REACHED", "FOURTH_ARTIST_REACHED"] },
+      },
+      _count: { _all: true },
     }),
   ]);
 
@@ -120,6 +142,30 @@ export async function loadHistoryHealth(): Promise<HistoryHealth> {
       for (let j = i + 1; j < unique.length; j += 1) pairs.add(`${unique[i]}|${unique[j]}`);
     }
   }
+  const paths = buildDocumentedPaths(
+    exhibitions.map((exhibition) => ({
+      id: exhibition.id,
+      slug: exhibition.historyMeta?.slug ?? null,
+      title: exhibition.title,
+      year: exhibition.historyMeta?.startYear ?? null,
+      artists: exhibition.historyArtists.map((row) => ({ slug: row.artist.slug, name: row.artist.canonicalName })),
+    })),
+    2000,
+  );
+  const readablePaths = paths.filter((path) => path.exhibitions.every((show) => show.title.length <= 42)).length;
+  const operatorCountFor = (query: string) =>
+    operatorSignals.find((row) => row.path === query)?._count._all ?? 0;
+  const decisions = namedFrontier(
+    [...artists.values()].map((artist) => ({ slug: artist.slug, exhibitionCount: artist.exhibitionIds.length })),
+  );
+  const depthCount = (name: string) => depthSignals.find((row) => row.name === name)?._count._all ?? 0;
+  const noResultSearches = demand.slice(0, 20).map((row) => ({
+    ...row,
+    operatorCount: operatorCountFor(row.query),
+    possibleAlias: resolveVerifiedAlias(row.query),
+    unresolvedCandidate: snapshot.unresolved.find((name) => aliasLookupEqual(name.label, row.query))?.label ?? null,
+    frontierStatus: decisions.find((item) => aliasLookupEqual(item.name, row.query))?.status ?? null,
+  }));
   return {
     publicArtists: snapshot.artists.length,
     historyReady,
@@ -129,13 +175,18 @@ export async function loadHistoryHealth(): Promise<HistoryHealth> {
     sharedExhibitions: snapshot.exhibitions.filter((exhibition) => new Set(exhibition.artistSlugs).size >= 2).length,
     largestComponent: largest,
     twoHopPairs: pairs.size,
+    documentedPaths: paths.length,
+    readablePaths,
     threeArtistRoutes,
     unresolvedParticipants: [...new Set(snapshot.unresolved.map((row) => row.label))].sort(),
-    noResultSearches: demand.slice(0, 20).map((row) => ({
-      ...row,
-      possibleAlias: resolveVerifiedAlias(row.query),
-      unresolvedCandidate: snapshot.unresolved.find((name) => aliasLookupEqual(name.label, row.query))?.label ?? null,
-    })),
+    noResultSearches,
+    journey: journeyDepthFromCounts({
+      opened: depthCount("ARTIST_OPENED"),
+      second: depthCount("SECOND_ARTIST_REACHED"),
+      third: depthCount("THIRD_ARTIST_REACHED"),
+      fourth: depthCount("FOURTH_ARTIST_REACHED"),
+    }),
+    namedFrontier: decisions,
     frontier: frontier.slice(0, 40),
   };
 }
