@@ -406,7 +406,7 @@ export async function loadPublicArtistFromDatabase(key: string): Promise<
 
 const loadCachedPublicArtist = unstable_cache(
   async (key: string) => loadPublicArtistFromDatabase(key),
-  ["rob-public-artist-history", "growth-v1"],
+  ["rob-public-artist-history", "frontier-v1"],
   { revalidate: PUBLIC_HISTORY_REVALIDATE_SECONDS, tags: [PUBLIC_HISTORY_CACHE_TAG] },
 );
 
@@ -548,7 +548,7 @@ export async function loadSpacePage(key: string): Promise<HistorySpacePage | nul
   };
 }
 
-export const PUBLIC_EXPLORE_CACHE_KEY = ["rob-public-explore", "explore-v1"] as const;
+export const PUBLIC_EXPLORE_CACHE_KEY = ["rob-public-explore", "frontier-v1"] as const;
 
 export async function loadExplorePayload() {
   const summary = await queryExploreSummary(prisma);
