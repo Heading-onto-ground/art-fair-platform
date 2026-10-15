@@ -47,6 +47,8 @@ export const VERIFIED_ALIASES: readonly VerifiedAlias[] = [
   { slug: "youn-myeungro", label: "윤명로", language: "ko", script: "Hang", source: "National Academy of Arts member page, memb_id=359" },
   { slug: "kim-hyung-dae", label: "Kim Hyung Dae", language: "en", script: "Latn", source: "National Academy of Arts member page, memb_id=537" },
   { slug: "kim-hyung-dae", label: "김형대", language: "ko", script: "Hang", source: "National Academy of Arts member page, memb_id=537" },
+  { slug: "lee-seung-jio", label: "이승조", language: "ko", script: "Hang", source: "Kukje Gallery, Lee Seung Jio, 1 September–30 October 2022, https://www.kukjegallery.com/exhibitions/view?seq=245" },
+  { slug: "park-hyun-ki", label: "박현기", language: "ko", script: "Hang", source: "Kukje Gallery news, Landlord Colors, https://www.kukjegallery.com/news/view?seq=762" },
 ];
 
 /** Letter-author names in an exhibition title are not participants of that exhibition. */

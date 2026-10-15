@@ -1,0 +1,111 @@
+{
+  "importVersion": "growth-v3",
+  "job": {
+    "sourceId": "growth-2026-10-15-chronology",
+    "sourceName": "Arario Gallery, Kukje Gallery, National Academy of Arts, Seoul Shinmun",
+    "sourceUrl": "https://www.arariogallery.com/exhibitions/236-youn-myeung-ro-plateau/",
+    "sourceClass": "GALLERY_CV",
+    "targetArtists": ["youn-myeungro", "lee-seung-jio", "park-hyun-ki"],
+    "retrievedAt": "2026-10-15",
+    "extractionMode": "MANUAL_FACT_LINES",
+    "contentScope": "FACTUAL_METADATA_ONLY",
+    "notes": "Youn Myeungro gains three solos that his National Academy of Arts chronology lists and that a gallery or news page corroborates. Lee Seung Jio and Park Hyun-Ki are created only because an existing unresolved name is an explicit participant. Kim Hyung Dae stays without an entity. Kim, Guirin stays unresolved. Youn Myeung-Ro is not added as an alias."
+  },
+  "artists": [
+    {
+      "slug": "lee-seung-jio",
+      "canonicalName": "Lee Seung Jio",
+      "nativeName": "이승조",
+      "birthYear": 1941,
+      "country": "Korea",
+      "officialWebsite": "https://www.kukjegallery.com/exhibitions/view?seq=245"
+    },
+    {
+      "slug": "park-hyun-ki",
+      "canonicalName": "Park Hyun-Ki",
+      "nativeName": "박현기",
+      "birthYear": null,
+      "country": "Korea",
+      "officialWebsite": "https://www.kukjegallery.com/news/view?seq=762"
+    }
+  ],
+  "enrichments": [],
+  "records": [
+    {
+      "pilotRecordId": "traces-of-the-spirit-2014",
+      "title": "Traces of the Spirit",
+      "year": 2014,
+      "startMonth": 10,
+      "startDay": 15,
+      "endYear": 2014,
+      "endMonth": 11,
+      "endDay": 23,
+      "datePrecision": "DAY",
+      "venue": "Arario Gallery",
+      "city": "Seoul",
+      "country": "Korea",
+      "participants": ["Youn Myeungro"],
+      "sourceName": "Arario Gallery",
+      "sourceUrl": "https://www.arariogallery.com/ko/exhibitions/155-youn-myeung-ro-traces-of-the-spirit/",
+      "sourceType": "OFFICIAL_GALLERY_PAGE",
+      "evidenceShort": "Arario Gallery: YOUN Myeung-Ro: Traces of the Spirit, 15 October–23 November 2014, Seoul. National Academy of Arts member 359 lists the same dates as 윤명로's solo at 아라리오갤러리 서울. The hyphenated English spelling is not stored as an alias."
+    },
+    {
+      "pilotRecordId": "plateau-2016",
+      "title": "Plateau",
+      "year": 2016,
+      "startMonth": 3,
+      "startDay": 5,
+      "endYear": 2016,
+      "endMonth": 4,
+      "endDay": 28,
+      "datePrecision": "DAY",
+      "venue": "Arario Gallery Shanghai",
+      "city": "Shanghai",
+      "country": "China",
+      "participants": ["Youn Myeungro"],
+      "sourceName": "Arario Gallery",
+      "sourceUrl": "https://www.arariogallery.com/exhibitions/236-youn-myeung-ro-plateau/",
+      "sourceType": "OFFICIAL_GALLERY_PAGE",
+      "evidenceShort": "Arario Gallery: YOUN Myeung-Ro: Plateau, 5 March–28 April 2016, Shanghai. National Academy of Arts member 359 lists the same dates as 윤명로's solo at 아라리오 갤러리 in Shanghai."
+    },
+    {
+      "pilotRecordId": "youn-then-and-now-2017",
+      "title": "윤명로, 그때와 지금",
+      "year": 2017,
+      "startMonth": 1,
+      "startDay": 18,
+      "endYear": 2017,
+      "endMonth": 3,
+      "endDay": 5,
+      "datePrecision": "DAY",
+      "venue": "Insa Art Center",
+      "city": "Seoul",
+      "country": "Korea",
+      "participants": ["Youn Myeungro"],
+      "sourceName": "Seoul Shinmun",
+      "sourceUrl": "https://www.seoul.co.kr/news/life/exhibition/2017/01/23/20170123021007",
+      "sourceType": "PRESS_LISTING",
+      "evidenceShort": "Seoul Shinmun reports 윤명로's exhibition 윤명로, 그때와 지금 at 인사아트센터. Maeil Business and Chosun Art give 18 January through 5 March 2017. National Academy of Arts member 359 lists the same dates."
+    },
+    {
+      "pilotRecordId": "lee-seung-jio-2022",
+      "title": "Lee Seung Jio",
+      "year": 2022,
+      "startMonth": 9,
+      "startDay": 1,
+      "endYear": 2022,
+      "endMonth": 10,
+      "endDay": 30,
+      "datePrecision": "DAY",
+      "venue": "Kukje Gallery",
+      "city": "Seoul",
+      "country": "Korea",
+      "participants": ["Lee Seung Jio"],
+      "sourceName": "Kukje Gallery",
+      "sourceUrl": "https://www.kukjegallery.com/exhibitions/view?seq=245",
+      "sourceType": "OFFICIAL_GALLERY_PAGE",
+      "evidenceShort": "Kukje Gallery solo of Lee Seung Jio (이승조, 1941-1990), 1 September–30 October 2022, Seoul. The page states it is a solo exhibition, so the name in the title is an explicit participant."
+    }
+  ]
+}
