@@ -13,6 +13,14 @@
   },
   "artists": [
     {
+      "slug": "kim-whanki",
+      "canonicalName": "Kim Whanki",
+      "nativeName": "김환기",
+      "birthYear": 1913,
+      "country": "Korea",
+      "officialWebsite": null
+    },
+    {
       "slug": "youn-myeungro",
       "canonicalName": "Youn Myeungro",
       "nativeName": "윤명로",
