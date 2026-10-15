@@ -36,6 +36,7 @@ type RecordPlan = {
   evidenceShort: string;
   sourceName?: string;
   sourceUrl?: string;
+  sourceType?: string;
   datePrecision?: "DAY" | "MONTH" | "YEAR";
   startMonth?: number | null;
   startDay?: number | null;
@@ -272,15 +273,15 @@ async function main() {
     const spaceRows = await client.query<{ id: string; name: string; city: string | null }>(`SELECT id, name, city FROM "Space"`);
     const spaceSlugs = new Set((await client.query<{ slug: string }>(`SELECT slug FROM "SpaceSlug"`)).rows.map((row) => row.slug));
     const exhibitionSlugs = new Set((await client.query<{ slug: string }>(`SELECT slug FROM "ExhibitionHistoryMeta" WHERE slug IS NOT NULL`)).rows.map((row) => row.slug));
-    async function sourceIdFor(url: string, name: string) {
+    async function sourceIdFor(url: string, name: string, sourceType = "OFFICIAL_GALLERY_PAGE") {
       const existing = sourceIds.get(url);
       if (existing) return existing;
       const id = randomUUID();
       await client.query(
         `INSERT INTO "HistorySource"
            (id, url, "sourceName", "sourceType", "retrievedAt", "clearanceStatus", "internalUseDecision", "externalPermission", "contentScope", "createdAt")
-         VALUES ($1, $2, $3, 'OFFICIAL_GALLERY_PAGE', NOW(), 'REVIEW_REQUIRED', 'ALLOW_LIMITED', 'NOT_OBTAINED', 'FACTUAL_METADATA_ONLY', NOW())`,
-        [id, url, name],
+         VALUES ($1, $2, $3, $4, NOW(), 'REVIEW_REQUIRED', 'ALLOW_LIMITED', 'NOT_OBTAINED', 'FACTUAL_METADATA_ONLY', NOW())`,
+        [id, url, name, sourceType],
       );
       sourceIds.set(url, id);
       return id;
@@ -342,7 +343,7 @@ async function main() {
            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, 'PUBLIC', 'ROB_RESEARCHED', 'NOT_APPLICABLE', 'REVIEW_REQUIRED')`,
           [exhibitionId, slug, record.datePrecision ?? "YEAR", record.year, record.startMonth ?? null, record.startDay ?? null, record.endYear ?? null, record.endMonth ?? null, record.endDay ?? null],
         );
-        const sourceId = await sourceIdFor(recordSourceUrl, recordSourceName);
+        const sourceId = await sourceIdFor(recordSourceUrl, recordSourceName, record.sourceType || "OFFICIAL_GALLERY_PAGE");
         await client.query(`INSERT INTO "ExhibitionSource" ("exhibitionId", "sourceId") VALUES ($1, $2) ON CONFLICT DO NOTHING`, [exhibitionId, sourceId]);
         for (const slug of item.resolved) {
           const artistId = slugToId.get(slug);
