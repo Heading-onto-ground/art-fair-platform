@@ -19,10 +19,27 @@ export default function StartHistory() {
 
   async function search(event: FormEvent) {
     event.preventDefault();
-    const response = await fetch(`/api/history/search?q=${encodeURIComponent(query)}`);
-    const data = await response.json();
-    setResults(Array.isArray(data.results) ? data.results : []);
-    if (!data.results?.length) setMessage("No existing page matches. You can create the artist record.");
+    const q = query.trim();
+    if (!q) return;
+    const controller = new AbortController();
+    const timer = window.setTimeout(() => controller.abort(), 9000);
+    try {
+      const response = await fetch(`/api/history/search?q=${encodeURIComponent(q)}`, { signal: controller.signal, cache: "no-store" });
+      const data = await response.json().catch(() => null);
+      if (!response.ok || !data || data.unavailable) {
+        setResults([]);
+        setMessage("Search is temporarily unavailable. Please try again.");
+        return;
+      }
+      const found = Array.isArray(data.results) ? data.results as HistorySearchResult[] : [];
+      setResults(found);
+      setMessage(found.length === 0 ? "No existing page matches. You can create the artist record." : "");
+    } catch {
+      setResults([]);
+      setMessage("Search is temporarily unavailable. Please try again.");
+    } finally {
+      window.clearTimeout(timer);
+    }
   }
 
   async function claim(slug: string) {

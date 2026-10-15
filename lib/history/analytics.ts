@@ -1,4 +1,5 @@
-import { isHistoryEvent, type HistoryEventName } from "@/lib/history/policy";
+import { searchDemandQuery } from "@/lib/history/identity";
+import { isHistoryEvent, missingSearchEvent, type HistoryEventName } from "@/lib/history/policy";
 
 const SEEN_ARTISTS = "rob-history-artists";
 
@@ -74,4 +75,25 @@ export function trackHistory(name: HistoryEventName, path?: string) {
   }
 }
 
-export { isHistoryEvent };
+/** Records a zero-result search after the results are already on screen. */
+export function trackMissingSearch(query: string, operator = false) {
+  if (typeof window === "undefined") return;
+  if (!searchDemandQuery(query)) return;
+  const body = JSON.stringify({ q: query, operator });
+  try {
+    if (navigator.sendBeacon) {
+      navigator.sendBeacon("/api/history/missing-search", new Blob([body], { type: "application/json" }));
+      return;
+    }
+    void fetch("/api/history/missing-search", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body,
+      keepalive: true,
+    });
+  } catch {
+    // A missed demand log must not change the search result.
+  }
+}
+
+export { isHistoryEvent, missingSearchEvent };
