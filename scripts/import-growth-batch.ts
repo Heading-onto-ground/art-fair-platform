@@ -2,6 +2,7 @@ import { createHash, randomUUID } from "crypto";
 import { mkdirSync, readFileSync, writeFileSync } from "fs";
 import { Client } from "pg";
 import { VERIFIED_ALIASES, labelAppearsInTitle, mayRelinkUnresolvedName, normalizeArtistLookup, resolveArtistSlug, shouldRelinkUnresolved } from "../lib/history/identity";
+import { requestPublicHistoryRefresh, type RefreshOutcome } from "../lib/history/cacheRefresh";
 import { previewCandidates, resolveVerifiedSpace, sameVerifiedSpace, type FactualCandidate, type GrowthSnapshot } from "../lib/history/growth";
 import { uniqueSlug } from "../lib/history/policy";
 
@@ -64,13 +65,33 @@ type BatchFile = {
 
 const SLAG_URL = "https://www.slaggallery.com/chelsea_art_gallery/artists/kim-guiline/documents/resume";
 
-function databaseUrl(): string {
-  if (process.env.DATABASE_URL) return process.env.DATABASE_URL;
-  const line = readFileSync(".env", "utf8").split(/\r?\n/).find((item) => item.startsWith("DATABASE_URL="));
-  if (!line) throw new Error("DATABASE_URL missing");
-  let value = line.slice("DATABASE_URL=".length).trim();
+function readEnv(name: string): string {
+  if (process.env[name]) return String(process.env[name]);
+  let text = "";
+  try {
+    text = readFileSync(".env", "utf8");
+  } catch {
+    return "";
+  }
+  const line = text.split(/\r?\n/).find((item) => item.startsWith(`${name}=`));
+  if (!line) return "";
+  let value = line.slice(name.length + 1).trim();
   if ((value.startsWith('"') && value.endsWith('"')) || (value.startsWith("'") && value.endsWith("'"))) value = value.slice(1, -1);
   return value;
+}
+
+function databaseUrl(): string {
+  const value = readEnv("DATABASE_URL");
+  if (!value) throw new Error("DATABASE_URL missing");
+  return value;
+}
+
+function publicOrigin(): string {
+  return readEnv("ROB_PUBLIC_ORIGIN") || readEnv("NEXT_PUBLIC_APP_URL") || "https://rob-roleofbridge.com";
+}
+
+async function refreshPublicCache(): Promise<RefreshOutcome> {
+  return requestPublicHistoryRefresh({ origin: publicOrigin(), secret: readEnv("CRON_SECRET") });
 }
 
 function candidateFrom(record: Enrichment | RecordPlan, space: string, city: string | null, country: string | null, sourceUrl: string): FactualCandidate {
@@ -127,6 +148,15 @@ async function backup(client: Client) {
 }
 
 async function main() {
+  if (process.argv.includes("--refresh-cache")) {
+    if (process.env.ROB_CONFIRM_GROWTH_IMPORT !== "1") {
+      console.log("REFUSED");
+      process.exit(1);
+    }
+    const outcome = await refreshPublicCache();
+    console.log(JSON.stringify(outcome));
+    process.exit(outcome.status === "CACHE_INVALIDATION_COMPLETE" ? 0 : 2);
+  }
   const preview = process.argv.includes("--preview");
   if (!preview && process.env.ROB_CONFIRM_GROWTH_IMPORT !== "1") {
     console.log("REFUSED");
@@ -420,7 +450,22 @@ async function main() {
       process.exit(1);
     }
     await client.query("COMMIT");
-    console.log(JSON.stringify({ imported: true, exhibitionsWritten, participationsWritten, aliasesWritten, relinked, detached, backup: saved, users: after.rows[0].users }));
+    const refresh = await refreshPublicCache();
+    console.log(JSON.stringify({
+      DB_WRITE_COMPLETE: true,
+      imported: true,
+      exhibitionsWritten,
+      participationsWritten,
+      aliasesWritten,
+      relinked,
+      detached,
+      backup: saved,
+      users: after.rows[0].users,
+      status: refresh.status,
+      CACHE_INVALIDATION_COMPLETE: refresh.status === "CACHE_INVALIDATION_COMPLETE",
+      ...(refresh.status === "WRITE_SUCCEEDED_CACHE_REFRESH_FAILED" ? { reason: refresh.reason } : {}),
+    }));
+    if (refresh.status !== "CACHE_INVALIDATION_COMPLETE") process.exit(2);
     } catch (error) {
       await client.query("ROLLBACK");
       throw error;

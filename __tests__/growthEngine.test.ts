@@ -182,6 +182,39 @@ describe("path diversity", () => {
   });
 });
 
+describe("repeated ingestion", () => {
+  it("adds no exhibition and no artist pair when the same candidate is previewed again", () => {
+    const added = candidate({
+      title: "Shared Room",
+      startYear: 2019,
+      space: "Kukje Gallery",
+      artistNames: ["Park Seo-Bo", "Lee Ufan"],
+      pilotRecordId: "shared-room",
+    });
+    const [first] = previewCandidates([added], snapshot);
+    expect(first.decision).toBe("NEW");
+    const after: GrowthSnapshot = {
+      ...snapshot,
+      exhibitions: [
+        ...snapshot.exhibitions,
+        {
+          id: "shared",
+          title: "Shared Room",
+          year: 2019,
+          space: "Kukje Gallery",
+          city: "Seoul",
+          artistSlugs: first.resolved,
+        },
+      ],
+    };
+    const [second] = previewCandidates([added], after);
+    expect(second.decision).toBe("EXACT");
+    expect(second.value.newExhibition).toBe(false);
+    expect(second.value.newArtistPairCount).toBe(0);
+    expect(second.resolved).toEqual(first.resolved);
+  });
+});
+
 describe("exploration depth", () => {
   it("counts a new artist and ignores a repeat", () => {
     const first = nextExplorationDepth([], "lee-ufan");
