@@ -76,6 +76,24 @@ export function shouldRelinkUnresolved(label: string, exhibitionTitle: string, s
   return !labelAppearsInTitle(label, exhibitionTitle);
 }
 
+export type ParticipantEvidence = "EXPLICIT_PARTICIPANT" | "TITLE_ONLY" | "AMBIGUOUS" | "NOT_PARTICIPANT";
+
+/** Internal candidate state. A title, essay title, caption heading, or headline is not a participant list. */
+export function participantEvidence(input: {
+  listedAsParticipant: boolean;
+  namedInTitle: boolean;
+  ambiguous?: boolean;
+}): ParticipantEvidence {
+  if (input.listedAsParticipant) return "EXPLICIT_PARTICIPANT";
+  if (input.namedInTitle) return "TITLE_ONLY";
+  if (input.ambiguous) return "AMBIGUOUS";
+  return "NOT_PARTICIPANT";
+}
+
+export function mayCreateParticipation(evidence: ParticipantEvidence): boolean {
+  return evidence === "EXPLICIT_PARTICIPANT";
+}
+
 export function normalizeArtistLookup(value: string): string {
   return value
     .normalize("NFKC")
