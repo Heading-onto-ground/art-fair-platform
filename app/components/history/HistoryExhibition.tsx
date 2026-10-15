@@ -26,7 +26,7 @@ export default function HistoryExhibition({ record }: { record: HistoryExhibitio
             </li>
           ))}
           {record.unresolved.map((name) => (
-            <li key={name.label}>{name.label} · {name.status === "REVIEW_REQUIRED" ? "Review required" : "Unresolved participant"}</li>
+            <li key={name.label}>{name.label} · {name.status === "REVIEW_REQUIRED" ? "Review required" : name.status === "TITLE_MENTION" ? "Named in the title" : "Unresolved participant"}</li>
           ))}
         </ul>
         {record.curatorName ? <p>Curator: {record.curatorName}</p> : null}

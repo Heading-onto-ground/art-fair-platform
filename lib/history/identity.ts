@@ -40,12 +40,40 @@ export const VERIFIED_ALIASES: readonly VerifiedAlias[] = [
   { slug: "kim-guiline", label: "김기린", language: "ko", script: "Hang", source: "Kukje Gallery Korean exhibition text, The Art of Dansaekhwa, 2014" },
   { slug: "kim-guiline", label: "Kim Gui-line", language: "en", script: "Latn", source: "Seoul Museum of Art collection page, Kim Gui-line, born 1936" },
   { slug: "kim-whanki", label: "Kim Whanki", language: "en", script: "Latn", source: "Tina Kim Gallery, When Process Becomes Form, 2016" },
+  { slug: "kim-whanki", label: "김환기", language: "ko", script: "Hang", source: "Monthly Art, After Drawing, June 2016, paired with the Korea JoongAng Daily English listing of Kim Whanki in that exhibition" },
   { slug: "kwon-young-woo", label: "Kwon Young-Woo", language: "en", script: "Latn", source: "Tina Kim Gallery, When Process Becomes Form, 2016" },
+  { slug: "kwon-young-woo", label: "권영우", language: "ko", script: "Hang", source: "Kukje Gallery news, Landlord Colors, https://www.kukjegallery.com/news/view?seq=762" },
+  { slug: "youn-myeungro", label: "Youn Myeungro", language: "en", script: "Latn", source: "National Academy of Arts member page, memb_id=359" },
+  { slug: "youn-myeungro", label: "윤명로", language: "ko", script: "Hang", source: "National Academy of Arts member page, memb_id=359" },
+  { slug: "kim-hyung-dae", label: "Kim Hyung Dae", language: "en", script: "Latn", source: "National Academy of Arts member page, memb_id=537" },
+  { slug: "kim-hyung-dae", label: "김형대", language: "ko", script: "Hang", source: "National Academy of Arts member page, memb_id=537" },
 ];
 
 /** Letter-author names in an exhibition title are not participants of that exhibition. */
 export function mayRelinkUnresolvedName(exhibitionTitle: string): boolean {
   return !/letters of/i.test(exhibitionTitle);
+}
+
+/** A name that only appears inside the exhibition title is not relinked from that title. */
+export function labelAppearsInTitle(label: string, exhibitionTitle: string): boolean {
+  const fold = (value: string) =>
+    value
+      .normalize("NFKC")
+      .toLowerCase()
+      .replace(/[\u2010\u2011\u2012\u2013\u2014\u2212-]/g, " ")
+      .replace(/[^\p{L}\p{N}]+/gu, " ")
+      .replace(/\s+/g, " ")
+      .trim();
+  const name = fold(label);
+  const title = fold(exhibitionTitle);
+  if (!name || !title) return false;
+  return ` ${title} `.includes(` ${name} `);
+}
+
+export function shouldRelinkUnresolved(label: string, exhibitionTitle: string, status = "UNRESOLVED_PARTICIPANT"): boolean {
+  if (status !== "UNRESOLVED_PARTICIPANT") return false;
+  if (!mayRelinkUnresolvedName(exhibitionTitle)) return false;
+  return !labelAppearsInTitle(label, exhibitionTitle);
 }
 
 export function normalizeArtistLookup(value: string): string {
