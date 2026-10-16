@@ -5,6 +5,7 @@ import { VERIFIED_ALIASES, labelAppearsInTitle, mayRelinkUnresolvedName, normali
 import { requestPublicHistoryRefresh, type RefreshOutcome } from "../lib/history/cacheRefresh";
 import { previewCandidates, resolveVerifiedSpace, sameVerifiedSpace, type FactualCandidate, type GrowthSnapshot } from "../lib/history/growth";
 import { uniqueSlug } from "../lib/history/policy";
+import { envValue } from "../lib/history/runtimeEnv";
 
 type ArtistPlan = {
   slug: string;
@@ -66,18 +67,15 @@ type BatchFile = {
 const SLAG_URL = "https://www.slaggallery.com/chelsea_art_gallery/artists/kim-guiline/documents/resume";
 
 function readEnv(name: string): string {
-  if (process.env[name]) return String(process.env[name]);
-  let text = "";
-  try {
-    text = readFileSync(".env", "utf8");
-  } catch {
-    return "";
+  const files: string[] = [];
+  for (const path of [".env.local", ".env"]) {
+    try {
+      files.push(readFileSync(path, "utf8"));
+    } catch {
+      files.push("");
+    }
   }
-  const line = text.split(/\r?\n/).find((item) => item.startsWith(`${name}=`));
-  if (!line) return "";
-  let value = line.slice(name.length + 1).trim();
-  if ((value.startsWith('"') && value.endsWith('"')) || (value.startsWith("'") && value.endsWith("'"))) value = value.slice(1, -1);
-  return value;
+  return envValue(name, files);
 }
 
 function databaseUrl(): string {
