@@ -364,6 +364,96 @@ describe("trusted source crawler", () => {
   });
 });
 
+describe("institution exhibition adapters", () => {
+  const tateHtml = `
+    <h1>Working With Nature: Traditional Thought in Contemporary Art from Korea</h1>
+    <span class="splash-header__dates">8 April – 21 June 1992</span>
+    <div class="content-block content-block--location venue-block">
+      <h2 class="content-block__title">Tate Liverpool</h2>
+    </div>
+    <p>Park Seo-Bo is named only in this prose BIO_TOKEN.</p>
+    <p><strong>PARK, SEO-BO Born 1931</strong> <em>Lives and works in Seoul</em><br/>
+    <strong>LEE, U-FAN Born 1936</strong></p>
+  `;
+
+  it("reads a Tate roster as explicit names and does not invent a country", () => {
+    const [fact] = crawl({
+      url: "https://www.tate.org.uk/whats-on/tate-liverpool/working-nature-traditional-thought-contemporary-art-korea",
+      html: tateHtml,
+    });
+    expect(fact?.pageType).toBe("EXHIBITION");
+    expect(fact?.title).toBe("Working With Nature: Traditional Thought in Contemporary Art from Korea");
+    expect(fact?.startYear).toBe(1992);
+    expect(fact?.venue).toBe("Tate Liverpool");
+    expect(fact?.city).toBe("Liverpool");
+    expect(fact?.country).toBeNull();
+    expect(fact?.decision).toBe("REVIEW_QUEUE");
+    expect(fact?.reason).toBe("INCOMPLETE_FACT");
+    expect(fact?.participants.filter((person) => person.identity === "EXACT").map((person) => person.slug)).toEqual(["park-seo-bo", "lee-ufan"]);
+    expect(JSON.stringify(fact)).not.toContain("BIO_TOKEN");
+    expect(trustedImportBatch([fact!], retrievedAt, snapshot())).toBeNull();
+  });
+
+  it("keeps an artist profile from becoming an exhibition and ignores promo links", async () => {
+    const profile = crawl({ url: "https://www.tate.org.uk/art/artists/yun-hyong-keun-27698", html: "<h1>Yun Hyong-keun</h1>" })[0];
+    expect(profile?.pageType).toBe("ARTIST_PROFILE");
+    expect(profile?.reason).toBe("NO_EXHIBITION_FACT");
+    expect(profile?.decision).toBe("HOLD");
+    const { tateResultLinks } = await import("@/lib/history/institutionPages");
+    const search = `<div class="card card--search-promo"><a href="/whats-on/tate-modern/frida-kahlo-the-making-of-an-icon"></a></div>
+      <div class="card card--cluster"><div class="card__inner"><a href="/whats-on/tate-liverpool/working-nature-traditional-thought-contemporary-art-korea"></a></div></div>`;
+    expect(tateResultLinks(search)).toEqual(["https://www.tate.org.uk/whats-on/tate-liverpool/working-nature-traditional-thought-contemporary-art-korea"]);
+  });
+
+  it("reads a Cleveland exhibition record without copying its description", () => {
+    const [fact] = crawl({
+      url: "https://openaccess-api.clevelandart.org/api/exhibitions/517759",
+      json: {
+        data: {
+          id: 517759,
+          title: "Material and Immaterial in Korean Modern and Contemporary Art",
+          description: "Yun Hyong-keun BIO_TOKEN",
+          opening_date: "2023-04-28T04:00:00",
+          closing_date: "2024-02-25T05:00:00",
+          venues: [{ name: "The Cleveland Museum of Art" }],
+        },
+      },
+    });
+    expect(fact?.pageType).toBe("EXHIBITION");
+    expect(fact?.title).toBe("Material and Immaterial in Korean Modern and Contemporary Art");
+    expect(fact?.startYear).toBe(2023);
+    expect(fact?.endYear).toBe(2024);
+    expect(fact?.venue).toBe("The Cleveland Museum of Art");
+    expect(fact?.participants).toEqual([]);
+    expect(fact?.decision).toBe("REVIEW_QUEUE");
+    expect(fact?.reason).toBe("NO_PARTICIPANT_LIST");
+    expect(JSON.stringify(fact)).not.toContain("BIO_TOKEN");
+  });
+
+  it("points an AIC exhibition at the institution page and leaves missing place fields empty", () => {
+    const [fact] = crawl({
+      url: "https://api.artic.edu/api/v1/exhibitions/3204",
+      json: {
+        data: {
+          api_model: "exhibitions",
+          title: "Korean Painting: Art of the Joseon Dynasty",
+          aic_start_at: "2015-04-25T00:00:00-05:00",
+          aic_end_at: "2015-06-28T00:00:00-05:00",
+          web_url: "https://www.artic.edu/exhibitions/3204/korean-painting-art-of-the-joseon-dynasty",
+          short_description: "BIO_TOKEN",
+        },
+      },
+    });
+    expect(fact?.pageType).toBe("EXHIBITION");
+    expect(fact?.provenance.sourceUrl).toBe("https://www.artic.edu/exhibitions/3204/korean-painting-art-of-the-joseon-dynasty");
+    expect(fact?.city).toBeNull();
+    expect(fact?.country).toBeNull();
+    expect(fact?.participants).toEqual([]);
+    expect(fact?.reason).toBe("NO_PARTICIPANT_LIST");
+    expect(JSON.stringify(fact)).not.toContain("BIO_TOKEN");
+  });
+});
+
 describe("runtime env", () => {
   it("reads a quoted value and keeps the first file ahead of the next", () => {
     expect(envValueFromText("CRON_SECRET=\"present\"\nOTHER=1", "CRON_SECRET")).toBe("present");

@@ -1,5 +1,13 @@
 import { VERIFIED_ALIASES, mayCreateParticipation, normalizeArtistLookup, resolveArtistSlug, resolveVerifiedAlias, type ParticipantEvidence } from "@/lib/history/identity";
 import {
+  aicExhibition,
+  clevelandExhibitions,
+  clevelandHtmlExhibition,
+  classifyFetchedPage,
+  tateExhibition,
+  type PageType,
+} from "@/lib/history/institutionPages";
+import {
   VERIFIED_SPACES,
   duplicateDecision,
   normalizeFactTitle,
@@ -21,7 +29,7 @@ export type TrustedSource = {
   sourceName: string;
   sourceClass: SourceClass;
   sourceTier: SourceTier;
-  adapter: "kukje-exhibition" | "hyundai-exhibition" | "arario-exhibition" | "foundation-cv" | "museum-api" | "mmca-exhibition";
+  adapter: "kukje-exhibition" | "hyundai-exhibition" | "arario-exhibition" | "foundation-cv" | "museum-api" | "mmca-exhibition" | "tate-exhibition" | "aic-exhibition" | "cleveland-exhibition";
   autoImport: boolean;
 };
 
@@ -37,6 +45,11 @@ export const TRUSTED_SOURCES: readonly TrustedSource[] = [
   { host: "guggenheim.org", sourceName: "Guggenheim", sourceClass: "MUSEUM_API", sourceTier: "MUSEUM_API", adapter: "museum-api", autoImport: true },
   { host: "naa.go.kr", sourceName: "National Academy of Arts", sourceClass: "INSTITUTION", sourceTier: "FIRST_PARTY", adapter: "foundation-cv", autoImport: true },
   { host: "mmca.go.kr", sourceName: "MMCA", sourceClass: "MUSEUM", sourceTier: "MUSEUM", adapter: "mmca-exhibition", autoImport: true },
+  { host: "tate.org.uk", sourceName: "Tate", sourceClass: "MUSEUM", sourceTier: "MUSEUM", adapter: "tate-exhibition", autoImport: true },
+  { host: "artic.edu", sourceName: "Art Institute of Chicago", sourceClass: "MUSEUM", sourceTier: "MUSEUM", adapter: "aic-exhibition", autoImport: true },
+  { host: "api.artic.edu", sourceName: "Art Institute of Chicago", sourceClass: "MUSEUM_API", sourceTier: "MUSEUM_API", adapter: "aic-exhibition", autoImport: true },
+  { host: "clevelandart.org", sourceName: "Cleveland Museum of Art", sourceClass: "MUSEUM", sourceTier: "MUSEUM", adapter: "cleveland-exhibition", autoImport: true },
+  { host: "openaccess-api.clevelandart.org", sourceName: "Cleveland Museum of Art", sourceClass: "MUSEUM_API", sourceTier: "MUSEUM_API", adapter: "cleveland-exhibition", autoImport: true },
 ];
 
 export const CRAWL_LIMITS = {
@@ -109,6 +122,7 @@ export type CrawlFact = {
     participants: FieldSource | null;
     curators: FieldSource | null;
   };
+  pageType: PageType;
 };
 
 export type TrustedImportBatch = {
@@ -213,7 +227,10 @@ export function crawlTrustedPage(input: {
   const source = classifyTrustedUrl(input.url);
   if (!source) return [heldFact(input, null, "LOW_AUTHORITY", "LOW_AUTHORITY")];
   const path = pathOf(input.url);
-  if (source.adapter === "kukje-exhibition" && path.includes("/news/")) return [heldFact(input, source, "PRESS_PAGE", "PRESS_PAGE")];
+  if (source.adapter === "kukje-exhibition" && path.includes("/news/")) return [heldFact(input, source, "PRESS_PAGE", "PRESS_PAGE", "PRESS")];
+  if (source.adapter === "tate-exhibition") return crawlTate(input, source);
+  if (source.adapter === "aic-exhibition") return crawlAic(input, source);
+  if (source.adapter === "cleveland-exhibition") return crawlCleveland(input, source);
   if (source.adapter === "foundation-cv") return crawlFoundationCv(input, source);
   if (source.adapter === "museum-api") return crawlMuseumApi(input, source);
   if (source.adapter === "mmca-exhibition") return [crawlMmcaExhibition(input, source)];
@@ -420,6 +437,95 @@ function crawlFoundationCv(input: CrawlInput, source: TrustedSource): CrawlFact[
   return (fresh.length > 0 ? fresh : facts).slice(0, CRAWL_LIMITS.selectiveCvRows);
 }
 
+function datedRange(value: string): { start: DateParts; end: DateParts; precision: "DAY" | "MONTH" | "YEAR" | "UNKNOWN" } {
+  const text = value.replace(/\b(?:Monday|Tuesday|Wednesday|Thursday|Friday|Saturday|Sunday),?\s*/gi, "");
+  return parseRange(text);
+}
+
+function exhibitionFact(input: CrawlInput, source: TrustedSource, fields: {
+  title: string | null;
+  dates: { start: DateParts; end: DateParts; precision: "DAY" | "MONTH" | "YEAR" | "UNKNOWN" };
+  venue: string | null;
+  city: string | null;
+  roster: string[];
+  extractionMethod: string;
+}): CrawlFact {
+  return finishFact(input, source, {
+    title: fields.title,
+    dates: fields.dates,
+    venue: fields.venue,
+    city: fields.city,
+    country: null,
+    participants: fields.roster.map((label) => participant(label, "EXPLICIT_PARTICIPANT", input.artists, "artist-roster")),
+    extractionMethod: fields.extractionMethod,
+  });
+}
+
+function noExhibitionFact(input: CrawlInput, source: TrustedSource, pageType: PageType): CrawlFact {
+  const fact = heldFact(input, source, "NO_EXHIBITION_FACT", "NO_EXHIBITION_FACT", pageType);
+  return { ...fact, confidence: "MEDIUM" };
+}
+
+function crawlTate(input: CrawlInput, source: TrustedSource): CrawlFact[] {
+  const pageType = classifyFetchedPage(input.url, { html: input.html });
+  if (pageType === "PRESS") return [heldFact(input, source, "PRESS_PAGE", "PRESS_PAGE", "PRESS")];
+  if (pageType !== "EXHIBITION") return [noExhibitionFact(input, source, pageType)];
+  const parsed = input.html ? tateExhibition(input.html) : null;
+  if (!parsed?.title || !parsed.dateText) return [heldFact(input, source, "NO_STRUCTURE", "NO_STRUCTURE", "EXHIBITION")];
+  return [exhibitionFact(input, source, {
+    title: parsed.title,
+    dates: datedRange(parsed.dateText),
+    venue: parsed.venue,
+    city: parsed.city,
+    roster: parsed.roster,
+    extractionMethod: "TATE_EXHIBITION_ROSTER",
+  })];
+}
+
+function crawlAic(input: CrawlInput, source: TrustedSource): CrawlFact[] {
+  const pageType = classifyFetchedPage(input.url, { html: input.html, json: input.json });
+  if (pageType !== "EXHIBITION") return [noExhibitionFact(input, source, pageType)];
+  const parsed = aicExhibition(input.json);
+  if (!parsed?.title || !parsed.startDate) return [heldFact(input, source, "NO_STRUCTURE", "NO_STRUCTURE", "EXHIBITION")];
+  const webSource = parsed.webUrl ? classifyTrustedUrl(parsed.webUrl) : null;
+  const sourceUrl = webSource?.adapter === "aic-exhibition" ? parsed.webUrl ?? input.url : input.url;
+  return [exhibitionFact({ ...input, url: sourceUrl }, source, {
+    title: parsed.title,
+    dates: datedRange([parsed.startDate, parsed.endDate].filter(Boolean).join(" – ")),
+    venue: parsed.venue,
+    city: parsed.city,
+    roster: parsed.roster,
+    extractionMethod: "AIC_EXHIBITION_API",
+  })];
+}
+
+function crawlCleveland(input: CrawlInput, source: TrustedSource): CrawlFact[] {
+  const pageType = classifyFetchedPage(input.url, { html: input.html, json: input.json });
+  if (pageType === "PRESS") return [heldFact(input, source, "PRESS_PAGE", "PRESS_PAGE", "PRESS")];
+  if (pageType !== "EXHIBITION") return [noExhibitionFact(input, source, pageType)];
+  const apiRows = clevelandExhibitions(input.json);
+  if (apiRows.length > 0) {
+    return apiRows.map((parsed) => exhibitionFact(input, source, {
+      title: parsed.title,
+      dates: datedRange([parsed.startDate, parsed.endDate].filter(Boolean).join(" – ")),
+      venue: parsed.venue,
+      city: parsed.city,
+      roster: [],
+      extractionMethod: "CLEVELAND_EXHIBITION_API",
+    }));
+  }
+  const htmlRow = input.html ? clevelandHtmlExhibition(input.html) : null;
+  if (!htmlRow?.title || !htmlRow.dateText) return [heldFact(input, source, "NO_STRUCTURE", "NO_STRUCTURE", "EXHIBITION")];
+  return [exhibitionFact(input, source, {
+    title: htmlRow.title,
+    dates: datedRange(htmlRow.dateText),
+    venue: htmlRow.venue,
+    city: htmlRow.city,
+    roster: [],
+    extractionMethod: "CLEVELAND_EXHIBITION_PAGE",
+  })];
+}
+
 function crawlMuseumApi(input: CrawlInput, source: TrustedSource): CrawlFact[] {
   const rows = museumRows(input.json);
   if (rows.length === 0) return [heldFact(input, source, "NO_STRUCTURE", "NO_STRUCTURE")];
@@ -547,6 +653,7 @@ function finishFact(input: CrawlInput, source: TrustedSource, parsed: Parsed): C
       participants: named,
       curators: curatorSource,
     },
+    pageType: "EXHIBITION",
   };
 }
 
@@ -580,7 +687,7 @@ function decide(input: {
   return { confidence: "HIGH", decision: "AUTO_IMPORT", reason: "HIGH_CONFIDENCE" };
 }
 
-function heldFact(input: CrawlInput, source: TrustedSource | null, reason: string, extractionMethod: string): CrawlFact {
+function heldFact(input: CrawlInput, source: TrustedSource | null, reason: string, extractionMethod: string, pageType: PageType = "UNKNOWN"): CrawlFact {
   return {
     pilotRecordId: pilotRecordId(source?.host ?? "untrusted", null, null),
     title: null,
@@ -627,6 +734,7 @@ function heldFact(input: CrawlInput, source: TrustedSource | null, reason: strin
       participants: null,
       curators: null,
     },
+    pageType,
   };
 }
 
