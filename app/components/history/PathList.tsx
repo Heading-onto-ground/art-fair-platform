@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import JourneyContinueLink from "@/app/components/history/JourneyContinueLink";
 import { trackHistory } from "@/lib/history/analytics";
 import { historyCopy, type HistoryLocale } from "@/lib/history/locale";
 
@@ -29,9 +30,9 @@ export default function PathList({ routes, locale = "en" }: { routes: Route[]; l
                 return (
                   <span key={`${route.id}-${artist.slug}`}>
                     {bridge ? ` ↓ ${bridge.year ?? ""} ${bridge.title} ↓ ` : ""}
-                    <Link href={`/artists/${artist.slug}`} onClick={() => trackHistory("PATH_STEP_OPENED", `/artists/${artist.slug}`)}>
+                    <JourneyContinueLink slug={artist.slug} via={bridge?.slug ?? null} onClick={() => trackHistory("PATH_STEP_OPENED", `/artists/${artist.slug}`)}>
                       {artist.name}
-                    </Link>
+                    </JourneyContinueLink>
                   </span>
                 );
               })}

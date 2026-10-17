@@ -13,7 +13,6 @@ import {
   HISTORY_PENDING_OVERLAY_MS,
   careerSpan,
   clusterByDecade,
-  followArtistHref,
   groupByYear,
   historyCoverageCopy,
   momentPlace,
@@ -26,6 +25,17 @@ import {
   type DotMark,
   type ZoomLevel,
 } from "@/lib/history/display";
+import {
+  extendJourney,
+  followArtistHref,
+  newJourneyId,
+  readJourneySteps,
+  rememberJourneyCursor,
+  restoredJourneyHref,
+  retreatJourney,
+  validJourneyId,
+  type JourneyStep,
+} from "@/lib/history/journeyTrail";
 import type { HistoryImage } from "@/lib/history/images";
 import { INITIAL_CONSTELLATION, isFilledMarker } from "@/lib/history/policy";
 import type { HistoryArtistView, HistoryExhibitionView } from "@/lib/history/types";
@@ -175,6 +185,8 @@ export default function HistoryExperience({ artist, locale = "en" }: { artist: H
   const [pendingSlug, setPendingSlug] = useState<string | null>(null);
   const [failedHeroUrl, setFailedHeroUrl] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
+  const [trail, setTrail] = useState<JourneyStep[]>([]);
+  const trailIdRef = useRef(validJourneyId(searchParams.get("j")) ?? "");
   const hero = artist.heroImage && failedHeroUrl !== artist.heroImage.url ? artist.heroImage : null;
   const dropHero = useCallback(() => {
     if (artist.heroImage) setFailedHeroUrl(artist.heroImage.url);
@@ -233,15 +245,66 @@ export default function HistoryExperience({ artist, locale = "en" }: { artist: H
     delete document.documentElement.dataset.nav;
   }, []);
 
+  function activeJourneyId() {
+    const fromUrl = validJourneyId(searchParams.get("j"));
+    if (fromUrl) {
+      trailIdRef.current = fromUrl;
+      return fromUrl;
+    }
+    if (!trailIdRef.current) trailIdRef.current = newJourneyId();
+    return trailIdRef.current;
+  }
+
+  function currentStep(scrollY: number): JourneyStep {
+    return {
+      artist: artist.slug,
+      mode: zoom === "ALL" ? "all" : zoom === "DECADE" ? "decade" : "year",
+      focus: focus == null ? null : String(focus),
+      exhibition: selected ? selected.slug || selected.id : null,
+      scrollY,
+    };
+  }
+
+  useEffect(() => {
+    const id = validJourneyId(searchParams.get("j"));
+    setTrail(id ? readJourneySteps(sessionStorage, id) : []);
+  }, [artist.slug, searchParams]);
+
+  useEffect(() => {
+    const snapshot = () => {
+      try {
+        rememberJourneyCursor(sessionStorage, activeJourneyId(), currentStep(window.scrollY));
+      } catch {
+        // Private browsing can reject storage. The visible journey still uses the URL.
+      }
+    };
+    snapshot();
+    window.addEventListener("pagehide", snapshot);
+    return () => {
+      snapshot();
+      window.removeEventListener("pagehide", snapshot);
+    };
+    // The cursor is the page the visitor is leaving, including the latest year and Moment.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [artist.slug, zoom, focus, eventKey, searchParams]);
+
   useEffect(() => {
     if (!selected) return;
     const viaKey = selected.slug || selected.id;
+    const journeyId = validJourneyId(searchParams.get("j")) ?? trailIdRef.current;
+    if (!journeyId) return;
     for (const person of selected.artists) {
-      if (person.slug && person.slug !== artist.slug) router.prefetch(followArtistHref(person.slug, artist.slug, viaKey));
+      if (person.slug && person.slug !== artist.slug) router.prefetch(followArtistHref(person.slug, journeyId, viaKey));
     }
-  }, [selected, artist.slug, router]);
+  }, [selected, artist.slug, router, searchParams]);
 
   useEffect(() => {
+    const journeyId = validJourneyId(searchParams.get("j"));
+    const previous = journeyId ? readJourneySteps(sessionStorage, journeyId).at(-1) : null;
+    if (previous) {
+      router.prefetch(restoredJourneyHref(previous, readJourneySteps(sessionStorage, journeyId).length > 1 ? journeyId : null));
+      return;
+    }
     if (!from) return;
     const stored = via ? readHistoryReturn(from, via) : null;
     router.prefetch(returnArtistHref({
@@ -250,7 +313,7 @@ export default function HistoryExperience({ artist, locale = "en" }: { artist: H
       srcZoom: stored?.zoom ?? searchParams.get("srcZoom"),
       srcFocus: stored?.focus ?? searchParams.get("srcFocus"),
     }));
-  }, [from, via, router, searchParams]);
+  }, [from, via, router, searchParams, artist.slug]);
 
   useEffect(() => {
     trackHistory("ARTIST_OPENED", `/artists/${artist.slug}`);
@@ -341,17 +404,25 @@ export default function HistoryExperience({ artist, locale = "en" }: { artist: H
 
   function warmArtist(slug: string) {
     if (!selected || !slug) return;
-    router.prefetch(followArtistHref(slug, artist.slug, selected.slug || selected.id));
+    router.prefetch(followArtistHref(slug, activeJourneyId(), selected.slug || selected.id));
   }
 
-  function followArtist(slug: string, exhibition: HistoryExhibitionView) {
-    const viaKey = exhibition.slug || exhibition.id;
-    const href = followArtistHref(slug, artist.slug, viaKey);
-    saveHistoryReturn(artist.slug, viaKey, {
-      zoom: zoom === "ALL" ? null : zoom.toLowerCase(),
-      focus: focus == null ? null : String(focus),
-      scroll: window.scrollY,
-    });
+  function followArtist(slug: string, viaKey: string | null) {
+    const journeyId = activeJourneyId();
+    const leaving = currentStep(window.scrollY);
+    try {
+      extendJourney(sessionStorage, journeyId, leaving);
+      if (viaKey) {
+        saveHistoryReturn(artist.slug, viaKey, {
+          zoom: leaving.mode === "all" ? null : leaving.mode,
+          focus: leaving.focus,
+          scroll: leaving.scrollY ?? 0,
+        });
+      }
+    } catch {
+      // The next page still opens. Back is available when the trail was stored.
+    }
+    const href = followArtistHref(slug, journeyId, viaKey);
     markPending(slug);
     router.prefetch(href);
     trackHistory("CONNECTION_FOLLOWED", href);
@@ -363,6 +434,17 @@ export default function HistoryExperience({ artist, locale = "en" }: { artist: H
 
   function goBack() {
     markPending("back");
+    const journeyId = validJourneyId(searchParams.get("j"));
+    const retreated = journeyId ? retreatJourney(sessionStorage, journeyId) : null;
+    if (retreated) {
+      if (retreated.step.scrollY != null) rememberScroll(retreated.step.artist, retreated.step.scrollY);
+      const href = restoredJourneyHref(retreated.step, retreated.rest.length > 0 ? journeyId : null);
+      router.prefetch(href);
+      startTransition(() => {
+        router.push(href, { scroll: false });
+      });
+      return;
+    }
     if (!from) {
       startTransition(() => {
         router.back();
@@ -440,7 +522,7 @@ export default function HistoryExperience({ artist, locale = "en" }: { artist: H
       {journeyOn && !reduceMotion && viaExhibition ? (
         <div className="rh-journey" role="status" aria-live="polite">
           <span className="rh-journey-label">Moving through a documented exhibition</span>
-          <p>{from?.split("-").filter(Boolean).map((part) => part.charAt(0).toUpperCase() + part.slice(1)).join(" ")}</p>
+          <p>{(trail.at(-1)?.artist ?? from)?.split("-").filter(Boolean).map((part) => part.charAt(0).toUpperCase() + part.slice(1)).join(" ")}</p>
           <span className="rh-line" />
           <strong>{viaExhibition.title}</strong>
           <span className="rh-line" />
@@ -448,7 +530,7 @@ export default function HistoryExperience({ artist, locale = "en" }: { artist: H
         </div>
       ) : null}
       <main className="rh-wrap" id="main-content">
-        {from ? (
+        {from || trail.length > 0 ? (
           <div className="rh-trail">
             <button className="rh-back" type="button" onClick={goBack}>
               ← {copy.back}
@@ -668,7 +750,7 @@ export default function HistoryExperience({ artist, locale = "en" }: { artist: H
                           onMouseEnter={() => warmArtist(node.id)}
                           onFocus={() => warmArtist(node.id)}
                           onTouchStart={() => warmArtist(node.id)}
-                          onClick={() => followArtist(node.id, selected)}
+                          onClick={() => followArtist(node.id, selected.slug || selected.id)}
                         >
                           <span className="rh-node-type">{copy.artistWord}</span>
                           <strong>{node.label}</strong>
@@ -750,7 +832,18 @@ export default function HistoryExperience({ artist, locale = "en" }: { artist: H
             <div className="rh-card-grid">
               {artist.artists.map((person) => (
                 <article key={person.id} className="rh-card">
-                  <Link className="rh-card-link" href={`/artists/${person.slug}`}>{person.name}</Link>
+                  <Link
+                    className="rh-card-link"
+                    href={`/artists/${person.slug}`}
+                    onClick={(event) => {
+                      if (!person.slug) return;
+                      event.preventDefault();
+                      const shared = person.exhibitions[0];
+                      followArtist(person.slug, shared?.slug ?? shared?.id ?? null);
+                    }}
+                  >
+                    {person.name}
+                  </Link>
                   {person.nativeName ? <span className="rh-muted"> {person.nativeName}</span> : null}
                   <p>{copy.sharedCount(person.count)}</p>
                   <ul>

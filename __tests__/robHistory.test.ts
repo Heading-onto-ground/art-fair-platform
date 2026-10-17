@@ -359,8 +359,9 @@ describe("ROB public history", () => {
   });
 
   it("prefetches the follow href and keeps scroll restoration bounded", () => {
-    const href = followArtistHref("park-seo-bo", "lee-ufan", "making-of-modern-korean-art");
-    expect(href).toBe("/artists/park-seo-bo?from=lee-ufan&via=making-of-modern-korean-art");
+    const href = followArtistHref("park-seo-bo", "abcd1234", "making-of-modern-korean-art");
+    expect(href).toBe("/artists/park-seo-bo?j=abcd1234&via=making-of-modern-korean-art");
+    expect(href).not.toContain("from=");
     const back = returnArtistHref({ from: "lee-ufan", via: "making-of-modern-korean-art", srcZoom: "year", srcFocus: "2025" });
     expect(back).toBe("/artists/lee-ufan?event=making-of-modern-korean-art&zoom=year&focus=2025");
     expect(back).not.toContain("scroll=");

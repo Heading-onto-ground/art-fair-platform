@@ -1,4 +1,5 @@
 import Link from "next/link";
+import JourneyContinueLink from "@/app/components/history/JourneyContinueLink";
 import TopBar from "@/app/components/TopBar";
 import type { HistoryExhibitionPage } from "@/lib/history/types";
 import ReportIssue from "@/app/components/history/ReportIssue";
@@ -23,7 +24,7 @@ export default function HistoryExhibition({ record, locale = "en" }: { record: H
         <ul className="rh-list">
           {record.artists.map((artist) => (
             <li key={artist.id}>
-              <Link href={`/artists/${artist.slug}`}>{artist.name}</Link>
+              <JourneyContinueLink slug={artist.slug}>{artist.name}</JourneyContinueLink>
               {artist.nativeName ? ` ${artist.nativeName}` : ""}
             </li>
           ))}

@@ -33,7 +33,7 @@ import {
   type ContributorKind,
   type HistoryOrigin,
 } from "@/lib/history/policy";
-import { aliasLookupEqual, aliasLookupPrefix } from "@/lib/history/identity";
+import { rankSearchRows, searchProbe } from "@/lib/history/searchMatch";
 import { buildDocumentedPaths, selectDiversePaths } from "@/lib/history/paths";
 import { publishedArtistHero } from "@/lib/history/imageRegistry";
 import type {
@@ -421,14 +421,27 @@ export const loadPublicArtist = cache((key: string) => loadCachedPublicArtist(ke
 
 export async function searchArtists(rawQuery: string): Promise<HistorySearchResult[]> {
   const query = rawQuery.trim();
-  if (query.length < 1) return [];
-  const rows = await prisma.artistEntity.findMany({
-    include: {
+  const probe = searchProbe(query);
+  if (!probe) return [];
+  const candidates = await prisma.artistEntity.findMany({
+    where: {
+      OR: [
+        { canonicalName: { contains: probe, mode: "insensitive" } },
+        { nativeName: { contains: probe, mode: "insensitive" } },
+        { aliases: { some: { label: { contains: probe, mode: "insensitive" } } } },
+      ],
+    },
+    select: {
+      id: true,
+      slug: true,
+      canonicalName: true,
+      nativeName: true,
+      birthYear: true,
       aliases: { select: { label: true } },
       profile: {
         select: {
           exhibitionEntries: {
-            where: { status: "confirmed", exhibition: publicExhibitionWhere },
+            where: { status: "confirmed" as const, exhibition: publicExhibitionWhere },
             select: { exhibitionId: true },
           },
         },
@@ -439,20 +452,9 @@ export async function searchArtists(rawQuery: string): Promise<HistorySearchResu
       },
     },
     orderBy: { canonicalName: "asc" },
-    take: 300,
+    take: 24,
   });
-  const matched = rows
-    .map((row) => {
-      const labels = [row.canonicalName, row.nativeName, ...row.aliases.map((alias) => alias.label)].filter((label): label is string => Boolean(label));
-      const exact = labels.some((label) => aliasLookupEqual(label, query));
-      const prefix = labels.some((label) => aliasLookupPrefix(query, label));
-      return { row, exact, prefix };
-    })
-    .filter((item) => item.exact || item.prefix)
-    .sort((left, right) => Number(right.exact) - Number(left.exact) || left.row.canonicalName.localeCompare(right.row.canonicalName))
-    .slice(0, 8)
-    .map((item) => item.row);
-  return matched.map((row) => {
+  return rankSearchRows(candidates, query).map((row) => {
     const dated = row.participations.map((item) => {
       const exhibition = item.exhibition;
       const meta = exhibition.historyMeta;
