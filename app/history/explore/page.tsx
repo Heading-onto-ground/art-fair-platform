@@ -1,4 +1,5 @@
 import Link from "next/link";
+import JourneyContinueLink from "@/app/components/history/JourneyContinueLink";
 import TopBar from "@/app/components/TopBar";
 import ExploreTrack from "@/app/components/history/ExploreTrack";
 import LocaleSwitch from "@/app/components/history/LocaleSwitch";
@@ -44,7 +45,7 @@ export default async function HistoryExplorePage() {
             <ul className="rh-list">
               {artists.map((artist) => (
                 <li key={artist.slug}>
-                  <Link href={`/artists/${artist.slug}`}>{artist.canonicalName}</Link>
+                  <JourneyContinueLink slug={artist.slug}>{artist.canonicalName}</JourneyContinueLink>
                   {artist.nativeName ? ` ${artist.nativeName}` : ""}
                   <div>
                     {artist.firstYear && artist.lastYear ? `${artist.firstYear}–${artist.lastYear} · ` : ""}
@@ -69,7 +70,7 @@ export default async function HistoryExplorePage() {
                     {moment.artists.map((artist, index) => (
                       <span key={artist.slug}>
                         {index > 0 ? " · " : ""}
-                        <Link href={`/artists/${artist.slug}`}>{artist.name}</Link>
+                        <JourneyContinueLink slug={artist.slug} via={moment.slug}>{artist.name}</JourneyContinueLink>
                       </span>
                     ))}
                   </div>
