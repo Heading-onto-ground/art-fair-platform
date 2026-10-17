@@ -1,3 +1,5 @@
+import { countNoun, historyCopy, type HistoryLocale } from "@/lib/history/locale";
+
 export const VISIBLE_PIPS = 4;
 export const MOMENT_SATELLITE_LIMIT = 7;
 /** Arrival hint only. Navigation is not delayed for this animation. */
@@ -289,25 +291,23 @@ export function clusterByDecade(groups: { year: number; count: number }[]): Deca
  * Copy for the history a visitor can see. Sparse coverage never prints a
  * year range, because "1994–2025" reads as an empty career.
  */
-export function historyCoverageCopy(input: { count: number; years: number[] }) {
+export function historyCoverageCopy(input: { count: number; years: number[] }, locale: HistoryLocale = "en") {
   const count = Number.isFinite(input.count) ? Math.max(0, Math.floor(input.count)) : 0;
   const dated = input.years.filter((year) => Number.isFinite(year)).sort((left, right) => left - right);
   const presentation = historyPresentation(count);
-  const countNoun =
-    presentation === "sparse"
-      ? `${count === 1 ? "record" : "records"} currently documented in ROB`
-      : `${count === 1 ? "exhibition" : "exhibitions"} currently documented in ROB`;
+  const copy = historyCopy(locale);
+  const documented = countNoun(locale, count, presentation === "sparse" ? "record" : "exhibition");
   const range = presentation === "sparse" || dated.length === 0 ? null : `${dated[0]}–${dated[dated.length - 1]}`;
-  const gapNote = presentation === "sparse" ? "Years without a row are not years without activity." : null;
-  const rangeLabel = range ? `Documented years ${range}` : null;
-  const rendered = ["Partial history", `${count} ${countNoun}`, gapNote, rangeLabel].filter(Boolean).join(" ");
+  const gapNote = presentation === "sparse" ? copy.gapNote : null;
+  const rangeLabel = range ? copy.documentedYears(range) : null;
+  const rendered = [copy.partialHistory, `${count} ${documented}`, gapNote, rangeLabel].filter(Boolean).join(" ");
   const impliesInactivity =
     /inactive|no (?:exhibitions|activity|records|shows) between|career\s+\d{4}/i.test(rendered) ||
     (presentation === "sparse" && /\d{4}\s*[–-]\s*\d{4}/.test(rendered));
   return {
     presentation,
-    partialLabel: "Partial history",
-    countNoun,
+    partialLabel: copy.partialHistory,
+    countNoun: documented,
     rangeLabel,
     chronologyYears: presentation === "sparse" ? dated : [],
     gapNote,

@@ -2,12 +2,14 @@ import Link from "next/link";
 import TopBar from "@/app/components/TopBar";
 import type { HistoryExhibitionPage } from "@/lib/history/types";
 import ReportIssue from "@/app/components/history/ReportIssue";
+import { historyCopy, type HistoryLocale } from "@/lib/history/locale";
 import "./history.css";
 
-export default function HistoryExhibition({ record }: { record: HistoryExhibitionPage }) {
+export default function HistoryExhibition({ record, locale = "en" }: { record: HistoryExhibitionPage; locale?: HistoryLocale }) {
+  const copy = historyCopy(locale);
   return (
     <div className="rh-page">
-      <TopBar />
+      <TopBar locale={locale} />
       <main className="rh-wrap">
         <h1 className="rh-title">{record.title}</h1>
         <p>{record.dateLabel}{record.endLabel ? ` – ${record.endLabel}` : ""}</p>
@@ -17,7 +19,7 @@ export default function HistoryExhibition({ record }: { record: HistoryExhibitio
             {record.city || record.country ? ` · ${[record.city, record.country].filter(Boolean).join(" · ")}` : ""}
           </p>
         ) : null}
-        <h2>Artists</h2>
+        <h2>{copy.artistsHeading}</h2>
         <ul className="rh-list">
           {record.artists.map((artist) => (
             <li key={artist.id}>
@@ -26,13 +28,13 @@ export default function HistoryExhibition({ record }: { record: HistoryExhibitio
             </li>
           ))}
           {record.unresolved.map((name) => (
-            <li key={name.label}>{name.label} · {name.status === "REVIEW_REQUIRED" ? "Review required" : name.status === "TITLE_MENTION" ? "Named in the title" : "Unresolved participant"}</li>
+            <li key={name.label}>{name.label} · {name.status === "REVIEW_REQUIRED" ? copy.reviewRequired : name.status === "TITLE_MENTION" ? copy.namedInTitle : copy.unresolvedParticipant}</li>
           ))}
         </ul>
-        {record.curatorName ? <p>Curator: {record.curatorName}</p> : null}
+        {record.curatorName ? <p>{copy.curatorLabel}: {record.curatorName}</p> : null}
         <details>
-          <summary>{record.provenance}</summary>
-          {record.sources.length === 0 ? <p>No source is attached.</p> : null}
+          <summary>{copy.source}: {record.provenance}</summary>
+          {record.sources.length === 0 ? <p>{copy.noSource}</p> : null}
           {record.sources.map((source) => (
             <p key={source.id}><a href={source.url}>{source.sourceName}</a></p>
           ))}

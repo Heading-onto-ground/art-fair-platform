@@ -4,6 +4,8 @@ import { useCallback, useEffect, useMemo, useRef, useState, useTransition } from
 import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import TopBar from "@/app/components/TopBar";
+import LocaleSwitch from "@/app/components/history/LocaleSwitch";
+import { historyCopy, type HistoryLocale } from "@/lib/history/locale";
 import { rememberExplorationDepth, trackHistory } from "@/lib/history/analytics";
 import ReportIssue from "@/app/components/history/ReportIssue";
 import {
@@ -25,14 +27,9 @@ import {
   type ZoomLevel,
 } from "@/lib/history/display";
 import type { HistoryImage } from "@/lib/history/images";
-import { pluralCount } from "@/lib/history/copy";
 import { INITIAL_CONSTELLATION, isFilledMarker } from "@/lib/history/policy";
 import type { HistoryArtistView, HistoryExhibitionView } from "@/lib/history/types";
 import "./history.css";
-
-function plural(count: number) {
-  return pluralCount(count, "documented shared exhibition");
-}
 
 function eventLocation(exhibition: HistoryExhibitionView) {
   return [exhibition.spaceName, exhibition.city, exhibition.country].filter(Boolean).join(" · ");
@@ -165,7 +162,8 @@ function HistoryStill({ image, onFail }: { image: HistoryImage; onFail?: () => v
   );
 }
 
-export default function HistoryExperience({ artist }: { artist: HistoryArtistView }) {
+export default function HistoryExperience({ artist, locale = "en" }: { artist: HistoryArtistView; locale?: HistoryLocale }) {
+  const copy = historyCopy(locale);
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
@@ -213,8 +211,8 @@ export default function HistoryExperience({ artist }: { artist: HistoryArtistVie
       historyCoverageCopy({
         count: artist.exhibitionCount,
         years: artist.exhibitions.flatMap((exhibition) => (exhibition.year == null ? [] : [exhibition.year])),
-      }),
-    [artist],
+      }, locale),
+    [artist, locale],
   );
   const presentation = coverage.presentation;
   const decadeClusters = useMemo(() => clusterByDecade(groups), [groups]);
@@ -411,10 +409,10 @@ export default function HistoryExperience({ artist }: { artist: HistoryArtistVie
     <div className="rh-artist-summary">
       <p className="rh-count-lead">{artist.exhibitionCount}</p>
       <p className="rh-count-copy">{coverage.countNoun}</p>
-      {artist.birthYear ? <p className="rh-muted">Born {artist.birthYear}</p> : null}
+      {artist.birthYear ? <p className="rh-muted">{copy.born(artist.birthYear)}</p> : null}
       {presentation === "sparse" ? null : (
         <div className="rh-signature-block">
-          <div className="rh-signature" aria-label={coverage.rangeLabel ?? "Documented exhibition density"}>
+          <div className="rh-signature" aria-label={coverage.rangeLabel ?? copy.densityLabel}>
             {signature.map((height, index) => (
               <i key={index} style={{ height: `${4 + height * 5}px` }} />
             ))}
@@ -427,18 +425,18 @@ export default function HistoryExperience({ artist }: { artist: HistoryArtistVie
 
   return (
     <div className="rh-page" style={{ ["--rh-overlay-delay" as string]: `${HISTORY_PENDING_OVERLAY_MS}ms` }}>
-      <div className="rh-progress" role="progressbar" aria-hidden={pendingSlug ? undefined : true} aria-label="Opening history">
+      <div className="rh-progress" role="progressbar" aria-hidden={pendingSlug ? undefined : true} aria-label={copy.openingHistory}>
         <span />
       </div>
       <div className="rh-nav-overlay" data-pending={isPending || pendingSlug ? "1" : "0"} aria-hidden="true">
-        <p className="rh-kicker">Artist history</p>
+        <p className="rh-kicker">{copy.artistHistory}</p>
         <div className="rh-skel rh-skel-title" />
         <div className="rh-skel rh-skel-line" />
         <div className="rh-skel rh-skel-row" />
         <div className="rh-skel rh-skel-row" />
         <div className="rh-skel rh-skel-row" />
       </div>
-      <TopBar />
+      <TopBar locale={locale} />
       {journeyOn && !reduceMotion && viaExhibition ? (
         <div className="rh-journey" role="status" aria-live="polite">
           <span className="rh-journey-label">Moving through a documented exhibition</span>
@@ -453,7 +451,7 @@ export default function HistoryExperience({ artist }: { artist: HistoryArtistVie
         {from ? (
           <div className="rh-trail">
             <button className="rh-back" type="button" onClick={goBack}>
-              ← Back
+              ← {copy.back}
             </button>
             {viaExhibition ? <span>You came here through <strong>{viaExhibition.title}</strong></span> : null}
           </div>
@@ -461,7 +459,8 @@ export default function HistoryExperience({ artist }: { artist: HistoryArtistVie
 
         <header className={`rh-artist-header${hero ? " has-hero" : ""}`}>
           <div>
-            <p className="rh-kicker">Artist history</p>
+            <LocaleSwitch locale={locale} />
+            <p className="rh-kicker">{copy.artistHistory}</p>
             <h1 className="rh-title">{artist.canonicalName}</h1>
             {artist.nativeName ? <p className="rh-native">{artist.nativeName}</p> : null}
             <p className="rh-partial">{coverage.partialLabel}</p>
@@ -473,7 +472,7 @@ export default function HistoryExperience({ artist }: { artist: HistoryArtistVie
         <div className="rh-tabs" role="tablist" aria-label="Artist">
           {(["history", "connections", "works", "about"] as const).map((item) => (
             <button key={item} className="rh-tab" type="button" role="tab" aria-selected={tab === item} onClick={() => setTab(item)}>
-              {item}
+              {copy[item === "history" ? "history" : item]}
             </button>
           ))}
         </div>
@@ -482,21 +481,21 @@ export default function HistoryExperience({ artist }: { artist: HistoryArtistVie
           <section className="rh-history-section">
             <div className="rh-history-toolbar">
               <div>
-                <p className="rh-kicker">{presentation === "sparse" ? "Documented in ROB" : "History"}</p>
+                <p className="rh-kicker">{presentation === "sparse" ? copy.documentedInRob : copy.history}</p>
                 {presentation === "sparse" ? (
                   <p className="rh-gap-note">{coverage.gapNote}</p>
                 ) : span && coverage.rangeLabel ? (
                   <p className="rh-timeline-summary">
                     {coverage.rangeLabel}
-                    {zoom === "DECADE" && windowSpan ? <span> · viewing {windowSpan.start}–{windowSpan.end}</span> : null}
-                    {presentation === "dense" && zoom === "ALL" ? <span> · clustered by decade</span> : null}
+                    {zoom === "DECADE" && windowSpan ? <span> · {copy.viewingRange(windowSpan.start, windowSpan.end)}</span> : null}
+                    {presentation === "dense" && zoom === "ALL" ? <span> · {copy.clustered}</span> : null}
                   </p>
                 ) : (
-                  <p className="rh-timeline-summary">No documented exhibitions yet</p>
+                  <p className="rh-timeline-summary">{copy.noExhibitions}</p>
                 )}
               </div>
               {presentation === "sparse" ? null : (
-                <div className="rh-zoom" role="group" aria-label="Timeline level">
+                <div className="rh-zoom" role="group" aria-label={copy.timelineLevel}>
                   {(["ALL", "DECADE", "YEAR"] as const).map((level) => (
                     <button key={level} type="button" aria-pressed={zoom === level} onClick={() => setZoom(level)}>
                       {level}
@@ -526,8 +525,8 @@ export default function HistoryExperience({ artist }: { artist: HistoryArtistVie
             ) : (
               <>
             <details className="rh-timeline-help">
-              <summary>How to read this timeline</summary>
-              <p>Open circles mark year-only records. Filled circles include a month or day. A number is the count for that year. Empty stretches are missing ROB records, not missing activity.</p>
+              <summary>{copy.timelineHelp}</summary>
+              <p>{copy.timelineHelpBody}</p>
             </details>
 
             <div className="rh-track-shell">
@@ -548,7 +547,7 @@ export default function HistoryExperience({ artist }: { artist: HistoryArtistVie
                           className="rh-cluster"
                           style={{ left: `clamp(0px, calc(${left}% - 22px), calc(100% - 44px))` }}
                           type="button"
-                          aria-label={`${cluster.decade}s, ${pluralCount(cluster.count, "documented exhibition")}`}
+                          aria-label={`${cluster.decade}s, ${copy.documentedLine(cluster.count)}`}
                           onClick={() => replaceQuery({ zoom: "decade", focus: String(cluster.decade), event: null })}
                         >
                           <span className="rh-stack">
@@ -569,7 +568,7 @@ export default function HistoryExperience({ artist }: { artist: HistoryArtistVie
                       style={{ left: `clamp(0px, calc(${left}% - 22px), calc(100% - 44px))` }}
                       type="button"
                       aria-pressed={active}
-                      aria-label={`${group.year}, ${group.count} exhibition${group.count === 1 ? "" : "s"}, ${group.marks.every((mark) => mark === "open") ? "year only" : "dated"}`}
+                      aria-label={copy.yearAria(group.year, group.count, !group.marks.every((mark) => mark === "open"))}
                       onClick={() => openYear(group.year, only?.id)}
                     >
                       <span className="rh-stack">
@@ -637,7 +636,7 @@ export default function HistoryExperience({ artist }: { artist: HistoryArtistVie
                 {selected.coverImage ? <HistoryStill image={selected.coverImage} /> : null}
                 <div className="rh-moment-heading">
                   <div>
-                    <p className="rh-kicker">Moment</p>
+                    <p className="rh-kicker">{copy.momentWord}</p>
                     <h2>{place.title}</h2>
                   </div>
                   <div className="rh-moment-meta">
@@ -647,12 +646,12 @@ export default function HistoryExperience({ artist }: { artist: HistoryArtistVie
                 </div>
 
                 {visibleConnectedArtists.length > 0 ? (
-                  <p className="rh-moment-intro">Continue through this exhibition into another artist&apos;s history.</p>
+                  <p className="rh-moment-intro">{copy.continueThrough}</p>
                 ) : (
-                  <p className="rh-moment-intro">This documented moment currently connects the artist to its recorded place.</p>
+                  <p className="rh-moment-intro">{copy.connectsPlace}</p>
                 )}
 
-                <div className="rh-constellation" aria-label="Documented connections from this exhibition">
+                <div className="rh-constellation" aria-label={copy.momentConnections}>
                   <div className="rh-core-node">
                     <span>{selected.year}</span>
                     <strong>{artist.canonicalName}</strong>
@@ -671,13 +670,13 @@ export default function HistoryExperience({ artist }: { artist: HistoryArtistVie
                           onTouchStart={() => warmArtist(node.id)}
                           onClick={() => followArtist(node.id, selected)}
                         >
-                          <span className="rh-node-type">Artist</span>
+                          <span className="rh-node-type">{copy.artistWord}</span>
                           <strong>{node.label}</strong>
-                          <span className="rh-node-arrow">Enter history →</span>
+                          <span className="rh-node-arrow">{copy.enterHistory} →</span>
                         </button>
                       ) : node.kind === "space" && selected.spaceSlug ? (
                         <Link key={node.id} className="rh-node" href={`/spaces/${selected.spaceSlug}`}>
-                          <span className="rh-node-type">Space</span>
+                          <span className="rh-node-type">{copy.spaceWord}</span>
                           <strong>{node.label}</strong>
                         </Link>
                       ) : (
@@ -692,13 +691,13 @@ export default function HistoryExperience({ artist }: { artist: HistoryArtistVie
 
                 {selected.unresolved.length > 0 ? (
                   <p className="rh-muted">
-                    Also recorded: {selected.unresolved.map((name) => name.label).join(", ")}
+                    {copy.alsoRecorded}: {selected.unresolved.map((name) => name.label).join(", ")}
                   </p>
                 ) : null}
 
                 {satellites && satellites.hiddenArtists > 0 ? (
                   <button className="rh-link-button" type="button" onClick={() => setExpanded(true)}>
-                    Show {satellites.hiddenArtists} more {satellites.hiddenArtists === 1 ? "artist" : "artists"}
+                    {copy.showMore(satellites.hiddenArtists)}
                   </button>
                 ) : null}
 
@@ -717,7 +716,7 @@ export default function HistoryExperience({ artist }: { artist: HistoryArtistVie
                 </div>
                 {sourcesOpen ? (
                   <div className="rh-source-panel">
-                    {selected.sources.length === 0 ? <p>No source is attached.</p> : null}
+                    {selected.sources.length === 0 ? <p>{copy.noSource}</p> : null}
                     {selected.sources.map((source) => (
                       <p key={source.id}>
                         <a href={source.url} onClick={() => trackHistory("SOURCE_OPENED")}>
@@ -726,16 +725,16 @@ export default function HistoryExperience({ artist }: { artist: HistoryArtistVie
                       </p>
                     ))}
                     <ReportIssue exhibitionId={selected.id} artistSlug={artist.slug} />
-                    {selected.review ? <p>Data under review</p> : null}
+                    {selected.review ? <p>{copy.dataReview}</p> : null}
                   </div>
                 ) : null}
               </article>
             ) : null}
 
             <div className="rh-history-foot">
-              <p>Coverage is partial.</p>
+              <p>{copy.coveragePartial}</p>
               <Link href={`/history/add?artist=${artist.slug}`} onClick={() => trackHistory("EXHIBITION_ADD_STARTED")}>
-                Add an exhibition →
+                {copy.addExhibition} →
               </Link>
             </div>
           </section>
@@ -744,16 +743,16 @@ export default function HistoryExperience({ artist }: { artist: HistoryArtistVie
         {tab === "connections" ? (
           <section className="rh-tab-panel">
             <div className="rh-section-heading">
-              <p className="rh-kicker">Documented connections</p>
-              <h2>Artists</h2>
+              <p className="rh-kicker">{copy.documentedConnections}</p>
+              <h2>{copy.artistsHeading}</h2>
             </div>
-            {artist.artists.length === 0 ? <p>No documented shared exhibitions yet.</p> : null}
+            {artist.artists.length === 0 ? <p>{copy.noShared}</p> : null}
             <div className="rh-card-grid">
               {artist.artists.map((person) => (
                 <article key={person.id} className="rh-card">
                   <Link className="rh-card-link" href={`/artists/${person.slug}`}>{person.name}</Link>
                   {person.nativeName ? <span className="rh-muted"> {person.nativeName}</span> : null}
-                  <p>{plural(person.count)}</p>
+                  <p>{copy.sharedCount(person.count)}</p>
                   <ul>
                     {person.exhibitions.map((exhibition) => (
                       <li key={exhibition.id}>{exhibition.title}</li>
@@ -763,28 +762,28 @@ export default function HistoryExperience({ artist }: { artist: HistoryArtistVie
               ))}
             </div>
             <div className="rh-section-heading">
-              <p className="rh-kicker">Documented places</p>
-              <h2>Spaces</h2>
+              <p className="rh-kicker">{copy.documentedPlaces}</p>
+              <h2>{copy.spaces}</h2>
             </div>
-            {artist.spaces.length === 0 ? <p>No documented spaces yet.</p> : null}
+            {artist.spaces.length === 0 ? <p>{copy.noSpaces}</p> : null}
             <div className="rh-card-grid">
               {artist.spaces.map((space) => (
                 <article key={space.id} className="rh-card">
                   {space.slug ? <Link className="rh-card-link" href={`/spaces/${space.slug}`}>{space.name}</Link> : <span>{space.name}</span>}
-                  <p>{plural(space.count)}</p>
+                  <p>{copy.sharedCount(space.count)}</p>
                 </article>
               ))}
             </div>
             <div className="rh-section-heading">
-              <p className="rh-kicker">Documented curators</p>
+              <p className="rh-kicker">{copy.documentedCurators}</p>
               <h2>Curators</h2>
             </div>
-            {artist.curators.length === 0 ? <p>No documented curator is attached.</p> : null}
+            {artist.curators.length === 0 ? <p>{copy.noCurator}</p> : null}
             <div className="rh-card-grid">
               {artist.curators.map((curator) => (
                 <article key={curator.id} className="rh-card">
                   <span>{curator.name}</span>
-                  <p>{plural(curator.count)}</p>
+                  <p>{copy.sharedCount(curator.count)}</p>
                 </article>
               ))}
             </div>
@@ -794,11 +793,11 @@ export default function HistoryExperience({ artist }: { artist: HistoryArtistVie
         {tab === "works" ? (
           <section className="rh-tab-panel">
             <div className="rh-section-heading">
-              <p className="rh-kicker">First-party archive</p>
-              <h2>Works</h2>
+              <p className="rh-kicker">{copy.worksArchive}</p>
+              <h2>{copy.works}</h2>
             </div>
-            {artist.worksHref ? <p><Link href={artist.worksHref}>Open the existing portfolio →</Link></p> : null}
-            {artist.works.length === 0 ? <p>No first-party works are public on this page.</p> : null}
+            {artist.worksHref ? <p><Link href={artist.worksHref}>{copy.openPortfolio} →</Link></p> : null}
+            {artist.works.length === 0 ? <p>{copy.noWorks}</p> : null}
             <ul className="rh-list">
               {artist.works.map((work) => (
                 <li key={work.id}>
@@ -813,16 +812,16 @@ export default function HistoryExperience({ artist }: { artist: HistoryArtistVie
         {tab === "about" ? (
           <section className="rh-tab-panel rh-about-panel">
             <div className="rh-section-heading">
-              <p className="rh-kicker">About this record</p>
+              <p className="rh-kicker">{copy.aboutRecord}</p>
               <h2>{artist.canonicalName}</h2>
             </div>
-            <p>ROB maps documented exhibitions and connections through time. It does not write a biography.</p>
-            {artist.birthYear ? <p>Born {artist.birthYear}</p> : null}
+            <p>{copy.aboutBody}</p>
+            {artist.birthYear ? <p>{copy.born(artist.birthYear)}</p> : null}
             {artist.city || artist.country ? <p>{[artist.city, artist.country].filter(Boolean).join(", ")}</p> : null}
-            {artist.officialWebsite ? <p><a href={artist.officialWebsite}>Official website ↗</a></p> : null}
+            {artist.officialWebsite ? <p><a href={artist.officialWebsite}>{copy.officialWebsite} ↗</a></p> : null}
             <p>
               <Link href={`/history/start?artist=${artist.slug}`} onClick={() => trackHistory("CLAIM_STARTED")}>
-                Claim this page →
+                {copy.claimPage} →
               </Link>
             </p>
           </section>
