@@ -328,6 +328,23 @@ export function largestComponentSize(snapshot: GrowthSnapshot): number {
   return largest;
 }
 
+/** Stable component ids for a snapshot. Artist order does not change the id. */
+export function componentMembership(snapshot: GrowthSnapshot): Map<string, { id: number; size: number }> {
+  const stable: GrowthSnapshot = {
+    artists: [...snapshot.artists].sort((left, right) => left.slug.localeCompare(right.slug)),
+    exhibitions: [...snapshot.exhibitions]
+      .map((exhibition) => ({ ...exhibition, artistSlugs: [...exhibition.artistSlugs].sort((left, right) => left.localeCompare(right)) }))
+      .sort((left, right) => left.id.localeCompare(right.id)),
+    unresolved: snapshot.unresolved,
+  };
+  const ids = components(stable);
+  const sizes = new Map<number, number>();
+  for (const id of ids.values()) sizes.set(id, (sizes.get(id) ?? 0) + 1);
+  const membership = new Map<string, { id: number; size: number }>();
+  for (const [slug, id] of ids) membership.set(slug, { id, size: sizes.get(id) ?? 0 });
+  return membership;
+}
+
 export function buildGraphFrontier(input: {
   snapshot: GrowthSnapshot;
   demand: { query: string; count: number }[];
