@@ -18,10 +18,6 @@ import type { HistorySearchResult } from "@/lib/history/types";
 import "./history.css";
 import "./home.css";
 
-function operatorSearch(): boolean {
-  return new URLSearchParams(window.location.search).get("operator") === "1";
-}
-
 async function fetchSearch(q: string, signal: AbortSignal): Promise<{ ok: true; results: HistorySearchResult[] } | { ok: false }> {
   const response = await fetch(`/api/history/search?q=${encodeURIComponent(q)}`, { signal, cache: "no-store" });
   const data = await response.json().catch(() => null);
@@ -120,7 +116,7 @@ export default function HistoryHome({ discovery = null, locale = "en" }: { disco
     setResults(found);
     const next = finishSearch({ ok: true, results: found });
     setPhase(next);
-    if (next === "empty") trackMissingSearch(q, operatorSearch());
+    if (next === "empty") trackMissingSearch(q);
   }
 
   async function onSubmit(event: FormEvent) {

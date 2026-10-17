@@ -1,5 +1,5 @@
+import type { DemandEventName } from "@/lib/history/demandQuality";
 import { searchDemandQuery } from "@/lib/history/identity";
-import { missingSearchEvent } from "@/lib/history/policy";
 
 export const SEARCH_CLIENT_TIMEOUT_MS = 9_000;
 export const SEARCH_EMPTY_COPY = "No documented artist matches that name yet.";
@@ -40,13 +40,13 @@ export function acceptAutocomplete(requestQuery: string, currentQuery: string, a
 
 export async function persistMissingSearch(input: {
   query: string;
-  operator: boolean;
-  write: (name: "SEARCH_NO_RESULT" | "SEARCH_NO_RESULT_OPERATOR", path: string) => Promise<void>;
+  event: DemandEventName;
+  write: (name: DemandEventName, path: string) => Promise<void>;
 }): Promise<"recorded" | "skipped" | "failed"> {
   const path = searchDemandQuery(input.query);
   if (!path) return "skipped";
   try {
-    await input.write(missingSearchEvent(input.operator), path);
+    await input.write(input.event, path);
     return "recorded";
   } catch {
     return "failed";

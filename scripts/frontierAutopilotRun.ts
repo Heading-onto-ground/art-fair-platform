@@ -1,4 +1,5 @@
 import { PrismaClient } from "@prisma/client";
+import { DEMAND_SEPARATION_AT } from "../lib/history/demandQuality";
 import { buildDocumentedPaths } from "../lib/history/paths";
 import { buildGraphFrontier, previewCandidates, type FactualCandidate, type GrowthSnapshot } from "../lib/history/growth";
 import { aliasLookupEqual, resolveVerifiedAlias } from "../lib/history/identity";
@@ -162,7 +163,7 @@ async function loadGraph(): Promise<{ snapshot: GrowthSnapshot; demand: { query:
     }),
     prisma.historySignal.groupBy({
       by: ["path"],
-      where: { name: "SEARCH_NO_RESULT" },
+      where: { name: "SEARCH_NO_RESULT", createdAt: { gte: new Date(DEMAND_SEPARATION_AT) } },
       _count: { _all: true },
     }),
   ]);
