@@ -146,23 +146,32 @@ function nativeLabel(label: string): string | null {
   return native || null;
 }
 
-function relatesToSlug(entity: DiscoveryEntity, slug: string): boolean {
-  if ([entity.label, ...entity.aliases].some((label) => exactAlias(label, slug))) return true;
+function recordedLabel(label: string, matchLabels: readonly string[]): boolean {
+  return matchLabels.some((extra) => aliasLookupEqual(extra, label));
+}
+
+function relatesToSlug(entity: DiscoveryEntity, slug: string, matchLabels: readonly string[] = []): boolean {
+  const labels = [entity.label, ...entity.aliases];
+  if (labels.some((label) => exactAlias(label, slug) || recordedLabel(label, matchLabels))) return true;
   const native = nativeLabel(entity.label);
-  return Boolean(native && exactAlias(native, slug));
+  return Boolean(native && (exactAlias(native, slug) || recordedLabel(native, matchLabels)));
 }
 
-function identityBasisFor(entity: DiscoveryEntity, slug: string): "EXACT_ALIAS" | "STRUCTURED_NATIVE_LABEL" {
-  if ([entity.label, ...entity.aliases].some((label) => exactAlias(label, slug))) return "EXACT_ALIAS";
-  return "STRUCTURED_NATIVE_LABEL";
+function identityBasisFor(entity: DiscoveryEntity, slug: string, matchLabels: readonly string[]): "EXACT_ALIAS" | "STRUCTURED_NATIVE_LABEL" | "RECORDED_ENTITY_LABEL" {
+  const labels = [entity.label, ...entity.aliases];
+  if (labels.some((label) => exactAlias(label, slug))) return "EXACT_ALIAS";
+  const native = nativeLabel(entity.label);
+  if (native && exactAlias(native, slug)) return "STRUCTURED_NATIVE_LABEL";
+  if (labels.some((label) => recordedLabel(label, matchLabels)) || (native && recordedLabel(native, matchLabels))) return "RECORDED_ENTITY_LABEL";
+  return "EXACT_ALIAS";
 }
 
-export function selectDiscoveryEntity(entities: readonly DiscoveryEntity[], slug: string): {
+export function selectDiscoveryEntity(entities: readonly DiscoveryEntity[], slug: string, matchLabels: readonly string[] = []): {
   selected: DiscoveryEntity | null;
   rejectedEntityIds: string[];
-  identityBasis: "EXACT_ALIAS" | "STRUCTURED_NATIVE_LABEL" | null;
+  identityBasis: "EXACT_ALIAS" | "STRUCTURED_NATIVE_LABEL" | "RECORDED_ENTITY_LABEL" | null;
 } {
-  const named = entities.filter((entity) => relatesToSlug(entity, slug));
+  const named = entities.filter((entity) => relatesToSlug(entity, slug, matchLabels));
   const eligible = named.filter((entity) => isHumanArtist(entity) && !blockedContext(entity));
   if (eligible.length !== 1) {
     return { selected: null, rejectedEntityIds: named.map((entity) => entity.id), identityBasis: null };
@@ -171,7 +180,7 @@ export function selectDiscoveryEntity(entities: readonly DiscoveryEntity[], slug
   return {
     selected,
     rejectedEntityIds: named.filter((entity) => entity.id !== selected?.id).map((entity) => entity.id),
-    identityBasis: selected ? identityBasisFor(selected, slug) : null,
+    identityBasis: selected ? identityBasisFor(selected, slug, matchLabels) : null,
   };
 }
 
@@ -298,13 +307,14 @@ export function discoverTrustedSources(input: {
   entities: readonly DiscoveryEntity[];
   institutions: readonly DiscoveryInstitution[];
   searchHits?: readonly SearchHit[];
+  matchLabels?: readonly string[];
 }): {
   resolvedEntityId: string | null;
   rejectedEntityIds: string[];
-  identityBasis: "EXACT_ALIAS" | "STRUCTURED_NATIVE_LABEL" | null;
+  identityBasis: "EXACT_ALIAS" | "STRUCTURED_NATIVE_LABEL" | "RECORDED_ENTITY_LABEL" | null;
   candidates: DiscoveryCandidate[];
 } {
-  const choice = selectDiscoveryEntity(input.entities, input.artistId);
+  const choice = selectDiscoveryEntity(input.entities, input.artistId, input.matchLabels ?? []);
   const found: DiscoveryCandidate[] = [];
   if (choice.selected) {
     for (const url of choice.selected.officialWebsites) {

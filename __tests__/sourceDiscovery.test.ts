@@ -164,6 +164,19 @@ describe("source discovery", () => {
     });
   });
 
+  it("uses a recorded entity label and does not equate a comma spelling", () => {
+    const matched = selectDiscoveryEntity([
+      entity({ id: "Qpark", label: "Park Hyun-ki" }),
+    ], "park-hyun-ki", ["Park Hyun-Ki"]);
+    expect(matched.selected?.id).toBe("Qpark");
+    expect(matched.identityBasis).toBe("RECORDED_ENTITY_LABEL");
+    const unrelated = selectDiscoveryEntity([
+      entity({ id: "Qkim", label: "Kim Guiline", aliases: ["김기린"] }),
+    ], "Kim, Guirin");
+    expect(unrelated.selected).toBeNull();
+    expect(unrelated.rejectedEntityIds).toEqual([]);
+  });
+
   it("matches a verified spelling alias and refuses two exact artists", () => {
     const matched = selectDiscoveryEntity([
       entity({ id: "Q23068024", label: "Ha Chonghyun", aliases: ["Ha Chong-Hyun"] }),
