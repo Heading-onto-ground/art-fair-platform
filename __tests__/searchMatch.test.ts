@@ -1,3 +1,5 @@
+import { readFileSync } from "node:fs";
+import { resolve } from "node:path";
 import { describe, expect, it } from "vitest";
 import { rankSearchRows, searchProbe } from "@/lib/history/searchMatch";
 
@@ -28,5 +30,10 @@ describe("search matching", () => {
   it("probes with the longest normalized token", () => {
     expect(searchProbe("Lee U-Fan")).toBe("fan");
     expect(searchProbe("박서보")).toBe("박서보");
+  });
+
+  it("runs search beside the Mumbai database", () => {
+    const route = readFileSync(resolve(__dirname, "../app/api/history/search/route.ts"), "utf8");
+    expect(route).toContain('preferredRegion = "bom1"');
   });
 });

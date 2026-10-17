@@ -5,6 +5,8 @@ import { searchArtists } from "@/lib/history/queries";
 import { isHistoryUnavailable } from "@/lib/history/schemaError";
 
 export const dynamic = "force-dynamic";
+export const preferredRegion = "bom1";
+export const runtime = "nodejs";
 
 export async function GET(req: Request) {
   const limited = enforceRateLimit(req, "history-search", 60, 60_000);
