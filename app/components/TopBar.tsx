@@ -3,10 +3,11 @@
 import { useEffect, useMemo, useState, useRef } from "react";
 import NotificationsBell from "./NotificationsBell";
 import { useRouter, usePathname } from "next/navigation";
-import { useLanguage } from "@/lib/useLanguage";
+import { useLanguage, type Language } from "@/lib/useLanguage";
 import { useAutoLocale } from "@/lib/useAutoLocale";
 import { t, getAvailableLanguages } from "@/lib/translate";
 import { F, S } from "@/lib/design";
+import { ROB_LOCALE_COOKIE, type HistoryLocale } from "@/lib/history/locale";
 import { useUserSupportAlerts } from "@/lib/useUserSupportAlerts";
 
 type Role = "artist" | "gallery" | "curator";
@@ -92,12 +93,19 @@ async function fetchMe(options?: { preferCache?: boolean }): Promise<MeResponse 
   }
 }
 
-export default function TopBar({ hideOnMobile = false }: { hideOnMobile?: boolean } = {}) {
+export default function TopBar({ hideOnMobile = false, locale }: { hideOnMobile?: boolean; locale?: HistoryLocale } = {}) {
   const router = useRouter();
   const pathname = usePathname();
   const [me, setMe] = useState<MeResponse | null>(null);
   const [mounted, setMounted] = useState(false);
-  const { lang, setLang } = useLanguage();
+  const { lang, setLang } = useLanguage(locale);
+  function chooseLanguage(next: string) {
+    setLang(next as Language);
+    if (next === "ko" || next === "en") {
+      document.cookie = `${ROB_LOCALE_COOKIE}=${next}; Path=/; Max-Age=31536000; SameSite=Lax`;
+      router.refresh();
+    }
+  }
   const { country, language } = useAutoLocale();
 
   const [notifications, setNotifications] = useState<Notification[]>([]);
@@ -125,9 +133,13 @@ export default function TopBar({ hideOnMobile = false }: { hideOnMobile?: boolea
 
   useEffect(() => {
     if (!mounted) return;
+    if (locale) {
+      document.documentElement.lang = locale;
+      return;
+    }
     if (language && language !== lang) setLang(language);
     if (typeof document !== "undefined") document.documentElement.lang = lang;
-  }, [language, lang, setLang, mounted]);
+  }, [language, lang, setLang, mounted, locale]);
 
   useEffect(() => {
     const session = me?.session;
@@ -255,7 +267,7 @@ export default function TopBar({ hideOnMobile = false }: { hideOnMobile?: boolea
         { path: "/contact", label: lang === "ko" ? "문의" : lang === "ja" ? "お問い合わせ" : "CONTACT" },
       ],
     },
-    { path: "/about", label: "ABOUT" },
+    { path: "/about", label: lang === "ko" ? "소개" : "ABOUT" },
   ], [lang]);
 
   const galleryNav = useMemo((): NavEntry[] => [
@@ -275,7 +287,7 @@ export default function TopBar({ hideOnMobile = false }: { hideOnMobile?: boolea
         { path: "/contact", label: lang === "ko" ? "문의" : lang === "ja" ? "お問い合わせ" : "CONTACT" },
       ],
     },
-    { path: "/about", label: "ABOUT" },
+    { path: "/about", label: lang === "ko" ? "소개" : "ABOUT" },
   ], [lang]);
 
   const curatorNav = useMemo((): NavEntry[] => [
@@ -294,7 +306,7 @@ export default function TopBar({ hideOnMobile = false }: { hideOnMobile?: boolea
         { path: "/contact", label: lang === "ko" ? "문의" : lang === "ja" ? "お問い合わせ" : "CONTACT" },
       ],
     },
-    { path: "/about", label: "ABOUT" },
+    { path: "/about", label: lang === "ko" ? "소개" : "ABOUT" },
   ], [lang]);
 
   const navEntries = useMemo(
@@ -412,7 +424,7 @@ export default function TopBar({ hideOnMobile = false }: { hideOnMobile?: boolea
               <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
                 <select
                   value={lang}
-                  onChange={(e) => setLang(e.target.value as any)}
+                  onChange={(e) => chooseLanguage(e.target.value)}
                   style={{ padding: "4px 8px", border: "1px solid #E8E3DB", background: "transparent", color: "#8A8580", fontFamily: F, fontSize: 9, fontWeight: 500, cursor: "pointer", outline: "none" }}
                 >
                   {getAvailableLanguages().map((l) => (
@@ -433,7 +445,7 @@ export default function TopBar({ hideOnMobile = false }: { hideOnMobile?: boolea
             <>
               <select
                 value={lang}
-                onChange={(e) => setLang(e.target.value as any)}
+                onChange={(e) => chooseLanguage(e.target.value)}
                 style={{ padding: "4px 8px", border: "1px solid #E8E3DB", background: "transparent", color: "#8A8580", fontFamily: F, fontSize: 9, fontWeight: 500, cursor: "pointer", outline: "none", marginRight: 12 }}
               >
                 {getAvailableLanguages().map((l) => (
@@ -456,7 +468,7 @@ export default function TopBar({ hideOnMobile = false }: { hideOnMobile?: boolea
                 onClick={() => router.push("/about")}
                 style={{ padding: "8px 12px", border: "1px solid #E8E3DB", background: "transparent", color: "#4A4A4A", fontFamily: F, fontSize: 10, fontWeight: 500, letterSpacing: "0.08em", textTransform: "uppercase", cursor: "pointer", marginRight: 8 }}
               >
-                About
+                {lang === "ko" ? "소개" : "About"}
               </button>
               <button
                 onClick={() => router.push("/guide")}
@@ -483,7 +495,7 @@ export default function TopBar({ hideOnMobile = false }: { hideOnMobile?: boolea
         <div className="mobile-nav-controls" style={{ display: "none", alignItems: "center", gap: 8 }}>
           <select
             value={lang}
-            onChange={(e) => setLang(e.target.value as any)}
+            onChange={(e) => chooseLanguage(e.target.value)}
             style={{ padding: "4px 6px", border: "1px solid #E8E3DB", background: "transparent", color: "#8A8580", fontFamily: F, fontSize: 9, fontWeight: 500, cursor: "pointer", outline: "none" }}
           >
             {getAvailableLanguages().map((l) => (
@@ -714,7 +726,7 @@ export default function TopBar({ hideOnMobile = false }: { hideOnMobile?: boolea
               onClick={() => navigate("/about")}
               style={{ width: "100%", padding: "12px", border: "1px solid #E8E3DB", background: "transparent", color: "#4A4A4A", fontFamily: F, fontSize: 10, fontWeight: 500, letterSpacing: "0.09em", textTransform: "uppercase", cursor: "pointer", marginBottom: 8 }}
             >
-              About
+              {lang === "ko" ? "소개" : "About"}
             </button>
             <button
               onClick={() => navigate("/guide")}

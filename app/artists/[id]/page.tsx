@@ -6,6 +6,7 @@ import { loadPublicArtist } from "@/lib/history/queries";
 import { artistJsonLd } from "@/lib/history/seo";
 import { isMissingHistorySchema } from "@/lib/history/schemaError";
 import { SITE_URL } from "@/lib/seo";
+import { historyLocale } from "@/lib/history/requestLocale";
 
 // The same route still renders legacy account profiles, which are not public
 // history. Keep the route dynamic and cache only the public history load.
@@ -18,6 +19,7 @@ function isNextRedirect(error: unknown): boolean {
 }
 
 export default async function ArtistPage({ params }: { params: { id: string } }) {
+  const locale = historyLocale();
   try {
     const loaded = await loadPublicArtist(params.id);
     if (loaded.kind === "redirect") redirect(loaded.to);
@@ -33,7 +35,7 @@ export default async function ArtistPage({ params }: { params: { id: string } })
         <>
           <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(json) }} />
           <Suspense>
-            <HistoryExperience artist={loaded.artist} />
+            <HistoryExperience artist={loaded.artist} locale={locale} />
           </Suspense>
         </>
       );

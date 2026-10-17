@@ -2,6 +2,8 @@ import type { Metadata } from "next";
 import { Inter, Cormorant_Garamond } from "next/font/google";
 import "./globals.css";
 import { ToastProvider } from "@/lib/toast";
+import { historyCopy } from "@/lib/history/locale";
+import { historyLocale } from "@/lib/history/requestLocale";
 
 // ── Self-hosted fonts via next/font (no render-blocking @import) ──
 const inter = Inter({
@@ -70,21 +72,23 @@ export const metadata: Metadata = {
   },
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
+  const locale = historyLocale();
+  const copy = historyCopy(locale);
   return (
     <html
-      lang="en"
+      lang={locale}
       className={`${inter.variable} ${cormorant.variable}`}
       suppressHydrationWarning
     >
       <head />
       <body>
         <a href="#main-content" className="skip-link">
-          Skip to content
+          {copy.skipToContent}
         </a>
         <ToastProvider>{children}</ToastProvider>
       </body>

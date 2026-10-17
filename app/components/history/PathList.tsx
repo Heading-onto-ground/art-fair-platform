@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { trackHistory } from "@/lib/history/analytics";
+import { historyCopy, type HistoryLocale } from "@/lib/history/locale";
 
 type Route = {
   id: string;
@@ -9,17 +10,18 @@ type Route = {
   exhibitions: { slug: string | null; title: string; year: number | null }[];
 };
 
-export default function PathList({ routes }: { routes: Route[] }) {
+export default function PathList({ routes, locale = "en" }: { routes: Route[]; locale?: HistoryLocale }) {
   if (routes.length === 0) return null;
+  const copy = historyCopy(locale);
   return (
     <section>
-      <h2>Paths</h2>
-      <p>Follow a documented path</p>
+      <h2>{copy.paths}</h2>
+      <p>{copy.followPath}</p>
       <ul className="rh-list">
         {routes.map((route) => (
           <li key={route.id} id={route.id}>
             <Link href={`/history/explore#${route.id}`} onClick={() => trackHistory("PATH_OPENED", `/history/explore#${route.id}`)}>
-              Follow a documented path
+              {copy.followPath}
             </Link>
             <div>
               {route.artists.map((artist, index) => {

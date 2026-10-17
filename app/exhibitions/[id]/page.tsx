@@ -1,11 +1,12 @@
 import type { Metadata } from "next";
+import { redirect } from "next/navigation";
 import ExhibitionClient from "./ExhibitionClient";
 import HistoryExhibition from "@/app/components/history/HistoryExhibition";
 import { loadExhibitionPage } from "@/lib/history/queries";
 import { exhibitionJsonLd, exhibitionPageTitle } from "@/lib/history/seo";
 import { isMissingHistorySchema } from "@/lib/history/schemaError";
 import { pageMetadata, SITE_URL } from "@/lib/seo";
-import { redirect } from "next/navigation";
+import { historyLocale } from "@/lib/history/requestLocale";
 
 export const dynamic = "force-dynamic";
 
@@ -25,6 +26,7 @@ export async function generateMetadata({ params }: { params: { id: string } }): 
 }
 
 export default async function ExhibitionPage({ params }: { params: { id: string } }) {
+  const locale = historyLocale();
   try {
     const record = await loadExhibitionPage(params.id);
     if (record) {
@@ -33,7 +35,7 @@ export default async function ExhibitionPage({ params }: { params: { id: string 
       return (
         <>
           <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(json) }} />
-          <HistoryExhibition record={record} />
+          <HistoryExhibition record={record} locale={locale} />
         </>
       );
     }

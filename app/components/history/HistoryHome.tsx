@@ -3,13 +3,11 @@
 import { Fragment, FormEvent, KeyboardEvent, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import TopBar from "@/app/components/TopBar";
+import LocaleSwitch from "@/app/components/history/LocaleSwitch";
 import { trackHistory, trackMissingSearch } from "@/lib/history/analytics";
-import { pluralCount } from "@/lib/history/copy";
+import { historyCopy, type HistoryLocale } from "@/lib/history/locale";
 import {
   SEARCH_CLIENT_TIMEOUT_MS,
-  SEARCH_EMPTY_COPY,
-  SEARCH_ERROR_COPY,
-  SEARCH_PENDING_COPY,
   acceptAutocomplete,
   claimSubmit,
   finishSearch,
@@ -37,7 +35,8 @@ type Discovery = {
   route: { id: string; artists: { slug: string; name: string }[]; exhibitions: { slug: string | null; title: string; year: number | null }[] } | null;
 };
 
-export default function HistoryHome({ discovery = null }: { discovery?: Discovery | null }) {
+export default function HistoryHome({ discovery = null, locale = "en" }: { discovery?: Discovery | null; locale?: HistoryLocale }) {
+  const copy = historyCopy(locale);
   const [query, setQuery] = useState("");
   const [results, setResults] = useState<HistorySearchResult[] | null>(null);
   const [suggestions, setSuggestions] = useState<HistorySearchResult[]>([]);
@@ -174,19 +173,20 @@ export default function HistoryHome({ discovery = null }: { discovery?: Discover
 
   return (
     <div className="rh-page">
-      <TopBar />
+      <TopBar locale={locale} />
       <main className="rh-wrap rh-home" id="main-content">
         <section className="rh-home-hero">
           <div className="rh-home-copy">
+            <LocaleSwitch locale={locale} />
             <p className="rh-kicker">
-              ROB <span className="rh-guide" aria-hidden="true" /> Art history search & exploration
+              ROB <span className="rh-guide" aria-hidden="true" /> {copy.homeKicker}
             </p>
-            <h1 className="rh-title">Search an artist.</h1>
-            <p className="rh-lead">See their journey. Follow the moments that connect one artist to another.</p>
+            <h1 className="rh-title">{copy.searchTitle}</h1>
+            <p className="rh-lead">{copy.searchLeadFull}</p>
             <form className="rh-search" onSubmit={onSubmit} role="search">
               <div className="rh-search-wrap" ref={box}>
                 <label className="rh-sr-only" htmlFor="artist-search">
-                  Search an artist
+                  {copy.searchLabel}
                 </label>
                 <input
                   id="artist-search"
@@ -198,7 +198,7 @@ export default function HistoryHome({ discovery = null }: { discovery?: Discover
                   aria-autocomplete="list"
                   onChange={(event) => setQuery(event.target.value)}
                   onKeyDown={onKeyDown}
-                  placeholder="Search an artist..."
+                  placeholder={copy.searchPlaceholder}
                   autoComplete="off"
                 />
                 {open && suggestions.length > 0 ? (
@@ -215,7 +215,7 @@ export default function HistoryHome({ discovery = null }: { discovery?: Discover
                         >
                           <strong>{artist.canonicalName}</strong>
                           {artist.nativeName ? <span> {artist.nativeName}</span> : null}
-                          <span> · {pluralCount(artist.exhibitionCount, "exhibition")} currently documented</span>
+                          <span> · {copy.documentedLine(artist.exhibitionCount)}</span>
                         </button>
                       </li>
                     ))}
@@ -223,27 +223,27 @@ export default function HistoryHome({ discovery = null }: { discovery?: Discover
                 ) : null}
               </div>
               <button className="rh-button" type="submit" disabled={pendingQuery === query.trim() && phase === "searching"} aria-busy={phase === "searching"}>
-                {phase === "searching" ? SEARCH_PENDING_COPY : "Search"}
+                {phase === "searching" ? copy.searching : copy.searchButton}
               </button>
             </form>
             <div className="rh-search-feedback" role="status" aria-live="polite">
-              {phase === "searching" ? <p>{SEARCH_PENDING_COPY}</p> : null}
+              {phase === "searching" ? <p>{copy.searching}</p> : null}
               {phase === "empty" ? (
                 <>
-                  <p>{SEARCH_EMPTY_COPY}</p>
+                  <p>{copy.searchEmpty}</p>
                   <p>
-                    <Link href="/history/start">Start your history</Link>
+                    <Link href="/history/start">{copy.startHistory}</Link>
                     {" · "}
-                    <Link href="/history/explore">Explore the art world</Link>
+                    <Link href="/history/explore">{copy.exploreWorld}</Link>
                   </p>
                 </>
               ) : null}
-              {phase === "error" ? <p>{SEARCH_ERROR_COPY}</p> : null}
+              {phase === "error" ? <p>{copy.searchError}</p> : null}
             </div>
             {phase === "success" && results && results.length > 0 ? (
               <section className="rh-search-results" aria-live="polite">
                 <div className="rh-search-results-heading">
-                  <p className="rh-kicker">Search results</p>
+                  <p className="rh-kicker">{copy.searchResults}</p>
                   <span>{results.length}</span>
                 </div>
                 <ul className="rh-results">
@@ -259,10 +259,10 @@ export default function HistoryHome({ discovery = null }: { discovery?: Discover
                           {artist.nativeName ? <span>{artist.nativeName}</span> : null}
                         </span>
                         <span className="rh-result-meta">
-                          {artist.birthYear ? <span>Born {artist.birthYear}</span> : null}
-                          <span>{pluralCount(artist.exhibitionCount, "exhibition")} currently documented</span>
+                          {artist.birthYear ? <span>{copy.born(artist.birthYear)}</span> : null}
+                          <span>{copy.documentedLine(artist.exhibitionCount)}</span>
                         </span>
-                        <span className="rh-signature" aria-label="History signature">
+                        <span className="rh-signature" aria-label={copy.historySignature}>
                           {artist.signature.map((height, index) => (
                             <i key={index} style={{ height: `${4 + height * 5}px` }} />
                           ))}
@@ -276,18 +276,18 @@ export default function HistoryHome({ discovery = null }: { discovery?: Discover
             ) : null}
             <div className="rh-home-actions">
               <Link className="rh-home-start" href="/artists/lee-ufan" onClick={() => trackHistory("SEARCH_RESULT_OPENED", "/artists/lee-ufan")}>
-                Start with Lee Ufan →
+                {copy.startWith} →
               </Link>
-              <span>or</span>
+              <span>{copy.orWord}</span>
               <Link href="/history/start" onClick={() => trackHistory("START_HISTORY_CLICKED")}>
-                Start your own history
+                {copy.startOwn}
               </Link>
             </div>
             {query.trim() === "" && discovery?.journey ? (
               <p className="rh-muted">
-                Start here · <Link href={`/artists/${discovery.journey.slug}`}>{discovery.journey.canonicalName}</Link>
+                {copy.startHere} · <Link href={`/artists/${discovery.journey.slug}`}>{discovery.journey.canonicalName}</Link>
                 {discovery.journey.nativeName ? ` ${discovery.journey.nativeName}` : ""}
-                {` · ${pluralCount(discovery.journey.exhibitionCount, "exhibition")} currently documented`}
+                {` · ${copy.documentedLine(discovery.journey.exhibitionCount)}`}
               </p>
             ) : null}
             {query.trim() === "" ? (
@@ -322,7 +322,7 @@ export default function HistoryHome({ discovery = null }: { discovery?: Discover
             ) : null}
           </div>
 
-          <div className="rh-home-map" aria-label="ROB connects artists through documented exhibition moments">
+          <div className="rh-home-map" aria-label={copy.connectsAria}>
             {(discovery?.route?.artists.length ? discovery.route.artists : [{ slug: "lee-ufan", name: "Lee Ufan" }, { slug: "park-seo-bo", name: "Park Seo-Bo" }]).map((artist, index) => {
               const bridge = discovery?.route?.exhibitions[index - 1];
               const fallbackBridge = index === 1 && !discovery?.route ? { year: 2025, title: "The Making of Modern Korean Art" } : null;
@@ -333,14 +333,14 @@ export default function HistoryHome({ discovery = null }: { discovery?: Discover
                     <>
                       <div className="rh-home-map-line" aria-hidden="true" />
                       <div className="rh-home-event">
-                        <span>{shown.year ?? "Exhibition"}</span>
+                        <span>{shown.year ?? copy.exhibitionWord}</span>
                         <strong>{shown.title}</strong>
                       </div>
                       <div className="rh-home-map-line" aria-hidden="true" />
                     </>
                   ) : null}
                   <div className={index === 0 ? "rh-home-person rh-home-person-a" : "rh-home-person rh-home-person-b"}>
-                    <span>Artist</span>
+                    <span>{copy.artistWord}</span>
                     <strong>{artist.name}</strong>
                   </div>
                 </Fragment>
@@ -349,34 +349,34 @@ export default function HistoryHome({ discovery = null }: { discovery?: Discover
           </div>
         </section>
 
-        <section className="rh-home-principles" aria-label="How ROB works">
+        <section className="rh-home-principles" aria-label={copy.howWorks}>
           <article>
             <span>01</span>
-            <h2>See time</h2>
-            <p>Read an artist through documented exhibitions instead of a flat CV.</p>
+            <h2>{copy.seeTime}</h2>
+            <p>{copy.seeTimeBody}</p>
           </article>
           <article>
             <span>02</span>
-            <h2>Open a moment</h2>
-            <p>Select a year or exhibition to reveal its recorded place, source, and participants.</p>
+            <h2>{copy.openMomentTitle}</h2>
+            <p>{copy.openMomentBody}</p>
           </article>
           <article>
             <span>03</span>
-            <h2>Cross the bridge</h2>
-            <p>Enter another artist&apos;s history through an exhibition they actually shared.</p>
+            <h2>{copy.crossBridge}</h2>
+            <p>{copy.crossBridgeBody}</p>
           </article>
         </section>
 
         <section className="rh-below">
           <Link className="rh-home-panel" href="/history/explore">
-            <span className="rh-kicker">Explore</span>
-            <strong>Browse the graph as it grows.</strong>
-            <p>Artists, exhibitions, and spaces with documented records.</p>
+            <span className="rh-kicker">{copy.explore}</span>
+            <strong>{copy.browseGraph}</strong>
+            <p>{copy.browseGraphBody}</p>
           </Link>
           <Link className="rh-home-panel" href="/now">
-            <span className="rh-kicker">Now</span>
-            <strong>See what is happening now.</strong>
-            <p>The present stays visible while today&apos;s events become tomorrow&apos;s history.</p>
+            <span className="rh-kicker">{copy.now}</span>
+            <strong>{copy.seeNow}</strong>
+            <p>{copy.seeNowBody}</p>
           </Link>
         </section>
       </main>
