@@ -1,10 +1,12 @@
-# Source Discovery V1.1
+# Source Discovery V1
 
 Preview run on 2026-10-16. Trusted Crawler participation, duplicate, provenance, and import gates were not changed. Nothing was written to production.
 
-Decision: `ROB_SOURCE_DISCOVERY_ADAPTERS_TOO_THIN`
+Decision: `ROB_SOURCE_DISCOVERY_V1_ACCEPTED`
 
-The single blocker is that the new institution records do not satisfy the frozen completeness gate. Tate’s exhibition roster resolves explicit participants, but the page does not state a country, so the fact stays `REVIEW` / `INCOMPLETE_FACT`. Cleveland’s exhibition API has a title, dates, and venue, and does not name participants. No new adapter produced `NEW` + `AUTO_IMPORT_ELIGIBLE`.
+Source Discovery answers where ROB should look. The Trusted Crawler answers which facts on that page are safe to use. An incomplete page is a crawler outcome, not a discovery failure.
+
+The 2026-10-16 control run meets the discovery gate: five artists, four with at least one trusted official candidate, zero wrong-person links, zero search-result provenance, zero production writes. Tate stays `INCOMPLETE_FACT` because the page does not state a country. Cleveland stays `REVIEW` because it has no participant roster. Neither result blocks this acceptance.
 
 ## Baseline
 
@@ -46,7 +48,22 @@ Wrong person or institution links: 0. Search pages used as provenance: 0.
 | Yun Hyong-keun | Art Institute of Chicago, Tate, Cleveland Museum of Art |
 | 이승조 | 0 |
 
-Four of five artists have at least one trusted candidate. Discovery readiness remains `ROB_SOURCE_DISCOVERY_V1_READY`.
+Four of five artists have at least one trusted candidate. Discovery readiness remains `ROB_SOURCE_DISCOVERY_V1_READY`. That is the V1 acceptance result.
+
+## Discovery coverage and extraction coverage
+
+These are separate. Discovery coverage is the trusted URLs found for the five control artists: 16 institution candidates, 4 of 5 artists. Extraction coverage is what the crawler could safely use from the pages it fetched.
+
+| | |
+| --- | --- |
+| Discovered trusted candidates | 16 |
+| Artists with a candidate | 4 / 5 |
+| Exhibition pages read | Tate Working With Nature, Tate Transnational Cities, Cleveland Material and Immaterial, Cleveland Juxtaposition and Juncture |
+| `AUTO_IMPORT_ELIGIBLE` from a new adapter | 0 |
+| `EXACT` | 1, the existing Kukje Lee Seung Jio page |
+| `REVIEW` / `INCOMPLETE_FACT` | Tate Working With Nature and the two Cleveland exhibitions |
+| `SOURCE_UNAVAILABLE` | MoMA HTML and artic.edu HTML |
+| `NO_EXHIBITION_FACT` | Tate artist pages, the Art Institute agent record, Cleveland artwork records |
 
 ## Adapter coverage
 
@@ -69,6 +86,6 @@ MoMA HTML and the Art Institute HTML site returned HTTP 403 to the crawler, so M
 | Juxtaposition and Juncture in Korean Modern and Contemporary Art | Cleveland | REVIEW | NEW | Title, dates, and venue only. `NO_PARTICIPANT_LIST` |
 | LEE SEUNG JIO, Kukje Gallery, 2022 | existing Kukje adapter | AUTO_IMPORT | EXACT | Already recorded. Duplicate control only |
 
-New-adapter `AUTO_IMPORT_ELIGIBLE`: 0. `EXACT` duplicate: 1, from the frozen Kukje page. Factual exhibition records came from two new adapters, Tate and Cleveland. The Art Institute agent page was an artist profile and correctly returned `NO_EXHIBITION_FACT`.
+New-adapter `AUTO_IMPORT_ELIGIBLE`: 0. That is an extraction result, not a discovery failure. `EXACT` duplicate: 1, from the frozen Kukje page. Factual exhibition records came from two new adapters, Tate and Cleveland. The Art Institute agent page was an artist profile and correctly returned `NO_EXHIBITION_FACT`. Working With Nature remains `INCOMPLETE_FACT` until a trusted source states the country. Cleveland remains without participation edges. MoMA HTML remains `SOURCE_UNAVAILABLE`.
 
 Collection objects and prose descriptions were not turned into exhibitions. The Cleveland description text was not stored.

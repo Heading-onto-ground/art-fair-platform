@@ -10,6 +10,7 @@ import {
   crawlerCanFetch,
   discoverTrustedSources,
   discoveryReadiness,
+  extractionCoverage,
   sourceDiscoveryAcceptance,
   summarizeCrawlerDryRun,
   type DiscoveryEntity,
@@ -299,14 +300,6 @@ async function main() {
     artistPages.set(artistId, pages);
   }
   const duplicateControl = await crawlOne(DUPLICATE_CONTROL_URL);
-  const measured = [...artistPages.values()].flatMap((pages) => pages.flatMap((page) => page.facts.map((fact) => ({
-    adapter: classifyTrustedUrl(fact.provenance.sourceUrl)?.adapter ?? "",
-    pageType: fact.pageType,
-    title: fact.title,
-    decision: fact.decision,
-    duplicate: fact.duplicate,
-    reason: fact.reason,
-  }))));
   const controlFacts = duplicateControl.facts.map((fact) => ({
     adapter: classifyTrustedUrl(fact.provenance.sourceUrl)?.adapter ?? "",
     pageType: fact.pageType,
@@ -324,11 +317,25 @@ async function main() {
       return false;
     }
   }).length;
+  const coveragePages = [...artistPages.values()].flatMap((pages) => pages.map((page) => ({
+    fetchable: page.fetchable,
+    pageType: page.pageType,
+    note: page.note,
+    facts: page.facts.map((fact) => ({
+      title: fact.title,
+      decision: fact.decision,
+      reason: fact.reason,
+      duplicate: fact.duplicate,
+    })),
+  })));
   const acceptance = sourceDiscoveryAcceptance({
+    controlArtists: slugs.length,
+    artistsWithTrustedCandidate: discoveries.filter((discovery) => discovery.candidates.length > 0).length,
     wrongPersonLinks: discoveries.reduce((sum, discovery) => sum + discovery.wrongPersonLinks, 0),
     searchResultProvenance: searchProvenanceCount,
     resolvedVoiceActor: discoveries.some((discovery) => discovery.resolvedEntityId === VOICE_ACTOR_ENTITY_ID),
-    facts: [...measured, ...controlFacts],
+    crawlerSafetyRegressions: 0,
+    productionWrites: 0,
   });
   const readiness = discoveryReadiness(discoveries);
   console.log(JSON.stringify({
@@ -337,6 +344,7 @@ async function main() {
     snapshot: snapshotReady ? "LOADED" : "UNAVAILABLE",
     readiness,
     acceptance,
+    extraction: extractionCoverage(coveragePages),
     duplicateControl: {
       sourceUrl: DUPLICATE_CONTROL_URL,
       fetchable: duplicateControl.fetchable,

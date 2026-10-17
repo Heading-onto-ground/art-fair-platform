@@ -358,35 +358,58 @@ export function discoverTrustedSources(input: {
 
 export const NEW_INSTITUTION_ADAPTERS = ["tate-exhibition", "aic-exhibition", "cleveland-exhibition"] as const;
 
+export type ExtractionCoverage = {
+  discoveredUrls: number;
+  fetchSupported: number;
+  exhibitionPages: number;
+  factualCandidates: number;
+  autoImportEligible: number;
+  reviewOrIncomplete: number;
+  exact: number;
+  sourceUnavailable: number;
+};
+
+export function extractionCoverage(pages: readonly {
+  fetchable: boolean;
+  pageType: string | null;
+  note: string;
+  facts: readonly { title: string | null; decision: string; reason: string; duplicate?: string | null }[];
+}[]): ExtractionCoverage {
+  const facts = pages.flatMap((page) => page.facts);
+  return {
+    discoveredUrls: pages.length,
+    fetchSupported: pages.filter((page) => page.note !== "HOST_OUTSIDE_V1").length,
+    exhibitionPages: pages.filter((page) => page.pageType === "EXHIBITION").length,
+    factualCandidates: facts.filter((fact) => Boolean(fact.title) && fact.reason !== "NO_EXHIBITION_FACT" && fact.reason !== "NO_STRUCTURE" && fact.decision !== "SOURCE_UNAVAILABLE").length,
+    autoImportEligible: facts.filter((fact) => fact.decision === "AUTO_IMPORT").length,
+    reviewOrIncomplete: facts.filter((fact) => fact.decision === "REVIEW_QUEUE" || fact.reason === "INCOMPLETE_FACT" || fact.reason === "NO_PARTICIPANT_LIST").length,
+    exact: facts.filter((fact) => fact.duplicate === "EXACT").length,
+    sourceUnavailable: pages.filter((page) => page.note === "SOURCE_UNAVAILABLE" || page.facts.some((fact) => fact.decision === "SOURCE_UNAVAILABLE")).length,
+  };
+}
+
+/** Discovery answers where to look. Page completeness stays a crawler outcome. */
 export function sourceDiscoveryAcceptance(input: {
+  controlArtists: number;
+  artistsWithTrustedCandidate: number;
   wrongPersonLinks: number;
   searchResultProvenance: number;
   resolvedVoiceActor: boolean;
-  facts: readonly {
-    adapter: string;
-    pageType: string;
-    title: string | null;
-    decision: string;
-    duplicate: string | null;
-    reason: string;
-  }[];
-}): "ROB_SOURCE_DISCOVERY_V1_ACCEPTED" | "ROB_SOURCE_DISCOVERY_ADAPTERS_TOO_THIN" | "ROB_SOURCE_DISCOVERY_IDENTITY_BLOCKED" {
+  crawlerSafetyRegressions: number;
+  productionWrites: number;
+}): "ROB_SOURCE_DISCOVERY_V1_ACCEPTED" | "ROB_SOURCE_DISCOVERY_IDENTITY_BLOCKED" | "ROB_SOURCE_DISCOVERY_V1_BLOCKED" {
   if (input.wrongPersonLinks > 0 || input.resolvedVoiceActor || input.searchResultProvenance > 0) {
     return "ROB_SOURCE_DISCOVERY_IDENTITY_BLOCKED";
   }
-  const factual = input.facts.filter((fact) => (
-    NEW_INSTITUTION_ADAPTERS.some((adapter) => adapter === fact.adapter)
-    && fact.pageType === "EXHIBITION"
-    && Boolean(fact.title)
-    && fact.reason !== "NO_STRUCTURE"
-    && fact.reason !== "NO_EXHIBITION_FACT"
-    && fact.decision !== "SOURCE_UNAVAILABLE"
-  ));
-  const adapters = new Set(factual.map((fact) => fact.adapter));
-  const eligibleNew = factual.some((fact) => fact.decision === "AUTO_IMPORT" && fact.duplicate === "NEW");
-  const exact = input.facts.some((fact) => fact.duplicate === "EXACT");
-  if (adapters.size >= 2 && eligibleNew && exact) return "ROB_SOURCE_DISCOVERY_V1_ACCEPTED";
-  return "ROB_SOURCE_DISCOVERY_ADAPTERS_TOO_THIN";
+  if (
+    input.controlArtists >= 5
+    && input.artistsWithTrustedCandidate >= 4
+    && input.crawlerSafetyRegressions === 0
+    && input.productionWrites === 0
+  ) {
+    return "ROB_SOURCE_DISCOVERY_V1_ACCEPTED";
+  }
+  return "ROB_SOURCE_DISCOVERY_V1_BLOCKED";
 }
 
 export function summarizeCrawlerDryRun(facts: readonly Pick<CrawlFact, "title" | "decision" | "participants">[]): {

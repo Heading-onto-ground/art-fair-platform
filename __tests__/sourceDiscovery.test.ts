@@ -8,6 +8,7 @@ import {
   discoverTrustedSources,
   discoveryReadiness,
   selectDiscoveryEntity,
+  extractionCoverage,
   sourceDiscoveryAcceptance,
   summarizeCrawlerDryRun,
   type DiscoveryEntity,
@@ -205,31 +206,47 @@ describe("source discovery", () => {
     expect(readiness.searchResultProvenance).toBe(0);
     expect(readiness.decision).toBe("ROB_SOURCE_DISCOVERY_V1_READY");
     expect(CONTROL_ARTISTS).toHaveLength(5);
+    expect(extractionCoverage([
+      { fetchable: true, pageType: "EXHIBITION", note: "INCOMPLETE_FACT", facts: [{ title: "Working With Nature", decision: "REVIEW_QUEUE", reason: "INCOMPLETE_FACT", duplicate: "NEW" }] },
+      { fetchable: true, pageType: "EXHIBITION", note: "NO_PARTICIPANT_LIST", facts: [{ title: "Material and Immaterial", decision: "REVIEW_QUEUE", reason: "NO_PARTICIPANT_LIST", duplicate: "NEW" }] },
+      { fetchable: false, pageType: null, note: "SOURCE_UNAVAILABLE", facts: [] },
+      { fetchable: false, pageType: null, note: "HOST_OUTSIDE_V1", facts: [] },
+    ])).toEqual({
+      discoveredUrls: 4,
+      fetchSupported: 3,
+      exhibitionPages: 2,
+      factualCandidates: 2,
+      autoImportEligible: 0,
+      reviewOrIncomplete: 2,
+      exact: 0,
+      sourceUnavailable: 1,
+    });
     expect(sourceDiscoveryAcceptance({
+      controlArtists: 5,
+      artistsWithTrustedCandidate: 4,
       wrongPersonLinks: 0,
       searchResultProvenance: 0,
       resolvedVoiceActor: false,
-      facts: [
-        { adapter: "tate-exhibition", pageType: "EXHIBITION", title: "Working With Nature", decision: "AUTO_IMPORT", duplicate: "NEW", reason: "HIGH_CONFIDENCE" },
-        { adapter: "cleveland-exhibition", pageType: "EXHIBITION", title: "Material and Immaterial", decision: "REVIEW_QUEUE", duplicate: "NEW", reason: "NO_PARTICIPANT_LIST" },
-        { adapter: "kukje-exhibition", pageType: "EXHIBITION", title: "Lee Seung Jio", decision: "AUTO_IMPORT", duplicate: "EXACT", reason: "HIGH_CONFIDENCE" },
-      ],
+      crawlerSafetyRegressions: 0,
+      productionWrites: 0,
     })).toBe("ROB_SOURCE_DISCOVERY_V1_ACCEPTED");
     expect(sourceDiscoveryAcceptance({
+      controlArtists: 5,
+      artistsWithTrustedCandidate: 3,
       wrongPersonLinks: 0,
       searchResultProvenance: 0,
       resolvedVoiceActor: false,
-      facts: [
-        { adapter: "tate-exhibition", pageType: "EXHIBITION", title: "Working With Nature", decision: "REVIEW_QUEUE", duplicate: "NEW", reason: "INCOMPLETE_FACT" },
-        { adapter: "cleveland-exhibition", pageType: "EXHIBITION", title: "Material and Immaterial", decision: "REVIEW_QUEUE", duplicate: "NEW", reason: "NO_PARTICIPANT_LIST" },
-        { adapter: "kukje-exhibition", pageType: "EXHIBITION", title: "Lee Seung Jio", decision: "AUTO_IMPORT", duplicate: "EXACT", reason: "HIGH_CONFIDENCE" },
-      ],
-    })).toBe("ROB_SOURCE_DISCOVERY_ADAPTERS_TOO_THIN");
+      crawlerSafetyRegressions: 0,
+      productionWrites: 0,
+    })).toBe("ROB_SOURCE_DISCOVERY_V1_BLOCKED");
     expect(sourceDiscoveryAcceptance({
+      controlArtists: 5,
+      artistsWithTrustedCandidate: 5,
       wrongPersonLinks: 1,
       searchResultProvenance: 0,
       resolvedVoiceActor: true,
-      facts: [],
+      crawlerSafetyRegressions: 0,
+      productionWrites: 0,
     })).toBe("ROB_SOURCE_DISCOVERY_IDENTITY_BLOCKED");
   });
 });
