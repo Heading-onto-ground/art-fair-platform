@@ -419,22 +419,6 @@ function cache<CachedFunction extends (key: string) => Promise<Awaited<ReturnTyp
 
 export const loadPublicArtist = cache((key: string) => loadCachedPublicArtist(key));
 
-const searchDetailSelect = {
-  id: true,
-  profile: {
-    select: {
-      exhibitionEntries: {
-        where: { status: "confirmed" as const, exhibition: publicExhibitionWhere },
-        select: { exhibitionId: true },
-      },
-    },
-  },
-  participations: {
-    where: { exhibition: publicExhibitionWhere },
-    select: { exhibition: { select: { id: true, historyMeta: { select: { startYear: true, datePrecision: true } }, startDate: true } } },
-  },
-} satisfies Prisma.ArtistEntitySelect;
-
 export async function searchArtists(rawQuery: string): Promise<HistorySearchResult[]> {
   const query = rawQuery.trim();
   const probe = searchProbe(query);
@@ -454,20 +438,24 @@ export async function searchArtists(rawQuery: string): Promise<HistorySearchResu
       nativeName: true,
       birthYear: true,
       aliases: { select: { label: true } },
+      profile: {
+        select: {
+          exhibitionEntries: {
+            where: { status: "confirmed" as const, exhibition: publicExhibitionWhere },
+            select: { exhibitionId: true },
+          },
+        },
+      },
+      participations: {
+        where: { exhibition: publicExhibitionWhere },
+        select: { exhibition: { select: { id: true, historyMeta: { select: { startYear: true, datePrecision: true } }, startDate: true } } },
+      },
     },
     orderBy: { canonicalName: "asc" },
-    take: 80,
+    take: 24,
   });
-  const matched = rankSearchRows(candidates, query);
-  if (matched.length === 0) return [];
-  const details = await prisma.artistEntity.findMany({
-    where: { id: { in: matched.map((row) => row.id) } },
-    select: searchDetailSelect,
-  });
-  const byId = new Map(details.map((row) => [row.id, row]));
-  return matched.map((row) => {
-    const detail = byId.get(row.id);
-    const dated = (detail?.participations ?? []).map((item) => {
+  return rankSearchRows(candidates, query).map((row) => {
+    const dated = row.participations.map((item) => {
       const exhibition = item.exhibition;
       const meta = exhibition.historyMeta;
       return {
@@ -477,7 +465,7 @@ export async function searchArtists(rawQuery: string): Promise<HistorySearchResu
       };
     });
     const ids = new Set(dated.map((item) => item.id));
-    for (const entry of detail?.profile?.exhibitionEntries ?? []) ids.add(entry.exhibitionId);
+    for (const entry of row.profile?.exhibitionEntries ?? []) ids.add(entry.exhibitionId);
     return {
       slug: row.slug,
       canonicalName: decodeDisplayText(row.canonicalName),
