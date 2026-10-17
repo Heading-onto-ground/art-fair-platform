@@ -10,6 +10,31 @@
   padding: 56px 28px 112px;
 }
 
+.rh-locale {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin: 0 0 16px;
+}
+
+.rh-locale button {
+  appearance: none;
+  background: none;
+  border: 0;
+  padding: 4px 0;
+  font: inherit;
+  font-size: 13px;
+  letter-spacing: 0.04em;
+  color: #8a8580;
+  cursor: pointer;
+}
+
+.rh-locale button[aria-pressed="true"] {
+  color: #181818;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
 .rh-kicker {
   margin: 0;
   font-size: 11px;
