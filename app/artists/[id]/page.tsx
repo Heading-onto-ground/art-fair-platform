@@ -6,6 +6,7 @@ import { loadPublicArtist } from "@/lib/history/queries";
 import { artistJsonLd } from "@/lib/history/seo";
 import { isMissingHistorySchema } from "@/lib/history/schemaError";
 import { SITE_URL } from "@/lib/seo";
+import { withPreservedSearch } from "@/lib/history/journeyTrail";
 import { historyLocale } from "@/lib/history/requestLocale";
 
 // The same route still renders legacy account profiles, which are not public
@@ -18,11 +19,17 @@ function isNextRedirect(error: unknown): boolean {
   return typeof error === "object" && error !== null && "digest" in error && String((error as { digest?: unknown }).digest).startsWith("NEXT_REDIRECT");
 }
 
-export default async function ArtistPage({ params }: { params: { id: string } }) {
+export default async function ArtistPage({
+  params,
+  searchParams,
+}: {
+  params: { id: string };
+  searchParams?: Record<string, string | string[] | undefined>;
+}) {
   const locale = historyLocale();
   try {
     const loaded = await loadPublicArtist(params.id);
-    if (loaded.kind === "redirect") redirect(loaded.to);
+    if (loaded.kind === "redirect") redirect(withPreservedSearch(loaded.to, searchParams));
     if (loaded.kind === "history") {
       const json = artistJsonLd({
         name: loaded.artist.canonicalName,

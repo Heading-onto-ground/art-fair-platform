@@ -197,12 +197,7 @@ export function momentSatellites(
   return { visible: visible.slice(0, expanded ? visible.length : limit), hiddenArtists: Math.max(0, input.artists.length - artists.length) };
 }
 
-export function followArtistHref(destinationSlug: string, fromSlug: string, via: string): string {
-  const params = new URLSearchParams();
-  params.set("from", fromSlug);
-  params.set("via", via);
-  return `/artists/${destinationSlug}?${params.toString()}`;
-}
+export { followArtistHref } from "@/lib/history/journeyTrail";
 
 export function returnArtistHref(input: {
   from: string;
