@@ -1,5 +1,7 @@
 import { NextResponse } from "next/server";
 import { enforceRateLimit } from "@/lib/apiGuards";
+import { getAdminSession } from "@/lib/adminAuth";
+import { demandEventName, demandWriteClass } from "@/lib/history/demandQuality";
 import { persistMissingSearch } from "@/lib/history/searchFlow";
 import { isMissingHistorySchema } from "@/lib/history/schemaError";
 import { prisma } from "@/lib/prisma";
@@ -11,10 +13,13 @@ export async function POST(req: Request) {
   if (limited) return limited;
   const body = await req.json().catch(() => null);
   const query = body && typeof body.q === "string" ? body.q.slice(0, 200) : "";
-  const operator = Boolean(body && body.operator === true);
+  const event = demandEventName(demandWriteClass({
+    adminSession: Boolean(getAdminSession()),
+    nodeEnv: process.env.NODE_ENV ?? "production",
+  }));
   await persistMissingSearch({
     query,
-    operator,
+    event,
     write: async (name, path) => {
       try {
         await prisma.historySignal.create({ data: { name, path } });

@@ -40,7 +40,7 @@ export default async function HistoryHealthPage() {
             ))}
           </ul>
           <h2>Missing searches</h2>
-          <p>Real missing searches are counted separately from operator checks.</p>
+          <p>Frontier ranking uses real visitor searches recorded after the operator split. Older rows stay here as mixed history.</p>
           {report.noResultSearches.length === 0 ? <p>No missing-artist searches yet.</p> : null}
           <ul>
             {report.noResultSearches.map((row) => (
@@ -50,6 +50,14 @@ export default async function HistoryHealthPage() {
                 {row.unresolvedCandidate ? ` · unresolved ${row.unresolvedCandidate}` : ""}
                 {row.frontierStatus ? ` · ${row.frontierStatus}` : ""}
               </li>
+            ))}
+          </ul>
+          <h2>Legacy mixed demand</h2>
+          <p>LEGACY_MIXED. These SEARCH_NO_RESULT rows predate reliable operator separation and do not rank the frontier.</p>
+          {report.legacyMixedSearches.length === 0 ? <p>None.</p> : null}
+          <ul>
+            {report.legacyMixedSearches.map((row) => (
+              <li key={row.query}>{row.query} · {row.count}</li>
             ))}
           </ul>
           <h2>Journey depth</h2>

@@ -75,11 +75,11 @@ export function trackHistory(name: HistoryEventName, path?: string) {
   }
 }
 
-/** Records a zero-result search after the results are already on screen. */
-export function trackMissingSearch(query: string, operator = false) {
+/** Records a zero-result search after the results are already on screen. The server classifies provenance. */
+export function trackMissingSearch(query: string) {
   if (typeof window === "undefined") return;
   if (!searchDemandQuery(query)) return;
-  const body = JSON.stringify({ q: query, operator });
+  const body = JSON.stringify({ q: query });
   try {
     if (navigator.sendBeacon) {
       navigator.sendBeacon("/api/history/missing-search", new Blob([body], { type: "application/json" }));
