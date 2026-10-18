@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { trackHistory } from "@/lib/history/analytics";
+import { pushRobEvent } from "@/lib/publicGrowth/analytics";
 
 const KINDS = [
   ["incorrect", "Incorrect information"],
@@ -24,6 +25,7 @@ export default function ReportIssue({ exhibitionId, artistSlug }: { exhibitionId
       headers: { "content-type": "application/json" },
       body: JSON.stringify({ exhibitionId, artistSlug, kind, note }),
     });
+    if (response.ok) pushRobEvent("REPORT_ISSUE_SUBMITTED", { route: "report" });
     setState(response.ok ? "sent" : "error");
   }
 
@@ -32,7 +34,7 @@ export default function ReportIssue({ exhibitionId, artistSlug }: { exhibitionId
   return (
     <form onSubmit={submit}>
       <p>
-        <button className="rh-text-button" type="button" onClick={() => trackHistory("REPORT_ISSUE_STARTED")}>
+        <button className="rh-text-button" type="button" onClick={() => { trackHistory("REPORT_ISSUE_STARTED"); pushRobEvent("REPORT_ISSUE_OPENED", { route: "report" }); }}>
           Report an issue
         </button>
       </p>
