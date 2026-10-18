@@ -1,4 +1,4 @@
-import { readFileSync } from "fs";
+import { readFileSync, writeFileSync } from "fs";
 import { envValue } from "../lib/history/runtimeEnv";
 
 function readEnv(name: string): string {
@@ -31,8 +31,10 @@ async function main() {
     process.exit(1);
   }
   process.env.DATABASE_URL = databaseUrl;
+  const reportFlag = argv.indexOf("--report");
+  const reportPath = reportFlag >= 0 ? argv[reportFlag + 1] : null;
   const { runFrontierAutopilot } = await import("./frontierAutopilotRun");
-  await runFrontierAutopilot({ limit: option(argv, "--limit") ?? 8 });
+  await runFrontierAutopilot({ limit: option(argv, "--limit") ?? 12, reportPath });
 }
 
 main().catch((error: unknown) => {

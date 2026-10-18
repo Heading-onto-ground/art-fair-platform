@@ -30,13 +30,18 @@ describe("search demand quality", () => {
     expect(classifyStoredDemand({
       name: "SEARCH_NO_RESULT",
       createdAt: "2026-10-14T00:00:00.000Z",
-      query: "pending check name",
+      query: "김홍도",
     })).toBe("LEGACY_MIXED");
     expect(classifyStoredDemand({
       name: "SEARCH_NO_RESULT",
       createdAt: "2026-10-14T00:00:00.000Z",
+      query: "pending check name",
+    })).toBe("INVALID_QUERY");
+    expect(classifyStoredDemand({
+      name: "SEARCH_NO_RESULT",
+      createdAt: "2026-10-14T00:00:00.000Z",
       query: "zzzz no artist",
-    })).toBe("LEGACY_MIXED");
+    })).toBe("INVALID_QUERY");
     expect(countsAsFrontierDemand({
       name: "SEARCH_NO_RESULT",
       createdAt: DEMAND_SEPARATION_AT,
@@ -57,5 +62,20 @@ describe("search demand quality", () => {
       createdAt: "2026-10-17T00:00:00.000Z",
       query: "a",
     })).toBe("INVALID_QUERY");
+    expect(countsAsFrontierDemand({
+      name: "SEARCH_NO_RESULT",
+      createdAt: "2026-10-15T16:42:09.245Z",
+      query: "pending check name",
+    })).toBe(false);
+    expect(countsAsFrontierDemand({
+      name: "SEARCH_NO_RESULT",
+      createdAt: "2026-10-15T16:41:47.570Z",
+      query: "zzzz no artist",
+    })).toBe(false);
+    expect(countsAsFrontierDemand({
+      name: "SEARCH_NO_RESULT",
+      createdAt: "2026-10-15T16:45:25.453Z",
+      query: "김홍도",
+    })).toBe(true);
   });
 });
