@@ -35,7 +35,7 @@ describe("history search flow", () => {
     let release: () => void = () => {};
     const pending = persistMissingSearch({
       query: "김홍도",
-      operator: false,
+      event: "SEARCH_NO_RESULT",
       write: () => new Promise((resolve) => {
         release = () => {
           released = true;
@@ -52,7 +52,7 @@ describe("history search flow", () => {
   it("still returns an empty 200 body when the analytics write fails", async () => {
     const outcome = await persistMissingSearch({
       query: "김홍도",
-      operator: false,
+      event: "SEARCH_NO_RESULT",
       write: async () => {
         throw new Error("database unavailable");
       },

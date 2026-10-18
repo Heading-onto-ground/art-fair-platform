@@ -1,6 +1,7 @@
 import type { PrismaClient } from "@prisma/client";
 import { prisma as untypedPrisma } from "@/lib/prisma";
 import { journeyDepthFromCounts, type JourneyDepthReport } from "@/lib/history/analytics";
+import { DEMAND_SEPARATION_AT } from "@/lib/history/demandQuality";
 import { namedFrontier, type NamedFrontier } from "@/lib/history/frontierCases";
 import { buildGraphFrontier, largestComponentSize, type FrontierRow, type FrontierStatus, type GrowthSnapshot } from "@/lib/history/growth";
 import { aliasLookupEqual, resolveVerifiedAlias } from "@/lib/history/identity";
@@ -23,6 +24,7 @@ export type HistoryHealth = {
   readablePaths: number;
   threeArtistRoutes: number;
   unresolvedParticipants: string[];
+  legacyMixedSearches: { query: string; count: number }[];
   noResultSearches: {
     query: string;
     count: number;
@@ -38,7 +40,8 @@ export type HistoryHealth = {
 };
 
 export async function loadHistoryHealth(): Promise<HistoryHealth> {
-  const [exhibitions, unresolved, signals, operatorSignals, depthSignals] = await Promise.all([
+  const separationAt = new Date(DEMAND_SEPARATION_AT);
+  const [exhibitions, unresolved, signals, legacySignals, operatorSignals, depthSignals] = await Promise.all([
     prisma.exhibition.findMany({
       where: publicExhibitionWhere,
       select: {
@@ -65,9 +68,14 @@ export async function loadHistoryHealth(): Promise<HistoryHealth> {
     }),
     prisma.historySignal.groupBy({
       by: ["path"],
-      where: { name: "SEARCH_NO_RESULT" },
+      where: { name: "SEARCH_NO_RESULT", createdAt: { gte: separationAt } },
       _count: { _all: true },
       _max: { createdAt: true },
+    }),
+    prisma.historySignal.groupBy({
+      by: ["path"],
+      where: { name: "SEARCH_NO_RESULT", createdAt: { lt: separationAt } },
+      _count: { _all: true },
     }),
     prisma.historySignal.groupBy({
       by: ["path"],
@@ -179,6 +187,11 @@ export async function loadHistoryHealth(): Promise<HistoryHealth> {
     readablePaths,
     threeArtistRoutes,
     unresolvedParticipants: [...new Set(snapshot.unresolved.map((row) => row.label))].sort(),
+    legacyMixedSearches: legacySignals
+      .filter((row) => row.path)
+      .map((row) => ({ query: row.path as string, count: row._count._all }))
+      .sort((left, right) => right.count - left.count || left.query.localeCompare(right.query))
+      .slice(0, 20),
     noResultSearches,
     journey: journeyDepthFromCounts({
       opened: depthCount("ARTIST_OPENED"),
