@@ -52,6 +52,14 @@ export default async function HistoryHealthPage() {
               </li>
             ))}
           </ul>
+          <h2>Invalid check queries</h2>
+          <p>INVALID_QUERY. Internal check strings stay in analytics and do not rank the frontier.</p>
+          {report.invalidCheckQueries.length === 0 ? <p>None.</p> : null}
+          <ul>
+            {report.invalidCheckQueries.map((row) => (
+              <li key={row.query}>{row.query} · {row.count}</li>
+            ))}
+          </ul>
           <h2>Legacy mixed demand</h2>
           <p>LEGACY_MIXED. These SEARCH_NO_RESULT rows predate reliable operator separation and do not rank the frontier.</p>
           {report.legacyMixedSearches.length === 0 ? <p>None.</p> : null}

@@ -21,6 +21,18 @@ export type DemandEventName = "SEARCH_NO_RESULT" | "SEARCH_NO_RESULT_OPERATOR" |
 
 const SEPARATION_MS = Date.parse(DEMAND_SEPARATION_AT);
 
+/**
+ * Internal check strings already observed in public analytics.
+ * They are not artist names. 김홍도 is intentionally absent: a public search for that name stays real demand.
+ * Stored rows are not deleted or rewritten.
+ */
+const INTERNAL_CHECK_QUERIES = new Set(["pending check name", "zzzz no artist"]);
+
+export function isInternalCheckQuery(query: string): boolean {
+  const normalized = query.normalize("NFKC").toLowerCase().replace(/\s+/g, " ").trim();
+  return INTERNAL_CHECK_QUERIES.has(normalized);
+}
+
 /** Public clients cannot choose this. Admin session or the test runtime can. */
 export function demandWriteClass(input: { adminSession: boolean; nodeEnv: string }): "REAL_VISITOR" | "OPERATOR" | "QA_TEST" {
   if (input.nodeEnv === "test") return "QA_TEST";
@@ -38,7 +50,7 @@ export function classifyStoredDemand(input: { name: string; createdAt: string; q
   if (!searchDemandQuery(input.query)) return "INVALID_QUERY";
   if (input.name === "SEARCH_NO_RESULT_OPERATOR") return "OPERATOR";
   if (input.name === "SEARCH_NO_RESULT_QA") return "QA_TEST";
-  if (input.name !== "SEARCH_NO_RESULT") return "INVALID_QUERY";
+  if (input.name !== "SEARCH_NO_RESULT" || isInternalCheckQuery(input.query)) return "INVALID_QUERY";
   const created = Date.parse(input.createdAt);
   if (!Number.isFinite(created) || created < SEPARATION_MS) return "LEGACY_MIXED";
   return "REAL_VISITOR";

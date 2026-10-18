@@ -11,6 +11,8 @@ Later rows:
 | `REAL_VISITOR` | public request, no admin session |
 | `OPERATOR` | signed-in admin session |
 | `QA_TEST` | test runtime |
-| `INVALID_QUERY` | empty, too short, or otherwise not a demand query |
+| `INVALID_QUERY` | empty, too short, or an internal check string |
 
 The request body cannot set the class. A public client that sends `operator: true` is still a real visitor. A future public search for 김홍도 remains real demand. The same text from an admin session or a test run does not.
+
+`pending check name` and `zzzz no artist` are internal check strings. They stay in analytics and are classified `INVALID_QUERY` when read, including rows stored as `SEARCH_NO_RESULT` after the split. They do not rank the frontier. This is not an artist-name blacklist.

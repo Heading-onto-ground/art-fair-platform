@@ -1,3 +1,4 @@
+import { chronologySubject, galleryChronologyRows } from "@/lib/history/galleryChronology";
 import { VERIFIED_ALIASES, mayCreateParticipation, normalizeArtistLookup, resolveArtistSlug, resolveVerifiedAlias, type ParticipantEvidence } from "@/lib/history/identity";
 import {
   aicExhibition,
@@ -235,6 +236,7 @@ export function crawlTrustedPage(input: {
   if (source.adapter === "museum-api") return crawlMuseumApi(input, source);
   if (source.adapter === "mmca-exhibition") return [crawlMmcaExhibition(input, source)];
   if (!input.html) return [heldFact(input, source, "NO_STRUCTURE", "NO_STRUCTURE")];
+  if (source.adapter === "kukje-exhibition" && path.includes("/artists/view")) return crawlKukjeChronology(input, source);
   if (source.adapter === "kukje-exhibition" && path.includes("/exhibitions/")) return [crawlKukjeExhibition(input, source)];
   if (source.adapter === "hyundai-exhibition" && path.includes("/exhibition/")) return [crawlGalleryHyundaiExhibition(input, source)];
   if (source.adapter === "arario-exhibition" && path.includes("/exhibitions/")) return [crawlArarioExhibition(input, source)];
@@ -334,6 +336,31 @@ function crawlKukjeExhibition(input: CrawlInput, source: TrustedSource): CrawlFa
     participants,
     extractionMethod: "KUKJE_EXHIBITION_HEADER",
   });
+}
+
+function crawlKukjeChronology(input: CrawlInput, source: TrustedSource): CrawlFact[] {
+  const html = input.html ?? "";
+  const labels = [...new Set(input.artists.flatMap((artist) => artist.labels))];
+  const subject = chronologySubject(html, labels);
+  if (!subject) return [heldFact(input, source, "CHRONOLOGY_UNATTRIBUTED", "KUKJE_ARTIST_CHRONOLOGY", "ARTIST_PROFILE")];
+  const rows = galleryChronologyRows(html);
+  if (rows.length === 0) return [heldFact(input, source, "NO_STRUCTURE", "KUKJE_ARTIST_CHRONOLOGY", "ARTIST_PROFILE")];
+  const selected = [...rows]
+    .sort((left, right) => Number(/solo/i.test(right.section)) - Number(/solo/i.test(left.section)) || right.year - left.year)
+    .slice(0, CRAWL_LIMITS.selectiveCvRows);
+  return selected.map((row) => finishFact(input, source, {
+    title: row.title,
+    dates: {
+      start: { year: row.year, month: null, day: null },
+      end: { year: null, month: null, day: null },
+      precision: "YEAR",
+    },
+    venue: row.venue,
+    city: row.city,
+    country: row.country,
+    participants: [participant(subject, "EXPLICIT_PARTICIPANT", input.artists, `chronology:${row.section}`)],
+    extractionMethod: "KUKJE_ARTIST_CHRONOLOGY",
+  }));
 }
 
 function crawlGalleryHyundaiExhibition(input: CrawlInput, source: TrustedSource): CrawlFact {

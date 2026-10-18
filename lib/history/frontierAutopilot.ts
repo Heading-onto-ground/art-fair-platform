@@ -9,8 +9,8 @@ import {
 import { densityForCount } from "@/lib/history/policy";
 
 export const AUTOPILOT_BATCH_MIN = 5;
-export const AUTOPILOT_BATCH_MAX = 10;
-export const AUTOPILOT_BATCH_DEFAULT = 8;
+export const AUTOPILOT_BATCH_MAX = 20;
+export const AUTOPILOT_BATCH_DEFAULT = 12;
 
 export const WATCHED_FRONTIER = [
   "Youn Myeungro",

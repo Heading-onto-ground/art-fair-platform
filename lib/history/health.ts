@@ -1,7 +1,7 @@
 import type { PrismaClient } from "@prisma/client";
 import { prisma as untypedPrisma } from "@/lib/prisma";
 import { journeyDepthFromCounts, type JourneyDepthReport } from "@/lib/history/analytics";
-import { DEMAND_SEPARATION_AT } from "@/lib/history/demandQuality";
+import { countsAsFrontierDemand, DEMAND_SEPARATION_AT } from "@/lib/history/demandQuality";
 import { namedFrontier, type NamedFrontier } from "@/lib/history/frontierCases";
 import { buildGraphFrontier, largestComponentSize, type FrontierRow, type FrontierStatus, type GrowthSnapshot } from "@/lib/history/growth";
 import { aliasLookupEqual, resolveVerifiedAlias } from "@/lib/history/identity";
@@ -25,6 +25,7 @@ export type HistoryHealth = {
   threeArtistRoutes: number;
   unresolvedParticipants: string[];
   legacyMixedSearches: { query: string; count: number }[];
+  invalidCheckQueries: { query: string; count: number }[];
   noResultSearches: {
     query: string;
     count: number;
@@ -116,10 +117,19 @@ export async function loadHistoryHealth(): Promise<HistoryHealth> {
     })),
     unresolved: unresolved.map((row) => ({ label: row.label, exhibitionTitle: row.exhibition.title })),
   };
-  const demand = signals
+  const recordedDemand = signals
     .filter((row) => row.path)
     .map((row) => ({ query: row.path as string, count: row._count._all, lastSearched: row._max.createdAt?.toISOString() ?? null }))
     .sort((left, right) => right.count - left.count || left.query.localeCompare(right.query));
+  const countsForFrontier = (query: string) => countsAsFrontierDemand({
+    name: "SEARCH_NO_RESULT",
+    createdAt: DEMAND_SEPARATION_AT,
+    query,
+  });
+  const demand = recordedDemand.filter((row) => countsForFrontier(row.query));
+  const invalidCheckQueries = recordedDemand
+    .filter((row) => !countsForFrontier(row.query))
+    .map((row) => ({ query: row.query, count: row.count }));
   const frontier = buildGraphFrontier({ snapshot, demand });
   const isolated = frontier.filter((row) => row.reason === "ISOLATED_ARTIST").map((row) => row.artist);
   const largest = largestComponentSize(snapshot);
@@ -187,6 +197,7 @@ export async function loadHistoryHealth(): Promise<HistoryHealth> {
     readablePaths,
     threeArtistRoutes,
     unresolvedParticipants: [...new Set(snapshot.unresolved.map((row) => row.label))].sort(),
+    invalidCheckQueries,
     legacyMixedSearches: legacySignals
       .filter((row) => row.path)
       .map((row) => ({ query: row.path as string, count: row._count._all }))

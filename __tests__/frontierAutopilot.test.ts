@@ -59,7 +59,7 @@ describe("frontier autopilot ranking", () => {
     expect(watched.find((row) => row.name === "Youn Myeungro")?.frontierType).toBe("ISOLATED_ARTIST");
     expect(watched.find((row) => row.name === "Kim Hyung Dae")?.rank).toBeNull();
     expect(selectAutopilotBatch(ranked, 8).length).toBeGreaterThanOrEqual(5);
-    expect(selectAutopilotBatch(ranked, 100).length).toBeLessThanOrEqual(10);
+    expect(selectAutopilotBatch(ranked, 100).length).toBeLessThanOrEqual(20);
   });
 
   it("counts the public graph without a fame rank", () => {

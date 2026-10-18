@@ -1,5 +1,8 @@
+import { writeFileSync } from "fs";
 import { PrismaClient } from "@prisma/client";
-import { DEMAND_SEPARATION_AT } from "../lib/history/demandQuality";
+import { classifyStoredDemand, countsAsFrontierDemand, DEMAND_SEPARATION_AT } from "../lib/history/demandQuality";
+import { aliasSitemapUrls, exactDirectoryLinks, textHasExactAlias } from "../lib/history/galleryChronology";
+import { TRUSTED_DOMAINS, enabledDirectories } from "../lib/history/trustedDomains";
 import { buildDocumentedPaths } from "../lib/history/paths";
 import { buildGraphFrontier, previewCandidates, type FactualCandidate, type GrowthSnapshot } from "../lib/history/growth";
 import { aliasLookupEqual, resolveVerifiedAlias } from "../lib/history/identity";
@@ -86,15 +89,20 @@ function toInstitution(id: string, entity: ApiEntity): DiscoveryInstitution {
 }
 
 async function wikidata(query: string, last: { at: number }): Promise<unknown> {
-  const wait = Math.max(0, 1200 - (Date.now() - last.at));
-  if (last.at > 0 && wait > 0) await new Promise((resolve) => setTimeout(resolve, wait));
-  last.at = Date.now();
-  const response = await fetch(`https://www.wikidata.org/w/api.php?${query}`, {
-    headers: { "user-agent": USER_AGENT, accept: "application/json" },
-  });
-  const text = await response.text();
-  if (!response.ok || text.startsWith("You are making too many requests")) throw new Error("WIKIDATA_RATE_LIMIT");
-  return JSON.parse(text) as unknown;
+  for (let attempt = 1; attempt <= 4; attempt += 1) {
+    const wait = Math.max(0, 2000 - (Date.now() - last.at));
+    if (last.at > 0 && wait > 0) await new Promise((resolve) => setTimeout(resolve, wait));
+    last.at = Date.now();
+    const response = await fetch(`https://www.wikidata.org/w/api.php?${query}`, {
+      headers: { "user-agent": USER_AGENT, accept: "application/json" },
+    });
+    const text = await response.text();
+    if (response.ok && !text.startsWith("You are making too many requests")) return JSON.parse(text) as unknown;
+    if (attempt === 4) throw new Error("WIKIDATA_RATE_LIMIT");
+    await new Promise((resolve) => setTimeout(resolve, 8000 * attempt));
+    last.at = Date.now();
+  }
+  throw new Error("WIKIDATA_RATE_LIMIT");
 }
 
 function discoveryIdentity(target: RankedFrontier, snapshot: GrowthSnapshot): { slug: string; matchLabels: string[] } {
@@ -135,8 +143,23 @@ function candidateFromFact(fact: CrawlFact): FactualCandidate {
   };
 }
 
-async function loadGraph(): Promise<{ snapshot: GrowthSnapshot; demand: { query: string; count: number }[]; documentedTwoHopPaths: number }> {
-  const [exhibitions, unresolved, signals] = await Promise.all([
+const CONTAMINATED_QUERIES = ["pending check name", "zzzz no artist", "김홍도"];
+
+function demandRows(rows: { path: string | null; _count: { _all: number } }[]): { query: string; count: number }[] {
+  return rows
+    .filter((row) => row.path)
+    .map((row) => ({ query: row.path as string, count: row._count._all }))
+    .sort((left, right) => right.count - left.count || left.query.localeCompare(right.query));
+}
+
+async function loadGraph(): Promise<{
+  snapshot: GrowthSnapshot;
+  demand: { query: string; count: number }[];
+  demandBefore: { query: string; count: number }[];
+  demandSamples: { query: string; name: string; count: number; earliest: string; latest: string; quality: string }[];
+  documentedTwoHopPaths: number;
+}> {
+  const [exhibitions, unresolved, signals, signalsBefore, samples] = await Promise.all([
     prisma.exhibition.findMany({
       where: publicExhibitionWhere,
       select: {
@@ -165,6 +188,16 @@ async function loadGraph(): Promise<{ snapshot: GrowthSnapshot; demand: { query:
       by: ["path"],
       where: { name: "SEARCH_NO_RESULT", createdAt: { gte: new Date(DEMAND_SEPARATION_AT) } },
       _count: { _all: true },
+    }),
+    prisma.historySignal.groupBy({
+      by: ["path"],
+      where: { name: "SEARCH_NO_RESULT" },
+      _count: { _all: true },
+    }),
+    prisma.historySignal.findMany({
+      where: { path: { in: [...CONTAMINATED_QUERIES] } },
+      select: { name: true, path: true, createdAt: true },
+      orderBy: { createdAt: "asc" },
     }),
   ]);
   const artists = new Map<string, GrowthSnapshot["artists"][number]>();
@@ -201,12 +234,30 @@ async function loadGraph(): Promise<{ snapshot: GrowthSnapshot; demand: { query:
     })),
     20000,
   );
+  const demandSamples = CONTAMINATED_QUERIES.flatMap((query) => {
+    const rows = samples.filter((row) => row.path === query);
+    if (rows.length === 0) return [];
+    const latest = rows[rows.length - 1];
+    const earliest = rows[0];
+    if (!latest || !earliest) return [];
+    return [{
+      query,
+      name: latest.name,
+      count: rows.length,
+      earliest: earliest.createdAt.toISOString(),
+      latest: latest.createdAt.toISOString(),
+      quality: classifyStoredDemand({ name: latest.name, createdAt: latest.createdAt.toISOString(), query }),
+    }];
+  });
   return {
     snapshot,
-    demand: signals
-      .filter((row) => row.path)
-      .map((row) => ({ query: row.path as string, count: row._count._all }))
-      .sort((left, right) => right.count - left.count || left.query.localeCompare(right.query)),
+    demand: demandRows(signals).filter((row) => countsAsFrontierDemand({
+      name: "SEARCH_NO_RESULT",
+      createdAt: DEMAND_SEPARATION_AT,
+      query: row.query,
+    })),
+    demandBefore: demandRows(signalsBefore),
+    demandSamples,
     documentedTwoHopPaths: paths.length,
   };
 }
@@ -233,11 +284,17 @@ async function investigate(batch: RankedFrontier[], snapshot: GrowthSnapshot): P
   }
   const artistIds = [...new Set([...foundIds.values()].flat())];
   const artistEntities = new Map<string, ApiEntity>();
-  if (artistIds.length > 0) {
-    const payload = await wikidata(`action=wbgetentities&ids=${artistIds.join("|")}&props=labels|aliases|descriptions|claims&languages=en|ko&format=json`, last) as {
-      entities?: Record<string, ApiEntity>;
-    };
-    for (const [id, entity] of Object.entries(payload.entities ?? {})) artistEntities.set(id, entity);
+  for (let index = 0; index < artistIds.length; index += 40) {
+    const slice = artistIds.slice(index, index + 40);
+    try {
+      const payload = await wikidata(`action=wbgetentities&ids=${slice.join("|")}&props=labels|aliases|descriptions|claims&languages=en|ko&format=json`, last) as {
+        entities?: Record<string, ApiEntity>;
+      };
+      for (const [id, entity] of Object.entries(payload.entities ?? {})) artistEntities.set(id, entity);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "WIKIDATA_FAILED";
+      for (const target of batch) target.previousOutcomes = [...target.previousOutcomes, message];
+    }
   }
   const discovered = batch.map((target) => {
     const entities = (foundIds.get(target.artist) ?? []).flatMap((id) => {
@@ -249,10 +306,15 @@ async function investigate(batch: RankedFrontier[], snapshot: GrowthSnapshot): P
   const collectionIds = [...new Set(discovered.flatMap((row) => row.entities.flatMap((entity) => entity.collectionIds)))];
   const institutions: DiscoveryInstitution[] = [];
   if (collectionIds.length > 0) {
-    const payload = await wikidata(`action=wbgetentities&ids=${collectionIds.join("|")}&props=labels|descriptions|claims&languages=en|ko&format=json`, last) as {
-      entities?: Record<string, ApiEntity>;
-    };
-    for (const [id, entity] of Object.entries(payload.entities ?? {})) institutions.push(toInstitution(id, entity));
+    try {
+      const payload = await wikidata(`action=wbgetentities&ids=${collectionIds.slice(0, 40).join("|")}&props=labels|descriptions|claims&languages=en|ko&format=json`, last) as {
+        entities?: Record<string, ApiEntity>;
+      };
+      for (const [id, entity] of Object.entries(payload.entities ?? {})) institutions.push(toInstitution(id, entity));
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "WIKIDATA_FAILED";
+      for (const target of batch) target.previousOutcomes = [...target.previousOutcomes, message];
+    }
   }
   const queued = new Map<string, string[]>();
   const addUrl = (artist: string, url: string) => {
@@ -280,28 +342,60 @@ async function investigate(batch: RankedFrontier[], snapshot: GrowthSnapshot): P
     };
   });
   const fetchState = { cache: new Map(), lastByHost: new Map<string, number>() };
-  for (const discovery of discoveries) {
-    const aliases = [...new Set([...aliasesFor(discovery.identitySlug), ...discovery.target.aliases, canonicalArtistName(discovery.identitySlug)])];
-    if (discovery.candidates.some((item) => item.sourceDomain === "tate.org.uk")) {
-      const search = await fetchTrustedDocument(`https://www.tate.org.uk/search?q=${encodeURIComponent(searchLabel(discovery.target.artist, discovery.target.aliases).name)}`, fetchState);
-      const links = search.html ? tateResultLinks(search.html) : [];
-      for (const link of links.filter((item) => classifyFetchedPage(item) === "EXHIBITION").slice(0, 2)) addUrl(discovery.target.artist, link);
-      const mentioned = (item: string) => aliases.some((alias) => {
-        const token = alias.toLowerCase().replace(/[\s\u2010-\u2014-]+/g, "-");
-        return token.length >= 6 && item.toLowerCase().includes(token);
-      });
-      for (const link of links.filter((item) => classifyFetchedPage(item) === "ARTIST_PROFILE" && mentioned(item)).slice(0, 1)) addUrl(discovery.target.artist, link);
-    }
-    if (discovery.candidates.some((item) => item.sourceDomain === "clevelandart.org")) {
-      for (const alias of aliases) {
-        const works = await fetchTrustedDocument(`https://openaccess-api.clevelandart.org/api/artworks/?artists=${encodeURIComponent(alias)}&limit=5`, fetchState);
-        const matched = clevelandMatchedWorks(works.json, aliases);
-        if (matched.exhibitionIds.length === 0 && matched.objectUrls.length === 0) continue;
-        for (const id of matched.exhibitionIds.slice(0, 2)) addUrl(discovery.target.artist, `https://openaccess-api.clevelandart.org/api/exhibitions/${id}`);
-        break;
+  const aliasesForDiscovery = (discovery: (typeof discoveries)[number]) => [...new Set([
+    ...aliasesFor(discovery.identitySlug),
+    ...discovery.target.aliases,
+    canonicalArtistName(discovery.identitySlug),
+    discovery.target.artist,
+  ])];
+  for (const domain of enabledDirectories()) {
+    if (!domain.directoryUrl) continue;
+    const directory = await fetchTrustedDocument(domain.directoryUrl, fetchState);
+    if (!directory.html) continue;
+    for (const discovery of discoveries) {
+      for (const url of exactDirectoryLinks(directory.html, aliasesForDiscovery(discovery), domain.directoryUrl).slice(0, 1)) {
+        addUrl(discovery.target.artist, url);
       }
     }
-    if (discovery.candidates.some((item) => item.sourceDomain === "artic.edu")) {
+  }
+  for (const domain of TRUSTED_DOMAINS.filter((item) => item.enabled && item.sitemapUrl)) {
+    const sitemap = await fetchTrustedDocument(domain.sitemapUrl as string, fetchState);
+    if (!sitemap.html) continue;
+    for (const discovery of discoveries) {
+      for (const url of aliasSitemapUrls(sitemap.html, aliasesForDiscovery(discovery), 2)) {
+        if (classifyTrustedUrl(url)) addUrl(discovery.target.artist, url);
+      }
+    }
+  }
+  for (const discovery of discoveries) {
+    const aliases = aliasesForDiscovery(discovery);
+    const tate = TRUSTED_DOMAINS.find((item) => item.domain === "tate.org.uk" && item.enabled && item.internalSearchUrl);
+    if (tate?.internalSearchUrl) {
+      const search = await fetchTrustedDocument(tate.internalSearchUrl.replace("{query}", encodeURIComponent(searchLabel(discovery.target.artist, discovery.target.aliases).name)), fetchState);
+      const links = search.html ? tateResultLinks(search.html) : [];
+      let checked = 0;
+      for (const link of links) {
+        const pageType = classifyFetchedPage(link);
+        if (pageType !== "EXHIBITION" && pageType !== "ARTIST_PROFILE") continue;
+        if (checked >= 2) break;
+        checked += 1;
+        if (aliases.some((alias) => textHasExactAlias(link, alias))) {
+          addUrl(discovery.target.artist, link);
+          continue;
+        }
+        const page = await fetchTrustedDocument(link, fetchState);
+        if (page.html && aliases.some((alias) => textHasExactAlias(page.html ?? "", alias))) addUrl(discovery.target.artist, link);
+      }
+    }
+    const cleveland = TRUSTED_DOMAINS.find((item) => item.domain === "clevelandart.org" && item.enabled);
+    if (cleveland) {
+      const alias = searchLabel(discovery.target.artist, aliases).name;
+      const works = await fetchTrustedDocument(`https://openaccess-api.clevelandart.org/api/artworks/?artists=${encodeURIComponent(alias)}&limit=5`, fetchState);
+      const matched = clevelandMatchedWorks(works.json, aliases);
+      for (const id of matched.exhibitionIds.slice(0, 2)) addUrl(discovery.target.artist, `https://openaccess-api.clevelandart.org/api/exhibitions/${id}`);
+    }
+    const aic = TRUSTED_DOMAINS.find((item) => item.domain === "artic.edu" && item.enabled);
+    if (aic) {
       const agents = await fetchTrustedDocument(`https://api.artic.edu/api/v1/agents/search?q=${encodeURIComponent(searchLabel(discovery.target.artist, discovery.target.aliases).name)}&limit=5&fields=id,title`, fetchState);
       const agent = aicExactAgent(agents.json, aliases);
       if (agent) addUrl(discovery.target.artist, `https://api.artic.edu/api/v1/agents/${agent.id}`);
@@ -353,7 +447,11 @@ async function investigate(batch: RankedFrontier[], snapshot: GrowthSnapshot): P
         sourceName: fact.provenance.sourceName,
         identity: fact.participants.map((person) => ({ label: person.label, identity: person.identity, evidence: person.evidence })),
         country: fact.country,
+        city: fact.city,
         venue: fact.venue,
+        startYear: fact.startYear,
+        datePrecision: fact.datePrecision,
+        extractionMethod: fact.provenance.extractionMethod,
         pageNote: page.note,
         graph: preview
           ? {
@@ -433,18 +531,34 @@ async function investigate(batch: RankedFrontier[], snapshot: GrowthSnapshot): P
   };
 }
 
-export async function runFrontierAutopilot(input: { limit: number }): Promise<void> {
+function rankSummary(row: RankedFrontier) {
+  return {
+    rank: row.rank,
+    artist: row.artist,
+    frontierType: row.frontierType,
+    score: row.score,
+    explanation: row.explanation,
+    exhibitionCount: row.exhibitionCount,
+    componentId: row.componentId,
+    componentSize: row.componentSize,
+    searchDemand: row.searchDemand,
+  };
+}
+
+export async function runFrontierAutopilot(input: { limit: number; reportPath?: string | null }): Promise<void> {
   const loaded = await loadGraph();
-  const rows = buildGraphFrontier({ snapshot: loaded.snapshot, demand: loaded.demand }).map((row) => {
+  const withKnownSources = (demand: { query: string; count: number }[]) => buildGraphFrontier({ snapshot: loaded.snapshot, demand }).map((row) => {
     const recorded = FRONTIER_CASES.find((item) => item.sourceUrl && (item.slug === row.artist || aliasLookupEqual(item.name, row.artist)));
     if (!recorded?.sourceUrl || row.candidateSources.includes(recorded.sourceUrl)) return row;
     return { ...row, candidateSources: [...row.candidateSources, recorded.sourceUrl] };
   });
   const ambiguous = FRONTIER_CASES.filter((item) => item.blocked).map((item) => item.name);
+  const rankedBefore = rankAutopilotFrontier({ rows: withKnownSources(loaded.demandBefore), snapshot: loaded.snapshot, ambiguousArtists: ambiguous });
+  const rows = withKnownSources(loaded.demand);
   const ranked = rankAutopilotFrontier({ rows, snapshot: loaded.snapshot, ambiguousArtists: ambiguous });
   const batch = selectAutopilotBatch(ranked, input.limit);
   const investigated = await investigate(batch, loaded.snapshot);
-  const approval = (investigated.candidates as {
+  const listed = investigated.candidates as {
     decision: string;
     duplicate: string | null;
     reason: string;
@@ -454,7 +568,30 @@ export async function runFrontierAutopilot(input: { limit: number }): Promise<vo
     artist: string;
     identity: { label: string; identity: string; evidence: string }[];
     graph: { newExhibitions: number; newDirectPairs: number; componentMerge: boolean } | null;
-  }[]).filter((candidate) => candidate.decision === "AUTO_IMPORT" && candidate.duplicate === "NEW");
+  }[];
+  const approval = listed.filter((candidate) => candidate.decision === "AUTO_IMPORT" && candidate.duplicate === "NEW");
+  const targetRows = investigated.targets as { resolvedEntityId: string | null; pages: { sourceUrl: string; fetchable: boolean; pageType: string | null }[] }[];
+  const pageRows = targetRows.flatMap((target) => target.pages);
+  const hosts = new Set(pageRows.flatMap((page) => {
+    try {
+      return [new URL(page.sourceUrl).hostname.replace(/^www\./, "")];
+    } catch {
+      return [];
+    }
+  }));
+  const yieldFunnel = {
+    frontierTargets: batch.length,
+    identitiesResolved: targetRows.filter((target) => target.resolvedEntityId).length,
+    trustedDomainsDiscovered: hosts.size,
+    candidateUrls: new Set(pageRows.map((page) => page.sourceUrl)).size,
+    fetchablePages: pageRows.filter((page) => page.fetchable).length,
+    exhibitionOrCvPages: pageRows.filter((page) => page.pageType === "EXHIBITION" || page.pageType === "ARTIST_PROFILE").length,
+    factualCandidates: investigated.extraction.factualCandidates,
+    newCandidates: listed.filter((row) => row.duplicate === "NEW").length,
+    autoImportEligible: approval.length,
+    review: listed.filter((row) => row.decision === "REVIEW_QUEUE").length,
+    exact: listed.filter((row) => row.duplicate === "EXACT").length,
+  };
   const report = {
     output: "GRAPH_FRONTIER_AUTOPILOT_V1",
     imported: false,
@@ -468,26 +605,31 @@ export async function runFrontierAutopilot(input: { limit: number }): Promise<vo
       return { name, present: Boolean(artist), slug: artist?.slug ?? null, exhibitions: artist?.exhibitionIds.length ?? 0 };
     }),
     batchSize: batch.length,
+    demandSeparationAt: DEMAND_SEPARATION_AT,
+    demandSamples: loaded.demandSamples,
+    rankingBefore: rankedBefore.slice(0, 12).map(rankSummary),
+    rankingAfter: ranked.slice(0, 12).map(rankSummary),
     ranking: ranked.slice(0, 20).map((row) => ({
-      rank: row.rank,
-      artist: row.artist,
-      frontierType: row.frontierType,
-      score: row.score,
-      explanation: row.explanation,
-      exhibitionCount: row.exhibitionCount,
-      componentId: row.componentId,
-      componentSize: row.componentSize,
-      searchDemand: row.searchDemand,
+      ...rankSummary(row),
       aliases: row.aliases,
       knownSourceCandidates: row.knownSourceCandidates,
       previousOutcomes: row.previousOutcomes,
     })),
+    registry: TRUSTED_DOMAINS.map((domain) => ({
+      institutionName: domain.institutionName,
+      domain: domain.domain,
+      searchMethod: domain.searchMethod,
+      enabled: domain.enabled,
+    })),
+    yieldFunnel,
     targets: investigated.targets,
     extraction: investigated.extraction,
     candidates: investigated.candidates,
     nextGrowthBatch: approval.slice(0, 15),
     usefulTargets: (investigated.targets as { useful: boolean }[]).filter((target) => target.useful).length,
   };
-  console.log(JSON.stringify(report));
+  const json = JSON.stringify(report);
+  console.log(json);
+  if (input.reportPath) writeFileSync(input.reportPath, json);
   await prisma.$disconnect();
 }
