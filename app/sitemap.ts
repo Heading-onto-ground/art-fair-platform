@@ -35,6 +35,8 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const staticPages: Entry[] = [
     url("/", undefined, { changeFrequency: "daily", priority: 1 }),
     url("/about", undefined, { changeFrequency: "monthly", priority: 0.5 }),
+    url("/about/why-rob", undefined, { changeFrequency: "monthly", priority: 0.6 }),
+    url("/about/how-to-use", undefined, { changeFrequency: "monthly", priority: 0.6 }),
     url("/guide", undefined, { changeFrequency: "monthly", priority: 0.5 }),
     url("/guide/activity-certification", undefined, { changeFrequency: "monthly", priority: 0.7 }),
     url("/support", undefined, { changeFrequency: "monthly", priority: 0.3 }),

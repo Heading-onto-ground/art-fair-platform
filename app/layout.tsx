@@ -4,6 +4,8 @@ import "./globals.css";
 import { ToastProvider } from "@/lib/toast";
 import { historyCopy } from "@/lib/history/locale";
 import { historyLocale } from "@/lib/history/requestLocale";
+import GoogleTagManager from "@/app/components/GoogleTagManager";
+import { gtmContainerId, siteVerification } from "@/lib/publicGrowth/analytics";
 
 // ── Self-hosted fonts via next/font (no render-blocking @import) ──
 const inter = Inter({
@@ -57,6 +59,9 @@ export const metadata: Metadata = {
     index: true,
     follow: true,
   },
+  ...(siteVerification(process.env.NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION, process.env.NEXT_PUBLIC_NAVER_SITE_VERIFICATION)
+    ? { verification: siteVerification(process.env.NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION, process.env.NEXT_PUBLIC_NAVER_SITE_VERIFICATION) }
+    : {}),
   appleWebApp: {
     capable: true,
     statusBarStyle: "default",
@@ -87,6 +92,7 @@ export default async function RootLayout({
     >
       <head />
       <body>
+        {gtmContainerId(process.env.NEXT_PUBLIC_GTM_ID) ? <GoogleTagManager id={gtmContainerId(process.env.NEXT_PUBLIC_GTM_ID) as string} /> : null}
         <a href="#main-content" className="skip-link">
           {copy.skipToContent}
         </a>

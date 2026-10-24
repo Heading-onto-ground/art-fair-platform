@@ -1354,3 +1354,10 @@ html[data-nav="pending"] .rh-progress span,
     transition: none !important;
   }
 }
+.rh-prose { max-width: 680px; }
+.rh-prose h2 { font-family: var(--font-cormorant), Georgia, serif; font-size: clamp(28px, 4vw, 40px); font-weight: 500; margin: 36px 0 8px; }
+.rh-prose p, .rh-prose li { font-size: 17px; line-height: 1.6; }
+.rh-path { display: flex; flex-wrap: wrap; gap: 8px 12px; font-family: var(--font-cormorant), Georgia, serif; font-size: clamp(28px, 4vw, 42px); }
+.rh-cta { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 28px; }
+.rh-search { display: flex; flex-wrap: wrap; gap: 8px; }
+.rh-search input { flex: 1 1 180px; min-width: 0; }

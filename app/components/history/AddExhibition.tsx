@@ -1,9 +1,10 @@
 "use client";
 
-import { FormEvent, useState } from "react";
+import { FormEvent, useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import TopBar from "@/app/components/TopBar";
 import { trackHistory } from "@/lib/history/analytics";
+import { pushRobEvent, pushRobEventOnce } from "@/lib/publicGrowth/analytics";
 import "./history.css";
 
 export default function AddExhibition() {
@@ -28,6 +29,10 @@ export default function AddExhibition() {
     sourceUrl: "",
   });
 
+  useEffect(() => {
+    pushRobEventOnce("ADD_EXHIBITION_OPENED", "add", { route: "/history/add" });
+  }, []);
+
   async function onSubmit(event: FormEvent) {
     event.preventDefault();
     trackHistory("EXHIBITION_ADD_STARTED");
@@ -50,6 +55,7 @@ export default function AddExhibition() {
       return;
     }
     trackHistory("EXHIBITION_ADDED");
+    pushRobEvent("ADD_EXHIBITION_SUBMITTED", { route: "/history/add" });
     if (data.publicationStatus !== "PUBLIC") {
       setMessage("Saved for review. It is not public, and it is not labeled Artist added, until a claim for this artist is approved.");
       return;

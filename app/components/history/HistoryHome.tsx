@@ -5,6 +5,7 @@ import Link from "next/link";
 import TopBar from "@/app/components/TopBar";
 import LocaleSwitch from "@/app/components/history/LocaleSwitch";
 import { trackHistory, trackMissingSearch } from "@/lib/history/analytics";
+import { pushRobEvent } from "@/lib/publicGrowth/analytics";
 import { historyCopy, type HistoryLocale } from "@/lib/history/locale";
 import {
   SEARCH_CLIENT_TIMEOUT_MS,
@@ -89,6 +90,7 @@ export default function HistoryHome({ discovery = null, locale = "en" }: { disco
 
   function choose(artist: HistorySearchResult) {
     trackHistory("SEARCH_RESULT_OPENED", `/artists/${artist.slug}`);
+    pushRobEvent("SEARCH_RESULT_OPENED", { artist: artist.slug, route: "/" });
     window.location.assign(`/artists/${artist.slug}`);
   }
 
@@ -116,7 +118,10 @@ export default function HistoryHome({ discovery = null, locale = "en" }: { disco
     setResults(found);
     const next = finishSearch({ ok: true, results: found });
     setPhase(next);
-    if (next === "empty") trackMissingSearch(q);
+    if (next === "empty") {
+      trackMissingSearch(q);
+      pushRobEvent("SEARCH_NO_RESULT", { route: "/" });
+    }
   }
 
   async function onSubmit(event: FormEvent) {
@@ -132,6 +137,7 @@ export default function HistoryHome({ discovery = null, locale = "en" }: { disco
     setResults(null);
     setOpen(false);
     trackHistory("SEARCH_PERFORMED");
+    pushRobEvent("SEARCH_STARTED", { route: "/" });
     if (completed.current && reuseCompletedSearch(completed.current.query, q)) {
       showResults(q, completed.current.results);
       if (submitSeq.current === seq) {
@@ -248,7 +254,10 @@ export default function HistoryHome({ discovery = null, locale = "en" }: { disco
                       <Link
                         className="rh-result-link"
                         href={`/artists/${artist.slug}`}
-                        onClick={() => trackHistory("SEARCH_RESULT_OPENED", `/artists/${artist.slug}`)}
+                        onClick={() => {
+                          trackHistory("SEARCH_RESULT_OPENED", `/artists/${artist.slug}`);
+                          pushRobEvent("SEARCH_RESULT_OPENED", { artist: artist.slug, route: "/" });
+                        }}
                       >
                         <span className="rh-result-name">
                           <strong>{artist.canonicalName}</strong>
@@ -375,6 +384,11 @@ export default function HistoryHome({ discovery = null, locale = "en" }: { disco
             <p>{copy.seeNowBody}</p>
           </Link>
         </section>
+        <p className="rh-muted">
+          <Link href="/about/how-to-use">{locale === "ko" ? "사용법" : "How to use"}</Link>
+          {" · "}
+          <Link href="/about/why-rob">{locale === "ko" ? "ROB 소개" : "Why ROB"}</Link>
+        </p>
       </main>
     </div>
   );

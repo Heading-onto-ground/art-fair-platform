@@ -7,6 +7,7 @@ import TopBar from "@/app/components/TopBar";
 import LocaleSwitch from "@/app/components/history/LocaleSwitch";
 import { historyCopy, type HistoryLocale } from "@/lib/history/locale";
 import { rememberExplorationDepth, trackHistory } from "@/lib/history/analytics";
+import { depthEventForTrail, markForwardArtist, pushRobEvent, pushRobEventOnce, takeForwardArtist } from "@/lib/publicGrowth/analytics";
 import ReportIssue from "@/app/components/history/ReportIssue";
 import {
   JOURNEY_MS,
@@ -317,6 +318,14 @@ export default function HistoryExperience({ artist, locale = "en" }: { artist: H
 
   useEffect(() => {
     trackHistory("ARTIST_OPENED", `/artists/${artist.slug}`);
+    pushRobEventOnce("ARTIST_OPENED", artist.slug, { artist: artist.slug, route: `/artists/${artist.slug}` });
+    if (takeForwardArtist(artist.slug)) {
+      const journeyId = validJourneyId(searchParams.get("j")) ?? trailIdRef.current;
+      const previous = readJourneySteps(sessionStorage, journeyId).length;
+      pushRobEventOnce("CONNECTED_ARTIST_OPENED", `${journeyId}:${artist.slug}`, { artist: artist.slug });
+      const depthEvent = depthEventForTrail(previous);
+      if (depthEvent) pushRobEventOnce(depthEvent, `${journeyId}:${previous}`, { artist: artist.slug, depth: previous + 1 });
+    }
     const depth = rememberExplorationDepth(artist.slug);
     if (from) trackHistory("SECOND_ARTIST_REACHED", `/artists/${artist.slug}`);
     if (depth === 3) trackHistory("THIRD_ARTIST_REACHED", `/artists/${artist.slug}`);
@@ -388,6 +397,7 @@ export default function HistoryExperience({ artist, locale = "en" }: { artist: H
 
   function openYear(year: number, eventId?: string) {
     trackHistory(eventId ? "TIMELINE_EVENT_OPENED" : "TIMELINE_YEAR_OPENED");
+    if (eventId) pushRobEvent("TIMELINE_EVENT_OPENED", { artist: artist.slug, exhibition: eventId });
     if (!eventId && focus === year && zoom === "YEAR" && !selected) {
       replaceQuery({ zoom: null, focus: null, event: null });
       return;
@@ -422,6 +432,7 @@ export default function HistoryExperience({ artist, locale = "en" }: { artist: H
     } catch {
       // The next page still opens. Back is available when the trail was stored.
     }
+    markForwardArtist(slug);
     const href = followArtistHref(slug, journeyId, viaKey);
     markPending(slug);
     router.prefetch(href);
