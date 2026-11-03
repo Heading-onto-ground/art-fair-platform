@@ -286,6 +286,13 @@ export function containsDestructiveSchema(source: string): boolean {
 
 export function slugifyName(name: string): string {
   const base = name
+    .replace(/&nbsp;|&#160;/g, " ")
+    .replace(/&#8211;|&#x2013;|&ndash;/g, "-")
+    .replace(/&uuml;/g, "u")
+    .replace(/&ouml;/g, "o")
+    .replace(/&auml;/g, "a")
+    .replace(/&eacute;/g, "e")
+    .replace(/&amp;/g, " ")
     .normalize("NFKD")
     .replace(/[\u0300-\u036f]/g, "")
     .toLowerCase()

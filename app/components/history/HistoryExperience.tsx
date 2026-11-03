@@ -585,7 +585,7 @@ export default function HistoryExperience({ artist, locale = "en" }: { artist: H
                   {artist.spaces.slice(0, 5).map((space) => (
                     <li key={space.id}>
                       {space.slug ? <Link href={`/spaces/${space.slug}`}>{space.name}</Link> : <span>{space.name}</span>}
-                      <span>{copy.sharedCount(space.count)}</span>
+                      <span>{copy.placeCount(space.count)}</span>
                     </li>
                   ))}
                 </ul>

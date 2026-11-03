@@ -140,6 +140,40 @@ describe("research jobs", () => {
     expect(second).not.toContain("DISCOVERY_IDENTITY_RESOLVED");
   });
 
+  it("uses a trusted gallery roster when the personal site cannot be fetched", async () => {
+    const roster = `
+      <a href="/artists/view?seq=176"><span class="artists-main-list__name">Haegue Yang <span style="display:none;">양혜규</span></span></a>
+      <a href="/artists/view?seq=10"><span class="artists-main-list__name">Other Artist</span></a>
+    `;
+    const page = chronology.replace("Ada Painter", "Haegue Yang").replace("First Light", "Star-Crossed Rendezvous");
+    const calls: string[] = [];
+    const research = deps({
+      lookupIdentity: async () => ({
+        entities: [{ ...painter("Haegue Yang", "Q1567689"), officialWebsites: ["http://www.heikejung.de/content.html"], aliases: ["Haegue Yang", "양혜규"] }],
+        institutions: [],
+        error: null,
+      }),
+      fetchDocument: async (url) => {
+        calls.push(url);
+        if (url.includes("/artists/view?seq=176")) return { html: page, requests: 1, host: "kukjegallery.com" };
+        if (url.endsWith("/artists")) return { html: roster, requests: 1, host: "kukjegallery.com" };
+        return { blocked: "LOW_AUTHORITY", requests: 0, host: "untrusted" };
+      },
+      publish: async (_job, fact) => {
+        research.published.push(fact);
+        return { ok: true, artistId: "artist-hy", artistSlug: "haegue-yang" };
+      },
+    });
+    const done = await run(blankJob({ id: "hy", query: "Haegue Yang", normalizedQuery: "haegue yang", locale: "ko", demandQuality: "REAL_VISITOR", expand: false, now }), research);
+    expect(calls.some((url) => url.endsWith("/artists"))).toBe(true);
+    expect(calls.some((url) => url.includes("seq=176"))).toBe(true);
+    expect(calls.some((url) => url.includes("heikejung"))).toBe(false);
+    expect(done.verifiedFactCount).toBe(1);
+    expect(done.resultArtistSlug).toBe("haegue-yang");
+    expect(research.published).toHaveLength(1);
+    expect(projectResearchJob(done).detail).toContain("현재 기록은 일부입니다.");
+  });
+
   it("does not let the browser choose operator demand", () => {
     const route = readFileSync(resolve(__dirname, "../app/api/history/research/route.ts"), "utf8");
     expect(route).toContain("demandWriteClass");

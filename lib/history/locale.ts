@@ -18,6 +18,7 @@ export type HistoryCopy = {
   searching: string;
   searchEmpty: string;
   researchOffer: string;
+  researchAsk: string;
   researchAction: string;
   researchExpand: string;
   searchError: string;
@@ -96,6 +97,7 @@ export type HistoryCopy = {
   clustered: string;
   showMore: (count: number) => string;
   sharedCount: (count: number) => string;
+  placeCount: (count: number) => string;
   documentedLine: (count: number) => string;
   reviewRequired: string;
   namedInTitle: string;
@@ -127,6 +129,7 @@ const en: HistoryCopy = {
   searching: "Searching…",
   searchEmpty: "No documented artist matches that name yet.",
   researchOffer: "ROB does not yet have enough documented history for this artist.",
+  researchAsk: "Look for this artist's documented records?",
   researchAction: "Research this artist",
   researchExpand: "Look for more documented records",
   searchError: "Search is temporarily unavailable. Please try again.",
@@ -205,6 +208,7 @@ const en: HistoryCopy = {
   clustered: "clustered by decade",
   showMore: (count) => `Show ${count} more ${count === 1 ? "artist" : "artists"}`,
   sharedCount: (count) => (count === 1 ? "1 documented shared exhibition" : `${count} documented shared exhibitions`),
+  placeCount: (count) => (count === 1 ? "1 documented exhibition" : `${count} documented exhibitions`),
   documentedLine: (count) => `${count} ${count === 1 ? "exhibition" : "exhibitions"} currently documented`,
   reviewRequired: "Review required",
   namedInTitle: "Named in the title",
@@ -236,6 +240,7 @@ const ko: HistoryCopy = {
   searching: "검색 중…",
   searchEmpty: "아직 ROB에 기록된 아티스트가 없습니다.",
   researchOffer: "아직 ROB에 충분한 기록이 없습니다.",
+  researchAsk: "이 작가의 기록을 찾아볼까요?",
   researchAction: "이 작가 조사하기",
   researchExpand: "기록을 더 찾아보기",
   searchError: "검색을 잠시 사용할 수 없습니다. 다시 시도해 주세요.",
@@ -314,6 +319,7 @@ const ko: HistoryCopy = {
   clustered: "연대별로 묶음",
   showMore: (count) => `작가 ${count}명 더 보기`,
   sharedCount: (count) => `기록된 공동 전시 ${count}건`,
+  placeCount: (count) => `기록된 전시 ${count}건`,
   documentedLine: (count) => `현재 ROB에 기록된 전시 ${count}건`,
   reviewRequired: "검토 필요",
   namedInTitle: "제목에만 등장",

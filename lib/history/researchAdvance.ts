@@ -3,7 +3,9 @@ import { aliasLookupEqual } from "@/lib/history/identity";
 import {
   crawlerCanFetch,
   discoverTrustedSources,
+  matchTrustedGalleryRoster,
   selectDiscoveryEntity,
+  TRUSTED_GALLERY_ROSTERS,
   type DiscoveryEntity,
   type DiscoveryInstitution,
 } from "@/lib/history/sourceDiscovery";
@@ -156,18 +158,40 @@ async function sourceStep(job: ResearchJobRecord, deps: ResearchDeps): Promise<R
     matchLabels: [job.query, identity.label, ...identity.aliases],
   });
   if (!discovered.resolvedEntityId) return close(job, "NEEDS_REVIEW", "IDENTITY_AMBIGUOUS", now);
-  const sources: ResearchSource[] = discovered.candidates.slice(0, RESEARCH_LIMITS.maxSourcesChecked).map((candidate) => ({
+  const sources: ResearchSource[] = discovered.candidates.map((candidate) => ({
     url: candidate.sourceUrl,
     name: candidate.sourceName,
     fetchable: crawlerCanFetch(candidate.sourceUrl),
     checked: false,
     blocked: null,
   }));
-  const payload: ResearchPayload = { ...job.payload, stepCount: job.payload.stepCount + 1, institutions, sources };
-  if (!sources.some((source) => source.fetchable)) {
-    return close({ ...job, sourcesFound: sources.length, payload }, "NEEDS_REVIEW", sources.length > 0 ? "NO_TRUSTED_SOURCE" : "NO_TRUSTED_SOURCE", now);
+  const hasArtistRecord = sources.some((source) => source.fetchable && /\/artists\/view|\/exhibitions\/|\/exhibition\//.test(source.url));
+  if (!hasArtistRecord) {
+    const labels = [job.query, identity.label, ...identity.aliases];
+    for (const roster of TRUSTED_GALLERY_ROSTERS) {
+      const index = await deps.fetchDocument(roster.indexUrl);
+      if (index.blocked || !index.html) continue;
+      const match = matchTrustedGalleryRoster(index.html, labels, roster.indexUrl);
+      if (!match || !crawlerCanFetch(match.url) || sources.some((source) => source.url === match.url)) continue;
+      sources.unshift({ url: match.url, name: match.sourceName, fetchable: true, checked: false, blocked: null });
+      break;
+    }
   }
-  return touch(job, { stage: "FETCH", sourcesFound: sources.length, payload, failureCode: null }, now);
+  const recordUrl = (url: string) => /\/artists\/view|\/exhibitions\/|\/exhibition\//.test(url);
+  const ordered = [
+    ...sources.filter((source) => source.fetchable && recordUrl(source.url)),
+    ...sources.filter((source) => source.fetchable && !recordUrl(source.url)),
+    ...sources.filter((source) => !source.fetchable),
+  ].slice(0, RESEARCH_LIMITS.maxSourcesChecked);
+  const hasRecord = ordered.some((source) => source.fetchable && recordUrl(source.url));
+  const selected = ordered.map((source) => hasRecord && source.fetchable && !recordUrl(source.url)
+    ? { ...source, fetchable: false }
+    : source);
+  const payload: ResearchPayload = { ...job.payload, stepCount: job.payload.stepCount + 1, institutions, sources: selected };
+  if (!selected.some((source) => source.fetchable)) {
+    return close({ ...job, sourcesFound: selected.length, payload }, "NEEDS_REVIEW", "NO_TRUSTED_SOURCE", now);
+  }
+  return touch(job, { stage: "FETCH", sourcesFound: selected.length, payload, failureCode: null }, now);
 }
 
 async function fetchStep(job: ResearchJobRecord, deps: ResearchDeps): Promise<ResearchJobRecord> {

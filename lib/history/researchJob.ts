@@ -193,9 +193,9 @@ const STEP_IDS = ["identity", "sources", "exhibitions", "places", "connections"]
 
 export function researchChecklist(job: Pick<ResearchJobRecord, "stage" | "identityStatus" | "sourcesFound" | "verifiedFactCount" | "payload">, locale: HistoryLocale): ResearchPublicView["steps"] {
   const labels = locale === "ko"
-    ? ["이름 확인", "공식 출처 발견", "전시 기록 확인", "장소 확인", "접점 확인"]
-    : ["Identity", "Official sources", "Exhibition records", "Places", "Connections"];
-  const identityDone = job.identityStatus === "RESOLVED" || job.identityStatus === "KNOWN" || job.stage === "DONE" && job.identityStatus !== "AMBIGUOUS" && job.identityStatus !== "NOT_FOUND";
+    ? ["작가 신원 확인", "공식 출처 발견", "전시 기록 확인 중", "장소 확인", "접점 확인"]
+    : ["Identity confirmed", "Official sources found", "Checking exhibitions", "Places", "Connections"];
+  const identityDone = job.identityStatus === "RESOLVED" || job.identityStatus === "KNOWN";
   const sourcesDone = job.sourcesFound > 0 && job.stage !== "IDENTITY" && job.stage !== "SOURCES";
   const factsDone = job.verifiedFactCount > 0;
   const placesDone = job.payload.verified.some((fact) => Boolean(fact.venue));
@@ -203,12 +203,15 @@ export function researchChecklist(job: Pick<ResearchJobRecord, "stage" | "identi
   const done = [identityDone, sourcesDone, factsDone, placesDone, connectionsDone];
   let currentSet = false;
   return STEP_IDS.map((id, index) => {
-    if (done[index]) return { id, label: labels[index] ?? id, state: "done" as const };
+    const label = id === "exhibitions" && done[index]
+      ? (locale === "ko" ? "전시 기록 확인" : "Exhibition records")
+      : labels[index] ?? id;
+    if (done[index]) return { id, label, state: "done" as const };
     if (!currentSet && job.stage !== "DONE") {
       currentSet = true;
-      return { id, label: labels[index] ?? id, state: "current" as const };
+      return { id, label, state: "current" as const };
     }
-    return { id, label: labels[index] ?? id, state: "waiting" as const };
+    return { id, label, state: "waiting" as const };
   });
 }
 
@@ -219,7 +222,8 @@ export function researchHeadline(job: Pick<ResearchJobRecord, "query" | "status"
     if (job.status === "NEEDS_REVIEW") return { headline: "공식 출처는 찾았지만 일부 기록을 더 확인해야 합니다.", detail: "신원이나 참여 여부가 분명하지 않은 기록은 공개 이력에 넣지 않습니다." };
     if (job.status === "SOURCE_BLOCKED") return { headline: "일부 공식 출처에 현재 접근할 수 없습니다.", detail: "확인하지 못한 기록은 만들지 않습니다." };
     if (job.status === "NOT_FOUND") return { headline: "이 이름으로 확인할 수 있는 작가 신원을 찾지 못했습니다.", detail: "같은 이름의 다른 사람으로 기록을 만들지 않습니다." };
-    if (job.verifiedFactCount > 0) return { headline: `${name}의 기록이 나타나고 있습니다.`, detail: "다른 공식 기록을 확인하고 있습니다." };
+    if (job.verifiedFactCount > 0 && job.stage !== "DONE") return { headline: `${name}의 기록이 나타나고 있습니다.`, detail: "현재 기록은 일부입니다. ROB가 다른 공식 기록을 확인하고 있습니다." };
+    if (job.stage === "DONE" && job.verifiedFactCount > 0) return { headline: `${name}의 확인된 기록은 여기까지입니다.`, detail: "현재 기록은 일부입니다." };
     if (job.stage === "DONE") return { headline: `${name}의 확인된 기록은 여기까지입니다.`, detail: "검토 중인 후보는 공개 이력과 섞지 않습니다." };
     return { headline: `ROB가 ${name}의 기록을 찾고 있습니다.`, detail: "확인된 사실만 이 화면에 나타납니다." };
   }
@@ -227,9 +231,10 @@ export function researchHeadline(job: Pick<ResearchJobRecord, "query" | "status"
   if (job.status === "NEEDS_REVIEW") return { headline: "Official sources were found, but some records still need review.", detail: "Uncertain identity or participation stays out of public history." };
   if (job.status === "SOURCE_BLOCKED") return { headline: "Some official sources cannot be reached right now.", detail: "ROB does not fill the gap with an unverified record." };
   if (job.status === "NOT_FOUND") return { headline: "ROB could not resolve an artist identity for this name.", detail: "No artist record is created from the search text alone." };
-  if (job.verifiedFactCount > 0) return { headline: `A record for ${name} is appearing.`, detail: "ROB is still checking other official sources." };
+  if (job.verifiedFactCount > 0 && job.stage !== "DONE") return { headline: `Documented records for ${name} are appearing.`, detail: "Coverage is partial. ROB is still checking other official records." };
+  if (job.stage === "DONE" && job.verifiedFactCount > 0) return { headline: `This is the verified record for ${name} so far.`, detail: "Coverage is partial." };
   if (job.stage === "DONE") return { headline: `This is the verified record for ${name} so far.`, detail: "Records still in review are kept separate." };
-  return { headline: `ROB is looking for a documented record of ${name}.`, detail: "Only verified facts appear here." };
+  return { headline: `ROB is checking documented records for ${name}.`, detail: "Only verified facts appear here." };
 }
 
 export function projectResearchJob(job: ResearchJobRecord): ResearchPublicView {

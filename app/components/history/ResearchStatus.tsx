@@ -65,6 +65,8 @@ export default function ResearchStatus({ initial }: { initial: ResearchPublicVie
             : `${job.sourcesFound} official sources · ${job.verifiedFactCount} verified records · ${job.reviewFactCount} in review`}
         </p>
         {job.facts.length > 0 ? (
+          <section className="rh-world" aria-label={job.locale === "ko" ? "확인된 기록" : "Documented records"}>
+            <h2 className="rh-kicker">{job.locale === "ko" ? "확인된 기록" : "Documented records"}</h2>
           <ul className="rh-results rh-enter">
             {job.facts.map((fact) => (
               <li key={fact.pilotRecordId}>
@@ -81,6 +83,7 @@ export default function ResearchStatus({ initial }: { initial: ResearchPublicVie
               </li>
             ))}
           </ul>
+          </section>
         ) : null}
         {job.resultHref ? (
           <p className="rh-cta">

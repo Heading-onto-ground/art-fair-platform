@@ -1370,7 +1370,14 @@ html[data-nav="pending"] .rh-progress span,
 .rh-world { margin: 8px 0 32px; max-width: 680px; }
 .rh-world-list { list-style: none; margin: 0 0 24px; padding: 0; }
 .rh-world-list li { display: flex; justify-content: space-between; gap: 16px; min-height: 44px; align-items: baseline; border-top: 1px solid #d8d2c8; padding: 12px 0; }
-.rh-world-list a, .rh-result-meta a { color: inherit; overflow-wrap: anywhere; }
+.rh-research .rh-title { max-width: 100%; overflow-wrap: anywhere; line-height: 0.96; }
+.rh-research .rh-result-link { display: grid; grid-template-columns: minmax(0, 1.1fr) minmax(0, 0.9fr); gap: 8px 28px; align-items: start; min-width: 0; }
+.rh-research .rh-result-name, .rh-research .rh-result-meta { display: flex; flex-direction: column; gap: 4px; min-width: 0; overflow-wrap: anywhere; }
+.rh-research .rh-result-name strong { font-family: var(--font-cormorant), Georgia, serif; font-size: 28px; font-weight: 500; line-height: 1.15; }
+.rh-research .rh-result-meta { color: #726d65; }
+@media (max-width: 720px) {
+  .rh-research .rh-result-link { grid-template-columns: minmax(0, 1fr); }
+}
 .rh-enter { animation: rh-fade 220ms cubic-bezier(0.16, 1, 0.3, 1) both; }
 .rh-world-list li:nth-child(2) { animation-delay: 50ms; }
 .rh-world-list li:nth-child(3) { animation-delay: 100ms; }

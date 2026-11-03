@@ -49,6 +49,7 @@ export default function ResearchOffer({
   return (
     <div className="rh-research-offer">
       <p>{expand ? copy.researchExpand : copy.researchOffer}</p>
+      {expand ? null : <p>{copy.researchAsk}</p>}
       <button className="rh-button" type="button" onClick={() => void start()} disabled={pending} aria-busy={pending}>
         {copy.researchAction}
       </button>
