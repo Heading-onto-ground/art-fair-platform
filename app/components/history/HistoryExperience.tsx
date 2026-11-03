@@ -9,6 +9,7 @@ import { historyCopy, type HistoryLocale } from "@/lib/history/locale";
 import { rememberExplorationDepth, trackHistory } from "@/lib/history/analytics";
 import { depthEventForTrail, markForwardArtist, pushRobEvent, pushRobEventOnce, takeForwardArtist } from "@/lib/publicGrowth/analytics";
 import ReportIssue from "@/app/components/history/ReportIssue";
+import ResearchOffer from "@/app/components/history/ResearchOffer";
 import {
   JOURNEY_MS,
   HISTORY_PENDING_OVERLAY_MS,
@@ -561,6 +562,54 @@ export default function HistoryExperience({ artist, locale = "en" }: { artist: H
           </div>
           {hero ? <HistoryStill image={hero} onFail={dropHero} /> : <div className="rh-artist-aside">{summary}</div>}
         </header>
+
+        {artist.artists.length > 0 || artist.spaces.length > 0 || artist.curators.length > 0 ? (
+          <section className="rh-world rh-enter" aria-label={copy.people}>
+            {artist.artists.length > 0 ? (
+              <>
+                <h2 className="rh-kicker">{copy.people}</h2>
+                <ul className="rh-world-list">
+                  {artist.artists.slice(0, 5).map((person) => (
+                    <li key={person.id}>
+                      {person.slug ? <Link href={`/artists/${person.slug}`}>{person.name}</Link> : <span>{person.name}</span>}
+                      <span>{copy.sharedCount(person.count)}</span>
+                    </li>
+                  ))}
+                </ul>
+              </>
+            ) : null}
+            {artist.spaces.length > 0 ? (
+              <>
+                <h2 className="rh-kicker">{copy.places}</h2>
+                <ul className="rh-world-list">
+                  {artist.spaces.slice(0, 5).map((space) => (
+                    <li key={space.id}>
+                      {space.slug ? <Link href={`/spaces/${space.slug}`}>{space.name}</Link> : <span>{space.name}</span>}
+                      <span>{copy.sharedCount(space.count)}</span>
+                    </li>
+                  ))}
+                </ul>
+              </>
+            ) : null}
+            {artist.curators.length > 0 ? (
+              <>
+                <h2 className="rh-kicker">{copy.curators}</h2>
+                <ul className="rh-world-list">
+                  {artist.curators.slice(0, 4).map((curator) => (
+                    <li key={curator.id}>
+                      <span>{curator.name}</span>
+                      <span>{copy.sharedCount(curator.count)}</span>
+                    </li>
+                  ))}
+                </ul>
+              </>
+            ) : null}
+          </section>
+        ) : null}
+
+        {artist.density === "LOW_DENSITY" || artist.density === "EMPTY" ? (
+          <ResearchOffer query={artist.canonicalName} locale={locale} expand />
+        ) : null}
 
         <div className="rh-tabs" role="tablist" aria-label="Artist">
           {(["history", "connections", "works", "about"] as const).map((item) => (

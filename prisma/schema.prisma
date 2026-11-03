@@ -913,3 +913,34 @@ model HistorySignal {
   @@index([name])
   @@index([createdAt])
 }
+
+// Durable Search-triggered Discovery. Additive. One active job per normalized query.
+model ResearchJob {
+  id                  String    @id @default(cuid())
+  query               String
+  normalizedQuery     String
+  locale              String
+  status              String
+  stage               String
+  demandQuality       String
+  requestedAt         DateTime  @default(now())
+  startedAt           DateTime?
+  updatedAt           DateTime  @updatedAt
+  completedAt         DateTime?
+  resolvedArtistId    String?
+  resolvedArtistSlug  String?
+  identityStatus      String?
+  sourcesFound        Int       @default(0)
+  sourcesChecked      Int       @default(0)
+  verifiedFactCount   Int       @default(0)
+  reviewFactCount     Int       @default(0)
+  blockedSourceCount  Int       @default(0)
+  failureCode         String?
+  failureDetail       String?
+  resultArtistSlug    String?
+  payload             Json
+
+  @@index([normalizedQuery])
+  @@index([status])
+  @@index([stage])
+}

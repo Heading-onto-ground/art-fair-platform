@@ -4,6 +4,7 @@ import { Fragment, FormEvent, KeyboardEvent, useEffect, useRef, useState } from 
 import Link from "next/link";
 import TopBar from "@/app/components/TopBar";
 import LocaleSwitch from "@/app/components/history/LocaleSwitch";
+import ResearchOffer from "@/app/components/history/ResearchOffer";
 import { trackHistory, trackMissingSearch } from "@/lib/history/analytics";
 import { pushRobEvent } from "@/lib/publicGrowth/analytics";
 import { historyCopy, type HistoryLocale } from "@/lib/history/locale";
@@ -47,6 +48,7 @@ export default function HistoryHome({ discovery = null, locale = "en" }: { disco
   const submitSeq = useRef(0);
   const submitAbort = useRef<AbortController | null>(null);
   const inflightQuery = useRef<string | null>(null);
+  const offered = useRef<string | null>(null);
 
   useEffect(() => {
     const q = query.trim();
@@ -121,6 +123,11 @@ export default function HistoryHome({ discovery = null, locale = "en" }: { disco
     if (next === "empty") {
       trackMissingSearch(q);
       pushRobEvent("SEARCH_NO_RESULT", { route: "/" });
+      if (offered.current !== q) {
+        offered.current = q;
+        pushRobEvent("DISCOVERY_OFFERED", { route: "/" });
+        trackHistory("DISCOVERY_OFFERED", "/");
+      }
     }
   }
 
@@ -230,9 +237,9 @@ export default function HistoryHome({ discovery = null, locale = "en" }: { disco
             </form>
             <div className="rh-search-feedback" role="status" aria-live="polite">
               {phase === "searching" ? <p>{copy.searching}</p> : null}
-              {phase === "empty" ? (
+              {phase === "empty" && pendingQuery === null ? (
                 <>
-                  <p>{copy.searchEmpty}</p>
+                  <ResearchOffer query={query} locale={locale} />
                   <p>
                     <Link href="/history/start">{copy.startHistory}</Link>
                     {" · "}
