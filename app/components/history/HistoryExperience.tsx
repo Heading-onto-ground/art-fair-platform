@@ -327,15 +327,21 @@ export default function HistoryExperience({ artist, locale = "en" }: { artist: H
       const depthEvent = depthEventForTrail(previous);
       if (depthEvent) pushRobEventOnce(depthEvent, `${journeyId}:${previous}`, { artist: artist.slug, depth: previous + 1 });
     }
+    let seenBefore: string[] = [];
+    try {
+      seenBefore = (window.sessionStorage.getItem("rob-history-artists") ?? "").split(",").filter(Boolean);
+    } catch {
+      seenBefore = [];
+    }
     const depth = rememberExplorationDepth(artist.slug);
-    if (from) trackHistory("SECOND_ARTIST_REACHED", `/artists/${artist.slug}`);
-    if (depth === 3) trackHistory("THIRD_ARTIST_REACHED", `/artists/${artist.slug}`);
-    if (depth === 4) trackHistory("FOURTH_ARTIST_REACHED", `/artists/${artist.slug}`);
+    const firstVisit = !seenBefore.includes(artist.slug);
+    if (firstVisit && from) trackHistory("SECOND_ARTIST_REACHED", `/artists/${artist.slug}`);
+    if (firstVisit && depth === 3) trackHistory("THIRD_ARTIST_REACHED", `/artists/${artist.slug}`);
+    if (firstVisit && depth === 4) trackHistory("FOURTH_ARTIST_REACHED", `/artists/${artist.slug}`);
     const media = window.matchMedia("(prefers-reduced-motion: reduce)");
     setReduceMotion(media.matches);
     const queryScroll = searchParams.get("scroll");
     const storedScroll = scrollTargetFor(artist.slug);
-    if (storedScroll != null) clearScrollTarget(artist.slug);
     const scroll = queryScroll != null && Number.isFinite(Number(queryScroll)) ? Number(queryScroll) : storedScroll;
     const timers: number[] = [];
     let frame = 0;
@@ -564,7 +570,7 @@ export default function HistoryExperience({ artist, locale = "en" }: { artist: H
         </header>
 
         {artist.artists.length > 0 || artist.spaces.length > 0 || artist.curators.length > 0 ? (
-          <section className="rh-world rh-enter" aria-label={copy.people}>
+          <section className="rh-world rh-enter">
             {artist.artists.length > 0 ? (
               <>
                 <h2 className="rh-kicker">{copy.people}</h2>

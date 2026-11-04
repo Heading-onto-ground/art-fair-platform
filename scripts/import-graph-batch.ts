@@ -43,14 +43,21 @@ function sameShow(left: { year: number | null; title: string; venue: string | nu
   return left.year === right.year && left.title.trim().toLowerCase() === right.title.trim().toLowerCase() && (left.venue ?? "").trim().toLowerCase() === right.venue.trim().toLowerCase();
 }
 
+function isolatedDiscoveryDatabase(): boolean {
+  const url = process.env.DATABASE_URL ?? "";
+  return process.env.ROB_LOCAL_DISCOVERY_IMPORT === "1" && /@127\.0\.0\.1:5433\/rob_discovery(?:\?|$)/.test(url);
+}
+
 async function main() {
   const preview = process.argv.includes("--preview");
-  if (!preview && process.env.ROB_CONFIRM_GRAPH_IMPORT !== "1") {
+  if (!preview && process.env.ROB_CONFIRM_GRAPH_IMPORT !== "1" && !isolatedDiscoveryDatabase()) {
     console.log("REFUSED");
     process.exit(1);
   }
   const file = JSON.parse(readFileSync("data/production-clearance/graph-batch-2026-10-12.json", "utf8")) as BatchFile;
-  const client = new Client({ connectionString: databaseUrl(), ssl: { rejectUnauthorized: false } });
+  const connectionString = databaseUrl();
+  const local = /@(127\.0\.0\.1|localhost)[:/]/.test(connectionString);
+  const client = new Client({ connectionString, ssl: local ? false : { rejectUnauthorized: false } });
   await client.connect();
   try {
     const before = await client.query<{ users: number; profiles: number; exhibitions: number }>(

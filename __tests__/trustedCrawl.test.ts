@@ -297,6 +297,8 @@ describe("trusted source crawler", () => {
     expect(spaceDecisionFor("MMCA")).toBe("RESOLVED");
     expect(spaceDecisionFor("Kukje Gallery Seoul")).toBe("REVIEW");
     expect(spaceDecisionFor("Guggenheim Museum")).toBe("NEW");
+    expect(spaceDecisionFor("Kunsthal Rotterdam, The Netherlands; Migros Museum für Gegenwartskunst")).toBe("REVIEW");
+    expect(spaceDecisionFor("Kunsthal Rotterdam, The Netherlands; Migros Museum für Gegenwartskunst")).toBe("REVIEW");
     const [fuzzy] = crawl({
       url: "https://www.guggenheim.org/api/exhibitions",
       json: {

@@ -165,4 +165,39 @@ export function openJob(jobs: ResearchJobRecord[]): ResearchJobRecord | null {
   return jobs.find((job) => jobIsOpen(job)) ?? null;
 }
 
+export async function claimResearchRun(id: string): Promise<boolean> {
+  // The WHERE clause is workflowClaimAvailable: stage is open and workflowRunId is empty.
+  const rows = await prisma.$queryRaw<{ id: string }[]>`
+    UPDATE "ResearchJob"
+    SET payload = jsonb_set(COALESCE(payload, '{}'::jsonb), '{workflowRunId}', '"pending"', true),
+        "updatedAt" = NOW()
+    WHERE id = ${id}
+      AND stage <> 'DONE'
+      AND (payload->>'workflowRunId' IS NULL OR payload->>'workflowRunId' = '')
+    RETURNING id
+  `;
+  return rows.length > 0;
+}
+
+export async function saveResearchRunId(id: string, runId: string): Promise<void> {
+  const token = JSON.stringify(runId);
+  await prisma.$executeRaw`
+    UPDATE "ResearchJob"
+    SET payload = jsonb_set(COALESCE(payload, '{}'::jsonb), '{workflowRunId}', ${token}::jsonb, true),
+        "updatedAt" = NOW()
+    WHERE id = ${id}
+      AND payload->>'workflowRunId' = 'pending'
+  `;
+}
+
+export async function releaseResearchRun(id: string): Promise<void> {
+  await prisma.$executeRaw`
+    UPDATE "ResearchJob"
+    SET payload = payload - 'workflowRunId',
+        "updatedAt" = NOW()
+    WHERE id = ${id}
+      AND payload->>'workflowRunId' = 'pending'
+  `;
+}
+
 export type { HistoryLocale };

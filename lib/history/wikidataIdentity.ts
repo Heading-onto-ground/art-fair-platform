@@ -38,10 +38,15 @@ function textOf(map: Record<string, { value?: string }> | undefined): string {
 }
 
 export function toDiscoveryEntity(id: string, entity: WikidataApiEntity): DiscoveryEntity {
-  const aliases = Object.values(entity.aliases ?? {}).flatMap((items) => items.flatMap((item) => (item.value ? [item.value] : [])));
+  const label = textOf(entity.labels);
+  const labels = Object.values(entity.labels ?? {}).flatMap((item) => (item.value ? [item.value] : []));
+  const aliases = [...new Set([
+    ...Object.values(entity.aliases ?? {}).flatMap((items) => items.flatMap((item) => (item.value ? [item.value] : []))),
+    ...labels.filter((value) => value !== label),
+  ])];
   return {
     id,
-    label: textOf(entity.labels),
+    label,
     description: textOf(entity.descriptions),
     aliases,
     instanceOf: claimIds(entity, "P31"),

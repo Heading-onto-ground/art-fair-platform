@@ -239,12 +239,11 @@ async function fetchStep(job: ResearchJobRecord, deps: ResearchDeps): Promise<Re
     verified: verified.slice(0, 12),
     queued: queued.filter((fact) => verified.slice(0, 12).some((view) => view.pilotRecordId === fact.pilotRecordId)).slice(0, 12),
   };
-  const partial = payload.verified.length > 0;
   return touch(job, {
-    status: partial ? "PARTIAL_RESULT" : "RESEARCHING",
+    status: job.payload.publishedIds.length > 0 ? "PARTIAL_RESULT" : "RESEARCHING",
     sourcesChecked,
     blockedSourceCount,
-    verifiedFactCount: payload.verified.length,
+    verifiedFactCount: job.payload.publishedIds.length,
     reviewFactCount,
     payload,
     failureCode: null,
@@ -253,7 +252,11 @@ async function fetchStep(job: ResearchJobRecord, deps: ResearchDeps): Promise<Re
 
 function afterFetch(job: ResearchJobRecord, deps: ResearchDeps, now: Date): ResearchJobRecord {
   if (job.payload.verified.length > 0) {
-    return touch(job, { stage: "PUBLISH", status: "PARTIAL_RESULT", payload: { ...job.payload, stepCount: job.payload.stepCount + 1 } }, now);
+    return touch(job, {
+      stage: "PUBLISH",
+      status: job.payload.publishedIds.length > 0 ? "PARTIAL_RESULT" : "RESEARCHING",
+      payload: { ...job.payload, stepCount: job.payload.stepCount + 1 },
+    }, now);
   }
   if (job.blockedSourceCount > 0) return close(job, "SOURCE_BLOCKED", "SOURCE_BLOCKED", now);
   return close(job, "NEEDS_REVIEW", "NO_TRUSTED_SOURCE", now);
@@ -280,10 +283,12 @@ async function publishStep(job: ResearchJobRecord, deps: ResearchDeps): Promise<
     proposedSlug: published.artistSlug,
   };
   const remaining = payload.verified.some((fact) => !payload.publishedIds.includes(fact.pilotRecordId));
+  const finished = !remaining;
   return touch(job, {
-    stage: remaining ? "PUBLISH" : "DONE",
-    status: payload.publishedIds.length >= 3 ? "HISTORY_READY" : "PARTIAL_RESULT",
-    completedAt: remaining ? job.completedAt : now.toISOString(),
+    stage: finished ? "DONE" : "PUBLISH",
+    status: finished && payload.publishedIds.length >= 3 ? "HISTORY_READY" : "PARTIAL_RESULT",
+    completedAt: finished ? now.toISOString() : job.completedAt,
+    verifiedFactCount: payload.publishedIds.length,
     resolvedArtistId: published.artistId,
     resolvedArtistSlug: published.artistSlug,
     resultArtistSlug: published.artistSlug,
@@ -304,7 +309,7 @@ function holdFact(job: ResearchJobRecord, pilotRecordId: string, code: string, n
   return touch(job, {
     status,
     stage: verified.length > 0 ? "PUBLISH" : "DONE",
-    verifiedFactCount: verified.length,
+    verifiedFactCount: payload.publishedIds.length,
     reviewFactCount: job.reviewFactCount + 1,
     failureCode: verified.length > 0 ? null : code,
     payload,

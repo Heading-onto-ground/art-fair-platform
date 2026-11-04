@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { toDiscoveryEntity } from "@/lib/history/wikidataIdentity";
 import type { CrawlFact } from "@/lib/history/trustedCrawl";
 import {
   CONTROL_ARTISTS,
@@ -276,5 +277,15 @@ describe("source discovery", () => {
     expect(matchTrustedGalleryRoster(html, ["양혜규"], "https://www.kukjegallery.com/artists")?.url).toContain("seq=176");
     expect(matchTrustedGalleryRoster(html, ["Yang"], "https://www.kukjegallery.com/artists")).toBeNull();
     expect(matchTrustedGalleryRoster(html, ["Haegue Yang", "Other Artist"], "https://www.kukjegallery.com/artists")).toBeNull();
+  });
+
+  it("keeps a Korean Wikidata label beside the English name", () => {
+    const entity = toDiscoveryEntity("Q1567689", {
+      labels: { en: { value: "Haegue Yang" }, ko: { value: "양혜규" } },
+      aliases: { en: [{ value: "Hae-gue Yang" }] },
+    });
+    expect(entity.label).toBe("Haegue Yang");
+    expect(entity.aliases).toContain("양혜규");
+    expect(entity.aliases).toContain("Hae-gue Yang");
   });
 });

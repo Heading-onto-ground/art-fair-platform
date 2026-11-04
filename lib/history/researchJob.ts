@@ -9,12 +9,11 @@ import type { HistoryLocale } from "@/lib/history/locale";
 /**
  * Search-triggered Discovery job model.
  *
- * Execution boundary: each authorized request runs one bounded step and
- * persists the result. The page may ask for the next step. Closing the
- * browser does not delete the job. This process does not pretend a
- * background worker is running after the request ends. A partial unique
- * index in prisma/sql/add-research-jobs.sql keeps one unfinished job per
- * normalized query once that migration is applied.
+ * ResearchJob in PostgreSQL is the product record. A durable workflow may
+ * advance it after the request returns; the browser only reads that record.
+ * workflowRunId is execution infrastructure and is not part of the public view.
+ * A partial unique index in prisma/sql/add-research-jobs.sql keeps one
+ * unfinished job per normalized query once that migration is applied.
  */
 
 export const RESEARCH_LIMITS = {
@@ -75,6 +74,7 @@ export type ResearchPayload = {
   verified: ResearchFactView[];
   queued: CrawlFact[];
   publishedIds: string[];
+  workflowRunId?: string | null;
 };
 
 export type ResearchJobRecord = {
@@ -140,6 +140,7 @@ export function emptyPayload(expand = false): ResearchPayload {
     verified: [],
     queued: [],
     publishedIds: [],
+    workflowRunId: null,
   };
 }
 
@@ -218,7 +219,7 @@ export function researchChecklist(job: Pick<ResearchJobRecord, "stage" | "identi
 export function researchHeadline(job: Pick<ResearchJobRecord, "query" | "status" | "verifiedFactCount" | "stage">, locale: HistoryLocale): { headline: string; detail: string } {
   const name = job.query.trim();
   if (locale === "ko") {
-    if (job.status === "HISTORY_READY") return { headline: `${name}의 기록이 준비되었습니다.`, detail: "확인된 전시부터 이 작가의 세계에 들어가 보세요." };
+    if (job.status === "HISTORY_READY") return { headline: name, detail: "공식 기록 확인 완료" };
     if (job.status === "NEEDS_REVIEW") return { headline: "공식 출처는 찾았지만 일부 기록을 더 확인해야 합니다.", detail: "신원이나 참여 여부가 분명하지 않은 기록은 공개 이력에 넣지 않습니다." };
     if (job.status === "SOURCE_BLOCKED") return { headline: "일부 공식 출처에 현재 접근할 수 없습니다.", detail: "확인하지 못한 기록은 만들지 않습니다." };
     if (job.status === "NOT_FOUND") return { headline: "이 이름으로 확인할 수 있는 작가 신원을 찾지 못했습니다.", detail: "같은 이름의 다른 사람으로 기록을 만들지 않습니다." };
@@ -227,11 +228,11 @@ export function researchHeadline(job: Pick<ResearchJobRecord, "query" | "status"
     if (job.stage === "DONE") return { headline: `${name}의 확인된 기록은 여기까지입니다.`, detail: "검토 중인 후보는 공개 이력과 섞지 않습니다." };
     return { headline: `ROB가 ${name}의 기록을 찾고 있습니다.`, detail: "확인된 사실만 이 화면에 나타납니다." };
   }
-  if (job.status === "HISTORY_READY") return { headline: `A documented record for ${name} is ready.`, detail: "Open the artist world from the verified exhibitions." };
+  if (job.status === "HISTORY_READY") return { headline: name, detail: "Official record check complete." };
   if (job.status === "NEEDS_REVIEW") return { headline: "Official sources were found, but some records still need review.", detail: "Uncertain identity or participation stays out of public history." };
   if (job.status === "SOURCE_BLOCKED") return { headline: "Some official sources cannot be reached right now.", detail: "ROB does not fill the gap with an unverified record." };
   if (job.status === "NOT_FOUND") return { headline: "ROB could not resolve an artist identity for this name.", detail: "No artist record is created from the search text alone." };
-  if (job.verifiedFactCount > 0 && job.stage !== "DONE") return { headline: `Documented records for ${name} are appearing.`, detail: "Coverage is partial. ROB is still checking other official records." };
+    if (job.verifiedFactCount > 0 && job.stage !== "DONE") return { headline: `Documented records for ${name} are appearing.`, detail: "Coverage is partial. ROB is checking other official records." };
   if (job.stage === "DONE" && job.verifiedFactCount > 0) return { headline: `This is the verified record for ${name} so far.`, detail: "Coverage is partial." };
   if (job.stage === "DONE") return { headline: `This is the verified record for ${name} so far.`, detail: "Records still in review are kept separate." };
   return { headline: `ROB is checking documented records for ${name}.`, detail: "Only verified facts appear here." };
@@ -255,7 +256,7 @@ export function projectResearchJob(job: ResearchJobRecord): ResearchPublicView {
     resultHref: job.resultArtistSlug ? `/artists/${job.resultArtistSlug}` : null,
     headline: copy.headline,
     detail: copy.detail,
-    facts: job.payload.verified,
+    facts: job.payload.verified.filter((fact) => job.payload.publishedIds.includes(fact.pilotRecordId)),
     failureCode: job.failureCode,
   };
 }
@@ -280,6 +281,38 @@ export function discoveryEvents(before: ResearchJobRecord, after: ResearchJobRec
   if (before.status !== "SOURCE_BLOCKED" && after.status === "SOURCE_BLOCKED") push("DISCOVERY_SOURCE_BLOCKED");
   if (before.status !== "NOT_FOUND" && after.status === "NOT_FOUND") push("DISCOVERY_FAILED");
   return next;
+}
+
+const TRANSIENT_FAILURES = new Set(["SOURCE_RATE_LIMITED", "FETCH_FAILED"]);
+
+export function researchStepDisposition(job: Pick<ResearchJobRecord, "stage" | "status" | "failureCode">): "retry" | "stop" | "continue" {
+  if (job.stage === "DONE") return "stop";
+  if (job.failureCode && TRANSIENT_FAILURES.has(job.failureCode) && job.status === "RESEARCHING") return "retry";
+  return "continue";
+}
+
+export function workflowOwned(runId: string | null | undefined): boolean {
+  return Boolean(runId);
+}
+
+/** Same predicate as the conditional UPDATE in claimResearchRun. */
+export function workflowClaimAvailable(stage: string, workflowRunId: string | null | undefined): boolean {
+  return stage !== "DONE" && (workflowRunId == null || workflowRunId === "");
+}
+
+/**
+ * Serializes overlapping start attempts the way the row lock does:
+ * the first empty claim writes "pending", and every later attempt loses.
+ */
+export function settleWorkflowClaims(attempts: number, stage = "IDENTITY"): number {
+  let workflowRunId: string | null = null;
+  let owners = 0;
+  for (let index = 0; index < attempts; index += 1) {
+    if (!workflowClaimAvailable(stage, workflowRunId)) continue;
+    workflowRunId = "pending";
+    owners += 1;
+  }
+  return owners;
 }
 
 export function withEvents(before: ResearchJobRecord, after: ResearchJobRecord): ResearchJobRecord {

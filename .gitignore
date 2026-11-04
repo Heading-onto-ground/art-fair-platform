@@ -63,3 +63,4 @@ scripts/partners.csv
 
 # Art history pilot: fetched page bodies stay local and are not product data.
 experiments/art-history-pilot/.local-snapshots/
+/.swc

@@ -156,14 +156,17 @@ async function main() {
     process.exit(outcome.status === "CACHE_INVALIDATION_COMPLETE" ? 0 : 2);
   }
   const preview = process.argv.includes("--preview");
-  if (!preview && process.env.ROB_CONFIRM_GROWTH_IMPORT !== "1") {
+  const isolated = process.env.ROB_LOCAL_DISCOVERY_IMPORT === "1" && /@127\.0\.0\.1:5433\/rob_discovery(?:\?|$)/.test(process.env.DATABASE_URL ?? "");
+  if (!preview && process.env.ROB_CONFIRM_GROWTH_IMPORT !== "1" && !isolated) {
     console.log("REFUSED");
     process.exit(1);
   }
   const fileArg = process.argv.find((item) => item.startsWith("--file="));
   const filePath = fileArg?.slice("--file=".length) || "data/production-clearance/growth-batch-2026-10-12.json";
   const file = JSON.parse(readFileSync(filePath, "utf8")) as BatchFile;
-  const client = new Client({ connectionString: databaseUrl(), ssl: { rejectUnauthorized: false } });
+  const connectionString = databaseUrl();
+  const local = /@(127\.0\.0\.1|localhost)[:/]/.test(connectionString);
+  const client = new Client({ connectionString, ssl: local ? false : { rejectUnauthorized: false } });
   await client.connect();
   try {
     const before = await client.query<{ users: number; profiles: number }>(

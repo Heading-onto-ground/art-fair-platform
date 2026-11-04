@@ -1,10 +1,14 @@
+import { revalidateTag } from "next/cache";
 import type { PrismaClient } from "@prisma/client";
 import { prisma as untypedPrisma } from "@/lib/prisma";
 import type { GrowthSnapshot } from "@/lib/history/growth";
 import { fetchTrustedDocument } from "@/lib/history/trustedCrawl";
 import { advanceResearchJob, type ResearchDeps } from "@/lib/history/researchAdvance";
 import { publishResearchFact } from "@/lib/history/researchPublish";
-import { findKnownArtist } from "@/lib/history/researchStore";
+import { researchStepDisposition, type ResearchJobRecord } from "@/lib/history/researchJob";
+import { findKnownArtist, readResearchJob, saveResearchJob } from "@/lib/history/researchStore";
+import { PUBLIC_HISTORY_CACHE_TAG } from "@/lib/history/publicGraph";
+import { isHistoryUnavailable } from "@/lib/history/schemaError";
 import {
   entitiesFromPayload,
   fetchWikidata,
@@ -95,4 +99,38 @@ export function researchDeps(): ResearchDeps {
 
 export async function stepResearchJob(job: Parameters<typeof advanceResearchJob>[0]) {
   return advanceResearchJob(job, researchDeps());
+}
+
+export async function persistResearchProgress(before: ResearchJobRecord, after: ResearchJobRecord): Promise<ResearchJobRecord> {
+  const fresh = after.payload.emitted.filter((name) => !before.payload.emitted.includes(name));
+  const saved = await saveResearchJob(after);
+  for (const name of fresh) {
+    try {
+      const path = `/research/${saved.id}`;
+      const existing = await prisma.historySignal.findFirst({ where: { name, path }, select: { id: true } });
+      if (!existing) await prisma.historySignal.create({ data: { name, path } });
+    } catch (error) {
+      if (!isHistoryUnavailable(error)) console.error("discovery signal failed", error);
+    }
+  }
+  if (saved.resultArtistSlug && saved.resultArtistSlug !== before.resultArtistSlug) {
+    try {
+      revalidateTag(PUBLIC_HISTORY_CACHE_TAG);
+    } catch {
+      // Cache refresh is separate from the stored fact.
+    }
+  }
+  return saved;
+}
+
+export async function advancePersistedJob(jobId: string): Promise<ResearchJobRecord | null> {
+  const current = await readResearchJob(jobId);
+  if (!current || current.stage === "DONE") return current;
+  const advanced = await stepResearchJob(current);
+  return persistResearchProgress(current, advanced);
+}
+
+export function persistedDisposition(job: ResearchJobRecord | null): "retry" | "stop" | "continue" {
+  if (!job) return "stop";
+  return researchStepDisposition(job);
 }

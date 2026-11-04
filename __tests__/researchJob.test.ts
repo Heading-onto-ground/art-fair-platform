@@ -8,7 +8,12 @@ import {
   mayPublishCrawledFact,
   normalizeResearchQuery,
   projectResearchJob,
+  researchStepDisposition,
   reuseDecision,
+  settleWorkflowClaims,
+  withEvents,
+  workflowClaimAvailable,
+  workflowOwned,
   type ResearchJobRecord,
 } from "@/lib/history/researchJob";
 import type { CrawlFact } from "@/lib/history/trustedCrawl";
@@ -174,10 +179,81 @@ describe("research jobs", () => {
     expect(projectResearchJob(done).detail).toContain("현재 기록은 일부입니다.");
   });
 
+  it("records a real partial result after the first published fact", async () => {
+    const page = chronology.replace(
+      "<ul><li><span class=\"biography__text\">2019<br /> <em>First Light, </em>Kukje Gallery, Seoul, Korea</span></li></ul>",
+      "<ul><li><span class=\"biography__text\">2019<br /> <em>First Light, </em>Kukje Gallery, Seoul, Korea</span></li><li><span class=\"biography__text\">2020<br /> <em>Second Light, </em>Kukje Gallery, Seoul, Korea</span></li></ul>",
+    );
+    const research = deps({ fetchDocument: async () => ({ html: page, requests: 1, host: "kukjegallery.com" }) });
+    let current = blankJob({ id: "partial", query: "Ada Painter", normalizedQuery: "ada painter", locale: "ko", demandQuality: "REAL_VISITOR", expand: false, now });
+    let boundary = false;
+    for (let step = 0; step < 8 && current.stage !== "DONE"; step += 1) {
+      current = await advanceResearchJob(current, research);
+      if (current.payload.publishedIds.length === 1 && current.status === "PARTIAL_RESULT" && current.stage !== "DONE" && current.verifiedFactCount >= 1) {
+        boundary = true;
+      }
+    }
+    expect(boundary).toBe(true);
+    expect(current.payload.publishedIds).toHaveLength(2);
+    expect(current.verifiedFactCount).toBe(2);
+    expect(projectResearchJob(current).facts).toHaveLength(2);
+    expect(projectResearchJob(current).detail).toContain("현재 기록은 일부입니다.");
+  });
+
+  it("retries transient source failures and stops permanent identity failures", () => {
+    const job = blankJob({ id: "retry", query: "Ada Painter", normalizedQuery: "ada painter", locale: "en", demandQuality: "REAL_VISITOR", expand: false, now });
+    expect(researchStepDisposition({ ...job, failureCode: "SOURCE_RATE_LIMITED" })).toBe("retry");
+    expect(researchStepDisposition({ ...job, failureCode: "FETCH_FAILED" })).toBe("retry");
+    expect(researchStepDisposition({ ...job, stage: "DONE", status: "NEEDS_REVIEW", failureCode: "IDENTITY_AMBIGUOUS" })).toBe("stop");
+    expect(researchStepDisposition({ ...job, stage: "DONE", status: "NOT_FOUND", failureCode: "IDENTITY_NOT_FOUND" })).toBe("stop");
+    expect(researchStepDisposition({ ...job, stage: "DONE", status: "SOURCE_BLOCKED", failureCode: "SOURCE_BLOCKED" })).toBe("stop");
+    expect(workflowOwned(null)).toBe(false);
+    expect(workflowOwned("pending")).toBe(true);
+    expect(workflowOwned("wrun_1")).toBe(true);
+    expect(workflowClaimAvailable("IDENTITY", null)).toBe(true);
+    expect(workflowClaimAvailable("IDENTITY", "")).toBe(true);
+    expect(workflowClaimAvailable("IDENTITY", "pending")).toBe(false);
+    expect(workflowClaimAvailable("DONE", null)).toBe(false);
+    expect(settleWorkflowClaims(2)).toBe(1);
+    expect(settleWorkflowClaims(8, "PUBLISH")).toBe(1);
+    expect(settleWorkflowClaims(3, "DONE")).toBe(0);
+  });
+
+  it("emits each discovery milestone once when a workflow step retries", () => {
+    const before = blankJob({ id: "events", query: "Ada Painter", normalizedQuery: "ada painter", locale: "en", demandQuality: "REAL_VISITOR", expand: false, now });
+    const progressed = withEvents(before, {
+      ...before,
+      status: "PARTIAL_RESULT",
+      identityStatus: "RESOLVED",
+      sourcesFound: 1,
+      verifiedFactCount: 1,
+      payload: { ...before.payload, stepCount: 1 },
+    });
+    const retried = withEvents(progressed, {
+      ...progressed,
+      status: "HISTORY_READY",
+      payload: { ...progressed.payload, stepCount: 2 },
+    });
+    expect(progressed.payload.emitted).toEqual([
+      "DISCOVERY_STARTED",
+      "DISCOVERY_IDENTITY_RESOLVED",
+      "DISCOVERY_SOURCE_FOUND",
+      "DISCOVERY_FIRST_FACT_VERIFIED",
+      "DISCOVERY_PARTIAL_RESULT",
+    ]);
+    expect(discoveryEvents(progressed, progressed)).toEqual([]);
+    expect(retried.payload.emitted).toEqual([...progressed.payload.emitted, "DISCOVERY_COMPLETED"]);
+  });
+
   it("does not let the browser choose operator demand", () => {
     const route = readFileSync(resolve(__dirname, "../app/api/history/research/route.ts"), "utf8");
     expect(route).toContain("demandWriteClass");
+    expect(route).toContain("beginResearchWorkflow");
+    expect(route).not.toContain("stepResearchJob");
     expect(route).not.toContain("body.operator");
+    const status = readFileSync(resolve(__dirname, "../app/components/history/ResearchStatus.tsx"), "utf8");
+    expect(status).not.toContain("/continue");
+    expect(status).toContain("visibilitychange");
     const css = readFileSync(resolve(__dirname, "../app/components/history/history.css"), "utf8");
     expect(css).toContain("prefers-reduced-motion");
     expect(css).toContain(".rh-enter");
