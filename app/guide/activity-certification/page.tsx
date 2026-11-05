@@ -10,6 +10,7 @@ export const metadata: Metadata = pageMetadata({
     "한국예술인복지재단 예술활동증명 신청 절차와 필요한 증빙자료를 정리했습니다. ROB에 기록한 전시·수상·레지던시 활동을 리포트로 내보내 신청 증빙 준비 시간을 줄여보세요.",
   path: "/guide/activity-certification",
   type: "article",
+  index: false,
 });
 
 const h2: React.CSSProperties = { fontFamily: S, fontSize: 26, fontWeight: 400, color: colors.textPrimary, margin: "48px 0 16px" };

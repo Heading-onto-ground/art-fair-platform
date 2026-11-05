@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import TopBar from "@/app/components/TopBar";
 import { pushRobEvent } from "@/lib/publicGrowth/analytics";
+import { usePublicHref } from "@/app/components/history/LocaleUrl";
 import type { ResearchFactView, ResearchPublicView } from "@/lib/history/researchJob";
 import "./history.css";
 
@@ -23,6 +24,7 @@ function sourceLabel(fact: ResearchFactView, locale: ResearchPublicView["locale"
 }
 
 export default function ResearchStatus({ initial }: { initial: ResearchPublicView }) {
+  const publicHref = usePublicHref();
   const [job, setJob] = useState(initial);
   const [unavailable, setUnavailable] = useState(false);
 
@@ -133,7 +135,7 @@ export default function ResearchStatus({ initial }: { initial: ResearchPublicVie
           <p className="rh-cta">
             <Link
               className="rh-button"
-              href={job.resultHref}
+              href={publicHref(job.resultHref)}
               onClick={() => pushRobEvent("DISCOVERY_RESULT_OPENED", { route: "/research" })}
             >
               {job.locale === "ko" ? "이 작가의 세계 보기" : "Enter this artist world"}

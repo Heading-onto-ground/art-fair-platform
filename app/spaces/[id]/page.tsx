@@ -6,7 +6,7 @@ import { loadSpacePage } from "@/lib/history/queries";
 import { spaceJsonLd, spacePageTitle } from "@/lib/history/seo";
 import { isMissingHistorySchema } from "@/lib/history/schemaError";
 import { pageMetadata, SITE_URL } from "@/lib/seo";
-import { historyLocale } from "@/lib/history/requestLocale";
+import { historyLocale, pinnedLocale, pinnedPath } from "@/lib/history/requestLocale";
 
 export const dynamic = "force-dynamic";
 
@@ -14,11 +14,15 @@ export async function generateMetadata({ params }: { params: { id: string } }): 
   try {
     const record = await loadSpacePage(params.id);
     if (!record) return {};
+    const locale = historyLocale();
     return pageMetadata({
       title: spacePageTitle(record.name),
-      description: `${record.name}. ${pluralCount(record.exhibitions.length, "documented exhibition")} on ROB.`,
+      description: locale === "ko"
+        ? `${record.name}. 기록된 전시 ${record.exhibitions.length}건.`
+        : `${record.name}. ${pluralCount(record.exhibitions.length, "documented exhibition")} on ROB.`,
       path: `/spaces/${record.slug}`,
       index: record.indexEligible,
+      localeUrl: pinnedLocale(),
     });
   } catch {
     return {};
@@ -30,7 +34,7 @@ export default async function SpacePage({ params }: { params: { id: string } }) 
   try {
     const record = await loadSpacePage(params.id);
     if (record) {
-      const json = spaceJsonLd({ ...record, url: `${SITE_URL}/spaces/${record.slug}` });
+      const json = spaceJsonLd({ ...record, url: `${SITE_URL}${pinnedPath(`/spaces/${record.slug}`)}` });
       return (
         <>
           <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(json) }} />

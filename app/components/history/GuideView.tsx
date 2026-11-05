@@ -4,9 +4,11 @@ import { useEffect } from "react";
 import Link from "next/link";
 import { pushRobEventOnce } from "@/lib/publicGrowth/analytics";
 import type { HistoryLocale } from "@/lib/history/locale";
+import { usePublicHref } from "@/app/components/history/LocaleUrl";
 
 export default function GuideView({ locale }: { locale: HistoryLocale }) {
   const ko = locale === "ko";
+  const publicHref = usePublicHref();
   useEffect(() => {
     pushRobEventOnce("GUIDE_PAGE_OPENED", locale, { language: locale, route: "/about/how-to-use" });
   }, [locale]);
@@ -22,9 +24,9 @@ export default function GuideView({ locale }: { locale: HistoryLocale }) {
         <h2>이력과 순간</h2>
         <p>이력은 현재 확인된 전시입니다. 기록이 없는 해가 활동이 없었다는 뜻은 아닙니다. 전시를 열면 제목, 날짜, 장소, 참여 작가, 출처를 볼 수 있습니다.</p>
         <h2>연결</h2>
-        <p>같은 전시의 다른 작가를 누르면 작가 A → 전시 → 작가 B로 이동합니다. ROB는 영향이나 친분을 추측하지 않습니다. <Link href="/history/explore">Explore</Link>에서 여정, 순간, 경로, 공간을 볼 수 있습니다.</p>
+        <p>같은 전시의 다른 작가를 누르면 작가 A → 전시 → 작가 B로 이동합니다. ROB는 영향이나 친분을 추측하지 않습니다. <Link href={publicHref("/history/explore")}>Explore</Link>에서 여정, 순간, 경로, 공간을 볼 수 있습니다.</p>
         <h2>출처와 빈칸</h2>
-        <p>출처는 사실을 어디서 확인했는지를 보여 주며, 그 기관이 ROB를 보증한다는 뜻은 아닙니다. 이미지는 사용 권리가 확인된 것만 표시합니다. 잘못된 기록은 <Link href="/about/data">Report issue</Link>로 알릴 수 있습니다.</p>
+        <p>출처는 사실을 어디서 확인했는지를 보여 주며, 그 기관이 ROB를 보증한다는 뜻은 아닙니다. 이미지는 사용 권리가 확인된 것만 표시합니다. 잘못된 기록은 <Link href={publicHref("/about/data")}>Report issue</Link>로 알릴 수 있습니다.</p>
       </article>
     );
   }
@@ -39,9 +41,9 @@ export default function GuideView({ locale }: { locale: HistoryLocale }) {
       <h2>History and moments</h2>
       <p>History shows exhibitions documented so far. A year without a row is not a year without activity. A moment shows title, date, place, participants, and source.</p>
       <h2>Connections</h2>
-      <p>Opening another name moves Artist A → Exhibition → Artist B. ROB does not infer influence or friendship. <Link href="/history/explore">Explore</Link> shows journeys, moments, paths, and spaces.</p>
+      <p>Opening another name moves Artist A → Exhibition → Artist B. ROB does not infer influence or friendship. <Link href={publicHref("/history/explore")}>Explore</Link> shows journeys, moments, paths, and spaces.</p>
       <h2>Sources and gaps</h2>
-      <p>A source says where a fact was read. It is not an endorsement. Images appear only when their use is cleared. Use <Link href="/about/data">Report issue</Link> for a correction.</p>
+      <p>A source says where a fact was read. It is not an endorsement. Images appear only when their use is cleared. Use <Link href={publicHref("/about/data")}>Report issue</Link> for a correction.</p>
     </article>
   );
 }

@@ -8,6 +8,7 @@ import ResearchOffer from "@/app/components/history/ResearchOffer";
 import { trackHistory, trackMissingSearch } from "@/lib/history/analytics";
 import { pushRobEvent } from "@/lib/publicGrowth/analytics";
 import { historyCopy, type HistoryLocale } from "@/lib/history/locale";
+import { usePublicHref } from "@/app/components/history/LocaleUrl";
 import {
   SEARCH_CLIENT_TIMEOUT_MS,
   acceptAutocomplete,
@@ -35,6 +36,7 @@ type Discovery = {
 
 export default function HistoryHome({ discovery = null, locale = "en" }: { discovery?: Discovery | null; locale?: HistoryLocale }) {
   const copy = historyCopy(locale);
+  const publicHref = usePublicHref();
   const [query, setQuery] = useState("");
   const [results, setResults] = useState<HistorySearchResult[] | null>(null);
   const [suggestions, setSuggestions] = useState<HistorySearchResult[]>([]);
@@ -93,7 +95,7 @@ export default function HistoryHome({ discovery = null, locale = "en" }: { disco
   function choose(artist: HistorySearchResult) {
     trackHistory("SEARCH_RESULT_OPENED", `/artists/${artist.slug}`);
     pushRobEvent("SEARCH_RESULT_OPENED", { artist: artist.slug, route: "/" });
-    window.location.assign(`/artists/${artist.slug}`);
+    window.location.assign(publicHref(`/artists/${artist.slug}`));
   }
 
   function onKeyDown(event: KeyboardEvent<HTMLInputElement>) {
@@ -241,9 +243,9 @@ export default function HistoryHome({ discovery = null, locale = "en" }: { disco
                 <>
                   <ResearchOffer query={query} locale={locale} />
                   <p>
-                    <Link href="/history/start">{copy.startHistory}</Link>
+                    <Link href={publicHref("/history/start")}>{copy.startHistory}</Link>
                     {" · "}
-                    <Link href="/history/explore">{copy.exploreWorld}</Link>
+                    <Link href={publicHref("/history/explore")}>{copy.exploreWorld}</Link>
                   </p>
                 </>
               ) : null}
@@ -260,7 +262,7 @@ export default function HistoryHome({ discovery = null, locale = "en" }: { disco
                     <li key={artist.slug}>
                       <Link
                         className="rh-result-link"
-                        href={`/artists/${artist.slug}`}
+                        href={publicHref(`/artists/${artist.slug}`)}
                         onClick={() => {
                           trackHistory("SEARCH_RESULT_OPENED", `/artists/${artist.slug}`);
                           pushRobEvent("SEARCH_RESULT_OPENED", { artist: artist.slug, route: "/" });
@@ -287,17 +289,17 @@ export default function HistoryHome({ discovery = null, locale = "en" }: { disco
               </section>
             ) : null}
             <div className="rh-home-actions">
-              <Link className="rh-home-start" href="/artists/lee-ufan" onClick={() => trackHistory("SEARCH_RESULT_OPENED", "/artists/lee-ufan")}>
+              <Link className="rh-home-start" href={publicHref("/artists/lee-ufan")} onClick={() => trackHistory("SEARCH_RESULT_OPENED", "/artists/lee-ufan")}>
                 {copy.startWith} →
               </Link>
               <span>{copy.orWord}</span>
-              <Link href="/history/start" onClick={() => trackHistory("START_HISTORY_CLICKED")}>
+              <Link href={publicHref("/history/start")} onClick={() => trackHistory("START_HISTORY_CLICKED")}>
                 {copy.startOwn}
               </Link>
             </div>
             {query.trim() === "" && discovery?.journey ? (
               <p className="rh-muted">
-                {copy.startHere} · <Link href={`/artists/${discovery.journey.slug}`}>{discovery.journey.canonicalName}</Link>
+                {copy.startHere} · <Link href={publicHref(`/artists/${discovery.journey.slug}`)}>{discovery.journey.canonicalName}</Link>
                 {discovery.journey.nativeName ? ` ${discovery.journey.nativeName}` : ""}
                 {` · ${copy.documentedLine(discovery.journey.exhibitionCount)}`}
               </p>
@@ -310,7 +312,7 @@ export default function HistoryHome({ discovery = null, locale = "en" }: { disco
                     return (
                       <span key={artist.slug}>
                         {bridge ? ` → ${bridge.year ?? ""} ${bridge.title} → ` : ""}
-                        <Link href={`/artists/${artist.slug}`}>{artist.name}</Link>
+                        <Link href={publicHref(`/artists/${artist.slug}`)}>{artist.name}</Link>
                       </span>
                     );
                   })}
@@ -328,7 +330,7 @@ export default function HistoryHome({ discovery = null, locale = "en" }: { disco
             {query.trim() === "" && discovery?.moment ? (
               <p className="rh-muted">
                 {discovery.moment.year ? `${discovery.moment.year} · ` : ""}
-                {discovery.moment.slug ? <Link href={`/exhibitions/${discovery.moment.slug}`}>{discovery.moment.title}</Link> : discovery.moment.title}
+                {discovery.moment.slug ? <Link href={publicHref(`/exhibitions/${discovery.moment.slug}`)}>{discovery.moment.title}</Link> : discovery.moment.title}
                 {discovery.moment.place ? ` · ${discovery.moment.place}` : ""}
               </p>
             ) : null}
@@ -380,7 +382,7 @@ export default function HistoryHome({ discovery = null, locale = "en" }: { disco
         </section>
 
         <section className="rh-below">
-          <Link className="rh-home-panel" href="/history/explore">
+          <Link className="rh-home-panel" href={publicHref("/history/explore")}>
             <span className="rh-kicker">{copy.explore}</span>
             <strong>{copy.browseGraph}</strong>
             <p>{copy.browseGraphBody}</p>
@@ -392,9 +394,9 @@ export default function HistoryHome({ discovery = null, locale = "en" }: { disco
           </Link>
         </section>
         <p className="rh-muted">
-          <Link href="/about/how-to-use">{locale === "ko" ? "사용법" : "How to use"}</Link>
+          <Link href={publicHref("/about/how-to-use")}>{locale === "ko" ? "사용법" : "How to use"}</Link>
           {" · "}
-          <Link href="/about/why-rob">{locale === "ko" ? "ROB 소개" : "Why ROB"}</Link>
+          <Link href={publicHref("/about/why-rob")}>{locale === "ko" ? "ROB 소개" : "Why ROB"}</Link>
         </p>
       </main>
     </div>

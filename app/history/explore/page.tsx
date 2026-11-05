@@ -4,15 +4,29 @@ import TopBar from "@/app/components/TopBar";
 import ExploreTrack from "@/app/components/history/ExploreTrack";
 import LocaleSwitch from "@/app/components/history/LocaleSwitch";
 import PathList from "@/app/components/history/PathList";
-import { historyCopy } from "@/lib/history/locale";
 import { listExplore } from "@/lib/history/queries";
-import { historyLocale } from "@/lib/history/requestLocale";
+import { historyCopy } from "@/lib/history/locale";
+import { historyLocale, pinnedLocale, pinnedPath } from "@/lib/history/requestLocale";
+import { pageMetadata } from "@/lib/seo";
 import { isMissingHistorySchema } from "@/lib/history/schemaError";
 import "@/app/components/history/history.css";
 
 export const dynamic = "force-dynamic";
 export const preferredRegion = "bom1";
 export const runtime = "nodejs";
+
+export function generateMetadata() {
+  const locale = historyLocale();
+  const ko = locale === "ko";
+  return pageMetadata({
+    title: ko ? "예술 세계 둘러보기 | ROB" : "Explore the art world | ROB",
+    description: ko
+      ? "기록된 작가, 전시, 공간과 그 접점을 둘러봅니다."
+      : "Browse documented artists, exhibitions, spaces, and the connections between them.",
+    path: "/history/explore",
+    localeUrl: pinnedLocale(),
+  });
+}
 
 export default async function HistoryExplorePage() {
   const locale = historyLocale();
@@ -64,7 +78,7 @@ export default async function HistoryExplorePage() {
               {moments.map((moment) => (
                 <li key={moment.id}>
                   <div>{moment.year ?? copy.yearNotRecorded}</div>
-                  {moment.slug ? <Link href={`/exhibitions/${moment.slug}`}>{moment.title}</Link> : <strong>{moment.title}</strong>}
+                  {moment.slug ? <Link href={pinnedPath(`/exhibitions/${moment.slug}`)}>{moment.title}</Link> : <strong>{moment.title}</strong>}
                   {moment.place ? <div>{moment.place}</div> : null}
                   <div>
                     {moment.artists.map((artist, index) => (
@@ -74,7 +88,7 @@ export default async function HistoryExplorePage() {
                       </span>
                     ))}
                   </div>
-                  {moment.slug ? <div><Link href={`/exhibitions/${moment.slug}`}>{copy.exploreMoment} →</Link></div> : null}
+                  {moment.slug ? <div><Link href={pinnedPath(`/exhibitions/${moment.slug}`)}>{copy.exploreMoment} →</Link></div> : null}
                 </li>
               ))}
             </ul>
@@ -89,7 +103,7 @@ export default async function HistoryExplorePage() {
             <ul className="rh-list">
               {spaces.map((space) => (
                 <li key={space.slug}>
-                  <Link href={`/spaces/${space.slug}`}>{space.name}</Link>
+                  <Link href={pinnedPath(`/spaces/${space.slug}`)}>{space.name}</Link>
                   <div>{copy.documentedLine(space.count)}</div>
                 </li>
               ))}

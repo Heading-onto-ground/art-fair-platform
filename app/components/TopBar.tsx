@@ -8,6 +8,7 @@ import { useAutoLocale } from "@/lib/useAutoLocale";
 import { t, getAvailableLanguages } from "@/lib/translate";
 import { F, S } from "@/lib/design";
 import { ROB_LOCALE_COOKIE, type HistoryLocale } from "@/lib/history/locale";
+import { usePublicHref } from "@/app/components/history/LocaleUrl";
 import { useUserSupportAlerts } from "@/lib/useUserSupportAlerts";
 
 type Role = "artist" | "gallery" | "curator";
@@ -95,6 +96,7 @@ async function fetchMe(options?: { preferCache?: boolean }): Promise<MeResponse 
 
 export default function TopBar({ hideOnMobile = false, locale }: { hideOnMobile?: boolean; locale?: HistoryLocale } = {}) {
   const router = useRouter();
+  const publicHref = usePublicHref();
   const pathname = usePathname();
   const [me, setMe] = useState<MeResponse | null>(null);
   const [mounted, setMounted] = useState(false);
@@ -193,7 +195,7 @@ export default function TopBar({ hideOnMobile = false, locale }: { hideOnMobile?
 
   function handleNotificationClick(notif: Notification) {
     if (!notif.read) markAsRead(notif.id);
-    if (notif.link) router.push(notif.link);
+    if (notif.link) router.push(publicHref(notif.link));
     setShowNotifications(false);
   }
 
@@ -207,7 +209,7 @@ export default function TopBar({ hideOnMobile = false, locale }: { hideOnMobile?
   function navigate(path: string) {
     setMobileMenuOpen(false);
     setMobileOpenGroup(null);
-    router.push(path);
+    router.push(publicHref(path));
   }
 
   const session = me?.session;
@@ -360,7 +362,7 @@ export default function TopBar({ hideOnMobile = false, locale }: { hideOnMobile?
                 "path" in entry ? (
                   <NavBtn
                     key={entry.path}
-                    onClick={() => router.push(entry.path)}
+                    onClick={() => router.push(publicHref(entry.path))}
                     active={isActive(entry.path)}
                   >
                     {entry.label}
@@ -370,7 +372,7 @@ export default function TopBar({ hideOnMobile = false, locale }: { hideOnMobile?
                     key={entry.label}
                     label={entry.label}
                     items={entry.items}
-                    onNavigate={(path) => router.push(path)}
+                    onNavigate={(path) => router.push(publicHref(path))}
                     isActive={entry.items.some((i) => isActive(i.path))}
                   />
                 )
@@ -379,7 +381,7 @@ export default function TopBar({ hideOnMobile = false, locale }: { hideOnMobile?
               {/* Admin support messages */}
               <button
                 type="button"
-                onClick={() => router.push("/support")}
+                onClick={() => router.push(publicHref("/support"))}
                 aria-label={trToast("Messages to admin", "관리자 쪽지", "管理者メッセージ", "Messages admin")}
                 style={{
                   position: "relative",
@@ -453,31 +455,31 @@ export default function TopBar({ hideOnMobile = false, locale }: { hideOnMobile?
                 ))}
               </select>
               <button
-                onClick={() => router.push("/now")}
+                onClick={() => router.push(publicHref("/now"))}
                 style={{ padding: "8px 12px", border: "1px solid #E8E3DB", background: "transparent", color: "#4A4A4A", fontFamily: F, fontSize: 10, fontWeight: 500, letterSpacing: "0.08em", textTransform: "uppercase", cursor: "pointer", marginRight: 8 }}
               >
                 {lang === "ko" ? "지금" : "Now"}
               </button>
               <button
-                onClick={() => router.push("/")}
+                onClick={() => router.push(publicHref("/"))}
                 style={{ padding: "8px 12px", border: "1px solid #E8E3DB", background: "transparent", color: "#4A4A4A", fontFamily: F, fontSize: 10, fontWeight: 500, letterSpacing: "0.08em", textTransform: "uppercase", cursor: "pointer", marginRight: 8 }}
               >
                 {lang === "ko" ? "검색" : "Search"}
               </button>
               <button
-                onClick={() => router.push("/about")}
+                onClick={() => router.push(publicHref("/about"))}
                 style={{ padding: "8px 12px", border: "1px solid #E8E3DB", background: "transparent", color: "#4A4A4A", fontFamily: F, fontSize: 10, fontWeight: 500, letterSpacing: "0.08em", textTransform: "uppercase", cursor: "pointer", marginRight: 8 }}
               >
                 {lang === "ko" ? "소개" : "About"}
               </button>
               <button
-                onClick={() => router.push("/guide")}
+                onClick={() => router.push(publicHref("/guide"))}
                 style={{ padding: "8px 12px", border: "1px solid #E8E3DB", background: "transparent", color: "#4A4A4A", fontFamily: F, fontSize: 10, fontWeight: 500, letterSpacing: "0.08em", textTransform: "uppercase", cursor: "pointer", marginRight: 8 }}
               >
                 {lang === "ko" ? "가이드" : lang === "ja" ? "ガイド" : "Guide"}
               </button>
               <button
-                onClick={() => router.push("/contact")}
+                onClick={() => router.push(publicHref("/contact"))}
                 style={{ padding: "8px 12px", border: "1px solid #E8E3DB", background: "transparent", color: "#4A4A4A", fontFamily: F, fontSize: 10, fontWeight: 500, letterSpacing: "0.08em", textTransform: "uppercase", cursor: "pointer", marginRight: 8 }}
               >
                 {lang === "ko" ? "문의" : lang === "ja" ? "お問い合わせ" : "Contact"}
@@ -795,7 +797,7 @@ export default function TopBar({ hideOnMobile = false, locale }: { hideOnMobile?
           <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
             <button
               type="button"
-              onClick={() => { dismissToast(); router.push("/support"); }}
+              onClick={() => { dismissToast(); router.push(publicHref("/support")); }}
               style={{ padding: "8px 16px", border: "1px solid #1A1A1A", background: "#1A1A1A", color: "#FDFBF7", fontFamily: F, fontSize: 10, fontWeight: 500, letterSpacing: "0.1em", textTransform: "uppercase", cursor: "pointer" }}
             >
               {trToast("Open messages", "쪽지 열기", "メッセージを開く", "Ouvrir")}
@@ -869,7 +871,7 @@ export default function TopBar({ hideOnMobile = false, locale }: { hideOnMobile?
                 type="button"
                 onClick={() => {
                   closeGuidePrompt(dontShowGuideAgain);
-                  router.push(guidePath);
+                  router.push(publicHref(guidePath));
                 }}
                 style={{ padding: "8px 14px", border: "1px solid #1A1A1A", background: "#1A1A1A", color: "#FDFBF7", fontFamily: F, fontSize: 10, letterSpacing: "0.08em", textTransform: "uppercase", cursor: "pointer" }}
               >

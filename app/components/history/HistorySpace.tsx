@@ -1,6 +1,7 @@
 import Link from "next/link";
 import TopBar from "@/app/components/TopBar";
 import { historyCopy, type HistoryLocale } from "@/lib/history/locale";
+import { pinnedPath } from "@/lib/history/requestLocale";
 import type { HistorySpacePage } from "@/lib/history/types";
 import "./history.css";
 
@@ -20,10 +21,10 @@ export default function HistorySpace({ record, locale = "en" }: { record: Histor
           {record.exhibitions.map((exhibition) => (
             <li key={exhibition.id}>
               <span>{exhibition.dateLabel}</span>{" "}
-              {exhibition.slug ? <Link href={`/exhibitions/${exhibition.slug}`}>{exhibition.title}</Link> : exhibition.title}
+              {exhibition.slug ? <Link href={pinnedPath(`/exhibitions/${exhibition.slug}`)}>{exhibition.title}</Link> : exhibition.title}
               <div>
                 {exhibition.artists.map((artist) => (
-                  <Link key={artist.id} href={`/artists/${artist.slug}`}>
+                  <Link key={artist.id} href={pinnedPath(`/artists/${artist.slug}`)}>
                     {artist.name}{" "}
                   </Link>
                 ))}

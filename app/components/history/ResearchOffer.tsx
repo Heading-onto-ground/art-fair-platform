@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { pushRobEvent } from "@/lib/publicGrowth/analytics";
+import { usePublicHref } from "@/app/components/history/LocaleUrl";
 import { historyCopy, type HistoryLocale } from "@/lib/history/locale";
 
 export default function ResearchOffer({
@@ -14,6 +15,7 @@ export default function ResearchOffer({
   expand?: boolean;
 }) {
   const copy = historyCopy(locale);
+  const publicHref = usePublicHref();
   const [pending, setPending] = useState(false);
   const [failed, setFailed] = useState(false);
 
@@ -31,11 +33,11 @@ export default function ResearchOffer({
       });
       const data = await response.json().catch(() => null);
       if (data?.artistHref && !data.job) {
-        window.location.assign(data.artistHref);
+        window.location.assign(publicHref(data.artistHref));
         return;
       }
       if (data?.job?.id) {
-        window.location.assign(`/research/${data.job.id}`);
+        window.location.assign(publicHref(`/research/${data.job.id}`));
         return;
       }
       setFailed(true);

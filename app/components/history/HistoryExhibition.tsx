@@ -4,6 +4,7 @@ import TopBar from "@/app/components/TopBar";
 import type { HistoryExhibitionPage } from "@/lib/history/types";
 import ReportIssue from "@/app/components/history/ReportIssue";
 import { historyCopy, type HistoryLocale } from "@/lib/history/locale";
+import { pinnedPath } from "@/lib/history/requestLocale";
 import "./history.css";
 
 export default function HistoryExhibition({ record, locale = "en" }: { record: HistoryExhibitionPage; locale?: HistoryLocale }) {
@@ -16,7 +17,7 @@ export default function HistoryExhibition({ record, locale = "en" }: { record: H
         <p>{record.dateLabel}{record.endLabel ? ` – ${record.endLabel}` : ""}</p>
         {record.spaceName ? (
           <p>
-            {record.spaceSlug ? <Link href={`/spaces/${record.spaceSlug}`}>{record.spaceName}</Link> : record.spaceName}
+            {record.spaceSlug ? <Link href={pinnedPath(`/spaces/${record.spaceSlug}`)}>{record.spaceName}</Link> : record.spaceName}
             {record.city || record.country ? ` · ${[record.city, record.country].filter(Boolean).join(" · ")}` : ""}
           </p>
         ) : null}

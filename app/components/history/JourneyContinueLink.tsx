@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { continueJourneyHref } from "@/lib/history/journeyTrail";
+import { usePublicHref } from "@/app/components/history/LocaleUrl";
 
 export default function JourneyContinueLink({
   slug,
@@ -18,7 +19,8 @@ export default function JourneyContinueLink({
   onClick?: () => void;
 }) {
   const router = useRouter();
-  const href = `/artists/${slug}`;
+  const publicHref = usePublicHref();
+  const href = publicHref(`/artists/${slug}`);
   return (
     <Link
       className={className}
@@ -33,7 +35,7 @@ export default function JourneyContinueLink({
         }
         if (!next) return;
         event.preventDefault();
-        router.push(next);
+        router.push(publicHref(next));
       }}
     >
       {children}

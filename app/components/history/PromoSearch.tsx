@@ -5,10 +5,12 @@ import Link from "next/link";
 import { pushRobEvent, pushRobEventOnce } from "@/lib/publicGrowth/analytics";
 import { trackHistory, trackMissingSearch } from "@/lib/history/analytics";
 import type { HistoryLocale } from "@/lib/history/locale";
+import { usePublicHref } from "@/app/components/history/LocaleUrl";
 import type { HistorySearchResult } from "@/lib/history/types";
 
 export default function PromoSearch({ locale }: { locale: HistoryLocale }) {
   const ko = locale === "ko";
+  const publicHref = usePublicHref();
   const [query, setQuery] = useState("");
   const [results, setResults] = useState<HistorySearchResult[] | null>(null);
 
@@ -46,7 +48,7 @@ export default function PromoSearch({ locale }: { locale: HistoryLocale }) {
         <ul className="rh-results">
           {results.map((artist) => (
             <li key={artist.slug}>
-              <Link href={`/artists/${artist.slug}`} onClick={() => { trackHistory("SEARCH_RESULT_OPENED", `/artists/${artist.slug}`); pushRobEvent("SEARCH_RESULT_OPENED", { artist: artist.slug, route: "/about/why-rob" }); }}>
+              <Link href={publicHref(`/artists/${artist.slug}`)} onClick={() => { trackHistory("SEARCH_RESULT_OPENED", `/artists/${artist.slug}`); pushRobEvent("SEARCH_RESULT_OPENED", { artist: artist.slug, route: "/about/why-rob" }); }}>
                 <strong>{artist.canonicalName}</strong>
                 {artist.nativeName ? <span> {artist.nativeName}</span> : null}
               </Link>
@@ -60,12 +62,13 @@ export default function PromoSearch({ locale }: { locale: HistoryLocale }) {
 
 export function PromoCtas({ locale }: { locale: HistoryLocale }) {
   const ko = locale === "ko";
+  const publicHref = usePublicHref();
   return (
     <div className="rh-cta">
-      <Link className="rh-button" href="/" onClick={() => pushRobEvent("CTA_START_HISTORY_CLICKED", { route: "/about/why-rob" })}>
+      <Link className="rh-button" href={publicHref("/")} onClick={() => pushRobEvent("CTA_START_HISTORY_CLICKED", { route: "/about/why-rob" })}>
         {ko ? "작가 검색하기" : "Search an artist"}
       </Link>
-      <Link className="rh-button" href="/history/explore" onClick={() => pushRobEvent("CTA_EXPLORE_CLICKED", { route: "/about/why-rob" })}>
+      <Link className="rh-button" href={publicHref("/history/explore")} onClick={() => pushRobEvent("CTA_EXPLORE_CLICKED", { route: "/about/why-rob" })}>
         {ko ? "예술 세계 둘러보기" : "Explore the art world"}
       </Link>
     </div>

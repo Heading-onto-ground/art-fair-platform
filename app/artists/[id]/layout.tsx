@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { pageMetadata } from "@/lib/seo";
 import { loadPublicArtist } from "@/lib/history/queries";
 import { artistPageDescription, artistPageTitle } from "@/lib/history/seo";
+import { historyLocale, pinnedLocale } from "@/lib/history/requestLocale";
 
 export const preferredRegion = "bom1";
 export const runtime = "nodejs";
@@ -12,22 +13,28 @@ export async function generateMetadata({
 }: {
   params: { id: string };
 }): Promise<Metadata> {
+  const locale = historyLocale();
+  const localeUrl = pinnedLocale();
   const fallback = pageMetadata({
-    title: "Artist | ROB",
-    description:
-      "Discover artists and their practice records on ROB — Role of Bridge, a global art platform.",
+    title: locale === "ko" ? "작가 | ROB" : "Artist | ROB",
+    description: locale === "ko"
+      ? "ROB에 기록된 작가의 전시 이력입니다."
+      : "A documented artist history on ROB.",
     path: `/artists/${params.id}`,
+    index: false,
+    localeUrl,
   });
 
   try {
     const loaded = await loadPublicArtist(params.id);
     if (loaded.kind === "history" || loaded.kind === "redirect") {
       return pageMetadata({
-        title: artistPageTitle(loaded.artist.canonicalName),
-        description: artistPageDescription(loaded.artist),
+        title: artistPageTitle(loaded.artist, locale),
+        description: artistPageDescription(loaded.artist, locale),
         path: `/artists/${loaded.artist.slug}`,
         index: loaded.artist.indexEligible,
         type: "profile",
+        localeUrl,
       });
     }
   } catch {
@@ -53,12 +60,12 @@ export async function generateMetadata({
     const title = descr ? `${a.name} — ${descr} | ROB` : `${a.name} | ROB`;
     return pageMetadata({
       title,
-      description:
-        a.bio ||
-        `${a.name}${descr ? ` (${descr})` : ""} — view this artist's profile and work on ROB, a global art platform.`,
+      description: a.bio || `${a.name}${descr ? ` (${descr})` : ""}.`,
       path: `/artists/${params.id}`,
       image: a.profileImage,
       type: "profile",
+      index: false,
+      localeUrl,
     });
   } catch {
     return fallback;

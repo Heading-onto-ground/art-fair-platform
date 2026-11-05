@@ -23,6 +23,7 @@ import {
   countBridgePaths,
   DENSE_HISTORY_MIN,
   densityForCount,
+  spaceIndexEligible,
   formatHistoryDate,
   isFilledMarker,
   isFirstPartyImage,
@@ -546,7 +547,7 @@ export async function loadSpacePage(key: string): Promise<HistorySpacePage | nul
       dateLabel: view.dateLabel,
       artists: view.artists,
     })),
-    indexEligible: Boolean(span) && views.length >= 1,
+    indexEligible: spaceIndexEligible(views.filter((view) => view.slug).length),
   };
 }
 
