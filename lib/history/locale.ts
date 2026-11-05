@@ -17,6 +17,10 @@ export type HistoryCopy = {
   searchButton: string;
   searching: string;
   searchEmpty: string;
+  researchOffer: string;
+  researchAsk: string;
+  researchAction: string;
+  researchExpand: string;
   searchError: string;
   startHistory: string;
   exploreWorld: string;
@@ -24,6 +28,9 @@ export type HistoryCopy = {
   partialHistory: string;
   history: string;
   connections: string;
+  people: string;
+  places: string;
+  curators: string;
   works: string;
   about: string;
   documentedInRob: string;
@@ -90,6 +97,7 @@ export type HistoryCopy = {
   clustered: string;
   showMore: (count: number) => string;
   sharedCount: (count: number) => string;
+  placeCount: (count: number) => string;
   documentedLine: (count: number) => string;
   reviewRequired: string;
   namedInTitle: string;
@@ -113,13 +121,17 @@ export type HistoryCopy = {
 
 const en: HistoryCopy = {
   searchTitle: "Search an artist.",
-  searchLead: "See their journey.",
-  searchLeadFull: "See their journey. Follow the moments that connect one artist to another.",
+  searchLead: "Enter their world.",
+  searchLeadFull: "Enter their world. Follow the moments that connect one artist to another.",
   searchLabel: "Search an artist",
   searchPlaceholder: "Search an artist...",
   searchButton: "Search",
   searching: "Searching…",
   searchEmpty: "No documented artist matches that name yet.",
+  researchOffer: "ROB does not yet have enough documented history for this artist.",
+  researchAsk: "Look for this artist's documented records?",
+  researchAction: "Research this artist",
+  researchExpand: "Look for more documented records",
   searchError: "Search is temporarily unavailable. Please try again.",
   startHistory: "Start your history",
   exploreWorld: "Explore the art world",
@@ -127,6 +139,9 @@ const en: HistoryCopy = {
   partialHistory: "Partial history",
   history: "History",
   connections: "Connections",
+  people: "People",
+  places: "Places",
+  curators: "Curators",
   works: "Works",
   about: "About",
   documentedInRob: "Documented in ROB",
@@ -193,6 +208,7 @@ const en: HistoryCopy = {
   clustered: "clustered by decade",
   showMore: (count) => `Show ${count} more ${count === 1 ? "artist" : "artists"}`,
   sharedCount: (count) => (count === 1 ? "1 documented shared exhibition" : `${count} documented shared exhibitions`),
+  placeCount: (count) => (count === 1 ? "1 documented exhibition" : `${count} documented exhibitions`),
   documentedLine: (count) => `${count} ${count === 1 ? "exhibition" : "exhibitions"} currently documented`,
   reviewRequired: "Review required",
   namedInTitle: "Named in the title",
@@ -206,8 +222,8 @@ const en: HistoryCopy = {
   timelineHelp: "How to read this timeline",
   timelineHelpBody: "Open circles mark year-only records. Filled circles include a month or day. A number is the count for that year. Empty stretches are missing ROB records, not missing activity.",
   yearAria: (year, count, dated) => `${year}, ${count} exhibition${count === 1 ? "" : "s"}, ${dated ? "dated" : "year only"}`,
-  pageTitle: "Search an artist. See their journey. | ROB",
-  pageDescription: "Search an artist and see their documented exhibition history on ROB.",
+  pageTitle: "Search an artist. Enter their world. | ROB",
+  pageDescription: "Search an artist and enter their documented world on ROB.",
   recordsDocumented: "records currently documented in ROB",
   exhibitionsDocumented: "exhibitions currently documented in ROB",
   documentedYears: (range) => `Documented years ${range}`,
@@ -215,14 +231,18 @@ const en: HistoryCopy = {
 };
 
 const ko: HistoryCopy = {
-  searchTitle: "아티스트를 검색하세요.",
-  searchLead: "그들의 여정을 따라가 보세요.",
-  searchLeadFull: "그들의 여정을 따라가 보세요. 한 작가를 다른 작가와 잇는 기록된 순간을 따라가 보세요.",
+  searchTitle: "작가를 검색하세요.",
+  searchLead: "그 작가의 세계로 들어갑니다.",
+  searchLeadFull: "그 작가의 세계로 들어갑니다. 한 작가를 다른 작가와 잇는 기록된 순간을 따라가 보세요.",
   searchLabel: "아티스트를 검색하세요",
   searchPlaceholder: "아티스트를 검색하세요",
   searchButton: "검색",
   searching: "검색 중…",
   searchEmpty: "아직 ROB에 기록된 아티스트가 없습니다.",
+  researchOffer: "아직 ROB에 충분한 기록이 없습니다.",
+  researchAsk: "이 작가의 기록을 찾아볼까요?",
+  researchAction: "이 작가 조사하기",
+  researchExpand: "기록을 더 찾아보기",
   searchError: "검색을 잠시 사용할 수 없습니다. 다시 시도해 주세요.",
   startHistory: "이력 시작하기",
   exploreWorld: "예술 세계 둘러보기",
@@ -230,6 +250,9 @@ const ko: HistoryCopy = {
   partialHistory: "일부 기록",
   history: "이력",
   connections: "연결",
+  people: "사람들",
+  places: "장소",
+  curators: "큐레이터",
   works: "작품",
   about: "소개",
   documentedInRob: "ROB에 기록된 이력",
@@ -296,6 +319,7 @@ const ko: HistoryCopy = {
   clustered: "연대별로 묶음",
   showMore: (count) => `작가 ${count}명 더 보기`,
   sharedCount: (count) => `기록된 공동 전시 ${count}건`,
+  placeCount: (count) => `기록된 전시 ${count}건`,
   documentedLine: (count) => `현재 ROB에 기록된 전시 ${count}건`,
   reviewRequired: "검토 필요",
   namedInTitle: "제목에만 등장",
@@ -309,8 +333,8 @@ const ko: HistoryCopy = {
   timelineHelp: "이 시간축을 읽는 법",
   timelineHelpBody: "빈 원은 연도만 있는 기록입니다. 채워진 원은 월이나 일이 있습니다. 숫자는 그해의 건수입니다. 비어 있는 구간은 활동이 없었다는 뜻이 아니라, ROB에 기록이 없다는 뜻입니다.",
   yearAria: (year, count, dated) => `${year}년, 전시 ${count}건, ${dated ? "날짜 있음" : "연도만"}`,
-  pageTitle: "아티스트를 검색하세요. 그들의 여정을 따라가 보세요. | ROB",
-  pageDescription: "아티스트를 검색하고 ROB에 기록된 전시 이력을 살펴보세요.",
+  pageTitle: "작가를 검색하세요. 그 작가의 세계로 들어갑니다. | ROB",
+  pageDescription: "작가를 검색하고 ROB에 기록된 그 작가의 세계로 들어가 보세요.",
   recordsDocumented: "현재 ROB에 기록된 이력",
   exhibitionsDocumented: "현재 ROB에 기록된 전시",
   documentedYears: (range) => `기록된 기간 ${range}`,

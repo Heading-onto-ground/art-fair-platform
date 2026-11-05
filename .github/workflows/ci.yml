@@ -44,7 +44,8 @@ jobs:
 
   mobile:
     name: Mobile (lint, typecheck, test, build)
-    runs-on: ubuntu-latest
+    # ubuntu-latest is 26.04, which Playwright 1.58 cannot install Chromium dependencies for.
+    runs-on: ubuntu-24.04
     defaults:
       run:
         working-directory: mobile

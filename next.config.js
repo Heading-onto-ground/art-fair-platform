@@ -1,8 +1,23 @@
+// next.config.js is CommonJS. The Workflow helper is a require() on purpose.
+// eslint-disable-next-line @typescript-eslint/no-require-imports
+const { withWorkflow } = require("workflow/next");
+
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: true,
   experimental: {
-    serverComponentsExternalPackages: ["@vercel/blob", "undici", "pdf-lib", "@pdf-lib/fontkit"],
+    serverComponentsExternalPackages: [
+      "@vercel/blob",
+      "undici",
+      "pdf-lib",
+      "@pdf-lib/fontkit",
+      // Next 13 reads this list. withWorkflow writes the Next 15+
+      // serverExternalPackages key, which 13.5 ignores, and then Webpack
+      // tries to parse Workflow's nested undici private fields.
+      "@workflow/world-local",
+      "@workflow/world-vercel",
+      "@workflow/core",
+    ],
     outputFileTracingIncludes: {
       "/api/admin/labor-survey/pdf": ["./lib/fonts/**/*"],
     },
@@ -50,4 +65,4 @@ const nextConfig = {
   },
 };
 
-module.exports = nextConfig;
+module.exports = withWorkflow(nextConfig);

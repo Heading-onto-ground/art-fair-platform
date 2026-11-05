@@ -24,4 +24,5 @@ export const NOINDEX_PATHS = [
   "/reset-password",
   "/embed/",
   "/verify-day1",
+  "/research",
 ] as const;

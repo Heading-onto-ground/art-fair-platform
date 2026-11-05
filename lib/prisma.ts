@@ -20,11 +20,21 @@ const poolMax =
       ? 1
       : 10;
 
+function databaseSsl(connectionString: string | undefined) {
+  try {
+    const host = new URL(connectionString ?? "").hostname;
+    if (host === "localhost" || host === "127.0.0.1" || host === "::1") return false;
+  } catch {
+    // Hosted databases keep the default below.
+  }
+  return { rejectUnauthorized: false as const };
+}
+
 const pool =
   globalForPrisma.pool ??
   new Pool({
     connectionString: process.env.DATABASE_URL,
-    ssl: { rejectUnauthorized: false },
+    ssl: databaseSsl(process.env.DATABASE_URL),
     max: poolMax,
     idleTimeoutMillis: 30_000,
     connectionTimeoutMillis: 15_000,

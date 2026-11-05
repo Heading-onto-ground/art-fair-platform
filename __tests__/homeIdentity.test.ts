@@ -24,10 +24,10 @@ describe("ROB public home", () => {
 
     const english = historyCopy("en");
     const korean = historyCopy("ko");
-    expect(`${english.searchTitle} ${english.searchLead}`).toBe("Search an artist. See their journey.");
-    expect(english.pageTitle).toContain("Search an artist. See their journey.");
-    expect(korean.searchTitle).toBe("아티스트를 검색하세요.");
-    expect(korean.searchLead).toBe("그들의 여정을 따라가 보세요.");
+    expect(`${english.searchTitle} ${english.searchLead}`).toBe("Search an artist. Enter their world.");
+    expect(english.pageTitle).toContain("Search an artist. Enter their world.");
+    expect(korean.searchTitle).toBe("작가를 검색하세요.");
+    expect(korean.searchLead).toBe("그 작가의 세계로 들어갑니다.");
     expect(resolveHistoryLocale("en", "ko-KR,ko;q=0.9")).toBe("en");
     expect(resolveHistoryLocale(undefined, "ko-KR,ko;q=0.9")).toBe("ko");
   });

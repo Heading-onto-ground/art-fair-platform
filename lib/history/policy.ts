@@ -37,6 +37,18 @@ export const HISTORY_EVENTS = [
   "EXHIBITION_ADD_STARTED",
   "EXHIBITION_ADDED",
   "REPORT_ISSUE_STARTED",
+  "DISCOVERY_OFFERED",
+  "DISCOVERY_REQUESTED",
+  "DISCOVERY_STARTED",
+  "DISCOVERY_IDENTITY_RESOLVED",
+  "DISCOVERY_SOURCE_FOUND",
+  "DISCOVERY_FIRST_FACT_VERIFIED",
+  "DISCOVERY_PARTIAL_RESULT",
+  "DISCOVERY_COMPLETED",
+  "DISCOVERY_NEEDS_REVIEW",
+  "DISCOVERY_SOURCE_BLOCKED",
+  "DISCOVERY_FAILED",
+  "DISCOVERY_RESULT_OPENED",
 ] as const;
 
 export type HistoryEventName = (typeof HISTORY_EVENTS)[number];
@@ -274,6 +286,13 @@ export function containsDestructiveSchema(source: string): boolean {
 
 export function slugifyName(name: string): string {
   const base = name
+    .replace(/&nbsp;|&#160;/g, " ")
+    .replace(/&#8211;|&#x2013;|&ndash;/g, "-")
+    .replace(/&uuml;/g, "u")
+    .replace(/&ouml;/g, "o")
+    .replace(/&auml;/g, "a")
+    .replace(/&eacute;/g, "e")
+    .replace(/&amp;/g, " ")
     .normalize("NFKD")
     .replace(/[\u0300-\u036f]/g, "")
     .toLowerCase()

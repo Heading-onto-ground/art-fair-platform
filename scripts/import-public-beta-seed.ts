@@ -13,6 +13,8 @@ import {
 import { uniqueSlug } from "../lib/history/policy";
 
 function databaseUrl(): string {
+  const fromEnv = process.env.DATABASE_URL ?? "";
+  if (/@(127\.0\.0\.1|localhost)[:/]/.test(fromEnv)) return fromEnv;
   const line = readFileSync(".env", "utf8").split(/\r?\n/).find((item) => item.startsWith("DATABASE_URL="));
   if (!line) throw new Error("DATABASE_URL missing");
   let value = line.slice("DATABASE_URL=".length).trim();
@@ -24,14 +26,21 @@ function previewOnly(): boolean {
   return process.argv.includes("--preview");
 }
 
+function isolatedDiscoveryDatabase(): boolean {
+  const url = process.env.DATABASE_URL ?? "";
+  return process.env.ROB_LOCAL_DISCOVERY_IMPORT === "1" && /@127\.0\.0\.1:5433\/rob_discovery(?:\?|$)/.test(url);
+}
+
 async function main() {
-  const confirm = process.env.ROB_CONFIRM_PRODUCTION_SEED_IMPORT === "1";
+  const confirm = process.env.ROB_CONFIRM_PRODUCTION_SEED_IMPORT === "1" || isolatedDiscoveryDatabase();
   if (!confirm && !previewOnly()) {
     console.log("REFUSED");
     process.exit(1);
   }
   const map = JSON.parse(readFileSync("data/production-clearance/kukje-record-map.json", "utf8")) as LaunchMap;
-  const client = new Client({ connectionString: databaseUrl(), ssl: { rejectUnauthorized: false } });
+  const connectionString = databaseUrl();
+  const local = /@(127\.0\.0\.1|localhost)[:/]/.test(connectionString);
+  const client = new Client({ connectionString, ssl: local ? false : { rejectUnauthorized: false } });
   await client.connect();
   try {
     const ping = await client.query("SELECT 1 AS ok");

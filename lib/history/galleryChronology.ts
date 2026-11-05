@@ -21,7 +21,14 @@ function clean(value: string): string {
   return value
     .replace(/<[^>]+>/g, " ")
     .replace(/&nbsp;|&#160;/g, " ")
+    .replace(/&#8211;|&#x2013;|&ndash;/g, "–")
+    .replace(/&#8212;|&#x2014;|&mdash;/g, "—")
+    .replace(/&uuml;/g, "ü")
+    .replace(/&ouml;/g, "ö")
+    .replace(/&auml;/g, "ä")
+    .replace(/&eacute;/g, "é")
     .replace(/&amp;/g, "&")
+    .replace(/&#(\d+);/g, (_, digits: string) => String.fromCodePoint(Number(digits)))
     .replace(/\s+/g, " ")
     .trim();
 }

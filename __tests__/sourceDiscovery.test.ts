@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { toDiscoveryEntity } from "@/lib/history/wikidataIdentity";
 import type { CrawlFact } from "@/lib/history/trustedCrawl";
 import {
   CONTROL_ARTISTS,
@@ -7,6 +8,7 @@ import {
   classifySearchHit,
   discoverTrustedSources,
   discoveryReadiness,
+  matchTrustedGalleryRoster,
   selectDiscoveryEntity,
   extractionCoverage,
   sourceDiscoveryAcceptance,
@@ -261,5 +263,29 @@ describe("source discovery", () => {
       crawlerSafetyRegressions: 0,
       productionWrites: 0,
     })).toBe("ROB_SOURCE_DISCOVERY_IDENTITY_BLOCKED");
+  });
+
+  it("matches one exact name on a trusted gallery roster", () => {
+    const html = `
+      <a href="/artists/view?seq=10"><span class="artists-main-list__name">Other Artist</span></a>
+      <a href="/artists/view?seq=176"><span class="artists-main-list__name">Haegue Yang <span style="display:none;">양혜규</span></span></a>
+    `;
+    expect(matchTrustedGalleryRoster(html, ["Haegue Yang"], "https://www.kukjegallery.com/artists")).toEqual({
+      url: "https://www.kukjegallery.com/artists/view?seq=176",
+      sourceName: "Kukje Gallery",
+    });
+    expect(matchTrustedGalleryRoster(html, ["양혜규"], "https://www.kukjegallery.com/artists")?.url).toContain("seq=176");
+    expect(matchTrustedGalleryRoster(html, ["Yang"], "https://www.kukjegallery.com/artists")).toBeNull();
+    expect(matchTrustedGalleryRoster(html, ["Haegue Yang", "Other Artist"], "https://www.kukjegallery.com/artists")).toBeNull();
+  });
+
+  it("keeps a Korean Wikidata label beside the English name", () => {
+    const entity = toDiscoveryEntity("Q1567689", {
+      labels: { en: { value: "Haegue Yang" }, ko: { value: "양혜규" } },
+      aliases: { en: [{ value: "Hae-gue Yang" }] },
+    });
+    expect(entity.label).toBe("Haegue Yang");
+    expect(entity.aliases).toContain("양혜규");
+    expect(entity.aliases).toContain("Hae-gue Yang");
   });
 });

@@ -803,6 +803,7 @@ function participant(label: string, evidence: ParticipantEvidence, artists: { sl
 
 export function spaceDecisionFor(venue: string | null): SpaceDecision {
   if (!venue?.trim()) return "MISSING";
+  if (venue.includes(";")) return "REVIEW";
   if (resolveVerifiedSpace(venue)) return "RESOLVED";
   const key = normalizeArtistLookup(venue);
   for (const space of VERIFIED_SPACES) {
