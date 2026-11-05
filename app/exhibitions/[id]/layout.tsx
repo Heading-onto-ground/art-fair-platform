@@ -9,9 +9,9 @@ export async function generateMetadata({
 }): Promise<Metadata> {
   const fallback = pageMetadata({
     title: "Exhibition | ROB",
-    description:
-      "Explore exhibitions and the artists behind them on ROB — Role of Bridge, a global art platform.",
+    description: "A documented exhibition on ROB.",
     path: `/exhibitions/${params.id}`,
+    index: false,
   });
 
   try {
@@ -32,11 +32,10 @@ export async function generateMetadata({
     const title = place ? `${ex.title} — ${place} | ROB` : `${ex.title} | ROB`;
     return pageMetadata({
       title,
-      description:
-        ex.description ||
-        `${ex.title}${place ? ` at ${place}` : ""} — exhibition details on ROB, a global art platform.`,
+      description: ex.description || `${ex.title}${place ? ` at ${place}` : ""}.`,
       path: `/exhibitions/${params.id}`,
       type: "article",
+      index: false,
     });
   } catch {
     return fallback;

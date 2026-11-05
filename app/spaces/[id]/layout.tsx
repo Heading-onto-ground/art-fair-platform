@@ -9,9 +9,9 @@ export async function generateMetadata({
 }): Promise<Metadata> {
   const fallback = pageMetadata({
     title: "Exhibition Space | ROB",
-    description:
-      "Explore exhibition spaces and venues on ROB — Role of Bridge, a global art platform.",
+    description: "A documented exhibition space on ROB.",
     path: `/spaces/${params.id}`,
+    index: false,
   });
 
   try {
@@ -25,10 +25,9 @@ export async function generateMetadata({
     const title = place ? `${s.name} — ${place} | ROB` : `${s.name} | ROB`;
     return pageMetadata({
       title,
-      description: `${s.name}${s.type ? ` (${s.type})` : ""}${
-        place ? ` in ${place}` : ""
-      } — exhibitions and details on ROB, a global art platform.`,
+      description: `${s.name}${s.type ? ` (${s.type})` : ""}${place ? ` in ${place}` : ""}.`,
       path: `/spaces/${params.id}`,
+      index: false,
     });
   } catch {
     return fallback;

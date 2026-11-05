@@ -1,5 +1,7 @@
 export const HISTORY_READY_MIN = 3;
 export const RICH_HISTORY_MIN = 12;
+/** A space needs more than one documented public exhibition before it is a search page. */
+export const SPACE_INDEX_MIN = 2;
 export const INITIAL_CONSTELLATION = 10;
 
 export type HistoryDensity = "EMPTY" | "LOW_DENSITY" | "HISTORY_READY" | "RICH_HISTORY";
@@ -66,6 +68,10 @@ export function isIndexEligible(density: HistoryDensity): boolean {
 
 export function artistSitemapEligible(count: number): boolean {
   return isIndexEligible(densityForCount(count));
+}
+
+export function spaceIndexEligible(exhibitionCount: number): boolean {
+  return exhibitionCount >= SPACE_INDEX_MIN;
 }
 
 export type PublicationStatus = "DRAFT" | "PENDING_REVIEW" | "PUBLIC" | "REJECTED";

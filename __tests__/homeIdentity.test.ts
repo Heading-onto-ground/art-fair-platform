@@ -25,7 +25,8 @@ describe("ROB public home", () => {
     const english = historyCopy("en");
     const korean = historyCopy("ko");
     expect(`${english.searchTitle} ${english.searchLead}`).toBe("Search an artist. Enter their world.");
-    expect(english.pageTitle).toContain("Search an artist. Enter their world.");
+    expect(english.pageTitle).toBe("ROB — Artist History & Documented Connections");
+    expect(korean.pageTitle).toBe("ROB — 작가의 전시 이력과 기록된 연결");
     expect(korean.searchTitle).toBe("작가를 검색하세요.");
     expect(korean.searchLead).toBe("그 작가의 세계로 들어갑니다.");
     expect(resolveHistoryLocale("en", "ko-KR,ko;q=0.9")).toBe("en");

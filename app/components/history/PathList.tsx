@@ -5,6 +5,7 @@ import JourneyContinueLink from "@/app/components/history/JourneyContinueLink";
 import { trackHistory } from "@/lib/history/analytics";
 import { pushRobEvent } from "@/lib/publicGrowth/analytics";
 import { historyCopy, type HistoryLocale } from "@/lib/history/locale";
+import { usePublicHref } from "@/app/components/history/LocaleUrl";
 
 type Route = {
   id: string;
@@ -13,6 +14,7 @@ type Route = {
 };
 
 export default function PathList({ routes, locale = "en" }: { routes: Route[]; locale?: HistoryLocale }) {
+  const publicHref = usePublicHref();
   if (routes.length === 0) return null;
   const copy = historyCopy(locale);
   return (
@@ -22,7 +24,7 @@ export default function PathList({ routes, locale = "en" }: { routes: Route[]; l
       <ul className="rh-list">
         {routes.map((route) => (
           <li key={route.id} id={route.id}>
-            <Link href={`/history/explore#${route.id}`} onClick={() => { trackHistory("PATH_OPENED", `/history/explore#${route.id}`); pushRobEvent("PATH_OPENED", { route: route.id }); }}>
+            <Link href={publicHref(`/history/explore#${route.id}`)} onClick={() => { trackHistory("PATH_OPENED", `/history/explore#${route.id}`); pushRobEvent("PATH_OPENED", { route: route.id }); }}>
               {copy.followPath}
             </Link>
             <div>

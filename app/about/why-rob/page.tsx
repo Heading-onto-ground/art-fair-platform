@@ -2,7 +2,7 @@ import Link from "next/link";
 import TopBar from "@/app/components/TopBar";
 import PromoSearch, { PromoCtas } from "@/app/components/history/PromoSearch";
 import { EXAMPLE_ARTISTS } from "@/lib/publicGrowth/examplePath";
-import { historyLocale } from "@/lib/history/requestLocale";
+import { historyLocale, pinnedLocale, pinnedPath } from "@/lib/history/requestLocale";
 import { pageMetadata } from "@/lib/seo";
 import "@/app/components/history/history.css";
 
@@ -14,6 +14,7 @@ export function generateMetadata() {
       ? "작가를 검색하세요. 그 작가의 세계로 들어갑니다. ROB는 확인된 전시와 그 접점을 보여 줍니다."
       : "Search an artist. Enter their world. ROB shows documented exhibitions and the people and places connected through them.",
     path: "/about/why-rob",
+    localeUrl: pinnedLocale(),
   });
 }
 
@@ -31,7 +32,7 @@ export default function WhyRobPage() {
           {EXAMPLE_ARTISTS.map((artist, index) => (
             <span key={artist.slug}>
               {index > 0 ? <span aria-hidden="true"> → </span> : null}
-              <Link href={`/artists/${artist.slug}`}>{artist.label}</Link>
+              <Link href={pinnedPath(`/artists/${artist.slug}`)}>{artist.label}</Link>
             </span>
           ))}
         </p>
@@ -41,7 +42,7 @@ export default function WhyRobPage() {
         <h2>{ko ? "관계를 추측하지 않습니다" : "ROB does not invent relationships"}</h2>
         <p>{ko ? "같은 전시에 있었다면 그 전시를 보여 줍니다. 영향에 대한 판단은 사용자에게 남깁니다. 기록은 출처와 함께 자라고, 모든 전시를 가진 척하지 않습니다." : "If two artists shared a documented exhibition, ROB shows that exhibition. Interpretation stays with the visitor. The record grows with sources and does not pretend to be complete."}</p>
         <PromoCtas locale={locale} />
-        <p><Link href="/about/how-to-use">{ko ? "사용법" : "How to use"}</Link></p>
+        <p><Link href={pinnedPath("/about/how-to-use")}>{ko ? "사용법" : "How to use"}</Link></p>
         <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify({ "@context": "https://schema.org", "@type": "WebSite", name: "ROB", url: "https://rob-roleofbridge.com", potentialAction: { "@type": "SearchAction", target: "https://rob-roleofbridge.com/?q={search_term_string}", "query-input": "required name=search_term_string" } }) }} />
       </main>
     </div>

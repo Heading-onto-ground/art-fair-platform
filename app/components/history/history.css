@@ -160,6 +160,8 @@
   color: inherit;
   background: transparent;
   cursor: pointer;
+  text-decoration: none;
+  border: 0;
 }
 
 .rh-back,

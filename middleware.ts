@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { aliasSlugRedirect } from "@/lib/history/identity";
-import { PROTECTED_PREFIXES } from "@/lib/routes";
+import { splitLocalePath, withLocalePrefix } from "@/lib/history/localeUrl";
+import { legacyNoindexPath, PROTECTED_PREFIXES } from "@/lib/routes";
 
 // Admin routes (require admin session cookie)
 const ADMIN_PREFIX = "/admin";
@@ -32,11 +33,19 @@ function applySecurityHeaders(res: NextResponse, isProduction: boolean, allowFra
   return res;
 }
 
+function withLocaleHeaders(req: NextRequest, locale: "ko" | "en") {
+  const requestHeaders = new Headers(req.headers);
+  requestHeaders.set("x-rob-locale", locale);
+  requestHeaders.set("x-rob-locale-pinned", "1");
+  return requestHeaders;
+}
+
 export function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl;
   const isProduction = process.env.NODE_ENV === "production";
+  const { locale, path } = splitLocalePath(pathname);
 
-  const artistPath = pathname.match(/^\/artists\/([^/]+)$/);
+  const artistPath = path.match(/^\/artists\/([^/]+)$/);
   if (artistPath) {
     let requested = artistPath[1];
     try {
@@ -47,56 +56,69 @@ export function middleware(req: NextRequest) {
     const canonical = aliasSlugRedirect(requested);
     if (canonical) {
       const url = req.nextUrl.clone();
-      url.pathname = `/artists/${canonical}`;
+      url.pathname = withLocalePrefix(`/artists/${canonical}`, locale);
       return applySecurityHeaders(NextResponse.redirect(url, 308), isProduction);
     }
   }
 
+  const nextFor = (allowFraming = false) => {
+    const response = locale
+      ? NextResponse.rewrite((() => {
+          const url = req.nextUrl.clone();
+          url.pathname = path;
+          return url;
+        })(), { request: { headers: withLocaleHeaders(req, locale) } })
+      : NextResponse.next();
+    if (path === "/research" || path.startsWith("/research/")) response.headers.set("X-Robots-Tag", "noindex, nofollow");
+    else if (legacyNoindexPath(path)) response.headers.set("X-Robots-Tag", "noindex, follow");
+    return applySecurityHeaders(response, isProduction, allowFraming);
+  };
+
   // ── Embeddable widget routes (public, iframe-able) ────────────────────────
-  if (pathname.startsWith("/embed/")) {
-    return applySecurityHeaders(NextResponse.next(), isProduction, true);
+  if (path.startsWith("/embed/")) {
+    return nextFor(true);
   }
 
   const hasSession = req.cookies.has("afp_session");
   const hasAdminSession = req.cookies.has("afp_admin_session");
   const isAdminArtistPreview =
-    pathname === "/artist/me" &&
+    path === "/artist/me" &&
     req.nextUrl.searchParams.get("adminView") === "1";
 
   // ── Admin routes ──────────────────────────────────────────────────────────
-  if (pathname.startsWith(ADMIN_PREFIX) && pathname !== ADMIN_LOGIN) {
+  if (path.startsWith(ADMIN_PREFIX) && path !== ADMIN_LOGIN) {
     if (!hasAdminSession) {
       return applySecurityHeaders(
         NextResponse.redirect(new URL(ADMIN_LOGIN, req.url)),
         isProduction
       );
     }
-    return applySecurityHeaders(NextResponse.next(), isProduction);
+    return nextFor();
   }
 
   // ── Auth pages ─────────────────────────────────────────────────────────────
-  if (AUTH_PATHS.some((p) => pathname === p)) {
-    return applySecurityHeaders(NextResponse.next(), isProduction);
+  if (AUTH_PATHS.some((p) => path === p)) {
+    return nextFor();
   }
 
   // ── Protected user routes ─────────────────────────────────────────────────
-  if (PROTECTED_PREFIXES.some((p) => pathname === p || pathname.startsWith(p + "/"))) {
+  if (PROTECTED_PREFIXES.some((p) => path === p || path.startsWith(p + "/"))) {
     // Allow admin read-only preview on artist page when admin session exists.
     if (isAdminArtistPreview && hasAdminSession) {
-      return applySecurityHeaders(NextResponse.next(), isProduction);
+      return nextFor();
     }
     if (!hasSession) {
       const loginUrl = new URL("/login", req.url);
       // Preserve the destination so login can redirect back after auth
-      if (pathname !== "/") {
-        loginUrl.searchParams.set("redirect", pathname);
+      if (path !== "/") {
+        loginUrl.searchParams.set("redirect", path);
       }
       return applySecurityHeaders(NextResponse.redirect(loginUrl), isProduction);
     }
-    return applySecurityHeaders(NextResponse.next(), isProduction);
+    return nextFor();
   }
 
-  return applySecurityHeaders(NextResponse.next(), isProduction);
+  return nextFor();
 }
 
 export const config = {

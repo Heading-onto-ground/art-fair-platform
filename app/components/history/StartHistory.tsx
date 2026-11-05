@@ -6,10 +6,12 @@ import { useRouter, useSearchParams } from "next/navigation";
 import TopBar from "@/app/components/TopBar";
 import { trackHistory } from "@/lib/history/analytics";
 import type { HistorySearchResult } from "@/lib/history/types";
+import { usePublicHref } from "@/app/components/history/LocaleUrl";
 import "./history.css";
 
 export default function StartHistory() {
   const router = useRouter();
+  const publicHref = usePublicHref();
   const params = useSearchParams();
   const preset = params.get("artist");
   const [query, setQuery] = useState("");
@@ -50,7 +52,7 @@ export default function StartHistory() {
       body: JSON.stringify({ slug }),
     });
     if (response.status === 401) {
-      router.push(`/login?redirect=${encodeURIComponent(`/history/start?artist=${slug}`)}`);
+      router.push(`/login?redirect=${encodeURIComponent(publicHref(`/history/start?artist=${slug}`))}`);
       return;
     }
     const data = await response.json();
@@ -70,7 +72,7 @@ export default function StartHistory() {
       body: JSON.stringify(form),
     });
     if (response.status === 401) {
-      router.push(`/login?redirect=${encodeURIComponent("/history/start")}`);
+      router.push(`/login?redirect=${encodeURIComponent(publicHref("/history/start"))}`);
       return;
     }
     const data = await response.json();
@@ -78,7 +80,7 @@ export default function StartHistory() {
       setMessage(data.error || "Could not create the artist.");
       return;
     }
-    router.push(`/history/add?artist=${data.slug}`);
+    router.push(publicHref(`/history/add?artist=${data.slug}`));
   }
 
   return (
@@ -96,7 +98,7 @@ export default function StartHistory() {
         <ul className="rh-results">
           {(results ?? []).map((artist) => (
             <li key={artist.slug}>
-              <Link href={`/artists/${artist.slug}`}>{artist.canonicalName}</Link>
+              <Link href={publicHref(`/artists/${artist.slug}`)}>{artist.canonicalName}</Link>
               {artist.nativeName ? <span> {artist.nativeName}</span> : null}
               <div>
                 <button className="rh-text-button" type="button" onClick={() => claim(artist.slug)}>Claim this page</button>

@@ -10,6 +10,7 @@ import { rememberExplorationDepth, trackHistory } from "@/lib/history/analytics"
 import { depthEventForTrail, markForwardArtist, pushRobEvent, pushRobEventOnce, takeForwardArtist } from "@/lib/publicGrowth/analytics";
 import ReportIssue from "@/app/components/history/ReportIssue";
 import ResearchOffer from "@/app/components/history/ResearchOffer";
+import { usePublicHref } from "@/app/components/history/LocaleUrl";
 import {
   JOURNEY_MS,
   HISTORY_PENDING_OVERLAY_MS,
@@ -177,6 +178,7 @@ function HistoryStill({ image, onFail }: { image: HistoryImage; onFail?: () => v
 export default function HistoryExperience({ artist, locale = "en" }: { artist: HistoryArtistView; locale?: HistoryLocale }) {
   const copy = historyCopy(locale);
   const router = useRouter();
+  const publicHref = usePublicHref();
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const [tab, setTab] = useState<"history" | "connections" | "works" | "about">("history");
@@ -446,7 +448,7 @@ export default function HistoryExperience({ artist, locale = "en" }: { artist: H
     trackHistory("CONNECTION_FOLLOWED", href);
     trackHistory("CONNECTED_ARTIST_OPENED", href);
     startTransition(() => {
-      router.push(href);
+      router.push(publicHref(href));
     });
   }
 
@@ -459,7 +461,7 @@ export default function HistoryExperience({ artist, locale = "en" }: { artist: H
       const href = restoredJourneyHref(retreated.step, retreated.rest.length > 0 ? journeyId : null);
       router.prefetch(href);
       startTransition(() => {
-        router.push(href, { scroll: false });
+        router.push(publicHref(href), { scroll: false });
       });
       return;
     }
@@ -482,7 +484,7 @@ export default function HistoryExperience({ artist, locale = "en" }: { artist: H
     if (scrollValue != null) rememberScroll(from, scrollValue);
     router.prefetch(href);
     startTransition(() => {
-      router.push(href, { scroll: false });
+      router.push(publicHref(href), { scroll: false });
     });
   }
 
@@ -577,7 +579,7 @@ export default function HistoryExperience({ artist, locale = "en" }: { artist: H
                 <ul className="rh-world-list">
                   {artist.artists.slice(0, 5).map((person) => (
                     <li key={person.id}>
-                      {person.slug ? <Link href={`/artists/${person.slug}`}>{person.name}</Link> : <span>{person.name}</span>}
+                      {person.slug ? <Link href={publicHref(`/artists/${person.slug}`)}>{person.name}</Link> : <span>{person.name}</span>}
                       <span>{copy.sharedCount(person.count)}</span>
                     </li>
                   ))}
@@ -590,7 +592,7 @@ export default function HistoryExperience({ artist, locale = "en" }: { artist: H
                 <ul className="rh-world-list">
                   {artist.spaces.slice(0, 5).map((space) => (
                     <li key={space.id}>
-                      {space.slug ? <Link href={`/spaces/${space.slug}`}>{space.name}</Link> : <span>{space.name}</span>}
+                      {space.slug ? <Link href={publicHref(`/spaces/${space.slug}`)}>{space.name}</Link> : <span>{space.name}</span>}
                       <span>{copy.placeCount(space.count)}</span>
                     </li>
                   ))}
@@ -658,15 +660,30 @@ export default function HistoryExperience({ artist, locale = "en" }: { artist: H
                 {chronology.map((exhibition) => (
                   <li key={exhibition.id}>
                     <span className="rh-chronology-year">{exhibition.year ?? "—"}</span>
-                    <button
-                      className={`rh-chronology-card${selected?.id === exhibition.id ? " is-selected" : ""}`}
-                      type="button"
-                      aria-pressed={selected?.id === exhibition.id}
-                      onClick={() => openYear(exhibition.year ?? 0, exhibition.id)}
-                    >
-                      <strong>{exhibition.title}</strong>
-                      <span>{eventLocation(exhibition) || exhibition.dateLabel}</span>
-                    </button>
+                    {exhibition.slug ? (
+                      <a
+                        className={`rh-chronology-card${selected?.id === exhibition.id ? " is-selected" : ""}`}
+                        href={publicHref(`/exhibitions/${exhibition.slug}`)}
+                        aria-current={selected?.id === exhibition.id ? "true" : undefined}
+                        onClick={(event) => {
+                          event.preventDefault();
+                          openYear(exhibition.year ?? 0, exhibition.id);
+                        }}
+                      >
+                        <strong>{exhibition.title}</strong>
+                        <span>{eventLocation(exhibition) || exhibition.dateLabel}</span>
+                      </a>
+                    ) : (
+                      <button
+                        className={`rh-chronology-card${selected?.id === exhibition.id ? " is-selected" : ""}`}
+                        type="button"
+                        aria-pressed={selected?.id === exhibition.id}
+                        onClick={() => openYear(exhibition.year ?? 0, exhibition.id)}
+                      >
+                        <strong>{exhibition.title}</strong>
+                        <span>{eventLocation(exhibition) || exhibition.dateLabel}</span>
+                      </button>
+                    )}
                   </li>
                 ))}
               </ol>
@@ -760,20 +777,40 @@ export default function HistoryExperience({ artist, locale = "en" }: { artist: H
                 </div>
                 <div className="rh-event-list">
                   {yearEvents.map((exhibition) => (
-                    <button
-                      key={exhibition.id}
-                      className={`rh-event-card${selected?.id === exhibition.id ? " is-selected" : ""}`}
-                      type="button"
-                      aria-pressed={selected?.id === exhibition.id}
-                      onClick={() => openYear(exhibition.year ?? focus ?? 0, exhibition.id)}
-                    >
-                      <span className="rh-event-dot" aria-hidden="true" />
-                      <span className="rh-event-copy">
-                        <strong>{exhibition.title}</strong>
-                        <span>{eventLocation(exhibition) || exhibition.dateLabel}</span>
-                      </span>
-                      <span className="rh-event-arrow" aria-hidden="true">→</span>
-                    </button>
+                    exhibition.slug ? (
+                      <a
+                        key={exhibition.id}
+                        className={`rh-event-card${selected?.id === exhibition.id ? " is-selected" : ""}`}
+                        href={publicHref(`/exhibitions/${exhibition.slug}`)}
+                        aria-current={selected?.id === exhibition.id ? "true" : undefined}
+                        onClick={(event) => {
+                          event.preventDefault();
+                          openYear(exhibition.year ?? focus ?? 0, exhibition.id);
+                        }}
+                      >
+                        <span className="rh-event-dot" aria-hidden="true" />
+                        <span className="rh-event-copy">
+                          <strong>{exhibition.title}</strong>
+                          <span>{eventLocation(exhibition) || exhibition.dateLabel}</span>
+                        </span>
+                        <span className="rh-event-arrow" aria-hidden="true">→</span>
+                      </a>
+                    ) : (
+                      <button
+                        key={exhibition.id}
+                        className={`rh-event-card${selected?.id === exhibition.id ? " is-selected" : ""}`}
+                        type="button"
+                        aria-pressed={selected?.id === exhibition.id}
+                        onClick={() => openYear(exhibition.year ?? focus ?? 0, exhibition.id)}
+                      >
+                        <span className="rh-event-dot" aria-hidden="true" />
+                        <span className="rh-event-copy">
+                          <strong>{exhibition.title}</strong>
+                          <span>{eventLocation(exhibition) || exhibition.dateLabel}</span>
+                        </span>
+                        <span className="rh-event-arrow" aria-hidden="true">→</span>
+                      </button>
+                    )
                   ))}
                 </div>
               </div>
@@ -823,7 +860,7 @@ export default function HistoryExperience({ artist, locale = "en" }: { artist: H
                           <span className="rh-node-arrow">{copy.enterHistory} →</span>
                         </button>
                       ) : node.kind === "space" && selected.spaceSlug ? (
-                        <Link key={node.id} className="rh-node" href={`/spaces/${selected.spaceSlug}`}>
+                        <Link key={node.id} className="rh-node" href={publicHref(`/spaces/${selected.spaceSlug}`)}>
                           <span className="rh-node-type">{copy.spaceWord}</span>
                           <strong>{node.label}</strong>
                         </Link>
@@ -881,7 +918,7 @@ export default function HistoryExperience({ artist, locale = "en" }: { artist: H
 
             <div className="rh-history-foot">
               <p>{copy.coveragePartial}</p>
-              <Link href={`/history/add?artist=${artist.slug}`} onClick={() => trackHistory("EXHIBITION_ADD_STARTED")}>
+              <Link href={publicHref(`/history/add?artist=${artist.slug}`)} onClick={() => trackHistory("EXHIBITION_ADD_STARTED")}>
                 {copy.addExhibition} →
               </Link>
             </div>
@@ -900,7 +937,7 @@ export default function HistoryExperience({ artist, locale = "en" }: { artist: H
                 <article key={person.id} className="rh-card">
                   <Link
                     className="rh-card-link"
-                    href={`/artists/${person.slug}`}
+                    href={publicHref(`/artists/${person.slug}`)}
                     onClick={(event) => {
                       if (!person.slug) return;
                       event.preventDefault();
@@ -928,7 +965,7 @@ export default function HistoryExperience({ artist, locale = "en" }: { artist: H
             <div className="rh-card-grid">
               {artist.spaces.map((space) => (
                 <article key={space.id} className="rh-card">
-                  {space.slug ? <Link className="rh-card-link" href={`/spaces/${space.slug}`}>{space.name}</Link> : <span>{space.name}</span>}
+                  {space.slug ? <Link className="rh-card-link" href={publicHref(`/spaces/${space.slug}`)}>{space.name}</Link> : <span>{space.name}</span>}
                   <p>{copy.sharedCount(space.count)}</p>
                 </article>
               ))}
@@ -979,7 +1016,7 @@ export default function HistoryExperience({ artist, locale = "en" }: { artist: H
             {artist.city || artist.country ? <p>{[artist.city, artist.country].filter(Boolean).join(", ")}</p> : null}
             {artist.officialWebsite ? <p><a href={artist.officialWebsite}>{copy.officialWebsite} ↗</a></p> : null}
             <p>
-              <Link href={`/history/start?artist=${artist.slug}`} onClick={() => trackHistory("CLAIM_STARTED")}>
+              <Link href={publicHref(`/history/start?artist=${artist.slug}`)} onClick={() => trackHistory("CLAIM_STARTED")}>
                 {copy.claimPage} →
               </Link>
             </p>

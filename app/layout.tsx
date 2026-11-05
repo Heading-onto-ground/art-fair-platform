@@ -3,8 +3,9 @@ import { Inter, Cormorant_Garamond } from "next/font/google";
 import "./globals.css";
 import { ToastProvider } from "@/lib/toast";
 import { historyCopy } from "@/lib/history/locale";
-import { historyLocale } from "@/lib/history/requestLocale";
+import { historyLocale, pinnedLocale } from "@/lib/history/requestLocale";
 import GoogleTagManager from "@/app/components/GoogleTagManager";
+import { LocaleUrlProvider } from "@/app/components/history/LocaleUrl";
 import { gtmContainerId, siteVerification } from "@/lib/publicGrowth/analytics";
 
 // ── Self-hosted fonts via next/font (no render-blocking @import) ──
@@ -23,59 +24,37 @@ const cormorant = Cormorant_Garamond({
   display: "swap",
 });
 
-// ── Enhanced SEO Metadata ──
-export const metadata: Metadata = {
-  metadataBase: new URL(process.env.NEXT_PUBLIC_APP_URL || "https://rob-roleofbridge.com"),
-  title: {
-    default: "ROB — Role of Bridge | Global Art Platform",
-    template: "%s | ROB",
-  },
-  description:
-    "A global art platform connecting artists and galleries worldwide. Discover open calls, apply to exhibitions, and ship artwork across borders.",
-  keywords: [
-    "art platform",
-    "open call",
-    "artist portfolio",
-    "gallery",
-    "art exhibition",
-    "global art network",
-    "artist community",
-  ],
-  openGraph: {
-    type: "website",
-    locale: "en_US",
-    siteName: "ROB — Role of Bridge",
-    title: "ROB — Role of Bridge | Global Art Platform",
-    description:
-      "Connecting artists and galleries worldwide. Discover, apply, exhibit.",
-  },
-  twitter: {
-    card: "summary_large_image",
-    title: "ROB — Role of Bridge",
-    description:
-      "Global art platform connecting artists and galleries across borders.",
-  },
-  robots: {
-    index: true,
-    follow: true,
-  },
-  ...(siteVerification(process.env.NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION, process.env.NEXT_PUBLIC_NAVER_SITE_VERIFICATION)
-    ? { verification: siteVerification(process.env.NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION, process.env.NEXT_PUBLIC_NAVER_SITE_VERIFICATION) }
-    : {}),
-  appleWebApp: {
-    capable: true,
-    statusBarStyle: "default",
-    title: "ROB Ritual",
-  },
-  applicationName: "ROB Ritual",
-  themeColor: "#8B7355",
-  viewport: {
-    width: "device-width",
-    initialScale: 1,
-    maximumScale: 1,
-    viewportFit: "cover",
-  },
-};
+export async function generateMetadata(): Promise<Metadata> {
+  const locale = historyLocale();
+  const ko = locale === "ko";
+  const title = ko ? "ROB — 작가의 전시 이력과 기록된 연결" : "ROB — Artist History & Documented Connections";
+  const description = ko
+    ? "작가를 검색하고 공식 출처로 확인된 전시, 공간, 큐레이터와 작가 간 연결을 따라가세요."
+    : "Search artists and explore documented exhibitions, spaces, curators, and artist connections. ROB builds verified art histories from official sources.";
+  const verification = siteVerification(
+    process.env.NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION,
+    process.env.NEXT_PUBLIC_NAVER_SITE_VERIFICATION,
+  );
+  return {
+    metadataBase: new URL(process.env.NEXT_PUBLIC_APP_URL || "https://rob-roleofbridge.com"),
+    title: { default: title, template: "%s | ROB" },
+    description,
+    openGraph: {
+      type: "website",
+      locale: ko ? "ko_KR" : "en_US",
+      siteName: "ROB",
+      title,
+      description,
+    },
+    twitter: { card: "summary", title, description },
+    robots: { index: true, follow: true },
+    ...(verification ? { verification } : {}),
+    appleWebApp: { capable: true, statusBarStyle: "default", title: "ROB" },
+    applicationName: "ROB",
+    themeColor: "#8B7355",
+    viewport: { width: "device-width", initialScale: 1, maximumScale: 1, viewportFit: "cover" },
+  };
+}
 
 export default async function RootLayout({
   children,
@@ -96,7 +75,9 @@ export default async function RootLayout({
         <a href="#main-content" className="skip-link">
           {copy.skipToContent}
         </a>
-        <ToastProvider>{children}</ToastProvider>
+        <LocaleUrlProvider locale={pinnedLocale()}>
+          <ToastProvider>{children}</ToastProvider>
+        </LocaleUrlProvider>
       </body>
     </html>
   );

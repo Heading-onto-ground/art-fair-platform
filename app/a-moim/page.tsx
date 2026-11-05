@@ -8,6 +8,7 @@ export const metadata: Metadata = pageMetadata({
   title: "A모임 기획 가이드 PDF — ROB",
   description: "작품보다 활동을 지속하는 사람들의 모임. A모임 기획·운영·ROB 연동 요약 PDF 다운로드.",
   path: "/a-moim",
+  index: false,
 });
 
 const PDF_PATH = "/api/a-moim/planning-guide";
