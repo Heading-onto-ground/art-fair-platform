@@ -23,7 +23,10 @@ import {
   CIRCUIT_BREAKER,
   COOLDOWN_DAYS,
   EXPANSION_DEFAULTS,
+  blankCanonicalNameCount,
   circuitBreakerReason,
+  resolvedIdentityCollisionCount,
+  sameNameReviewCount,
   cooldownDays,
   expansionPolicyFrom,
   isVisitorOnlyEvent,
@@ -116,7 +119,7 @@ function memory(input?: { demand?: { query: string; count: number; lastSearched:
       started.push(id);
       return `wf-${id}`;
     },
-    breakerSignals: async () => ({ consecutiveFailedRuns: 0, startFailureShare: 0, publicationsLastRun: 0, duplicateArtists: 0, databaseUnavailable: false }),
+    breakerSignals: async () => ({ consecutiveFailedRuns: 0, startFailureShare: 0, publicationsLastRun: 0, duplicateResolvedIdentities: 0, databaseUnavailable: false }),
     recordRun: async (run) => {
       runs.push({ ...run, summary: { ...run.summary, selected: [...run.summary.selected], ranking: [...run.summary.ranking] } });
     },
@@ -387,12 +390,49 @@ describe("global artist expansion", () => {
     const disabled = await runExpansion({ mode: "SCHEDULED", policy: policy({ enabled: false }) }, harness.deps);
     expect(disabled.status).toBe("DISABLED");
     expect(harness.started).toEqual([]);
-    harness.deps.breakerSignals = async () => ({ consecutiveFailedRuns: 0, startFailureShare: 0, publicationsLastRun: 0, duplicateArtists: 2, databaseUnavailable: false });
+    harness.deps.breakerSignals = async () => ({ consecutiveFailedRuns: 0, startFailureShare: 0, publicationsLastRun: 0, duplicateResolvedIdentities: 1, databaseUnavailable: false });
     const paused = await runExpansion({ mode: "SCHEDULED", policy: policy({ enabled: true }) }, harness.deps);
     expect(paused.status).toBe("PAUSED");
-    expect(paused.summary.pausedReason).toBe("DUPLICATE_ARTIST_SPIKE");
+    expect(paused.summary.pausedReason).toBe("DUPLICATE_RESOLVED_IDENTITY");
     expect(harness.started).toEqual([]);
-    expect(circuitBreakerReason({ consecutiveFailedRuns: CIRCUIT_BREAKER.maxConsecutiveFailedRuns, startFailureShare: 0, publicationsLastRun: 0, duplicateArtists: 0, databaseUnavailable: false })).toBe("REPEATED_RUN_FAILURE");
+    expect(circuitBreakerReason({ consecutiveFailedRuns: CIRCUIT_BREAKER.maxConsecutiveFailedRuns, startFailureShare: 0, publicationsLastRun: 0, duplicateResolvedIdentities: 0, databaseUnavailable: false })).toBe("REPEATED_RUN_FAILURE");
+  });
+
+  it("lets a manual batch name its artists and does not fill the rest from the queue", async () => {
+    const harness = memory({ demand: names(3, "Queue Painter") });
+    const run = await runExpansion({ mode: "MANUAL", policy: policy({ dailyResearchLimit: 10, sparseShare: 0 }), onlyLabels: ["Queue Painter 2"] }, harness.deps);
+    expect(run.jobsStarted).toBe(1);
+    expect(run.summary.selected.map((row) => row.displayName)).toEqual(["Queue Painter 2"]);
+    const previewHarness = memory({ demand: names(3, "Queue Painter") });
+    const preview = await runExpansion({ mode: "DRY_RUN", policy: policy({ dailyResearchLimit: 10, sparseShare: 0 }), onlyLabels: ["Queue Painter 2"] }, previewHarness.deps);
+    expect(preview.summary.selected.map((row) => row.displayName)).toEqual(["Queue Painter 2"]);
+    const scheduledHarness = memory({ demand: names(3, "Queue Painter") });
+    const scheduled = await runExpansion({ mode: "SCHEDULED", policy: policy({ enabled: true, dailyResearchLimit: 10, sparseShare: 0 }), onlyLabels: ["Queue Painter 2"] }, scheduledHarness.deps);
+    expect(scheduled.jobsStarted).toBe(3);
+  });
+
+  it("treats shared names as review warnings and only a split identity key as a collision", async () => {
+    const closed = { consecutiveFailedRuns: 0, startFailureShare: 0, publicationsLastRun: 0, duplicateResolvedIdentities: 0, databaseUnavailable: false };
+    expect(blankCanonicalNameCount(["", " ", "\t", "", ""])).toBe(5);
+    expect(circuitBreakerReason(closed)).toBeNull();
+    expect(sameNameReviewCount(["김도하", "김도하", "Lee Ufan"])).toBe(2);
+    expect(circuitBreakerReason(closed)).toBeNull();
+    expect(resolvedIdentityCollisionCount([
+      { identityKey: "Q1", artistId: "artist-a" },
+      { identityKey: "Q1", artistId: "artist-b" },
+    ])).toBe(1);
+    expect(circuitBreakerReason({ ...closed, duplicateResolvedIdentities: 1 })).toBe("DUPLICATE_RESOLVED_IDENTITY");
+    expect(resolvedIdentityCollisionCount([
+      { identityKey: "Q1", artistId: "artist-a" },
+      { identityKey: "Q1", artistId: "artist-a" },
+      { identityKey: "  ", artistId: "artist-b" },
+      { identityKey: "Q2", artistId: null },
+    ])).toBe(0);
+    const harness = memory({ demand: names(1, "Real Demand Painter") });
+    const run = await runExpansion({ mode: "SCHEDULED", policy: policy({ enabled: true, dailyResearchLimit: 10, sparseShare: 0 }) }, harness.deps);
+    expect(run.status).toBe("COMPLETED");
+    expect(run.summary.selected.map((row) => row.displayName)).toEqual(["Real Demand Painter 1"]);
+    expect(run.summary.selected.some((row) => row.displayName.trim() === "" || row.displayName === "김도하")).toBe(false);
   });
 
   it("is idempotent when the same day runs again", async () => {

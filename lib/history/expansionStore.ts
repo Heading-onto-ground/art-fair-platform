@@ -13,8 +13,11 @@ import {
   AUTONOMOUS_DEMAND_QUALITY,
   CANDIDATE_STATUSES,
   CIRCUIT_BREAKER,
+  blankCanonicalNameCount,
   circuitBreakerReason,
   expansionPolicy,
+  resolvedIdentityCollisionCount,
+  sameNameReviewCount,
   type BreakerSignals,
   type CandidateContext,
   type CandidateSourceType,
@@ -255,13 +258,23 @@ async function recordRun(run: ExpansionRunRecord): Promise<void> {
   await prisma.expansionRun.upsert({ where: { runKey: run.runKey }, update: data, create: { id: run.id, runKey: run.runKey, ...data } });
 }
 
-async function duplicateArtistCount(): Promise<number> {
-  const rows = await prisma.$queryRaw<{ count: bigint | number }[]>`
-    SELECT COUNT(*)::int AS count FROM (
-      SELECT LOWER("canonicalName") AS name FROM "ArtistEntity" GROUP BY LOWER("canonicalName") HAVING COUNT(*) > 1
-    ) duplicates
-  `;
-  return Number(rows[0]?.count ?? 0);
+async function resolvedIdentityLinks(): Promise<{ identityKey: string | null; artistId: string | null }[]> {
+  const [jobs, candidates] = await Promise.all([
+    prisma.$queryRaw<{ identityKey: string | null; artistId: string | null }[]>`
+      SELECT payload->'identity'->>'id' AS "identityKey", "resolvedArtistId" AS "artistId"
+      FROM "ResearchJob"
+      WHERE COALESCE(payload->'identity'->>'id', '') <> ''
+        AND "resolvedArtistId" IS NOT NULL
+    `,
+    prisma.artistResearchCandidate.findMany({
+      where: { identityCandidateId: { not: null }, resolvedArtistId: { not: null } },
+      select: { identityCandidateId: true, resolvedArtistId: true },
+    }),
+  ]);
+  return [
+    ...jobs,
+    ...candidates.map((row) => ({ identityKey: row.identityCandidateId, artistId: row.resolvedArtistId })),
+  ];
 }
 
 export async function breakerSignals(): Promise<BreakerSignals> {
@@ -284,11 +297,11 @@ export async function breakerSignals(): Promise<BreakerSignals> {
       consecutiveFailedRuns,
       startFailureShare,
       publicationsLastRun,
-      duplicateArtists: await duplicateArtistCount(),
+      duplicateResolvedIdentities: resolvedIdentityCollisionCount(await resolvedIdentityLinks()),
       databaseUnavailable: false,
     };
   } catch (error) {
-    if (isHistoryUnavailable(error)) return { consecutiveFailedRuns: 0, startFailureShare: 0, publicationsLastRun: 0, duplicateArtists: 0, databaseUnavailable: true };
+    if (isHistoryUnavailable(error)) return { consecutiveFailedRuns: 0, startFailureShare: 0, publicationsLastRun: 0, duplicateResolvedIdentities: 0, databaseUnavailable: true };
     throw error;
   }
 }
@@ -320,8 +333,8 @@ export function expansionDeps(input: { startWorkflow: ExpansionDeps["startWorkfl
   };
 }
 
-export async function runExpansionWithStore(input: { mode: ExpansionMode; limit?: number; policy?: ExpansionPolicy; startWorkflow: ExpansionDeps["startWorkflow"]; fetchRoster?: boolean }) {
-  return runExpansion({ mode: input.mode, limit: input.limit, policy: input.policy ?? expansionPolicy() }, expansionDeps({ startWorkflow: input.startWorkflow, fetchRoster: input.fetchRoster }));
+export async function runExpansionWithStore(input: { mode: ExpansionMode; limit?: number; policy?: ExpansionPolicy; onlyLabels?: readonly string[]; startWorkflow: ExpansionDeps["startWorkflow"]; fetchRoster?: boolean }) {
+  return runExpansion({ mode: input.mode, limit: input.limit, policy: input.policy ?? expansionPolicy(), onlyLabels: input.onlyLabels }, expansionDeps({ startWorkflow: input.startWorkflow, fetchRoster: input.fetchRoster }));
 }
 
 /**
@@ -386,6 +399,7 @@ export async function syncCandidatesWithJob(job: ResearchJobRecord): Promise<voi
 export type ExpansionHealth = {
   policy: ExpansionPolicy;
   paused: string | null;
+  dataQuality: { missingCanonicalName: number; sameNameRecords: number };
   totalArtists: number;
   indexableArtists: number;
   candidates: Record<string, number>;
@@ -414,7 +428,7 @@ export async function loadExpansionHealth(now = new Date()): Promise<ExpansionHe
   const dayKey = now.toISOString().slice(0, 10);
   const range = dayRange(dayKey);
   const [artists, grouped, runs, demand, next, review, jobsToday, exhibitionsToday, participationsToday, breaker] = await Promise.all([
-    prisma.artistEntity.findMany({ select: { id: true, participations: { where: { exhibition: publicExhibitionWhere }, select: { id: true } } } }),
+    prisma.artistEntity.findMany({ select: { id: true, canonicalName: true, participations: { where: { exhibition: publicExhibitionWhere }, select: { id: true } } } }),
     prisma.artistResearchCandidate.groupBy({ by: ["status"], _count: { _all: true } }),
     prisma.expansionRun.findMany({ orderBy: { startedAt: "desc" }, take: 10 }),
     loadRealVisitorDemand(),
@@ -460,6 +474,10 @@ export async function loadExpansionHealth(now = new Date()): Promise<ExpansionHe
   return {
     policy: expansionPolicy(),
     paused: circuitBreakerReason(breaker),
+    dataQuality: {
+      missingCanonicalName: blankCanonicalNameCount(artists.map((artist) => artist.canonicalName)),
+      sameNameRecords: sameNameReviewCount(artists.map((artist) => artist.canonicalName)),
+    },
     totalArtists: artists.length,
     indexableArtists: artists.filter((artist) => artist.participations.length >= 3).length,
     candidates,
