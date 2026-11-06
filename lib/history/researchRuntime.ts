@@ -1,4 +1,4 @@
-import { revalidateTag } from "next/cache";
+import { revalidatePath, revalidateTag } from "next/cache";
 import type { PrismaClient } from "@prisma/client";
 import { prisma as untypedPrisma } from "@/lib/prisma";
 import type { GrowthSnapshot } from "@/lib/history/growth";
@@ -121,6 +121,7 @@ export async function persistResearchProgress(before: ResearchJobRecord, after: 
   if (saved.resultArtistSlug && saved.resultArtistSlug !== before.resultArtistSlug) {
     try {
       revalidateTag(PUBLIC_HISTORY_CACHE_TAG);
+      revalidatePath("/sitemap.xml");
     } catch {
       // Cache refresh is separate from the stored fact.
     }

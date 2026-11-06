@@ -93,6 +93,94 @@ describe("research jobs", () => {
     expect(next.stage).toBe("DONE");
   });
 
+  it("researches a known artist from a trusted candidate profile without Wikidata", async () => {
+    const calls: string[] = [];
+    const profile = "https://www.galleryhyundai.com/artist/view/20000000033";
+    const research = deps({
+      findKnown: async () => ({ id: "park", slug: "park-hyun-ki", canonicalName: "Park Hyun-Ki", nativeName: "박현기", exhibitionCount: 1 }),
+      lookupIdentity: async () => {
+        throw new Error("structured lookup");
+      },
+      fetchDocument: async (url) => {
+        calls.push(url);
+        return { html: "<html><title>Park Hyun-Ki</title></html>", requests: 1, host: "galleryhyundai.com" };
+      },
+    });
+    const job = blankJob({ id: "park", query: "Park Hyun-Ki", normalizedQuery: "park hyun ki", locale: "en", demandQuality: "AUTONOMOUS_EXPANSION", expand: true, now });
+    job.payload.origin = "DAILY_EXPANSION";
+    job.payload.candidateSources = [{
+      url: profile,
+      name: "Gallery Hyundai",
+      host: "galleryhyundai.com",
+      sourceType: "SPARSE_EXISTING_ARTIST",
+      institution: "Gallery Hyundai",
+      sourceFamily: "galleryhyundai.com",
+      rosterIndexUrl: "https://www.galleryhyundai.com/artist/list",
+      profileUrl: profile,
+      qualifier: null,
+    }];
+    const done = await run(job, research);
+    expect(calls).toContain(profile);
+    expect(done.identityStatus).toBe("KNOWN");
+    expect(done.payload.identity).toBeNull();
+    expect(done.resolvedArtistSlug).toBe("park-hyun-ki");
+    expect(research.published).toHaveLength(0);
+    expect(done.failureCode).toBe("NO_TRUSTED_SOURCE");
+    expect(done.stage).toBe("DONE");
+  });
+
+  it("does not create an artist from a trusted profile when structured identity is missing", async () => {
+    const calls: string[] = [];
+    const research = deps({
+      lookupIdentity: async () => ({ entities: [], institutions: [], error: null }),
+      fetchDocument: async (url) => {
+        calls.push(url);
+        return { html: "<html></html>", requests: 1, host: "arariogallery.com" };
+      },
+    });
+    const job = blankJob({ id: "ahn", query: "AHN Jisan", normalizedQuery: "ahn jisan", locale: "en", demandQuality: "AUTONOMOUS_EXPANSION", expand: false, now });
+    job.payload.origin = "DAILY_EXPANSION";
+    job.payload.candidateSources = [{
+      url: "https://www.arariogallery.com/artists/241-ahn-jisan/",
+      name: "Arario Gallery",
+      host: "arariogallery.com",
+      sourceType: "GALLERY_ROSTER",
+      institution: "Arario Gallery",
+      sourceFamily: "arariogallery.com",
+      rosterIndexUrl: "https://www.arariogallery.com/artists/",
+      profileUrl: "https://www.arariogallery.com/artists/241-ahn-jisan/",
+      qualifier: null,
+    }];
+    const done = await run(job, research);
+    expect(done.status).toBe("NOT_FOUND");
+    expect(done.failureCode).toBe("IDENTITY_NOT_FOUND");
+    expect(done.resolvedArtistId).toBeNull();
+    expect(calls).toEqual([]);
+    expect(research.published).toHaveLength(0);
+  });
+
+  it("never fetches an untrusted or arbitrary candidate URL", async () => {
+    const calls: string[] = [];
+    const research = deps({
+      findKnown: async () => ({ id: "park", slug: "park-hyun-ki", canonicalName: "Park Hyun-Ki", nativeName: "박현기", exhibitionCount: 1 }),
+      fetchDocument: async (url) => {
+        calls.push(url);
+        return { html: "<html></html>", requests: 1, host: "example" };
+      },
+    });
+    const job = blankJob({ id: "blocked-hint", query: "Park Hyun-Ki", normalizedQuery: "park hyun ki", locale: "en", demandQuality: "AUTONOMOUS_EXPANSION", expand: true, now });
+    job.payload.origin = "DAILY_EXPANSION";
+    job.payload.candidateSources = [
+      { url: "https://evil.example/crawl-me", name: "Evil", host: "evil.example", sourceType: "GALLERY_ROSTER", institution: null, sourceFamily: null, rosterIndexUrl: null, profileUrl: "https://evil.example/crawl-me", qualifier: null },
+      { url: "https://www.galleryhyundai.com/private/notes", name: "Gallery Hyundai", host: "galleryhyundai.com", sourceType: "GALLERY_ROSTER", institution: "Gallery Hyundai", sourceFamily: "galleryhyundai.com", rosterIndexUrl: null, profileUrl: "https://www.galleryhyundai.com/private/notes", qualifier: null },
+    ];
+    const done = await run(job, research);
+    expect(calls.some((url) => url.includes("evil.example"))).toBe(false);
+    expect(calls.some((url) => url.includes("/private/notes"))).toBe(false);
+    expect(done.failureCode).toBe("NO_TRUSTED_SOURCE");
+    expect(research.published).toHaveLength(0);
+  });
+
   it("does not create an artist when the identity is ambiguous or missing", async () => {
     const ambiguous = deps({
       lookupIdentity: async () => ({ entities: [painter("Kim", "Q1"), painter("Kim", "Q2")], institutions: [], error: null }),
@@ -110,6 +198,7 @@ describe("research jobs", () => {
   it("publishes one verified chronology fact and does not publish it twice", async () => {
     const research = deps();
     const job = blankJob({ id: "ada", query: "Ada Painter", normalizedQuery: "ada painter", locale: "en", demandQuality: "REAL_VISITOR", expand: false, now });
+    expect(job.payload.candidateSources).toBeUndefined();
     const done = await run(job, research);
     expect(done.identityStatus).toBe("RESOLVED");
     expect(done.sourcesFound).toBeGreaterThan(0);

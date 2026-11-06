@@ -8,7 +8,7 @@ import {
   type CandidateRecord,
   type ExpansionGraph,
 } from "@/lib/history/expansionCandidates";
-import { candidateAfterJob, childObservationsForJob, feedbackEvent, resolveSiblingCandidates } from "@/lib/history/expansionFeedback";
+import { candidateAfterJob, childObservationsForJob, feedbackEvent, protectCandidateWrite, resolveSiblingCandidates } from "@/lib/history/expansionFeedback";
 import {
   AUTONOMOUS_DEMAND_QUALITY,
   CANDIDATE_STATUSES,
@@ -205,13 +205,39 @@ export async function loadCandidates(): Promise<CandidateRecord[]> {
 
 export async function saveCandidates(rows: readonly CandidateRecord[]): Promise<void> {
   for (const row of rows) {
-    const data = candidateData(row);
+    const existing = await prisma.artistResearchCandidate.findUnique({ where: { normalizedName: row.normalizedName } });
+    const current = existing ? asCandidate(existing as CandidateRow) : null;
+    const guarded = protectCandidateWrite(current, row);
+    if (current && guarded === current) continue;
+    const data = candidateData(guarded);
     await prisma.artistResearchCandidate.upsert({
-      where: { normalizedName: row.normalizedName },
+      where: { normalizedName: guarded.normalizedName },
       update: data,
-      create: { id: row.id, ...data },
+      create: { id: guarded.id, ...data },
     });
   }
+}
+
+/**
+ * Candidates left RESEARCHING after their ResearchJob already finished.
+ * Applies candidateAfterJob once. Does not start a workflow or insert a job.
+ */
+export async function reconcileTerminalResearchCandidates(now = new Date()): Promise<{ examined: number; updated: { name: string; before: string; after: string; failureCode: string | null }[] }> {
+  const rows = await prisma.artistResearchCandidate.findMany({
+    where: { status: "RESEARCHING", researchJobId: { not: null } },
+  });
+  const updated: { name: string; before: string; after: string; failureCode: string | null }[] = [];
+  for (const row of rows) {
+    if (!row.researchJobId) continue;
+    const job = await readResearchJob(row.researchJobId);
+    if (!job || job.stage !== "DONE") continue;
+    const current = asCandidate(row as CandidateRow);
+    const next = candidateAfterJob(current, job, now);
+    if (next.status === "RESEARCHING") continue;
+    await saveCandidates([next]);
+    updated.push({ name: current.displayName, before: current.status, after: next.status, failureCode: next.failureCode });
+  }
+  return { examined: rows.length, updated };
 }
 
 async function artistIds(): Promise<Map<string, string>> {

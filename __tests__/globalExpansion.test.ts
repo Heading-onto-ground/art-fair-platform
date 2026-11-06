@@ -5,6 +5,7 @@ import {
   applyIdentityResolution,
   classifyCandidateLabel,
   demandObservations,
+  emptyCandidatePayload,
   isExpansionFixtureLabel,
   mergeObservations,
   museumRosterObservations,
@@ -17,7 +18,7 @@ import {
   type CandidateRecord,
   type ExpansionGraph,
 } from "@/lib/history/expansionCandidates";
-import { candidateAfterJob, childObservationsForJob, resolveSiblingCandidates } from "@/lib/history/expansionFeedback";
+import { candidateAfterJob, childObservationsForJob, protectCandidateWrite, resolveSiblingCandidates } from "@/lib/history/expansionFeedback";
 import {
   AUTONOMOUS_DEMAND_QUALITY,
   CIRCUIT_BREAKER,
@@ -33,7 +34,7 @@ import {
   nextEligibleAfter,
 } from "@/lib/history/expansionPolicy";
 import { eligibleForResearch, rankCandidates, selectDailyBatch } from "@/lib/history/expansionRank";
-import { runExpansion, type ExpansionDeps, type ExpansionRunRecord } from "@/lib/history/expansionScheduler";
+import { autonomousJob, runExpansion, type ExpansionDeps, type ExpansionRunRecord } from "@/lib/history/expansionScheduler";
 import { aliasLookupEqual } from "@/lib/history/identity";
 import { blankJob } from "@/lib/history/researchAdvance";
 import { isAutonomousJob, publishableAliasLabels, signalsToRecord, type ResearchJobRecord } from "@/lib/history/researchJob";
@@ -464,6 +465,140 @@ describe("global artist expansion", () => {
     expect(again.attemptCount).toBe(owner.attemptCount);
   });
 
+  it("keeps the terminal candidate when a workflow finishes before the scheduler saves", async () => {
+    const harness = memory({ demand: [{ query: "Ahn Jisan", count: 1, lastSearched: stamp }] });
+    let sawResearchingBeforeWorkflow = false;
+    harness.deps.startWorkflow = async (id) => {
+      const owner = harness.candidates().find((row) => row.researchJobId === id);
+      sawResearchingBeforeWorkflow = owner?.status === "RESEARCHING";
+      const job = harness.jobs.find((item) => item.id === id);
+      if (job && owner) {
+        job.stage = "DONE";
+        job.status = "NOT_FOUND";
+        job.failureCode = "IDENTITY_NOT_FOUND";
+        job.completedAt = stamp;
+        const terminal = candidateAfterJob(owner, job, now);
+        await harness.deps.saveCandidates([terminal]);
+      }
+      harness.started.push(id);
+      return `wf-${id}`;
+    };
+    const run = await runExpansion({ mode: "MANUAL", policy: policy({ dailyResearchLimit: 10, sparseShare: 0 }), onlyLabels: ["Ahn Jisan"], limit: 1 }, harness.deps);
+    const candidate = harness.candidates().find((row) => row.displayName === "Ahn Jisan");
+    expect(run.jobsStarted).toBe(1);
+    expect(sawResearchingBeforeWorkflow).toBe(true);
+    expect(candidate?.status).toBe("COOLDOWN");
+    expect(candidate?.failureCode).toBe("IDENTITY_NOT_FOUND");
+    expect(harness.jobs).toHaveLength(1);
+  });
+
+  it("leaves a candidate RESEARCHING while its workflow is still open", async () => {
+    const harness = memory({ demand: [{ query: "Still Researching", count: 1, lastSearched: stamp }] });
+    const run = await runExpansion({ mode: "MANUAL", policy: policy({ dailyResearchLimit: 10, sparseShare: 0 }), onlyLabels: ["Still Researching"], limit: 1 }, harness.deps);
+    expect(run.jobsStarted).toBe(1);
+    expect(harness.candidates().find((row) => row.displayName === "Still Researching")?.status).toBe("RESEARCHING");
+    expect(harness.jobs[0]?.stage).toBe("IDENTITY");
+  });
+
+  it("reconciles a finished job without starting another one", async () => {
+    const harness = memory({ demand: [{ query: "Ahn Jisan", count: 1, lastSearched: stamp }] });
+    harness.deps.startWorkflow = async (id) => {
+      const owner = harness.candidates().find((row) => row.researchJobId === id);
+      const job = harness.jobs.find((item) => item.id === id);
+      if (job && owner) {
+        job.stage = "DONE";
+        job.status = "NOT_FOUND";
+        job.failureCode = "IDENTITY_NOT_FOUND";
+        job.completedAt = stamp;
+        await harness.deps.saveCandidates([candidateAfterJob(owner, job, now)]);
+      }
+      harness.started.push(id);
+      return `wf-${id}`;
+    };
+    await runExpansion({ mode: "MANUAL", policy: policy({ dailyResearchLimit: 10, sparseShare: 0 }), onlyLabels: ["Ahn Jisan"], limit: 1 }, harness.deps);
+    const second = await runExpansion({ mode: "MANUAL", policy: policy({ dailyResearchLimit: 10, sparseShare: 0 }), onlyLabels: ["Ahn Jisan"], limit: 1 }, harness.deps);
+    expect(second.jobsStarted).toBe(0);
+    expect(harness.jobs).toHaveLength(1);
+    expect(harness.started).toHaveLength(1);
+    expect(harness.candidates().find((row) => row.displayName === "Ahn Jisan")?.status).toBe("COOLDOWN");
+  });
+
+  it("uses the remaining daily cap for a later one-name manual request", async () => {
+    const harness = memory({ demand: names(2, "Later Painter") });
+    harness.deps.jobsStartedToday = async () => 3;
+    const run = await runExpansion({ mode: "MANUAL", policy: policy({ dailyResearchLimit: 10, sparseShare: 0 }), onlyLabels: ["Later Painter 1"], limit: 1 }, harness.deps);
+    expect(run.jobsStarted).toBe(1);
+    const full = memory({ demand: names(2, "Later Painter") });
+    full.deps.jobsStartedToday = async () => 10;
+    const blocked = await runExpansion({ mode: "MANUAL", policy: policy({ dailyResearchLimit: 10, sparseShare: 0 }), onlyLabels: ["Later Painter 1"], limit: 1 }, full.deps);
+    expect(blocked.jobsStarted).toBe(0);
+  });
+
+  it("does not let a stale researching snapshot replace a terminal candidate", () => {
+    const base = {
+      id: "cand-ahn",
+      displayName: "AHN Jisan",
+      nativeNameCandidate: null,
+      normalizedName: "ahn jisan",
+      sourceType: "GALLERY_ROSTER" as const,
+      sourceUrl: "https://www.arariogallery.com/artists/241-ahn-jisan/",
+      sourceHost: "arariogallery.com",
+      sourceContext: "DAILY_EXPANSION" as const,
+      discoveredAt: stamp,
+      lastSeenAt: stamp,
+      identityCandidateId: null,
+      resolvedArtistId: null,
+      researchJobId: "job-ahn",
+      demandCount: 0,
+      graphAdjacencyScore: 0,
+      trustedSourceScore: 0,
+      bridgePotentialScore: 0,
+      attemptCount: 1,
+      lastAttemptAt: stamp,
+      nextEligibleAt: stamp,
+      failureCode: "IDENTITY_NOT_FOUND",
+      priorityScore: 1,
+      payload: emptyCandidatePayload(),
+      createdAt: stamp,
+      updatedAt: stamp,
+    };
+    const terminal = { ...base, status: "COOLDOWN" as const };
+    const stale = { ...base, status: "RESEARCHING" as const, failureCode: null, nextEligibleAt: null };
+    expect(protectCandidateWrite(terminal, stale)).toBe(terminal);
+    const finished = blankJob({ id: "job-ahn", query: "AHN Jisan", normalizedQuery: "ahn jisan", locale: "en", demandQuality: AUTONOMOUS_DEMAND_QUALITY, expand: false, now });
+    finished.stage = "DONE";
+    finished.status = "NOT_FOUND";
+    finished.failureCode = "IDENTITY_NOT_FOUND";
+    const after = candidateAfterJob({ ...base, status: "RESEARCHING" }, finished, now);
+    expect(after.status).toBe("COOLDOWN");
+    expect(after.status).not.toBe("RESEARCHING");
+  });
+
+  it("copies only still-trusted candidate sources onto the research job", () => {
+    const merged = mergeObservations({
+      existing: [],
+      observations: [
+        observation("Hint Painter", {
+          sourceType: "GALLERY_ROSTER",
+          sourceContext: "DAILY_EXPANSION",
+          sourceUrl: "https://evil.example/secret",
+          sourceHints: ["https://www.galleryhyundai.com/artist/view/20000000033"],
+          via: { institution: "Gallery Hyundai" },
+        }),
+      ],
+      now: stamp,
+      observationLimit: 10,
+      writeLimit: 10,
+    });
+    const row = merged.rows.find((item) => item.displayName === "Hint Painter");
+    expect(row).toBeTruthy();
+    if (!row) return;
+    const job = autonomousJob(row, now);
+    expect(job?.payload.candidateSources?.map((source) => source.url)).toEqual(["https://www.galleryhyundai.com/artist/view/20000000033"]);
+    expect(job?.payload.candidateSources?.[0]?.institution).toBe("Gallery Hyundai");
+    expect(job?.payload.origin).toBe("DAILY_EXPANSION");
+  });
+
   it("keeps autonomous analytics off the visitor funnel", () => {
     const job = blankJob({ id: "job-auto", query: "KAWS", normalizedQuery: "kaws", locale: "en", demandQuality: AUTONOMOUS_DEMAND_QUALITY, expand: false, now });
     job.payload.origin = "DAILY_EXPANSION";
@@ -562,6 +697,7 @@ describe("global artist expansion", () => {
     expect(sql).not.toMatch(/\bDROP\s+(TABLE|COLUMN)\b/i);
     const runtime = readFileSync(resolve("lib/history/researchRuntime.ts"), "utf8");
     expect(runtime).toContain("revalidateTag(PUBLIC_HISTORY_CACHE_TAG)");
+    expect(runtime).toContain('revalidatePath("/sitemap.xml")');
     expect(runtime).not.toMatch(/search\.google|searchadvisor\.naver/i);
   });
 });

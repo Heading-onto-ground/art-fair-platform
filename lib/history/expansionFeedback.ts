@@ -4,6 +4,35 @@ import { nextEligibleAfter, type CandidateStatus } from "@/lib/history/expansion
 import type { ResearchJobRecord } from "@/lib/history/researchJob";
 
 /**
+ * States written by a finished ResearchJob. A scheduler snapshot taken before
+ * that write must not put the candidate back to RESEARCHING.
+ */
+export const TERMINAL_CANDIDATE_STATES: ReadonlySet<CandidateStatus> = new Set([
+  "PUBLISHED",
+  "RESOLVED_EXISTING",
+  "COOLDOWN",
+  "NEEDS_REVIEW",
+  "NO_TRUSTED_SOURCE",
+  "IDENTITY_AMBIGUOUS",
+  "NOT_ARTIST",
+  "BLOCKED",
+]);
+
+const STALE_PRE_TERMINAL: ReadonlySet<CandidateStatus> = new Set(["NEW", "QUEUED", "RESEARCHING"]);
+
+/**
+ * Compare-and-set for candidate rows. A terminal state from the same
+ * ResearchJob wins over an older RESEARCHING/QUEUED snapshot. A different
+ * job id may still start a new attempt.
+ */
+export function protectCandidateWrite(current: CandidateRecord | null, incoming: CandidateRecord): CandidateRecord {
+  if (!current || !TERMINAL_CANDIDATE_STATES.has(current.status)) return incoming;
+  const sameOrUnassignedJob = !incoming.researchJobId || incoming.researchJobId === current.researchJobId;
+  if (sameOrUnassignedJob && STALE_PRE_TERMINAL.has(incoming.status)) return current;
+  return incoming;
+}
+
+/**
  * Publication feedback into candidate state.
  *
  * The research engine owns every publication decision. This module only
