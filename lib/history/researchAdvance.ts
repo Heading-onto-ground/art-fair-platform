@@ -3,12 +3,15 @@ import { aliasLookupEqual } from "@/lib/history/identity";
 import {
   crawlerCanFetch,
   discoverTrustedSources,
-  matchTrustedGalleryRoster,
   selectDiscoveryEntity,
-  TRUSTED_GALLERY_ROSTERS,
   type DiscoveryEntity,
   type DiscoveryInstitution,
 } from "@/lib/history/sourceDiscovery";
+import { isTrustedArtistProfileUrl, matchArtistRoster, TRUSTED_ARTIST_ROSTERS } from "@/lib/history/artistRosters";
+
+function isArtistRecordUrl(url: string): boolean {
+  return isTrustedArtistProfileUrl(url) || /\/exhibitions\/|\/exhibition\//i.test(url);
+}
 import { crawlTrustedPage, fetchTrustedDocument, type CrawlFact, type TrustedFetchResult } from "@/lib/history/trustedCrawl";
 import {
   RESEARCH_LIMITS,
@@ -165,19 +168,20 @@ async function sourceStep(job: ResearchJobRecord, deps: ResearchDeps): Promise<R
     checked: false,
     blocked: null,
   }));
-  const hasArtistRecord = sources.some((source) => source.fetchable && /\/artists\/view|\/exhibitions\/|\/exhibition\//.test(source.url));
+  const hasArtistRecord = sources.some((source) => source.fetchable && isArtistRecordUrl(source.url));
   if (!hasArtistRecord) {
     const labels = [job.query, identity.label, ...identity.aliases];
-    for (const roster of TRUSTED_GALLERY_ROSTERS) {
+    for (const roster of TRUSTED_ARTIST_ROSTERS) {
+      if (!roster.enabled) continue;
       const index = await deps.fetchDocument(roster.indexUrl);
       if (index.blocked || !index.html) continue;
-      const match = matchTrustedGalleryRoster(index.html, labels, roster.indexUrl);
+      const match = matchArtistRoster(index.html, labels, roster.indexUrl);
       if (!match || !crawlerCanFetch(match.url) || sources.some((source) => source.url === match.url)) continue;
       sources.unshift({ url: match.url, name: match.sourceName, fetchable: true, checked: false, blocked: null });
       break;
     }
   }
-  const recordUrl = (url: string) => /\/artists\/view|\/exhibitions\/|\/exhibition\//.test(url);
+  const recordUrl = (url: string) => isArtistRecordUrl(url);
   const ordered = [
     ...sources.filter((source) => source.fetchable && recordUrl(source.url)),
     ...sources.filter((source) => source.fetchable && !recordUrl(source.url)),

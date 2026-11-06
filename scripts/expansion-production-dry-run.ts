@@ -15,7 +15,7 @@ import {
   unresolvedObservations,
   type ExpansionGraph,
 } from "@/lib/history/expansionCandidates";
-import { TRUSTED_GALLERY_ROSTERS } from "@/lib/history/sourceDiscovery";
+import { classifyRosterEntries, parseArtistRoster, rosterStreamName, TRUSTED_ARTIST_ROSTERS } from "@/lib/history/artistRosters";
 import { fetchTrustedDocument } from "@/lib/history/trustedCrawl";
 import { expansionPolicyFrom } from "@/lib/history/expansionPolicy";
 import { rankCandidates, selectDailyBatch } from "@/lib/history/expansionRank";
@@ -190,13 +190,65 @@ async function main() {
       ...sparseArtistObservations(graph, demand, seenAt),
     ];
     const rosterErrors: string[] = [];
-    for (const roster of TRUSTED_GALLERY_ROSTERS) {
+    const rosterAudit: {
+      stream: string;
+      host: string;
+      indexUrl: string;
+      blocked: string | null;
+      bytes: number;
+      adapter: string;
+      names: number;
+      profileUrls: number;
+      existing: number;
+      candidates: number;
+      review: number;
+      candidateNames: string[];
+      reviewNames: { name: string; qualifier: string | null }[];
+      existingNames: { name: string; slug: string }[];
+    }[] = [];
+    for (const roster of TRUSTED_ARTIST_ROSTERS) {
+      if (!roster.enabled) continue;
       const page = await fetchTrustedDocument(roster.indexUrl, { timeoutMs: 12_000 });
-      if (page.blocked || !page.html) {
+      const html = page.html ?? "";
+      if (page.blocked || !html) {
         rosterErrors.push(`${roster.sourceName}: ${page.blocked ?? "empty"}`);
+        rosterAudit.push({
+          stream: rosterStreamName(roster.adapter),
+          host: roster.host,
+          indexUrl: roster.indexUrl,
+          blocked: page.blocked ?? "empty",
+          bytes: 0,
+          adapter: roster.adapter,
+          names: 0,
+          profileUrls: 0,
+          existing: 0,
+          candidates: 0,
+          review: 0,
+          candidateNames: [],
+          reviewNames: [],
+          existingNames: [],
+        });
         continue;
       }
-      observations.push(...galleryRosterObservations({ html: page.html, indexUrl: roster.indexUrl, sourceName: roster.sourceName, graph, seenAt }));
+      const parsed = parseArtistRoster(html, roster);
+      const classified = classifyRosterEntries(parsed, allNames);
+      rosterAudit.push({
+        stream: rosterStreamName(roster.adapter),
+        host: page.host,
+        indexUrl: roster.indexUrl,
+        blocked: null,
+        bytes: html.length,
+        adapter: roster.adapter,
+        names: parsed.length,
+        profileUrls: parsed.filter((row) => row.profileUrl).length,
+        existing: classified.existing.length,
+        candidates: classified.candidates.length,
+        review: classified.review.length,
+        candidateNames: classified.candidates.map((row) => row.displayName),
+        reviewNames: classified.review.map((row) => ({ name: row.displayName, qualifier: row.rosterQualifier })),
+        existingNames: classified.existing.map((row) => ({ name: row.entry.displayName, slug: row.artistSlug })),
+      });
+      observations.push(...galleryRosterObservations({ html, indexUrl: roster.indexUrl, sourceName: roster.sourceName, graph, seenAt }));
     }
     const contaminated = observations.filter((row) => isExpansionFixtureLabel(row.label) || FIXTURES.some((name) => row.label.toLowerCase().includes(name)));
     const merged = mergeObservations({
@@ -237,6 +289,8 @@ async function main() {
         displayName: candidate.displayName,
         normalizedName: candidate.normalizedName,
         source: candidate.sourceType,
+        sourceInstitution: candidate.payload.provenance.find((item) => item.viaInstitution)?.viaInstitution ?? null,
+        sourceFamily: candidate.sourceHost,
         classification,
         demandCount: candidate.demandCount,
         unresolvedCount: candidate.payload.unresolvedOccurrences,
@@ -256,6 +310,7 @@ async function main() {
       counts: counts.rows[0],
       realVisitorQueries: demand.length,
       rosterErrors,
+      rosterAudit,
       observations: observations.length,
       candidateRowsConsidered: merged.observed,
       fixtureContamination: contaminated.length + leaked.length,
