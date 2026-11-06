@@ -330,37 +330,12 @@ export function classifySearchHit(hit: SearchHit, slug: string): DiscoveryCandid
   });
 }
 
-export const TRUSTED_GALLERY_ROSTERS = [
-  {
-    indexUrl: "https://www.kukjegallery.com/artists",
-    sourceName: "Kukje Gallery",
-  },
-] as const;
-
-export function matchTrustedGalleryRoster(
-  html: string,
-  labels: readonly string[],
-  indexUrl: string,
-): { url: string; sourceName: string } | null {
-  const roster = TRUSTED_GALLERY_ROSTERS.find((item) => item.indexUrl === indexUrl);
-  if (!roster || labels.length === 0) return null;
-  const origin = new URL(indexUrl).origin;
-  const anchors = html.match(/<a\b[^>]*href="[^"]*\/artists\/view\?seq=\d+"[^>]*>[\s\S]*?<\/a>/gi) ?? [];
-  const matched = new Set<string>();
-  for (const anchor of anchors) {
-    const href = anchor.match(/href="([^"]*\/artists\/view\?seq=\d+)"/i)?.[1];
-    if (!href) continue;
-    const names = [
-      anchor.match(/artists-main-list__name">([^<]+)/i)?.[1] ?? "",
-      ...(anchor.match(/<span[^>]*>([^<]+)<\/span>/gi) ?? []).map((span) => span.replace(/<[^>]+>/g, "")),
-    ].map((name) => name.trim()).filter(Boolean);
-    if (!names.some((name) => labels.some((label) => aliasLookupEqual(name, label)))) continue;
-    matched.add(new URL(href, origin).toString());
-  }
-  if (matched.size !== 1) return null;
-  const url = [...matched][0];
-  return url ? { url, sourceName: roster.sourceName } : null;
-}
+export {
+  TRUSTED_ARTIST_ROSTERS,
+  TRUSTED_GALLERY_ROSTERS,
+  matchArtistRoster,
+  matchTrustedGalleryRoster,
+} from "@/lib/history/artistRosters";
 
 export function discoverTrustedSources(input: {
   artistId: string;

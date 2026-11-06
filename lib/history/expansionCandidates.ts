@@ -2,7 +2,7 @@ import { createHash } from "node:crypto";
 import { isInternalCheckQuery } from "@/lib/history/demandQuality";
 import { aliasLookupEqual, mayRelinkUnresolvedName, normalizeArtistLookup, resolveArtistSlug, searchDemandQuery } from "@/lib/history/identity";
 import { densityForCount, type HistoryDensity } from "@/lib/history/policy";
-import { TRUSTED_GALLERY_ROSTERS } from "@/lib/history/sourceDiscovery";
+import { classifyRosterEntries, parseArtistRoster, rosterByIndex, type ArtistRosterEntry } from "@/lib/history/artistRosters";
 import { classifyTrustedUrl, type CrawlFact } from "@/lib/history/trustedCrawl";
 import type { CandidateContext, CandidateSourceType, CandidateStatus } from "@/lib/history/expansionPolicy";
 
@@ -24,6 +24,10 @@ export type CandidateProvenance = {
   viaExhibitionId?: string | null;
   viaExhibitionTitle?: string | null;
   viaInstitution?: string | null;
+  rosterAdapter?: string | null;
+  rosterIndexUrl?: string | null;
+  rawLabel?: string | null;
+  rosterQualifier?: string | null;
 };
 
 export type CandidatePayload = {
@@ -89,6 +93,10 @@ export type CandidateObservation = {
     exhibitionTitle?: string | null;
     institution?: string | null;
   };
+  rosterAdapter?: string | null;
+  rosterIndexUrl?: string | null;
+  rawLabel?: string | null;
+  rosterQualifier?: string | null;
 };
 
 export type ExpansionGraph = {
@@ -97,7 +105,7 @@ export type ExpansionGraph = {
   unresolved: { label: string; exhibitionId: string | null; exhibitionTitle: string; artistSlugs: string[]; sourceUrl: string | null }[];
 };
 
-export type LabelClass = "PERSON_LIKE" | "ORGANIZATION" | "EXHIBITION_TITLE" | "INVALID";
+export type LabelClass = "PERSON_LIKE" | "ORGANIZATION" | "EXHIBITION_TITLE" | "INVALID" | "ENTITY_TYPE_REVIEW";
 
 const ORGANIZATION_WORDS = /\b(gallery|galerie|galeria|museum|musee|musée|foundation|fondation|institute|institution|center|centre|biennale|biennial|triennial|art fair|collective|studio|university|college|school|archive|archives|association|society|company|inc\.?|ltd\.?|co\.|corporation|council|ministry|department|committee|press|magazine|journal|publishing|publisher|auction|fund|trust)\b/i;
 const ORGANIZATION_KOREAN = /(갤러리|미술관|박물관|재단|연구소|센터|비엔날레|트리엔날레|아트페어|대학교|대학|협회|학회|위원회|출판사|옥션)/;
@@ -182,7 +190,7 @@ export function coerceCandidatePayload(value: unknown): CandidatePayload {
     sourceHints: strings(raw.sourceHints),
     reasons: strings(raw.reasons),
     outcomes: strings(raw.outcomes),
-    labelClass: raw.labelClass === "ORGANIZATION" || raw.labelClass === "EXHIBITION_TITLE" || raw.labelClass === "INVALID" ? raw.labelClass : "PERSON_LIKE",
+    labelClass: raw.labelClass === "ORGANIZATION" || raw.labelClass === "EXHIBITION_TITLE" || raw.labelClass === "INVALID" || raw.labelClass === "ENTITY_TYPE_REVIEW" ? raw.labelClass : "PERSON_LIKE",
     identityKey: typeof raw.identityKey === "string" && raw.identityKey.trim() ? raw.identityKey.trim() : null,
   };
 }
@@ -335,24 +343,14 @@ export function rosterObservations(input: {
 
 /** Parses one trusted gallery roster index. Only hosts in TRUSTED_SOURCES count. */
 export function parseTrustedGalleryRoster(html: string, indexUrl: string): { name: string; nativeName: string | null; url: string }[] {
-  const roster = TRUSTED_GALLERY_ROSTERS.find((item) => item.indexUrl === indexUrl);
+  const roster = rosterByIndex(indexUrl);
   if (!roster) return [];
-  const origin = new URL(indexUrl).origin;
-  const anchors = html.match(/<a\b[^>]*href="[^"]*\/artists\/view\?seq=\d+"[^>]*>[\s\S]*?<\/a>/gi) ?? [];
-  const out: { name: string; nativeName: string | null; url: string }[] = [];
   const seen = new Set<string>();
-  for (const anchor of anchors) {
-    const href = anchor.match(/href="([^"]*\/artists\/view\?seq=\d+)"/i)?.[1];
-    if (!href) continue;
-    const url = new URL(href, origin).toString();
-    if (seen.has(url) || !classifyTrustedUrl(url)) continue;
-    const main = anchor.match(/artists-main-list__name">([^<]+)/i)?.[1]?.trim() ?? "";
-    const spans = (anchor.match(/<span[^>]*>([^<]+)<\/span>/gi) ?? []).map((span) => span.replace(/<[^>]+>/g, "").trim()).filter(Boolean);
-    const name = main || spans[0] || "";
-    if (!name) continue;
-    const native = spans.find((span) => span !== name && /[가-힣]/.test(span)) ?? null;
-    seen.add(url);
-    out.push({ name, nativeName: native, url });
+  const out: { name: string; nativeName: string | null; url: string }[] = [];
+  for (const row of parseArtistRoster(html, roster)) {
+    if (!row.profileUrl || seen.has(row.profileUrl) || !classifyTrustedUrl(row.profileUrl)) continue;
+    seen.add(row.profileUrl);
+    out.push({ name: row.displayName, nativeName: row.nativeNameCandidate, url: row.profileUrl });
   }
   return out;
 }
@@ -385,7 +383,27 @@ export function museumRosterObservations(input: {
   return out;
 }
 
-/** Stream D: representing-gallery artist lists ROB already trusts. Existing artists are skipped. */
+function observationFromRoster(row: ArtistRosterEntry, seenAt: string): CandidateObservation {
+  return {
+    label: row.displayName,
+    nativeLabel: row.nativeNameCandidate,
+    sourceType: "GALLERY_ROSTER",
+    sourceContext: "DAILY_EXPANSION",
+    sourceUrl: row.profileUrl,
+    seenAt,
+    sourceHints: row.profileUrl ? [row.profileUrl] : [],
+    via: { institution: row.sourceName },
+    rosterAdapter: row.adapter,
+    rosterIndexUrl: row.indexUrl,
+    rawLabel: row.rawLabel,
+    rosterQualifier: row.rosterQualifier,
+  };
+}
+
+/**
+ * Stream D: representing-gallery artist lists ROB already trusts.
+ * Existing artists, estates, collectives, and duplicate labels are not new identities.
+ */
 export function galleryRosterObservations(input: {
   html: string;
   indexUrl: string;
@@ -393,23 +411,13 @@ export function galleryRosterObservations(input: {
   graph: ExpansionGraph;
   seenAt: string;
 }): CandidateObservation[] {
+  const roster = rosterByIndex(input.indexUrl);
+  if (!roster) return [];
   const names = input.graph.artists.map((artist) => ({ slug: artist.slug, labels: artist.labels }));
-  const out: CandidateObservation[] = [];
-  for (const row of parseTrustedGalleryRoster(input.html, input.indexUrl)) {
-    if (isExpansionFixtureLabel(row.name) || (row.nativeName && isExpansionFixtureLabel(row.nativeName))) continue;
-    if (resolveArtistSlug(row.name, names) || (row.nativeName && resolveArtistSlug(row.nativeName, names))) continue;
-    out.push({
-      label: row.name,
-      nativeLabel: row.nativeName,
-      sourceType: "GALLERY_ROSTER",
-      sourceContext: "DAILY_EXPANSION",
-      sourceUrl: row.url,
-      seenAt: input.seenAt,
-      sourceHints: [row.url],
-      via: { institution: input.sourceName },
-    });
-  }
-  return out;
+  const classified = classifyRosterEntries(parseArtistRoster(input.html, roster), names);
+  return classified.candidates
+    .filter((row) => !isExpansionFixtureLabel(row.displayName) && !(row.nativeNameCandidate && isExpansionFixtureLabel(row.nativeNameCandidate)))
+    .map((row) => observationFromRoster(row, input.seenAt));
 }
 
 export type MergeResult = {
@@ -445,6 +453,10 @@ function provenanceOf(observation: CandidateObservation): CandidateProvenance {
     viaExhibitionId: observation.via?.exhibitionId ?? null,
     viaExhibitionTitle: observation.via?.exhibitionTitle ?? null,
     viaInstitution: observation.via?.institution ?? null,
+    rosterAdapter: observation.rosterAdapter ?? null,
+    rosterIndexUrl: observation.rosterIndexUrl ?? null,
+    rawLabel: observation.rawLabel ?? null,
+    rosterQualifier: observation.rosterQualifier ?? null,
   };
 }
 
@@ -456,7 +468,11 @@ function sameProvenance(left: CandidateProvenance, right: CandidateProvenance): 
 }
 
 function newRecord(key: string, observation: CandidateObservation, now: string): CandidateRecord {
-  const labelClass = observation.sourceType === "SPARSE_EXISTING_ARTIST" ? "PERSON_LIKE" : classifyCandidateLabel(observation.label);
+  const labelClass = observation.sourceType === "SPARSE_EXISTING_ARTIST"
+    ? "PERSON_LIKE"
+    : observation.rosterQualifier
+      ? "ENTITY_TYPE_REVIEW"
+      : classifyCandidateLabel(observation.label);
   const payload = emptyCandidatePayload(labelClass);
   payload.labels = unique([observation.label, observation.nativeLabel]);
   payload.provenance = [provenanceOf(observation)];
@@ -564,10 +580,23 @@ export function mergeObservations(input: {
 }): MergeResult {
   const byKey = new Map<string, CandidateRecord>();
   for (const row of input.existing) byKey.set(row.normalizedName, row);
+  const rosterStripe = new Map<CandidateObservation, number>();
+  const rosterSeen = new Map<string, number>();
+  for (const observation of input.observations) {
+    if (observation.sourceType !== "GALLERY_ROSTER") continue;
+    const institution = observation.via?.institution ?? "";
+    const next = rosterSeen.get(institution) ?? 0;
+    rosterStripe.set(observation, next);
+    rosterSeen.set(institution, next + 1);
+  }
+  // Equal-weight gallery rows are striped by institution before the name
+  // tie-break, so one roster cannot fill the write budget by itself.
   const observed = [...input.observations]
     .map((observation) => ({ observation, key: observationKey(observation), weight: observationWeight(observation) }))
     .filter((item): item is { observation: CandidateObservation; key: string; weight: number } => Boolean(item.key) && !isExpansionFixtureLabel(item.observation.label))
-    .sort((left, right) => right.weight - left.weight || left.key.localeCompare(right.key))
+    .sort((left, right) => right.weight - left.weight
+      || (rosterStripe.get(left.observation) ?? 0) - (rosterStripe.get(right.observation) ?? 0)
+      || left.key.localeCompare(right.key))
     .slice(0, input.observationLimit);
   const changedKeys = new Set<string>();
   let inserted = 0;

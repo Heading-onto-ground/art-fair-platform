@@ -26,7 +26,7 @@ import { rankCandidates, selectDailyBatch, type RankedCandidate } from "@/lib/hi
 import { aliasLookupEqual } from "@/lib/history/identity";
 import { blankJob, type KnownArtist } from "@/lib/history/researchAdvance";
 import { jobIsOpen, workflowOwned, type ResearchJobRecord } from "@/lib/history/researchJob";
-import { TRUSTED_GALLERY_ROSTERS } from "@/lib/history/sourceDiscovery";
+import { rosterStreamName, TRUSTED_ARTIST_ROSTERS } from "@/lib/history/artistRosters";
 
 /**
  * Daily bounded scheduler for Global Artist Expansion V1.
@@ -70,6 +70,8 @@ export type SelectedCandidateView = {
   normalizedName: string;
   kind: RankedCandidate["kind"];
   sourceType: string;
+  sourceInstitution: string | null;
+  sourceFamily: string | null;
   score: number;
   reasons: string[];
   expectedSourceFamilies: string[];
@@ -118,6 +120,8 @@ function view(row: RankedCandidate, action: SelectedCandidateView["action"], job
     normalizedName: row.candidate.normalizedName,
     kind: row.kind,
     sourceType: row.candidate.sourceType,
+    sourceInstitution: row.candidate.payload.provenance.find((item) => item.viaInstitution)?.viaInstitution ?? null,
+    sourceFamily: row.candidate.sourceHost,
     score: row.score,
     reasons: row.reasons,
     expectedSourceFamilies: row.expectedSourceFamilies,
@@ -247,10 +251,15 @@ export async function runExpansion(input: { mode: ExpansionMode; limit?: number;
   push("SPARSE_EXISTING_ARTIST", sparseArtistObservations(graph, demand, stamp));
   push("GROUP_ROSTER", reconciledState.children);
   if (deps.fetchRoster) {
-    for (const roster of TRUSTED_GALLERY_ROSTERS) {
+    for (const roster of TRUSTED_ARTIST_ROSTERS) {
+      if (!roster.enabled) continue;
       try {
         const html = await deps.fetchRoster(roster.indexUrl);
-        if (html) push(`GALLERY_ROSTER:${roster.sourceName}`, galleryRosterObservations({ html, indexUrl: roster.indexUrl, sourceName: roster.sourceName, graph, seenAt: stamp }));
+        if (!html) {
+          run.summary.errors.push(`roster ${roster.sourceName}: SOURCE_UNAVAILABLE`);
+          continue;
+        }
+        push(rosterStreamName(roster.adapter), galleryRosterObservations({ html, indexUrl: roster.indexUrl, sourceName: roster.sourceName, graph, seenAt: stamp }));
       } catch (error) {
         run.summary.errors.push(`roster ${roster.sourceName}: ${error instanceof Error ? error.message : "fetch failed"}`);
       }
