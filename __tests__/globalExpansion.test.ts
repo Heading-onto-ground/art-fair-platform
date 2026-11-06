@@ -403,6 +403,9 @@ describe("global artist expansion", () => {
     const run = await runExpansion({ mode: "MANUAL", policy: policy({ dailyResearchLimit: 10, sparseShare: 0 }), onlyLabels: ["Queue Painter 2"] }, harness.deps);
     expect(run.jobsStarted).toBe(1);
     expect(run.summary.selected.map((row) => row.displayName)).toEqual(["Queue Painter 2"]);
+    const previewHarness = memory({ demand: names(3, "Queue Painter") });
+    const preview = await runExpansion({ mode: "DRY_RUN", policy: policy({ dailyResearchLimit: 10, sparseShare: 0 }), onlyLabels: ["Queue Painter 2"] }, previewHarness.deps);
+    expect(preview.summary.selected.map((row) => row.displayName)).toEqual(["Queue Painter 2"]);
     const scheduledHarness = memory({ demand: names(3, "Queue Painter") });
     const scheduled = await runExpansion({ mode: "SCHEDULED", policy: policy({ enabled: true, dailyResearchLimit: 10, sparseShare: 0 }), onlyLabels: ["Queue Painter 2"] }, scheduledHarness.deps);
     expect(scheduled.jobsStarted).toBe(3);

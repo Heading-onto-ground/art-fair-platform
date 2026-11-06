@@ -277,7 +277,7 @@ export async function runExpansion(input: { mode: ExpansionMode; limit?: number;
   const freshChildKeys = new Set(
     reconciledState.children.map((child) => normalizeCandidateName(child.label)).filter((key): key is string => Boolean(key)),
   );
-  const requestedLabels = input.mode === "MANUAL" ? (input.onlyLabels ?? []).map((label) => label.trim()).filter(Boolean) : [];
+  const requestedLabels = input.mode === "SCHEDULED" ? [] : (input.onlyLabels ?? []).map((label) => label.trim()).filter(Boolean);
   const eligible = ranked.filter((row) => !freshChildKeys.has(row.candidate.normalizedName) || storedKeys.has(row.candidate.normalizedName));
   const selectable = requestedLabels.length === 0
     ? eligible
