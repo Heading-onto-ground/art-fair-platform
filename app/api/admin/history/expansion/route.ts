@@ -15,6 +15,20 @@ function clampLimit(value: unknown, max: number): number {
   return Math.min(Math.trunc(parsed), max);
 }
 
+/** Reviewed display names for one manual batch. Absent means the ranked queue. A URL is rejected. */
+function manualNames(value: unknown): string[] | null {
+  if (value == null) return [];
+  if (!Array.isArray(value) || value.length < 1 || value.length > 3) return null;
+  const names: string[] = [];
+  for (const item of value) {
+    if (typeof item !== "string") return null;
+    const name = item.trim();
+    if (!name || name.length > 80 || /https?:|\/\//i.test(name)) return null;
+    names.push(name);
+  }
+  return names;
+}
+
 /** Operator preview. Ranks candidates and shows what would run. Creates no job and writes no row. */
 export async function GET(req: Request) {
   const { error } = requireAdminSession();
@@ -48,10 +62,12 @@ export async function POST(req: Request) {
   if (limited) return limited;
   const body = await req.json().catch(() => null);
   if (!body || body.confirm !== "RUN") return NextResponse.json({ ok: false, error: "confirm" }, { status: 400 });
+  const names = manualNames(body.names);
+  if (!names) return NextResponse.json({ ok: false, error: "names" }, { status: 400 });
   const policy = expansionPolicy();
-  const limit = clampLimit(body.limit, Math.min(MANUAL_BATCH_MAX, policy.dailyResearchLimit));
+  const limit = clampLimit(names.length > 0 ? names.length : body.limit, Math.min(MANUAL_BATCH_MAX, policy.dailyResearchLimit));
   try {
-    const run = await runExpansionWithStore({ mode: "MANUAL", limit, policy, startWorkflow: beginResearchWorkflow });
+    const run = await runExpansionWithStore({ mode: "MANUAL", limit, policy, onlyLabels: names, startWorkflow: beginResearchWorkflow });
     return NextResponse.json({ ok: true, run });
   } catch (err) {
     if (isHistoryUnavailable(err)) return NextResponse.json({ ok: false, unavailable: true }, { status: 503 });

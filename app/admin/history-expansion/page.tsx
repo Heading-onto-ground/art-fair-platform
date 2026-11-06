@@ -49,7 +49,12 @@ export default async function HistoryExpansionPage() {
           <h2>State</h2>
           <p>
             {EXPANSION_KILL_SWITCH}: <strong>{health.policy.enabled ? "true" : "false"}</strong>.
-            {health.paused ? <> <strong>AUTONOMOUS_EXPANSION_PAUSED</strong> · {health.paused}.</> : " Circuit breaker closed."}
+          </p>
+          <p>
+            Circuit breaker: <strong>{health.paused ? `Open · ${health.paused}` : "Closed"}</strong>
+          </p>
+          <p>
+            Data quality: {health.dataQuality.missingCanonicalName} artists missing canonical name. {health.dataQuality.sameNameRecords} same-name artist records require review.
           </p>
           <p>
             Daily research limit {health.policy.dailyResearchLimit}. Fetch budget {health.policy.dailyFetchLimit}. Candidate observations {health.policy.dailyCandidateLimit}/day, writes {health.policy.dailyCandidateWriteLimit}/day. Sparse share {Math.round(health.policy.sparseShare * 100)}%. Child candidates per artist {health.policy.maxChildCandidates}.

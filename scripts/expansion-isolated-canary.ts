@@ -63,7 +63,7 @@ async function schedulerCanary() {
       started.push(id);
       return `isolated-${id}`;
     },
-    breakerSignals: async () => ({ consecutiveFailedRuns: 0, startFailureShare: 0, publicationsLastRun: 0, duplicateArtists: 0, databaseUnavailable: false }),
+    breakerSignals: async () => ({ consecutiveFailedRuns: 0, startFailureShare: 0, publicationsLastRun: 0, duplicateResolvedIdentities: 0, databaseUnavailable: false }),
     recordRun: async () => undefined,
     emit: async () => undefined,
   };

@@ -211,24 +211,73 @@ export const CIRCUIT_BREAKER = {
   maxStartFailureShare: 0.5,
   /** Autonomous publications per run beyond which a spike is suspected. */
   maxPublicationsPerRun: 40,
-  /** Duplicate ArtistEntity slugs found by the daily audit. Any duplicate pauses. */
-  maxDuplicateArtists: 0,
+  /**
+   * One structured identity key attached to more than one ArtistEntity.
+   * Shared display names and blank names are data-quality warnings, not this signal.
+   */
+  maxDuplicateResolvedIdentities: 0,
 } as const;
 
 export type BreakerSignals = {
   consecutiveFailedRuns: number;
   startFailureShare: number;
   publicationsLastRun: number;
-  duplicateArtists: number;
+  duplicateResolvedIdentities: number;
   databaseUnavailable: boolean;
 };
+
+/** A research result that already names both a stable identity and the ArtistEntity it resolved to. */
+export type ResolvedIdentityLink = {
+  identityKey: string | null | undefined;
+  artistId: string | null | undefined;
+};
+
+/**
+ * Count identity keys that point at two or more ArtistEntity ids.
+ * The same key repeating on one artist is not a collision. A blank key is ignored.
+ */
+export function resolvedIdentityCollisionCount(links: readonly ResolvedIdentityLink[]): number {
+  const artistsByKey = new Map<string, Set<string>>();
+  for (const link of links) {
+    const identityKey = link.identityKey?.trim() ?? "";
+    const artistId = link.artistId?.trim() ?? "";
+    if (!identityKey || !artistId) continue;
+    const artists = artistsByKey.get(identityKey) ?? new Set<string>();
+    artists.add(artistId);
+    artistsByKey.set(identityKey, artists);
+  }
+  let collisions = 0;
+  for (const artists of artistsByKey.values()) if (artists.size > 1) collisions += 1;
+  return collisions;
+}
+
+/** Rows whose canonical name is empty. This is a review warning, not an identity collision. */
+export function blankCanonicalNameCount(names: readonly string[]): number {
+  return names.filter((name) => name.trim() === "").length;
+}
+
+/**
+ * Rows that share a non-blank canonical name with another row.
+ * Same display name is not proof those rows are the same artist.
+ */
+export function sameNameReviewCount(names: readonly string[]): number {
+  const counts = new Map<string, number>();
+  for (const name of names) {
+    const key = name.trim().toLowerCase();
+    if (!key) continue;
+    counts.set(key, (counts.get(key) ?? 0) + 1);
+  }
+  let rows = 0;
+  for (const count of counts.values()) if (count > 1) rows += count;
+  return rows;
+}
 
 export function circuitBreakerReason(signals: BreakerSignals): string | null {
   if (signals.databaseUnavailable) return "DATABASE_UNAVAILABLE";
   if (signals.consecutiveFailedRuns >= CIRCUIT_BREAKER.maxConsecutiveFailedRuns) return "REPEATED_RUN_FAILURE";
   if (signals.startFailureShare > CIRCUIT_BREAKER.maxStartFailureShare) return "WORKFLOW_START_FAILURES";
   if (signals.publicationsLastRun > CIRCUIT_BREAKER.maxPublicationsPerRun) return "PUBLICATION_SPIKE";
-  if (signals.duplicateArtists > CIRCUIT_BREAKER.maxDuplicateArtists) return "DUPLICATE_ARTIST_SPIKE";
+  if (signals.duplicateResolvedIdentities > CIRCUIT_BREAKER.maxDuplicateResolvedIdentities) return "DUPLICATE_RESOLVED_IDENTITY";
   return null;
 }
 
