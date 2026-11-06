@@ -75,7 +75,41 @@ export type ResearchPayload = {
   queued: CrawlFact[];
   publishedIds: string[];
   workflowRunId?: string | null;
+  /** USER_SEARCH (default) or DAILY_EXPANSION. Internal provenance; not part of the public view. */
+  origin?: "USER_SEARCH" | "DAILY_EXPANSION";
+  /** ArtistResearchCandidate id when the job was started by the expansion scheduler. */
+  candidateId?: string | null;
 };
+
+export function isAutonomousJob(job: Pick<ResearchJobRecord, "demandQuality" | "payload">): boolean {
+  return job.payload.origin === "DAILY_EXPANSION" || job.demandQuality === "AUTONOMOUS_EXPANSION";
+}
+
+/** Visitor funnel events stay off autonomous jobs. Expansion events are recorded separately. */
+export function signalsToRecord(job: Pick<ResearchJobRecord, "demandQuality" | "payload">, names: readonly string[]): string[] {
+  if (isAutonomousJob(job)) return [];
+  return [...names];
+}
+
+/**
+ * Aliases stored on a new ArtistEntity. The search query is not an alias.
+ * A label is stored only when the resolved identity record already carries it.
+ */
+export function publishableAliasLabels(job: Pick<ResearchJobRecord, "payload">): string[] {
+  const identity = job.payload.identity;
+  const canonical = (job.payload.latinName || identity?.label || "").trim().toLowerCase();
+  const seen = new Set<string>();
+  const out: string[] = [];
+  for (const label of [identity?.label, ...(identity?.aliases ?? []), job.payload.latinName, job.payload.nativeName]) {
+    const text = label?.trim();
+    const key = text?.toLowerCase();
+    if (!text || !key || key === canonical || seen.has(key)) continue;
+    seen.add(key);
+    out.push(text);
+    if (out.length >= 8) break;
+  }
+  return out;
+}
 
 export type ResearchJobRecord = {
   id: string;

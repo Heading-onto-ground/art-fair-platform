@@ -944,3 +944,62 @@ model ResearchJob {
   @@index([status])
   @@index([stage])
 }
+
+// Global Artist Expansion. Additive. A candidate is a possible research target, not an artist.
+// No ArtistEntity is created from this table; publication still goes through ResearchJob.
+model ArtistResearchCandidate {
+  id                   String    @id @default(cuid())
+  displayName          String
+  nativeNameCandidate  String?
+  normalizedName       String    @unique
+  sourceType           String    // REAL_VISITOR_DEMAND | UNRESOLVED_PARTICIPANT | GROUP_ROSTER | GALLERY_ROSTER | MUSEUM_ROSTER | IDENTITY_DISCOVERY | SPARSE_EXISTING_ARTIST
+  sourceUrl            String?
+  sourceHost           String?
+  sourceContext        String    // USER_SEARCH | DAILY_EXPANSION | GRAPH_FRONTIER | UNRESOLVED_PARTICIPANT
+  discoveredAt         DateTime  @default(now())
+  lastSeenAt           DateTime  @default(now())
+  status               String    @default("NEW") // NEW | QUEUED | RESEARCHING | RESOLVED_EXISTING | PUBLISHED | NEEDS_REVIEW | NO_TRUSTED_SOURCE | IDENTITY_AMBIGUOUS | NOT_ARTIST | BLOCKED | COOLDOWN
+  identityCandidateId  String?
+  resolvedArtistId     String?
+  researchJobId        String?
+  demandCount          Int       @default(0)
+  graphAdjacencyScore  Int       @default(0)
+  trustedSourceScore   Int       @default(0)
+  bridgePotentialScore Int       @default(0)
+  attemptCount         Int       @default(0)
+  lastAttemptAt        DateTime?
+  nextEligibleAt       DateTime?
+  failureCode          String?
+  priorityScore        Int       @default(0)
+  payload              Json
+  createdAt            DateTime  @default(now())
+  updatedAt            DateTime  @updatedAt
+
+  @@index([status])
+  @@index([priorityScore])
+  @@index([nextEligibleAt])
+  @@index([identityCandidateId])
+  @@index([resolvedArtistId])
+  @@index([researchJobId])
+}
+
+// One row per scheduler run. The internal daily report and circuit breaker read this table.
+model ExpansionRun {
+  id                 String    @id @default(cuid())
+  runKey             String    @unique // YYYY-MM-DD or YYYY-MM-DD#manual-<n>
+  mode               String    // DRY_RUN | SCHEDULED | MANUAL
+  status             String    // COMPLETED | DISABLED | PAUSED | FAILED
+  startedAt          DateTime  @default(now())
+  completedAt        DateTime?
+  candidatesObserved Int       @default(0)
+  candidatesInserted Int       @default(0)
+  candidatesUpdated  Int       @default(0)
+  jobsStarted        Int       @default(0)
+  jobsReused         Int       @default(0)
+  estimatedFetches   Int       @default(0)
+  failureCount       Int       @default(0)
+  summary            Json
+
+  @@index([startedAt])
+  @@index([mode])
+}

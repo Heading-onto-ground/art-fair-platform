@@ -1,0 +1,121 @@
+import Link from "next/link";
+import { redirect } from "next/navigation";
+import { getAdminSession } from "@/lib/adminAuth";
+import { EXPANSION_KILL_SWITCH } from "@/lib/history/expansionPolicy";
+import { loadExpansionHealth, runExpansionWithStore } from "@/lib/history/expansionStore";
+import type { ExpansionRunRecord } from "@/lib/history/expansionScheduler";
+import { isMissingHistorySchema } from "@/lib/history/schemaError";
+import ExpansionControls from "@/app/components/admin/ExpansionControls";
+
+export const dynamic = "force-dynamic";
+
+function dailySummary(health: Awaited<ReturnType<typeof loadExpansionHealth>>): string[] {
+  const t = health.today;
+  return [
+    `ROB GLOBAL EXPANSION — ${t.dayKey}`,
+    `Candidates observed: ${health.lastRun?.candidatesObserved ?? 0}`,
+    `New candidates: ${health.lastRun?.candidatesInserted ?? 0}`,
+    `Research jobs started: ${t.workflowStarts}`,
+    `Artists published: ${t.published}`,
+    `Existing artists expanded: ${t.expanded}`,
+    `Exhibitions added: ${t.newExhibitions}`,
+    `Participation edges added: ${t.newParticipations}`,
+    `New artist bridges: ${t.newSharedPairs}`,
+    `Needs review: ${t.needsReview}`,
+    `No trusted source: ${t.noTrustedSource}`,
+  ];
+}
+
+export default async function HistoryExpansionPage() {
+  if (!getAdminSession()) redirect("/admin/login");
+  let health: Awaited<ReturnType<typeof loadExpansionHealth>> | null = null;
+  let preview: ExpansionRunRecord | null = null;
+  let unavailable = false;
+  try {
+    health = await loadExpansionHealth();
+    preview = await runExpansionWithStore({ mode: "DRY_RUN", policy: health.policy, startWorkflow: async () => null, fetchRoster: false });
+  } catch (error) {
+    unavailable = isMissingHistorySchema(error);
+    if (!unavailable) console.error("history expansion health failed", error);
+  }
+  return (
+    <main style={{ maxWidth: 880, margin: "40px auto", padding: "0 20px", fontFamily: "Georgia, serif" }}>
+      <p><Link href="/admin">Admin</Link> · <Link href="/admin/history-health">History health</Link></p>
+      <h1>Global Artist Expansion</h1>
+      <p>Internal operator view. Autonomous research uses the same identity, source, participation, duplicate, space, and publication gates as visitor Discovery.</p>
+      {unavailable || !health ? <p>Expansion tables are not available. Apply prisma/sql/add-artist-research-candidates.sql first.</p> : null}
+      {health ? (
+        <>
+          <h2>State</h2>
+          <p>
+            {EXPANSION_KILL_SWITCH}: <strong>{health.policy.enabled ? "true" : "false"}</strong>.
+            {health.paused ? <> <strong>AUTONOMOUS_EXPANSION_PAUSED</strong> · {health.paused}.</> : " Circuit breaker closed."}
+          </p>
+          <p>
+            Daily research limit {health.policy.dailyResearchLimit}. Fetch budget {health.policy.dailyFetchLimit}. Candidate observations {health.policy.dailyCandidateLimit}/day, writes {health.policy.dailyCandidateWriteLimit}/day. Sparse share {Math.round(health.policy.sparseShare * 100)}%. Child candidates per artist {health.policy.maxChildCandidates}.
+          </p>
+          <p>{health.totalArtists} ArtistEntity rows. {health.indexableArtists} indexable artists. {health.candidateTotal} candidates.</p>
+          <ul>
+            {Object.entries(health.candidates).sort().map(([status, count]) => (
+              <li key={status}>{status} · {count}</li>
+            ))}
+          </ul>
+          <h2>Daily summary</h2>
+          <pre style={{ background: "#f6f3ee", padding: 12, whiteSpace: "pre-wrap" }}>{dailySummary(health).join("\n")}</pre>
+          <p>Verified facts today {health.today.verifiedFacts}. Failed jobs today {health.today.failedJobs}. Workflow starts today {health.today.workflowStarts}.</p>
+          <ExpansionControls enabled={health.policy.enabled} dailyLimit={health.policy.dailyResearchLimit} paused={health.paused} />
+          <h2>What will ROB research next?</h2>
+          {preview ? (
+            <>
+              <p>Dry ranking. Nothing was created. Limit for this run {preview.summary.limitApplied} ({preview.summary.jobsStartedBefore} already started today, {preview.summary.openVisitorJobs} open visitor jobs).</p>
+              <ol>
+                {preview.summary.ranking.map((row) => (
+                  <li key={row.candidateId}>
+                    <strong>{row.displayName}</strong> · {row.kind} · {row.sourceType} · score {row.score}
+                    {preview.summary.selected.some((item) => item.candidateId === row.candidateId) ? " · would run" : ""}
+                    <br />
+                    <small>{row.reasons.join("; ")} · expected sources: {row.expectedSourceFamilies.join(", ")}</small>
+                  </li>
+                ))}
+              </ol>
+              {preview.summary.skippedDuplicateIdentity.length > 0 ? <p>Skipped as another spelling of a selected identity: {preview.summary.skippedDuplicateIdentity.join(", ")}</p> : null}
+            </>
+          ) : <p>Preview unavailable.</p>}
+          <h2>Last run</h2>
+          {health.lastRun ? (
+            <>
+              <p>{health.lastRun.runKey} · {health.lastRun.mode} · {health.lastRun.status} · started {health.lastRun.jobsStarted} · reused {health.lastRun.jobsReused} · observed {health.lastRun.candidatesObserved} · estimated fetches {health.lastRun.estimatedFetches} · failures {health.lastRun.failureCount}</p>
+              <ul>
+                {health.lastRun.summary.selected.map((row) => (
+                  <li key={row.candidateId}>{row.displayName} · {row.action}{row.jobId ? ` · job ${row.jobId}` : ""} · {row.reasons.join("; ")}</li>
+                ))}
+              </ul>
+              {health.lastRun.summary.errors.length > 0 ? <p>Errors: {health.lastRun.summary.errors.join(" | ")}</p> : null}
+            </>
+          ) : <p>No run recorded.</p>}
+          <h2>Recent runs</h2>
+          <ul>
+            {health.recentRuns.length === 0 ? <li>None</li> : null}
+            {health.recentRuns.map((run) => (
+              <li key={run.runKey}>{run.runKey} · {run.mode} · {run.status} · jobs {run.jobsStarted} · observed {run.candidatesObserved}</li>
+            ))}
+          </ul>
+          <h2>Needs review / no source / blocked</h2>
+          <ul>
+            {health.reviewCandidates.length === 0 ? <li>None</li> : null}
+            {health.reviewCandidates.map((row) => (
+              <li key={`${row.displayName}-${row.status}`}>{row.displayName} · {row.status} · {row.failureCode ?? "no code"} · eligible again {row.nextEligibleAt ?? "n/a"}</li>
+            ))}
+          </ul>
+          <h2>Top real visitor missing queries</h2>
+          <ul>
+            {health.topMissingQueries.length === 0 ? <li>None</li> : null}
+            {health.topMissingQueries.map((row) => (
+              <li key={row.query}>{row.query} · {row.count} · last {row.lastSearched ?? "n/a"}</li>
+            ))}
+          </ul>
+        </>
+      ) : null}
+    </main>
+  );
+}
