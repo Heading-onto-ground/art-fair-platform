@@ -5,7 +5,8 @@ import type { GrowthSnapshot } from "@/lib/history/growth";
 import { fetchTrustedDocument } from "@/lib/history/trustedCrawl";
 import { advanceResearchJob, type ResearchDeps } from "@/lib/history/researchAdvance";
 import { publishResearchFact } from "@/lib/history/researchPublish";
-import { researchStepDisposition, type ResearchJobRecord } from "@/lib/history/researchJob";
+import { researchStepDisposition, signalsToRecord, type ResearchJobRecord } from "@/lib/history/researchJob";
+import { syncCandidatesWithJob } from "@/lib/history/expansionStore";
 import { findKnownArtist, readResearchJob, saveResearchJob } from "@/lib/history/researchStore";
 import { PUBLIC_HISTORY_CACHE_TAG } from "@/lib/history/publicGraph";
 import { isHistoryUnavailable } from "@/lib/history/schemaError";
@@ -104,7 +105,8 @@ export async function stepResearchJob(job: Parameters<typeof advanceResearchJob>
 export async function persistResearchProgress(before: ResearchJobRecord, after: ResearchJobRecord): Promise<ResearchJobRecord> {
   const fresh = after.payload.emitted.filter((name) => !before.payload.emitted.includes(name));
   const saved = await saveResearchJob(after);
-  for (const name of fresh) {
+  // Autonomous expansion jobs never write DISCOVERY_* visitor funnel events.
+  for (const name of signalsToRecord(saved, fresh)) {
     try {
       const path = `/research/${saved.id}`;
       const existing = await prisma.historySignal.findFirst({ where: { name, path }, select: { id: true } });
@@ -112,6 +114,9 @@ export async function persistResearchProgress(before: ResearchJobRecord, after: 
     } catch (error) {
       if (!isHistoryUnavailable(error)) console.error("discovery signal failed", error);
     }
+  }
+  if (saved.stage === "DONE" || saved.identityStatus !== before.identityStatus) {
+    await syncCandidatesWithJob(saved);
   }
   if (saved.resultArtistSlug && saved.resultArtistSlug !== before.resultArtistSlug) {
     try {

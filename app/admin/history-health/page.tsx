@@ -18,7 +18,7 @@ export default async function HistoryHealthPage() {
   }
   return (
     <main style={{ maxWidth: 880, margin: "40px auto", padding: "0 20px", fontFamily: "Georgia, serif" }}>
-      <p><Link href="/admin">Admin</Link></p>
+      <p><Link href="/admin">Admin</Link> · <Link href="/admin/history-expansion">Global expansion</Link></p>
       <h1>History health</h1>
       {unavailable || !report ? <p>History tables are not available.</p> : null}
       {report ? (

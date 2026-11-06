@@ -55,6 +55,10 @@
     {
       "path": "/api/cron/ritual-streak-reminders",
       "schedule": "0 11 * * *"
+    },
+    {
+      "path": "/api/cron/history-expansion",
+      "schedule": "45 16 * * *"
     }
   ]
 }

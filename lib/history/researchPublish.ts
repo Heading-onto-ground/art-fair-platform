@@ -4,7 +4,7 @@ import { duplicateDecision, resolveVerifiedSpace } from "@/lib/history/growth";
 import { mayCreateParticipation } from "@/lib/history/identity";
 import { uniqueSlug } from "@/lib/history/policy";
 import { spaceDecisionFor, type CrawlFact } from "@/lib/history/trustedCrawl";
-import { mayPublishCrawledFact, type ResearchJobRecord } from "@/lib/history/researchJob";
+import { mayPublishCrawledFact, publishableAliasLabels, type ResearchJobRecord } from "@/lib/history/researchJob";
 import type { PublishResult } from "@/lib/history/researchAdvance";
 
 const prisma = untypedPrisma as PrismaClient;
@@ -47,7 +47,7 @@ async function ensureArtist(job: ResearchJobRecord, fact: CrawlFact): Promise<{ 
       canonicalName: job.payload.latinName || subject.label,
       nativeName: job.payload.nativeName,
       officialWebsite: job.payload.identity?.officialWebsites[0] ?? null,
-      aliases: { create: labels.filter((label) => label !== (job.payload.latinName || subject.label)).slice(0, 8).map((label) => ({ label })) },
+      aliases: { create: publishableAliasLabels(job).map((label) => ({ label })) },
     },
     select: { id: true, slug: true },
   });

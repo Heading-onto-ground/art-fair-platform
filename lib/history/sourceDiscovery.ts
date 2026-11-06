@@ -116,6 +116,34 @@ function rejectionForHost(hostname: string): string | null {
   return null;
 }
 
+export type DomainReviewState = "TRUSTED_EXISTING" | "OFFICIAL_CANDIDATE" | "NEEDS_REVIEW" | "REJECTED";
+
+/**
+ * A host the expansion engine has not seen before is never production-trusted
+ * from this classification. OFFICIAL_CANDIDATE still needs an adapter, tests,
+ * and an explicit addition to TRUSTED_SOURCES.
+ */
+export function reviewDiscoveredHost(hostname: string): { state: DomainReviewState; reason: string } {
+  const host = hostname.toLowerCase().replace(/^www\./, "").trim();
+  if (!host || host === "localhost" || host.endsWith(".local")) {
+    return { state: "REJECTED", reason: "not a public institution host" };
+  }
+  const rejected = rejectionForHost(host);
+  if (rejected) return { state: "REJECTED", reason: rejected };
+  if (classifyTrustedUrl(`https://${host}/`)) {
+    return { state: "TRUSTED_EXISTING", reason: "host is already in the trusted crawler list" };
+  }
+  if (/(museum|gallery|galerie|kunsthalle|foundation|guggenheim)\./i.test(host) || host.endsWith(".museum") || host.endsWith(".go.kr") || host.endsWith(".ac.uk") || host.endsWith(".edu")) {
+    return { state: "OFFICIAL_CANDIDATE", reason: "institutional host stays untrusted until an adapter and tests exist" };
+  }
+  return { state: "NEEDS_REVIEW", reason: "unknown host is not trusted" };
+}
+
+/** Expansion never promotes a host by itself. */
+export function mayAutoTrustHost(): false {
+  return false;
+}
+
 function exactAlias(label: string, slug: string): boolean {
   return aliasesFor(slug).some((alias) => aliasLookupEqual(alias, label));
 }
