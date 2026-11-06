@@ -61,3 +61,10 @@ CREATE TABLE IF NOT EXISTS "ExpansionRun" (
 CREATE UNIQUE INDEX IF NOT EXISTS "ExpansionRun_runKey_key" ON "ExpansionRun"("runKey");
 CREATE INDEX IF NOT EXISTS "ExpansionRun_startedAt_idx" ON "ExpansionRun"("startedAt");
 CREATE INDEX IF NOT EXISTS "ExpansionRun_mode_idx" ON "ExpansionRun"("mode");
+
+-- Internal queue tables. The server connects as postgres, which bypasses RLS.
+-- The public Data API roles get no privileges and no policy.
+REVOKE ALL ON TABLE "ArtistResearchCandidate" FROM PUBLIC, anon, authenticated;
+REVOKE ALL ON TABLE "ExpansionRun" FROM PUBLIC, anon, authenticated;
+ALTER TABLE "ArtistResearchCandidate" ENABLE ROW LEVEL SECURITY;
+ALTER TABLE "ExpansionRun" ENABLE ROW LEVEL SECURITY;
