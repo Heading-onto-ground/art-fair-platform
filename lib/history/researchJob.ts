@@ -2,7 +2,8 @@ import { createHash } from "node:crypto";
 import { searchDemandQuery } from "@/lib/history/identity";
 import { slugifyName } from "@/lib/history/policy";
 import { mayCreateParticipation } from "@/lib/history/identity";
-import { spaceDecisionFor, type CrawlFact } from "@/lib/history/trustedCrawl";
+import { isTrustedArtistProfileUrl } from "@/lib/history/artistRosters";
+import { classifyTrustedUrl, spaceDecisionFor, type CrawlFact } from "@/lib/history/trustedCrawl";
 import type { DiscoveryEntity, DiscoveryInstitution } from "@/lib/history/sourceDiscovery";
 import type { HistoryLocale } from "@/lib/history/locale";
 
@@ -60,6 +61,22 @@ export type ResearchFactView = {
   curator: string | null;
 };
 
+/**
+ * A trusted page the candidate store already found. It is a fetch hint, not a fact.
+ * Visitor Discovery jobs omit this. Arbitrary URLs are never stored here.
+ */
+export type CandidateSourceHint = {
+  url: string;
+  name: string | null;
+  host: string | null;
+  sourceType: string | null;
+  institution: string | null;
+  sourceFamily: string | null;
+  rosterIndexUrl: string | null;
+  profileUrl: string | null;
+  qualifier: string | null;
+};
+
 export type ResearchPayload = {
   expand: boolean;
   stepCount: number;
@@ -79,7 +96,16 @@ export type ResearchPayload = {
   origin?: "USER_SEARCH" | "DAILY_EXPANSION";
   /** ArtistResearchCandidate id when the job was started by the expansion scheduler. */
   candidateId?: string | null;
+  /** Trusted profile or exhibition URLs copied from the candidate. Optional. */
+  candidateSources?: CandidateSourceHint[];
 };
+
+/** A candidate hint may be fetched only when the host is still trusted and the path is a profile or exhibition. */
+export function acceptedCandidateSourceUrl(url: string): boolean {
+  if (!classifyTrustedUrl(url)) return false;
+  if (isTrustedArtistProfileUrl(url)) return true;
+  return /\/exhibitions\/|\/exhibition\//i.test(url);
+}
 
 export function isAutonomousJob(job: Pick<ResearchJobRecord, "demandQuality" | "payload">): boolean {
   return job.payload.origin === "DAILY_EXPANSION" || job.demandQuality === "AUTONOMOUS_EXPANSION";

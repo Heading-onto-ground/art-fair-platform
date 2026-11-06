@@ -15,8 +15,10 @@ function isArtistRecordUrl(url: string): boolean {
 import { crawlTrustedPage, fetchTrustedDocument, type CrawlFact, type TrustedFetchResult } from "@/lib/history/trustedCrawl";
 import {
   RESEARCH_LIMITS,
+  acceptedCandidateSourceUrl,
   emptyPayload,
   factView,
+  isAutonomousJob,
   mayPublishCrawledFact,
   researchSlugBase,
   withEvents,
@@ -145,38 +147,63 @@ async function identityStep(job: ResearchJobRecord, deps: ResearchDeps): Promise
   }, now);
 }
 
+function canonicalSourceUrl(url: string): string {
+  try {
+    const parsed = new URL(url);
+    parsed.hash = "";
+    if (parsed.pathname.length > 1) parsed.pathname = parsed.pathname.replace(/\/+$/, "");
+    return parsed.toString();
+  } catch {
+    return url;
+  }
+}
+
+function knownResearchAnchor(job: ResearchJobRecord): boolean {
+  return job.identityStatus === "KNOWN"
+    && Boolean(job.resolvedArtistId)
+    && Boolean(job.resolvedArtistSlug)
+    && (job.payload.expand || isAutonomousJob(job) || (job.payload.candidateSources?.length ?? 0) > 0);
+}
+
 async function sourceStep(job: ResearchJobRecord, deps: ResearchDeps): Promise<ResearchJobRecord> {
   const now = deps.now();
   const identity = job.payload.identity;
-  const slug = job.payload.proposedSlug;
-  if (!identity || !slug) return close(job, "NEEDS_REVIEW", "IDENTITY_NOT_FOUND", now);
+  const slug = job.payload.proposedSlug ?? (knownResearchAnchor(job) ? job.resolvedArtistSlug : null);
+  if ((!identity && !knownResearchAnchor(job)) || !slug) return close(job, "NEEDS_REVIEW", "IDENTITY_NOT_FOUND", now);
+  const labels = [...new Set([job.query, job.payload.latinName, job.payload.nativeName, ...job.payload.labels, identity?.label, ...(identity?.aliases ?? [])].filter((value): value is string => Boolean(value)))];
   let institutions = job.payload.institutions;
-  if (institutions.length === 0 && identity.collectionIds.length > 0) {
+  if (identity && institutions.length === 0 && identity.collectionIds.length > 0) {
     institutions = await deps.loadInstitutions(identity.collectionIds.slice(0, RESEARCH_LIMITS.maxInstitutions));
   }
-  const discovered = discoverTrustedSources({
-    artistId: slug,
-    entities: [identity],
-    institutions,
-    matchLabels: [job.query, identity.label, ...identity.aliases],
-  });
-  if (!discovered.resolvedEntityId) return close(job, "NEEDS_REVIEW", "IDENTITY_AMBIGUOUS", now);
-  const sources: ResearchSource[] = discovered.candidates.map((candidate) => ({
-    url: candidate.sourceUrl,
-    name: candidate.sourceName,
-    fetchable: crawlerCanFetch(candidate.sourceUrl),
-    checked: false,
-    blocked: null,
-  }));
+  const sources: ResearchSource[] = [];
+  const push = (url: string, name: string) => {
+    if (!acceptedCandidateSourceUrl(url) && !identity) return;
+    const key = canonicalSourceUrl(url);
+    if (sources.some((source) => canonicalSourceUrl(source.url) === key)) return;
+    sources.push({ url, name, fetchable: crawlerCanFetch(url) && (Boolean(identity) || acceptedCandidateSourceUrl(url)), checked: false, blocked: null });
+  };
+  for (const hint of job.payload.candidateSources ?? []) {
+    if (!acceptedCandidateSourceUrl(hint.url)) continue;
+    push(hint.url, hint.name ?? hint.institution ?? hint.host ?? "Trusted source");
+  }
+  if (identity) {
+    const discovered = discoverTrustedSources({
+      artistId: slug,
+      entities: [identity],
+      institutions,
+      matchLabels: labels,
+    });
+    if (!discovered.resolvedEntityId && !knownResearchAnchor(job)) return close(job, "NEEDS_REVIEW", "IDENTITY_AMBIGUOUS", now);
+    for (const candidate of discovered.candidates) push(candidate.sourceUrl, candidate.sourceName);
+  }
   const hasArtistRecord = sources.some((source) => source.fetchable && isArtistRecordUrl(source.url));
   if (!hasArtistRecord) {
-    const labels = [job.query, identity.label, ...identity.aliases];
     for (const roster of TRUSTED_ARTIST_ROSTERS) {
       if (!roster.enabled) continue;
       const index = await deps.fetchDocument(roster.indexUrl);
       if (index.blocked || !index.html) continue;
       const match = matchArtistRoster(index.html, labels, roster.indexUrl);
-      if (!match || !crawlerCanFetch(match.url) || sources.some((source) => source.url === match.url)) continue;
+      if (!match || !crawlerCanFetch(match.url) || sources.some((source) => canonicalSourceUrl(source.url) === canonicalSourceUrl(match.url))) continue;
       sources.unshift({ url: match.url, name: match.sourceName, fetchable: true, checked: false, blocked: null });
       break;
     }

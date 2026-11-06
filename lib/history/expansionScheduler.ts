@@ -12,7 +12,7 @@ import {
   type CandidateRecord,
   type ExpansionGraph,
 } from "@/lib/history/expansionCandidates";
-import { candidateAfterJob, childObservationsForJob, resolveSiblingCandidates } from "@/lib/history/expansionFeedback";
+import { candidateAfterJob, childObservationsForJob, protectCandidateWrite, resolveSiblingCandidates } from "@/lib/history/expansionFeedback";
 import {
   AUTONOMOUS_DEMAND_QUALITY,
   ESTIMATED_FETCHES_PER_JOB,
@@ -25,7 +25,7 @@ import {
 import { rankCandidates, selectDailyBatch, type RankedCandidate } from "@/lib/history/expansionRank";
 import { aliasLookupEqual } from "@/lib/history/identity";
 import { blankJob, type KnownArtist } from "@/lib/history/researchAdvance";
-import { jobIsOpen, workflowOwned, type ResearchJobRecord } from "@/lib/history/researchJob";
+import { acceptedCandidateSourceUrl, jobIsOpen, workflowOwned, type CandidateSourceHint, type ResearchJobRecord } from "@/lib/history/researchJob";
 import { rosterStreamName, TRUSTED_ARTIST_ROSTERS } from "@/lib/history/artistRosters";
 
 /**
@@ -135,6 +135,59 @@ function localeFor(label: string): "ko" | "en" {
   return /[가-힣]/.test(label) ? "ko" : "en";
 }
 
+function hostOf(url: string): string | null {
+  try {
+    return new URL(url).hostname.replace(/^www\./, "");
+  } catch {
+    return null;
+  }
+}
+
+/** Trusted profile and exhibition URLs already stored on the candidate. Untrusted URLs are dropped. */
+export function candidateSourceHints(candidate: CandidateRecord): CandidateSourceHint[] {
+  const seen = new Set<string>();
+  const out: CandidateSourceHint[] = [];
+  const add = (url: string | null | undefined, hint: Omit<CandidateSourceHint, "url" | "host"> & { host?: string | null }) => {
+    const text = url?.trim();
+    if (!text || !acceptedCandidateSourceUrl(text) || seen.has(text)) return;
+    seen.add(text);
+    out.push({ ...hint, url: text, host: hint.host ?? hostOf(text) });
+  };
+  const provenance = candidate.payload.provenance[0];
+  add(candidate.sourceUrl, {
+    name: provenance?.viaInstitution ?? null,
+    sourceType: candidate.sourceType,
+    institution: provenance?.viaInstitution ?? null,
+    sourceFamily: candidate.sourceHost,
+    rosterIndexUrl: provenance?.rosterIndexUrl ?? null,
+    profileUrl: candidate.sourceUrl,
+    qualifier: provenance?.rosterQualifier ?? null,
+  });
+  for (const item of candidate.payload.provenance) {
+    add(item.sourceUrl, {
+      name: item.viaInstitution ?? null,
+      sourceType: item.sourceType,
+      institution: item.viaInstitution ?? null,
+      sourceFamily: hostOf(item.sourceUrl ?? ""),
+      rosterIndexUrl: item.rosterIndexUrl ?? null,
+      profileUrl: item.sourceUrl,
+      qualifier: item.rosterQualifier ?? null,
+    });
+  }
+  for (const url of candidate.payload.sourceHints) {
+    add(url, {
+      name: provenance?.viaInstitution ?? null,
+      sourceType: candidate.sourceType,
+      institution: provenance?.viaInstitution ?? null,
+      sourceFamily: hostOf(url),
+      rosterIndexUrl: provenance?.rosterIndexUrl ?? null,
+      profileUrl: url,
+      qualifier: provenance?.rosterQualifier ?? null,
+    });
+  }
+  return out;
+}
+
 export function autonomousJob(candidate: CandidateRecord, now: Date): ResearchJobRecord | null {
   const query = candidate.displayName;
   const normalized = normalizeCandidateName(query);
@@ -148,7 +201,16 @@ export function autonomousJob(candidate: CandidateRecord, now: Date): ResearchJo
     expand: candidate.sourceType === "SPARSE_EXISTING_ARTIST",
     now,
   });
-  return { ...job, payload: { ...job.payload, origin: "DAILY_EXPANSION", candidateId: candidate.id } };
+  const candidateSources = candidateSourceHints(candidate);
+  return {
+    ...job,
+    payload: {
+      ...job.payload,
+      origin: "DAILY_EXPANSION",
+      candidateId: candidate.id,
+      ...(candidateSources.length > 0 ? { candidateSources } : {}),
+    },
+  };
 }
 
 function blankRun(mode: ExpansionMode, now: Date, policy: ExpansionPolicy): ExpansionRunRecord {
@@ -296,8 +358,9 @@ export async function runExpansion(input: { mode: ExpansionMode; limit?: number;
   run.summary.jobsStartedBefore = startedBefore;
   run.summary.openVisitorJobs = openVisitor;
   const requested = input.limit != null && Number.isFinite(input.limit) ? Math.max(0, Math.trunc(input.limit)) : input.policy.dailyResearchLimit;
-  // Visitor research keeps priority: open visitor jobs reduce the autonomous batch for this run.
-  const remaining = Math.max(0, Math.min(requested, input.policy.dailyResearchLimit) - startedBefore - openVisitor);
+  // Visitor research keeps priority. Earlier starts today consume the daily cap, not the size of this request.
+  const dailyRoom = Math.max(0, input.policy.dailyResearchLimit - startedBefore - openVisitor);
+  const remaining = Math.min(requested, dailyRoom);
   const fetchRemaining = Math.max(0, input.policy.dailyFetchLimit - startedBefore * ESTIMATED_FETCHES_PER_JOB);
   const batch = selectDailyBatch({ ranked: selectable, researchLimit: remaining, sparseShare: input.policy.sparseShare, fetchLimit: fetchRemaining });
   run.summary.limitApplied = batch.limit;
@@ -364,18 +427,20 @@ export async function runExpansion(input: { mode: ExpansionMode; limit?: number;
         continue;
       }
       const inserted = await deps.insertJob(job);
+      const researching = candidateAfterJob({ ...candidate, researchJobId: inserted.id }, inserted, deps.now());
+      const owned = { ...researching, priorityScore: row.score, payload: { ...researching.payload, reasons: row.reasons } };
+      replace(owned);
+      // Ownership is durable before the workflow can finish and write a terminal state.
+      await deps.saveCandidates([owned]);
       const runId = await deps.startWorkflow(inserted.id);
       if (runId === null) {
         // Someone else owns this job (a visitor request landed first). The candidate follows that job.
         run.jobsReused += 1;
-        replace(candidateAfterJob({ ...candidate, researchJobId: inserted.id }, inserted, deps.now()));
         selectedViews.push(view(row, "REUSED_OPEN_JOB", inserted.id));
         continue;
       }
       run.jobsStarted += 1;
       run.estimatedFetches += ESTIMATED_FETCHES_PER_JOB;
-      const researching = candidateAfterJob({ ...candidate, researchJobId: inserted.id }, inserted, deps.now());
-      replace({ ...researching, priorityScore: row.score, payload: { ...researching.payload, reasons: row.reasons } });
       await deps.emit("EXPANSION_RESEARCH_STARTED", inserted.id);
       selectedViews.push(view(row, "STARTED", inserted.id));
     } catch (error) {
@@ -397,7 +462,14 @@ export async function runExpansion(input: { mode: ExpansionMode; limit?: number;
   }
 
   run.summary.selected = selectedViews;
-  const toWrite = changedCandidates(stored, rows);
+  const latest = await deps.loadCandidates();
+  const latestByName = new Map(latest.map((row) => [row.normalizedName, row]));
+  const toWrite = changedCandidates(stored, rows).flatMap((incoming) => {
+    const current = latestByName.get(incoming.normalizedName) ?? null;
+    const guarded = protectCandidateWrite(current, incoming);
+    if (current && guarded === current) return [];
+    return [guarded];
+  });
   if (toWrite.length > 0) await deps.saveCandidates(toWrite);
   await deps.emit("EXPANSION_DAILY_COMPLETED", run.runKey);
   return finish(run.failureCount > 0 && run.jobsStarted === 0 && batch.selected.length > 0 ? "FAILED" : "COMPLETED");
