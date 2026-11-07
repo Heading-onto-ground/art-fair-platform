@@ -5,6 +5,7 @@ import Link from "next/link";
 import { pushRobEvent, pushRobEventOnce } from "@/lib/publicGrowth/analytics";
 import { trackHistory, trackMissingSearch } from "@/lib/history/analytics";
 import type { HistoryLocale } from "@/lib/history/locale";
+import { artistDisplayNames } from "@/lib/history/names";
 import { usePublicHref } from "@/app/components/history/LocaleUrl";
 import type { HistorySearchResult } from "@/lib/history/types";
 
@@ -46,14 +47,17 @@ export default function PromoSearch({ locale }: { locale: HistoryLocale }) {
       {results && results.length === 0 ? <p>{ko ? "아직 ROB에 충분한 기록이 없습니다." : "ROB does not yet have a documented artist for that name."}</p> : null}
       {results && results.length > 0 ? (
         <ul className="rh-results">
-          {results.map((artist) => (
+          {results.map((artist) => {
+            const names = artistDisplayNames({ canonicalName: artist.canonicalName, nativeName: artist.nativeName, locale });
+            return (
             <li key={artist.slug}>
               <Link href={publicHref(`/artists/${artist.slug}`)} onClick={() => { trackHistory("SEARCH_RESULT_OPENED", `/artists/${artist.slug}`); pushRobEvent("SEARCH_RESULT_OPENED", { artist: artist.slug, route: "/about/why-rob" }); }}>
-                <strong>{artist.canonicalName}</strong>
-                {artist.nativeName ? <span> {artist.nativeName}</span> : null}
+                <strong>{names.primary}</strong>
+                {names.secondary ? <span className="rh-name-secondary">{names.secondary}</span> : null}
               </Link>
             </li>
-          ))}
+            );
+          })}
         </ul>
       ) : null}
     </>

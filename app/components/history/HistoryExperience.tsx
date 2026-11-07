@@ -6,6 +6,7 @@ import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import TopBar from "@/app/components/TopBar";
 import LocaleSwitch from "@/app/components/history/LocaleSwitch";
 import { historyCopy, type HistoryLocale } from "@/lib/history/locale";
+import { artistDisplayName, artistDisplayNames, lookupArtistName } from "@/lib/history/names";
 import { rememberExplorationDepth, trackHistory } from "@/lib/history/analytics";
 import { depthEventForTrail, markForwardArtist, pushRobEvent, pushRobEventOnce, takeForwardArtist } from "@/lib/publicGrowth/analytics";
 import ReportIssue from "@/app/components/history/ReportIssue";
@@ -231,6 +232,24 @@ export default function HistoryExperience({ artist, locale = "en" }: { artist: H
     [artist, locale],
   );
   const presentation = coverage.presentation;
+  const heading = artistDisplayNames({ canonicalName: artist.canonicalName, nativeName: artist.nativeName, locale });
+  const knownArtists = useMemo(() => {
+    const rows: { slug: string; canonicalName: string; nativeName: string | null }[] = [
+      { slug: artist.slug, canonicalName: artist.canonicalName, nativeName: artist.nativeName },
+    ];
+    for (const person of artist.artists) {
+      if (person.slug) rows.push({ slug: person.slug, canonicalName: person.name, nativeName: person.nativeName });
+    }
+    for (const exhibition of artist.exhibitions) {
+      for (const person of exhibition.artists) {
+        if (person.slug) rows.push({ slug: person.slug, canonicalName: person.name, nativeName: person.nativeName });
+      }
+    }
+    return rows;
+  }, [artist]);
+  const previousSlug = trail.at(-1)?.artist ?? from;
+  const previousRecord = lookupArtistName(previousSlug === artist.slug ? null : previousSlug, knownArtists);
+  const previousLabel = previousRecord ? artistDisplayName({ ...previousRecord, locale }) : null;
   const decadeClusters = useMemo(() => clusterByDecade(groups), [groups]);
   const chronology = useMemo(
     () =>
@@ -496,7 +515,11 @@ export default function HistoryExperience({ artist, locale = "en" }: { artist: H
         {
           artists: selected.artists
             .filter((person) => person.slug !== artist.slug)
-            .map((person) => ({ id: person.slug, kind: "artist" as const, label: person.name })),
+            .map((person) => ({
+              id: person.slug,
+              kind: "artist" as const,
+              label: artistDisplayName({ canonicalName: person.name, nativeName: person.nativeName, locale }),
+            })),
           space: selected.spaceName ? { id: selected.spaceSlug || selected.spaceId || "space", kind: "space" as const, label: selected.spaceName } : null,
           curators: selected.curatorName
             ? [{ id: selected.curatorSlug || selected.curatorId || "curator", kind: "curator" as const, label: selected.curatorName }]
@@ -542,11 +565,11 @@ export default function HistoryExperience({ artist, locale = "en" }: { artist: H
       {journeyOn && !reduceMotion && viaExhibition ? (
         <div className="rh-journey" role="status" aria-live="polite">
           <span className="rh-journey-label">Moving through a documented exhibition</span>
-          <p>{(trail.at(-1)?.artist ?? from)?.split("-").filter(Boolean).map((part) => part.charAt(0).toUpperCase() + part.slice(1)).join(" ")}</p>
-          <span className="rh-line" />
+          {previousLabel ? <p>{previousLabel}</p> : null}
+          {previousLabel ? <span className="rh-line" /> : null}
           <strong>{viaExhibition.title}</strong>
           <span className="rh-line" />
-          <p>{artist.canonicalName}</p>
+          <p>{heading.primary}</p>
         </div>
       ) : null}
       <main className="rh-wrap" id="main-content">
@@ -555,6 +578,7 @@ export default function HistoryExperience({ artist, locale = "en" }: { artist: H
             <button className="rh-back" type="button" onClick={goBack}>
               ← {copy.back}
             </button>
+            {previousLabel ? <span className="rh-trail-name">{previousLabel}</span> : null}
             {viaExhibition ? <span>You came here through <strong>{viaExhibition.title}</strong></span> : null}
           </div>
         ) : null}
@@ -563,8 +587,8 @@ export default function HistoryExperience({ artist, locale = "en" }: { artist: H
           <div>
             <LocaleSwitch locale={locale} />
             <p className="rh-kicker">{copy.artistHistory}</p>
-            <h1 className="rh-title">{artist.canonicalName}</h1>
-            {artist.nativeName ? <p className="rh-native">{artist.nativeName}</p> : null}
+            <h1 className="rh-title">{heading.primary}</h1>
+            {heading.secondary ? <p className="rh-native">{heading.secondary}</p> : null}
             <p className="rh-partial">{coverage.partialLabel}</p>
             {hero ? summary : null}
           </div>
@@ -577,12 +601,15 @@ export default function HistoryExperience({ artist, locale = "en" }: { artist: H
               <>
                 <h2 className="rh-kicker">{copy.people}</h2>
                 <ul className="rh-world-list">
-                  {artist.artists.slice(0, 5).map((person) => (
-                    <li key={person.id}>
-                      {person.slug ? <Link href={publicHref(`/artists/${person.slug}`)}>{person.name}</Link> : <span>{person.name}</span>}
-                      <span>{copy.sharedCount(person.count)}</span>
-                    </li>
-                  ))}
+                  {artist.artists.slice(0, 5).map((person) => {
+                    const label = artistDisplayName({ canonicalName: person.name, nativeName: person.nativeName, locale });
+                    return (
+                      <li key={person.id}>
+                        {person.slug ? <Link href={publicHref(`/artists/${person.slug}`)}>{label}</Link> : <span>{label}</span>}
+                        <span>{copy.sharedCount(person.count)}</span>
+                      </li>
+                    );
+                  })}
                 </ul>
               </>
             ) : null}
@@ -839,7 +866,7 @@ export default function HistoryExperience({ artist, locale = "en" }: { artist: H
                 <div className="rh-constellation" aria-label={copy.momentConnections}>
                   <div className="rh-core-node">
                     <span>{selected.year}</span>
-                    <strong>{artist.canonicalName}</strong>
+                    <strong>{heading.primary}</strong>
                   </div>
                   <span className="rh-constellation-line" aria-hidden="true" />
                   <div className="rh-satellites">
@@ -933,7 +960,9 @@ export default function HistoryExperience({ artist, locale = "en" }: { artist: H
             </div>
             {artist.artists.length === 0 ? <p>{copy.noShared}</p> : null}
             <div className="rh-card-grid">
-              {artist.artists.map((person) => (
+              {artist.artists.map((person) => {
+                const names = artistDisplayNames({ canonicalName: person.name, nativeName: person.nativeName, locale });
+                return (
                 <article key={person.id} className="rh-card">
                   <Link
                     className="rh-card-link"
@@ -945,9 +974,9 @@ export default function HistoryExperience({ artist, locale = "en" }: { artist: H
                       followArtist(person.slug, shared?.slug ?? shared?.id ?? null);
                     }}
                   >
-                    {person.name}
+                    {names.primary}
                   </Link>
-                  {person.nativeName ? <span className="rh-muted"> {person.nativeName}</span> : null}
+                  {names.secondary ? <span className="rh-name-secondary">{names.secondary}</span> : null}
                   <p>{copy.sharedCount(person.count)}</p>
                   <ul>
                     {person.exhibitions.map((exhibition) => (
@@ -955,7 +984,8 @@ export default function HistoryExperience({ artist, locale = "en" }: { artist: H
                     ))}
                   </ul>
                 </article>
-              ))}
+                );
+              })}
             </div>
             <div className="rh-section-heading">
               <p className="rh-kicker">{copy.documentedPlaces}</p>
@@ -1009,7 +1039,8 @@ export default function HistoryExperience({ artist, locale = "en" }: { artist: H
           <section className="rh-tab-panel rh-about-panel">
             <div className="rh-section-heading">
               <p className="rh-kicker">{copy.aboutRecord}</p>
-              <h2>{artist.canonicalName}</h2>
+              <h2>{heading.primary}</h2>
+              {heading.secondary ? <p className="rh-native">{heading.secondary}</p> : null}
             </div>
             <p>{copy.aboutBody}</p>
             {artist.birthYear ? <p>{copy.born(artist.birthYear)}</p> : null}

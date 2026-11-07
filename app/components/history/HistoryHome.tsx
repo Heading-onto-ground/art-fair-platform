@@ -8,6 +8,7 @@ import ResearchOffer from "@/app/components/history/ResearchOffer";
 import { trackHistory, trackMissingSearch } from "@/lib/history/analytics";
 import { pushRobEvent } from "@/lib/publicGrowth/analytics";
 import { historyCopy, type HistoryLocale } from "@/lib/history/locale";
+import { artistDisplayNames } from "@/lib/history/names";
 import { usePublicHref } from "@/app/components/history/LocaleUrl";
 import {
   SEARCH_CLIENT_TIMEOUT_MS,
@@ -30,13 +31,20 @@ async function fetchSearch(q: string, signal: AbortSignal): Promise<{ ok: true; 
 
 type Discovery = {
   journey: { slug: string; canonicalName: string; nativeName: string | null; exhibitionCount: number } | null;
-  moment: { slug: string | null; title: string; year: number | null; place: string; artists: { slug: string; name: string }[] } | null;
-  route: { id: string; artists: { slug: string; name: string }[]; exhibitions: { slug: string | null; title: string; year: number | null }[] } | null;
+  moment: { slug: string | null; title: string; year: number | null; place: string; artists: { slug: string; name: string; nativeName?: string | null }[] } | null;
+  route: { id: string; artists: { slug: string; name: string; nativeName?: string | null }[]; exhibitions: { slug: string | null; title: string; year: number | null }[] } | null;
 };
+
+const fallbackArtists = [
+  { slug: "lee-ufan", name: "Lee Ufan", nativeName: "이우환" },
+  { slug: "park-seo-bo", name: "Park Seo-Bo", nativeName: "박서보" },
+];
 
 export default function HistoryHome({ discovery = null, locale = "en" }: { discovery?: Discovery | null; locale?: HistoryLocale }) {
   const copy = historyCopy(locale);
   const publicHref = usePublicHref();
+  const shownName = (artist: { canonicalName?: string | null; name?: string | null; nativeName?: string | null }) =>
+    artistDisplayNames({ canonicalName: artist.canonicalName || artist.name || "", nativeName: artist.nativeName, locale });
   const [query, setQuery] = useState("");
   const [results, setResults] = useState<HistorySearchResult[] | null>(null);
   const [suggestions, setSuggestions] = useState<HistorySearchResult[]>([]);
@@ -224,8 +232,8 @@ export default function HistoryHome({ discovery = null, locale = "en" }: { disco
                           onMouseDown={(event) => event.preventDefault()}
                           onClick={() => choose(artist)}
                         >
-                          <strong>{artist.canonicalName}</strong>
-                          {artist.nativeName ? <span> {artist.nativeName}</span> : null}
+                          <strong>{shownName(artist).primary}</strong>
+                          {shownName(artist).secondary ? <span className="rh-name-secondary">{shownName(artist).secondary}</span> : null}
                           <span> · {copy.documentedLine(artist.exhibitionCount)}</span>
                         </button>
                       </li>
@@ -269,8 +277,8 @@ export default function HistoryHome({ discovery = null, locale = "en" }: { disco
                         }}
                       >
                         <span className="rh-result-name">
-                          <strong>{artist.canonicalName}</strong>
-                          {artist.nativeName ? <span>{artist.nativeName}</span> : null}
+                          <strong>{shownName(artist).primary}</strong>
+                          {shownName(artist).secondary ? <span className="rh-name-secondary">{shownName(artist).secondary}</span> : null}
                         </span>
                         <span className="rh-result-meta">
                           {artist.birthYear ? <span>{copy.born(artist.birthYear)}</span> : null}
@@ -299,8 +307,8 @@ export default function HistoryHome({ discovery = null, locale = "en" }: { disco
             </div>
             {query.trim() === "" && discovery?.journey ? (
               <p className="rh-muted">
-                {copy.startHere} · <Link href={publicHref(`/artists/${discovery.journey.slug}`)}>{discovery.journey.canonicalName}</Link>
-                {discovery.journey.nativeName ? ` ${discovery.journey.nativeName}` : ""}
+                {copy.startHere} · <Link href={publicHref(`/artists/${discovery.journey.slug}`)}>{shownName(discovery.journey).primary}</Link>
+                {shownName(discovery.journey).secondary ? ` ${shownName(discovery.journey).secondary}` : ""}
                 {` · ${copy.documentedLine(discovery.journey.exhibitionCount)}`}
               </p>
             ) : null}
@@ -312,18 +320,18 @@ export default function HistoryHome({ discovery = null, locale = "en" }: { disco
                     return (
                       <span key={artist.slug}>
                         {bridge ? ` → ${bridge.year ?? ""} ${bridge.title} → ` : ""}
-                        <Link href={publicHref(`/artists/${artist.slug}`)}>{artist.name}</Link>
+                        <Link href={publicHref(`/artists/${artist.slug}`)}>{shownName(artist).primary}</Link>
                       </span>
                     );
                   })}
                 </p>
               ) : (
                 <p className="rh-home-path">
-                  <span>Lee Ufan</span>
+                  <span>{shownName(fallbackArtists[0]).primary}</span>
                   <span aria-hidden="true">→</span>
                   <span>The Making of Modern Korean Art</span>
                   <span aria-hidden="true">→</span>
-                  <span>Park Seo-Bo</span>
+                  <span>{shownName(fallbackArtists[1]).primary}</span>
                 </p>
               )
             ) : null}
@@ -337,7 +345,7 @@ export default function HistoryHome({ discovery = null, locale = "en" }: { disco
           </div>
 
           <div className="rh-home-map" aria-label={copy.connectsAria}>
-            {(discovery?.route?.artists.length ? discovery.route.artists : [{ slug: "lee-ufan", name: "Lee Ufan" }, { slug: "park-seo-bo", name: "Park Seo-Bo" }]).map((artist, index) => {
+            {(discovery?.route?.artists.length ? discovery.route.artists : fallbackArtists).map((artist, index) => {
               const bridge = discovery?.route?.exhibitions[index - 1];
               const fallbackBridge = index === 1 && !discovery?.route ? { year: 2025, title: "The Making of Modern Korean Art" } : null;
               const shown = bridge ?? fallbackBridge;
@@ -355,7 +363,7 @@ export default function HistoryHome({ discovery = null, locale = "en" }: { disco
                   ) : null}
                   <div className={index === 0 ? "rh-home-person rh-home-person-a" : "rh-home-person rh-home-person-b"}>
                     <span>{copy.artistWord}</span>
-                    <strong>{artist.name}</strong>
+                    <strong>{shownName(artist).primary}</strong>
                   </div>
                 </Fragment>
               );

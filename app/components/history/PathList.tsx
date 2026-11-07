@@ -5,11 +5,12 @@ import JourneyContinueLink from "@/app/components/history/JourneyContinueLink";
 import { trackHistory } from "@/lib/history/analytics";
 import { pushRobEvent } from "@/lib/publicGrowth/analytics";
 import { historyCopy, type HistoryLocale } from "@/lib/history/locale";
+import { artistDisplayName } from "@/lib/history/names";
 import { usePublicHref } from "@/app/components/history/LocaleUrl";
 
 type Route = {
   id: string;
-  artists: { slug: string; name: string }[];
+  artists: { slug: string; name: string; nativeName?: string | null }[];
   exhibitions: { slug: string | null; title: string; year: number | null }[];
 };
 
@@ -34,7 +35,7 @@ export default function PathList({ routes, locale = "en" }: { routes: Route[]; l
                   <span key={`${route.id}-${artist.slug}`}>
                     {bridge ? ` ↓ ${bridge.year ?? ""} ${bridge.title} ↓ ` : ""}
                     <JourneyContinueLink slug={artist.slug} via={bridge?.slug ?? null} onClick={() => { trackHistory("PATH_STEP_OPENED", `/artists/${artist.slug}`); pushRobEvent("PATH_STEP_OPENED", { artist: artist.slug, route: route.id }); }}>
-                      {artist.name}
+                      {artistDisplayName({ canonicalName: artist.name, nativeName: artist.nativeName, locale })}
                     </JourneyContinueLink>
                   </span>
                 );

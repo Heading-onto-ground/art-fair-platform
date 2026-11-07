@@ -1,4 +1,4 @@
-export type PathArtist = { slug: string; name: string };
+export type PathArtist = { slug: string; name: string; nativeName?: string | null };
 
 export type PathShow = {
   id: string;
