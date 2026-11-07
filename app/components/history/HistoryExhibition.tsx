@@ -4,6 +4,7 @@ import TopBar from "@/app/components/TopBar";
 import type { HistoryExhibitionPage } from "@/lib/history/types";
 import ReportIssue from "@/app/components/history/ReportIssue";
 import { historyCopy, type HistoryLocale } from "@/lib/history/locale";
+import { artistDisplayNames } from "@/lib/history/names";
 import { pinnedPath } from "@/lib/history/requestLocale";
 import "./history.css";
 
@@ -23,12 +24,15 @@ export default function HistoryExhibition({ record, locale = "en" }: { record: H
         ) : null}
         <h2>{copy.artistsHeading}</h2>
         <ul className="rh-list">
-          {record.artists.map((artist) => (
-            <li key={artist.id}>
-              <JourneyContinueLink slug={artist.slug}>{artist.name}</JourneyContinueLink>
-              {artist.nativeName ? ` ${artist.nativeName}` : ""}
-            </li>
-          ))}
+          {record.artists.map((artist) => {
+            const names = artistDisplayNames({ canonicalName: artist.name, nativeName: artist.nativeName, locale });
+            return (
+              <li key={artist.id}>
+                <JourneyContinueLink slug={artist.slug}>{names.primary}</JourneyContinueLink>
+                {names.secondary ? <span className="rh-name-secondary">{names.secondary}</span> : null}
+              </li>
+            );
+          })}
           {record.unresolved.map((name) => (
             <li key={name.label}>{name.label} · {name.status === "REVIEW_REQUIRED" ? copy.reviewRequired : name.status === "TITLE_MENTION" ? copy.namedInTitle : copy.unresolvedParticipant}</li>
           ))}

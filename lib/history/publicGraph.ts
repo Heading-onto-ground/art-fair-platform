@@ -282,7 +282,7 @@ export type ExploreSummaryShow = {
   city: string | null;
   country: string | null;
   space: { name: string; city: string | null; country: string | null; slug: string | null } | null;
-  artists: { slug: string; name: string }[];
+  artists: { slug: string; name: string; nativeName?: string | null }[];
 };
 
 export type ExploreSummary = {
@@ -352,7 +352,8 @@ export async function queryExploreSummary(prisma: PrismaClient): Promise<Explore
         COALESCE((
           SELECT jsonb_agg(jsonb_build_object(
             'slug', artist.slug,
-            'name', artist."canonicalName"
+            'name', artist."canonicalName",
+            'nativeName', artist."nativeName"
           ) ORDER BY participation.id)
           FROM "HistoryParticipation" participation
           JOIN "ArtistEntity" artist ON artist.id = participation."artistEntityId"

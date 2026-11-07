@@ -564,7 +564,11 @@ export async function loadExplorePayload() {
     if (row.year) decades.add(Math.floor(row.year / 10) * 10);
     if (city) cities.add(city);
     if (country) countries.add(country);
-    const artists = row.artists.map((artist) => ({ slug: artist.slug, name: decodeDisplayText(artist.name) }));
+    const artists = row.artists.map((artist) => ({
+      slug: artist.slug,
+      name: decodeDisplayText(artist.name),
+      nativeName: artist.nativeName ? decodeDisplayText(artist.nativeName) : null,
+    }));
     const space = row.space;
     return {
       id: row.id,

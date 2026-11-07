@@ -6,6 +6,7 @@ import LocaleSwitch from "@/app/components/history/LocaleSwitch";
 import PathList from "@/app/components/history/PathList";
 import { listExplore } from "@/lib/history/queries";
 import { historyCopy } from "@/lib/history/locale";
+import { artistDisplayNames } from "@/lib/history/names";
 import { historyLocale, pinnedLocale, pinnedPath } from "@/lib/history/requestLocale";
 import { pageMetadata } from "@/lib/seo";
 import { isMissingHistorySchema } from "@/lib/history/schemaError";
@@ -59,8 +60,10 @@ export default async function HistoryExplorePage() {
             <ul className="rh-list">
               {artists.map((artist) => (
                 <li key={artist.slug}>
-                  <JourneyContinueLink slug={artist.slug}>{artist.canonicalName}</JourneyContinueLink>
-                  {artist.nativeName ? ` ${artist.nativeName}` : ""}
+                  <JourneyContinueLink slug={artist.slug}>{artistDisplayNames({ canonicalName: artist.canonicalName, nativeName: artist.nativeName, locale }).primary}</JourneyContinueLink>
+                  {artistDisplayNames({ canonicalName: artist.canonicalName, nativeName: artist.nativeName, locale }).secondary ? (
+                    <span className="rh-name-secondary">{artistDisplayNames({ canonicalName: artist.canonicalName, nativeName: artist.nativeName, locale }).secondary}</span>
+                  ) : null}
                   <div>
                     {artist.firstYear && artist.lastYear ? `${artist.firstYear}–${artist.lastYear} · ` : ""}
                     {copy.documentedLine(artist.exhibitionCount)}
@@ -84,7 +87,7 @@ export default async function HistoryExplorePage() {
                     {moment.artists.map((artist, index) => (
                       <span key={artist.slug}>
                         {index > 0 ? " · " : ""}
-                        <JourneyContinueLink slug={artist.slug} via={moment.slug}>{artist.name}</JourneyContinueLink>
+                        <JourneyContinueLink slug={artist.slug} via={moment.slug}>{artistDisplayNames({ canonicalName: artist.name, nativeName: artist.nativeName, locale }).primary}</JourneyContinueLink>
                       </span>
                     ))}
                   </div>

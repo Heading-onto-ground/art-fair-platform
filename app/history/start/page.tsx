@@ -1,6 +1,7 @@
 import { Suspense } from "react";
 import type { Metadata } from "next";
 import StartHistory from "@/app/components/history/StartHistory";
+import { historyLocale } from "@/lib/history/requestLocale";
 
 export const metadata: Metadata = {
   title: { absolute: "Start your history | ROB" },
@@ -10,7 +11,7 @@ export const metadata: Metadata = {
 export default function StartHistoryPage() {
   return (
     <Suspense>
-      <StartHistory />
+      <StartHistory locale={historyLocale()} />
     </Suspense>
   );
 }

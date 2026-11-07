@@ -1,5 +1,6 @@
 import { pluralCount } from "@/lib/history/copy";
 import type { HistoryLocale } from "@/lib/history/locale";
+import { artistDisplayNames } from "@/lib/history/names";
 import type { HistoryArtistView, HistoryExhibitionPage, HistorySpacePage } from "@/lib/history/types";
 
 export function schemaDate(label: string | null | undefined): string | undefined {
@@ -11,12 +12,9 @@ export function artistPageTitle(
   artist: Pick<HistoryArtistView, "canonicalName" | "nativeName">,
   locale: HistoryLocale,
 ): string {
-  const other = artist.nativeName && artist.nativeName !== artist.canonicalName ? artist.nativeName : "";
-  if (locale === "ko") {
-    const name = other ? `${other} ${artist.canonicalName}` : artist.canonicalName;
-    return `${name} — 전시 이력 | ROB`;
-  }
-  const name = other ? `${artist.canonicalName} ${other}` : artist.canonicalName;
+  const names = artistDisplayNames({ canonicalName: artist.canonicalName, nativeName: artist.nativeName, locale });
+  const name = names.secondary ? `${names.primary} ${names.secondary}` : names.primary;
+  if (locale === "ko") return `${name} — 전시 이력 | ROB`;
   return `${name} — Exhibition History | ROB`;
 }
 
@@ -32,7 +30,7 @@ export function artistPageDescription(
   artist: Pick<HistoryArtistView, "canonicalName" | "nativeName" | "exhibitionCount" | "birthYear">,
   locale: HistoryLocale,
 ): string {
-  const name = locale === "ko" && artist.nativeName ? artist.nativeName : artist.canonicalName;
+  const name = artistDisplayNames({ canonicalName: artist.canonicalName, nativeName: artist.nativeName, locale }).primary;
   const born = artist.birthYear ? (locale === "ko" ? ` ${artist.birthYear}년생.` : ` Born ${artist.birthYear}.`) : "";
   if (locale === "ko") {
     return `${name}의 기록된 전시 이력.${born} 전시 ${artist.exhibitionCount}건. 출처는 각 기록에 붙어 있습니다.`;

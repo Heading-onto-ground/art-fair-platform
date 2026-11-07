@@ -1,6 +1,7 @@
 import Link from "next/link";
 import TopBar from "@/app/components/TopBar";
 import { historyCopy, type HistoryLocale } from "@/lib/history/locale";
+import { artistDisplayName } from "@/lib/history/names";
 import { pinnedPath } from "@/lib/history/requestLocale";
 import type { HistorySpacePage } from "@/lib/history/types";
 import "./history.css";
@@ -25,7 +26,7 @@ export default function HistorySpace({ record, locale = "en" }: { record: Histor
               <div>
                 {exhibition.artists.map((artist) => (
                   <Link key={artist.id} href={pinnedPath(`/artists/${artist.slug}`)}>
-                    {artist.name}{" "}
+                    {artistDisplayName({ canonicalName: artist.name, nativeName: artist.nativeName, locale })}{" "}
                   </Link>
                 ))}
               </div>

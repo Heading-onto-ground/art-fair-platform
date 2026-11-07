@@ -7,9 +7,11 @@ import TopBar from "@/app/components/TopBar";
 import { trackHistory } from "@/lib/history/analytics";
 import type { HistorySearchResult } from "@/lib/history/types";
 import { usePublicHref } from "@/app/components/history/LocaleUrl";
+import type { HistoryLocale } from "@/lib/history/locale";
+import { artistDisplayNames } from "@/lib/history/names";
 import "./history.css";
 
-export default function StartHistory() {
+export default function StartHistory({ locale = "en" }: { locale?: HistoryLocale }) {
   const router = useRouter();
   const publicHref = usePublicHref();
   const params = useSearchParams();
@@ -96,15 +98,18 @@ export default function StartHistory() {
         {preset ? <p>You asked to claim {preset}. Search that name, or claim it directly if you already know the page.</p> : null}
         {preset ? <button className="rh-text-button" type="button" onClick={() => claim(preset)}>Claim this page</button> : null}
         <ul className="rh-results">
-          {(results ?? []).map((artist) => (
+          {(results ?? []).map((artist) => {
+            const names = artistDisplayNames({ canonicalName: artist.canonicalName, nativeName: artist.nativeName, locale });
+            return (
             <li key={artist.slug}>
-              <Link href={publicHref(`/artists/${artist.slug}`)}>{artist.canonicalName}</Link>
-              {artist.nativeName ? <span> {artist.nativeName}</span> : null}
+              <Link href={publicHref(`/artists/${artist.slug}`)}>{names.primary}</Link>
+              {names.secondary ? <span className="rh-name-secondary"> {names.secondary}</span> : null}
               <div>
                 <button className="rh-text-button" type="button" onClick={() => claim(artist.slug)}>Claim this page</button>
               </div>
             </li>
-          ))}
+            );
+          })}
         </ul>
         <h2>Create artist record</h2>
         <form className="rh-form" onSubmit={create}>
