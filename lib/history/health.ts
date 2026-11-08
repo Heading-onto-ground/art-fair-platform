@@ -46,6 +46,11 @@ export type HistoryHealth = {
     firstPartyWithSource: number;
     unresolvedNames: number;
   };
+  sourceReview: {
+    pending: number;
+    approved: number;
+    rejected: number;
+  };
 };
 
 export async function loadHistoryHealth(): Promise<HistoryHealth> {
@@ -221,6 +226,7 @@ export async function loadHistoryHealth(): Promise<HistoryHealth> {
     namedFrontier: decisions,
     frontier: frontier.slice(0, 40),
     contribution: await contributionHealth(),
+    sourceReview: await sourceReviewHealth(),
   };
 }
 
@@ -238,4 +244,14 @@ async function contributionHealth(): Promise<HistoryHealth["contribution"]> {
     prisma.historyUnresolvedName.count(),
   ]);
   return { claimsSubmitted, claimsApproved, exhibitionsSubmitted, firstPartyPublished, firstPartyWithSource, unresolvedNames };
+}
+
+async function sourceReviewHealth(): Promise<HistoryHealth["sourceReview"]> {
+  const where = { sourceType: "submitted-url" };
+  const [pending, approved, rejected] = await Promise.all([
+    prisma.historySource.count({ where: { ...where, clearanceStatus: "REVIEW_REQUIRED" } }),
+    prisma.historySource.count({ where: { ...where, clearanceStatus: "APPROVED" } }),
+    prisma.historySource.count({ where: { ...where, clearanceStatus: "REJECTED" } }),
+  ]);
+  return { pending, approved, rejected };
 }

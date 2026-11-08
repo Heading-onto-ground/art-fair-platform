@@ -407,7 +407,7 @@ const ko: HistoryCopy = {
   continueThrough: "이 전시를 통해 다른 작가의 이력으로 이어집니다.",
   connectsPlace: "이 기록된 순간은 작가를 기록된 장소와 연결합니다.",
   alsoRecorded: "함께 기록된 이름",
-  noSource: "연결된 출처가 없습니다.",
+  noSource: "출처 없음",
   addExhibition: "전시 추가",
   documentedConnections: "기록된 연결",
   artistsHeading: "작가",
