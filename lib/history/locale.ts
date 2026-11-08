@@ -17,6 +17,9 @@ export type HistoryCopy = {
   searchButton: string;
   searching: string;
   searchEmpty: string;
+  unconfirmedName: string;
+  recordedMention: string;
+  viewExhibition: string;
   researchOffer: string;
   researchAsk: string;
   researchAction: string;
@@ -128,6 +131,9 @@ const en: HistoryCopy = {
   searchButton: "Search",
   searching: "Searching…",
   searchEmpty: "No documented artist matches that name yet.",
+  unconfirmedName: "This name is not yet confirmed as an artist page.",
+  recordedMention: "Exhibitions where this name is recorded",
+  viewExhibition: "View this exhibition",
   researchOffer: "ROB does not yet have enough documented history for this artist.",
   researchAsk: "Look for this artist's documented records?",
   researchAction: "Research this artist",
@@ -239,6 +245,9 @@ const ko: HistoryCopy = {
   searchButton: "검색",
   searching: "검색 중…",
   searchEmpty: "아직 ROB에 기록된 아티스트가 없습니다.",
+  unconfirmedName: "이 이름은 아직 작가 페이지로 확인되지 않았습니다.",
+  recordedMention: "이 이름이 기록된 전시",
+  viewExhibition: "이 전시 보기",
   researchOffer: "아직 ROB에 충분한 기록이 없습니다.",
   researchAsk: "이 작가의 기록을 찾아볼까요?",
   researchAction: "이 작가 조사하기",
