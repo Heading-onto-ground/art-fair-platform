@@ -129,7 +129,8 @@ export function recordIsPublic(input: {
   internalUseDecision?: string | null;
   contentScope?: string | null;
 }): boolean {
-  if (input.publicationStatus !== "PUBLIC" || input.sourceClearance === "REJECTED") return false;
+  if (input.publicationStatus !== "PUBLIC") return false;
+  if (input.origin === "ROB_RESEARCHED" && input.sourceClearance === "REJECTED") return false;
   if (input.origin === "ROB_RESEARCHED") {
     if (input.sourceClearance === "APPROVED") return true;
     return isFactualUseOk(input.internalUseDecision) && input.contentScope === "FACTUAL_METADATA_ONLY";
@@ -171,6 +172,32 @@ export function limitedPublicFactualDecision(input: {
 export function visitorSourceLabel(sourceName: string | null | undefined): string {
   const name = sourceName?.trim();
   return name ? `Source: ${name}` : "Source not recorded";
+}
+
+/**
+ * Exhibition-level clearance from the sources attached to that exhibition.
+ * An approved source wins. A rejected source hides only itself unless every external source is rejected.
+ * No external source stays NOT_APPLICABLE, which leaves a first-party record public with no source link.
+ */
+export function aggregateSourceClearance(statuses: readonly string[]): SourceClearance {
+  const external = statuses.filter((status) => status === "APPROVED" || status === "REVIEW_REQUIRED" || status === "REJECTED");
+  if (external.length === 0) return "NOT_APPLICABLE";
+  if (external.some((status) => status === "APPROVED")) return "APPROVED";
+  if (external.some((status) => status === "REVIEW_REQUIRED")) return "REVIEW_REQUIRED";
+  return "REJECTED";
+}
+
+/** Public pages may show an approved source, or an already-cleared factual research source. A submitted URL stays hidden until approved. */
+export function sourceIsPubliclyVisible(source: {
+  clearanceStatus: string;
+  sourceType?: string | null;
+  internalUseDecision?: string | null;
+  contentScope?: string | null;
+}): boolean {
+  if (source.clearanceStatus === "REJECTED") return false;
+  if (source.sourceType === "submitted-url") return source.clearanceStatus === "APPROVED";
+  if (source.clearanceStatus === "APPROVED") return true;
+  return isFactualUseOk(source.internalUseDecision) && source.contentScope === "FACTUAL_METADATA_ONLY";
 }
 
 export function sourceClearanceForSubmission(hasExternalSource: boolean): SourceClearance {

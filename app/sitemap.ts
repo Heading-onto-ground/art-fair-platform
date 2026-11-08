@@ -8,16 +8,18 @@ export const revalidate = 21600;
 const MAX_PER_TYPE = 5000;
 const PUBLIC_HISTORY = `
   m."publicationStatus" = 'PUBLIC'
-  AND m."sourceClearance" <> 'REJECTED'
   AND (
     m."origin" <> 'ROB_RESEARCHED'
     OR m."sourceClearance" = 'APPROVED'
-    OR EXISTS (
+    OR (
+      m."sourceClearance" <> 'REJECTED'
+      AND EXISTS (
       SELECT 1 FROM "ExhibitionSource" es
       JOIN "HistorySource" hs ON hs.id = es."sourceId"
       WHERE es."exhibitionId" = x.id
         AND hs."internalUseDecision" IN ('ALLOW_LIMITED', 'FACTUAL_USE_OK')
         AND hs."contentScope" = 'FACTUAL_METADATA_ONLY'
+    )
     )
   )
 `;

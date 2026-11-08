@@ -113,12 +113,12 @@ export async function queryPublicHistory(prisma: PrismaClient, key: string): Pro
           (meta."exhibitionId" IS NULL AND ex."createdBy" IS NOT NULL)
           OR (
             meta."publicationStatus" = 'PUBLIC'
-            AND meta."sourceClearance" <> 'REJECTED'
             AND (
               meta.origin IN ('ARTIST_SUBMITTED', 'GALLERY_SUBMITTED', 'INSTITUTION_SUBMITTED', 'LEGACY_FIRST_PARTY')
               OR (meta.origin = 'ROB_RESEARCHED' AND meta."sourceClearance" = 'APPROVED')
               OR (
                 meta.origin = 'ROB_RESEARCHED'
+                AND meta."sourceClearance" <> 'REJECTED'
                 AND EXISTS (
                   SELECT 1
                   FROM "ExhibitionSource" limited_link
@@ -217,6 +217,20 @@ export async function queryPublicHistory(prisma: PrismaClient, key: string): Pro
               FROM "ExhibitionSource" link
               JOIN "HistorySource" source ON source.id = link."sourceId"
               WHERE link."exhibitionId" = exhibition.id
+                AND source."clearanceStatus" <> 'REJECTED'
+                AND (
+                  (source."sourceType" = 'submitted-url' AND source."clearanceStatus" = 'APPROVED')
+                  OR (
+                    source."sourceType" <> 'submitted-url'
+                    AND (
+                      source."clearanceStatus" = 'APPROVED'
+                      OR (
+                        source."internalUseDecision" IN ('ALLOW_LIMITED', 'FACTUAL_USE_OK')
+                        AND source."contentScope" = 'FACTUAL_METADATA_ONLY'
+                      )
+                    )
+                  )
+                )
             ), '[]'::jsonb),
             'artists', COALESCE((
               SELECT jsonb_agg(jsonb_build_object(
@@ -302,12 +316,12 @@ export async function queryExploreSummary(prisma: PrismaClient): Promise<Explore
           (meta."exhibitionId" IS NULL AND ex."createdBy" IS NOT NULL)
           OR (
             meta."publicationStatus" = 'PUBLIC'
-            AND meta."sourceClearance" <> 'REJECTED'
             AND (
               meta.origin IN ('ARTIST_SUBMITTED', 'GALLERY_SUBMITTED', 'INSTITUTION_SUBMITTED', 'LEGACY_FIRST_PARTY')
               OR (meta.origin = 'ROB_RESEARCHED' AND meta."sourceClearance" = 'APPROVED')
               OR (
                 meta.origin = 'ROB_RESEARCHED'
+                AND meta."sourceClearance" <> 'REJECTED'
                 AND EXISTS (
                   SELECT 1
                   FROM "ExhibitionSource" limited_link
@@ -364,12 +378,12 @@ export async function queryExploreSummary(prisma: PrismaClient): Promise<Explore
       JOIN visible ON visible.id = ex.id
       LEFT JOIN "Space" space ON space.id = ex."spaceId"
       WHERE meta."publicationStatus" = 'PUBLIC'
-        AND meta."sourceClearance" <> 'REJECTED'
         AND (
           meta.origin IN ('ARTIST_SUBMITTED', 'GALLERY_SUBMITTED', 'INSTITUTION_SUBMITTED', 'LEGACY_FIRST_PARTY')
           OR (meta.origin = 'ROB_RESEARCHED' AND meta."sourceClearance" = 'APPROVED')
           OR (
             meta.origin = 'ROB_RESEARCHED'
+            AND meta."sourceClearance" <> 'REJECTED'
             AND EXISTS (
               SELECT 1
               FROM "ExhibitionSource" limited_link

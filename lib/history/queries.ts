@@ -30,6 +30,7 @@ import {
   isIndexEligible,
   provenanceLabel,
   recordIsPublic,
+  sourceIsPubliclyVisible,
   visitorSourceLabel,
   type ContributorKind,
   type HistoryOrigin,
@@ -59,7 +60,6 @@ export const publicExhibitionWhere: Prisma.ExhibitionWhereInput = {
       historyMeta: {
         is: {
           publicationStatus: "PUBLIC",
-          sourceClearance: { not: "REJECTED" },
           OR: [
             { origin: { in: ["ARTIST_SUBMITTED", "GALLERY_SUBMITTED", "INSTITUTION_SUBMITTED", "LEGACY_FIRST_PARTY"] } },
             { origin: "ROB_RESEARCHED", sourceClearance: "APPROVED" },
@@ -174,7 +174,7 @@ function limitedSource(row: ExhibitionRow): SourceRow | null {
 function visibleSources(row: ExhibitionRow): HistorySourceView[] {
   return row.historySources
     .map((join) => join.source)
-    .filter((source) => source.clearanceStatus === "APPROVED" || ((source.internalUseDecision === "ALLOW_LIMITED" || source.internalUseDecision === "FACTUAL_USE_OK") && source.contentScope === "FACTUAL_METADATA_ONLY"))
+    .filter((source) => sourceIsPubliclyVisible(source))
     .map((source) => ({
       id: source.id,
       url: source.url,
@@ -499,14 +499,12 @@ function recordedMentionDate(meta: {
 function recordedMentionSource(sources: {
   url: string;
   sourceName: string;
+  sourceType: string;
   clearanceStatus: string;
   internalUseDecision: string;
   contentScope: string;
 }[]): { sourceName: string; sourceUrl: string } | null {
-  const source = sources.find((item) =>
-    item.clearanceStatus === "APPROVED" ||
-    ((item.internalUseDecision === "ALLOW_LIMITED" || item.internalUseDecision === "FACTUAL_USE_OK") && item.contentScope === "FACTUAL_METADATA_ONLY"),
-  );
+  const source = sources.find((item) => sourceIsPubliclyVisible(item));
   if (!source?.url || !source.sourceName) return null;
   return { sourceName: source.sourceName, sourceUrl: source.url };
 }
@@ -531,7 +529,7 @@ export async function searchRecordedMentions(rawQuery: string): Promise<HistoryS
           historySources: {
             select: {
               source: {
-                select: { url: true, sourceName: true, clearanceStatus: true, internalUseDecision: true, contentScope: true },
+                select: { url: true, sourceName: true, sourceType: true, clearanceStatus: true, internalUseDecision: true, contentScope: true },
               },
             },
           },
@@ -771,7 +769,6 @@ export async function contentGateCounts() {
         OR: [
           { publicationStatus: { in: ["DRAFT", "PENDING_REVIEW"] } },
           { origin: "ROB_RESEARCHED", sourceClearance: { in: ["REVIEW_REQUIRED", "REJECTED"] } },
-          { sourceClearance: "REJECTED" },
         ],
       },
     }),
