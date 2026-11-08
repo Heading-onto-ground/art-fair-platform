@@ -1,5 +1,6 @@
 import type { PrismaClient } from "@prisma/client";
 import { prisma as untypedPrisma } from "@/lib/prisma";
+import { claimState, duplicateArtistDecision } from "@/lib/history/contribution";
 import { classifyParticipant, firstPartyWrite, uniqueSlug, validateExhibitionInput } from "@/lib/history/policy";
 
 const prisma = untypedPrisma as PrismaClient;
@@ -29,13 +30,29 @@ export async function createArtistRecord(input: {
     const linked = await prisma.artistEntity.findUnique({ where: { profileId: input.profileId }, select: { id: true } });
     if (linked) input = { ...input, profileId: null };
   }
+  const nativeName = input.nativeName?.trim() || null;
+  const identity = [canonicalName, nativeName].filter((name): name is string => Boolean(name));
+  const matches = await prisma.artistEntity.findMany({
+    where: {
+      OR: identity.flatMap((name) => [
+        { canonicalName: { equals: name, mode: "insensitive" as const } },
+        { nativeName: { equals: name, mode: "insensitive" as const } },
+        { aliases: { some: { label: { equals: name, mode: "insensitive" as const } } } },
+      ]),
+    },
+    select: { id: true, slug: true },
+    take: 5,
+  });
+  const decision = duplicateArtistDecision(matches.length);
+  if (decision === "existing") return { ok: false as const, error: "existing", slug: matches[0]?.slug ?? null };
+  if (decision === "ambiguous") return { ok: false as const, error: "ambiguous", slug: null };
   const taken = new Set((await prisma.artistEntity.findMany({ select: { slug: true } })).map((row) => row.slug));
   const slug = uniqueSlug(canonicalName, taken);
   const artist = await prisma.artistEntity.create({
     data: {
       slug,
       canonicalName,
-      nativeName: input.nativeName?.trim() || null,
+      nativeName,
       birthYear: input.birthYear ?? null,
       city: input.city?.trim() || null,
       country: input.country?.trim() || null,
@@ -49,10 +66,14 @@ export async function createArtistRecord(input: {
 export async function submitClaim(input: { slug: string; userId: string; note?: string | null }) {
   const artist = await prisma.artistEntity.findUnique({ where: { slug: input.slug }, select: { id: true } });
   if (!artist) return { ok: false as const, error: "Artist not found." };
-  const existing = await prisma.artistEntityClaim.findFirst({
-    where: { artistEntityId: artist.id, userId: input.userId, status: "PENDING" },
+  const prior = await prisma.artistEntityClaim.findMany({
+    where: { artistEntityId: artist.id, userId: input.userId },
+    select: { id: true, status: true },
   });
-  if (existing) return { ok: true as const, claim: existing, alreadyPending: true };
+  const state = claimState(prior.map((row) => row.status));
+  if (state === "APPROVED" || state === "PENDING") {
+    return { ok: true as const, claim: prior[0] ?? null, alreadyPending: state === "PENDING", status: state };
+  }
   const claim = await prisma.artistEntityClaim.create({
     data: {
       artistEntityId: artist.id,
@@ -61,7 +82,7 @@ export async function submitClaim(input: { slug: string; userId: string; note?: 
       note: input.note?.trim() || null,
     },
   });
-  return { ok: true as const, claim, alreadyPending: false };
+  return { ok: true as const, claim, alreadyPending: false, status: "PENDING" as const };
 }
 
 export async function reviewClaim(input: { id: string; status: "APPROVED" | "REJECTED"; reviewedBy: string }) {

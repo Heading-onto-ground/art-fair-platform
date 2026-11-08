@@ -1,6 +1,7 @@
 import { Suspense } from "react";
 import type { Metadata } from "next";
 import AddExhibition from "@/app/components/history/AddExhibition";
+import { historyLocale } from "@/lib/history/requestLocale";
 
 export const metadata: Metadata = {
   title: { absolute: "Add an exhibition | ROB" },
@@ -10,7 +11,7 @@ export const metadata: Metadata = {
 export default function AddExhibitionPage() {
   return (
     <Suspense>
-      <AddExhibition />
+      <AddExhibition locale={historyLocale()} />
     </Suspense>
   );
 }

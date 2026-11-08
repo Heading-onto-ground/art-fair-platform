@@ -445,6 +445,9 @@ export default function ArtistMePage() {
             <span style={{ fontFamily: F, fontSize: 10, fontWeight: 500, letterSpacing: "0.2em", color: "#8B7355", textTransform: "uppercase" }}>{t("nav_profile", lang)}</span>
             <h1 style={{ fontFamily: S, fontSize: 42, fontWeight: 300, color: "#1A1A1A", marginTop: 8 }}>{t("artist", lang)}</h1>
             <p style={{ fontFamily: F, fontSize: 12, color: "#B0AAA2", marginTop: 4 }}>{session?.email}</p>
+            <p style={{ fontFamily: F, fontSize: 12, marginTop: 8 }}>
+              <a href="/history/start">{lang === "ko" ? "ROB 이력 관리" : "Manage ROB history"}</a>
+            </p>
           </div>
           <span style={{ fontFamily: F, fontSize: 10, fontWeight: 500, letterSpacing: "0.1em", textTransform: "uppercase", color: "#8A8580", padding: "8px 16px", border: "1px solid #E8E3DB" }}>Artist</span>
         </div>

@@ -4,11 +4,15 @@ import { FormEvent, useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import TopBar from "@/app/components/TopBar";
 import { trackHistory } from "@/lib/history/analytics";
+import { historyCopy, type HistoryLocale } from "@/lib/history/locale";
 import { pushRobEvent, pushRobEventOnce } from "@/lib/publicGrowth/analytics";
+import { usePublicHref } from "@/app/components/history/LocaleUrl";
 import "./history.css";
 
-export default function AddExhibition() {
+export default function AddExhibition({ locale = "en" }: { locale?: HistoryLocale }) {
+  const copy = historyCopy(locale);
   const router = useRouter();
+  const publicHref = usePublicHref();
   const params = useSearchParams();
   const artistSlug = params.get("artist");
   const [message, setMessage] = useState("");
@@ -46,21 +50,22 @@ export default function AddExhibition() {
       }),
     });
     if (response.status === 401) {
-      router.push(`/login?redirect=${encodeURIComponent(`/history/add${artistSlug ? `?artist=${artistSlug}` : ""}`)}`);
+      const next = publicHref(`/history/add${artistSlug ? `?artist=${artistSlug}` : ""}`);
+      router.push(`/login?redirect=${encodeURIComponent(next)}`);
       return;
     }
     const data = await response.json();
     if (!response.ok) {
-      setMessage(data.error || "Could not add the exhibition.");
+      setMessage(data.error || copy.couldNotAdd);
       return;
     }
     trackHistory("EXHIBITION_ADDED");
     pushRobEvent("ADD_EXHIBITION_SUBMITTED", { route: "/history/add" });
     if (data.publicationStatus !== "PUBLIC") {
-      setMessage("Saved for review. It is not public, and it is not labeled Artist added, until a claim for this artist is approved.");
+      setMessage(copy.savedForReview);
       return;
     }
-    router.push(artistSlug ? `/artists/${artistSlug}` : `/exhibitions/${data.slug}`);
+    router.push(publicHref(artistSlug ? `/artists/${artistSlug}` : `/exhibitions/${data.slug}`));
   }
 
   function set(key: keyof typeof form, value: string) {
@@ -69,34 +74,35 @@ export default function AddExhibition() {
 
   return (
     <div className="rh-page">
-      <TopBar />
+      <TopBar locale={locale} />
       <main className="rh-wrap">
-        <p className="rh-kicker">Add your first exhibition</p>
-        <h1 className="rh-title">Exhibition</h1>
+        <p className="rh-kicker">{copy.addKicker}</p>
+        <h1 className="rh-title">{copy.addTitle}</h1>
+        <p>{copy.contributionNote}</p>
         <form className="rh-form" onSubmit={onSubmit}>
-          <input required aria-label="Title" placeholder="Title" value={form.title} onChange={(event) => set("title", event.target.value)} />
+          <input required aria-label={copy.exhibitionWord} placeholder={copy.exhibitionWord} value={form.title} onChange={(event) => set("title", event.target.value)} />
           <label>
-            Date precision
-            <select aria-label="Date precision" value={form.precision} onChange={(event) => set("precision", event.target.value)}>
-              <option value="UNKNOWN">Unknown</option>
-              <option value="YEAR">Year</option>
-              <option value="MONTH">Month</option>
-              <option value="DAY">Day</option>
+            {copy.datePrecision}
+            <select aria-label={copy.datePrecision} value={form.precision} onChange={(event) => set("precision", event.target.value)}>
+              <option value="UNKNOWN">{copy.precisionUnknown}</option>
+              <option value="YEAR">{copy.precisionYear}</option>
+              <option value="MONTH">{copy.precisionMonth}</option>
+              <option value="DAY">{copy.precisionDay}</option>
             </select>
           </label>
-          <input aria-label="Start year" placeholder="Start year" value={form.year} onChange={(event) => set("year", event.target.value)} />
-          <input aria-label="Start month" placeholder="Start month" value={form.month} onChange={(event) => set("month", event.target.value)} />
-          <input aria-label="Start day" placeholder="Start day" value={form.day} onChange={(event) => set("day", event.target.value)} />
-          <input aria-label="End year" placeholder="End year" value={form.endYear} onChange={(event) => set("endYear", event.target.value)} />
-          <input aria-label="End month" placeholder="End month" value={form.endMonth} onChange={(event) => set("endMonth", event.target.value)} />
-          <input aria-label="End day" placeholder="End day" value={form.endDay} onChange={(event) => set("endDay", event.target.value)} />
-          <input aria-label="Space" placeholder="Space" value={form.spaceName} onChange={(event) => set("spaceName", event.target.value)} />
-          <input aria-label="City" placeholder="City" value={form.city} onChange={(event) => set("city", event.target.value)} />
-          <input aria-label="Country" placeholder="Country" value={form.country} onChange={(event) => set("country", event.target.value)} />
-          <input aria-label="Curator" placeholder="Curator" value={form.curatorName} onChange={(event) => set("curatorName", event.target.value)} />
-          <textarea aria-label="Participants" placeholder="Participants, one name per line" value={form.participants} onChange={(event) => set("participants", event.target.value)} />
-          <input aria-label="Source URL" placeholder="Source URL" value={form.sourceUrl} onChange={(event) => set("sourceUrl", event.target.value)} />
-          <button className="rh-button" type="submit">Add exhibition</button>
+          <input aria-label={copy.startYear} placeholder={copy.startYear} value={form.year} onChange={(event) => set("year", event.target.value)} />
+          <input aria-label={copy.startMonth} placeholder={copy.startMonth} value={form.month} onChange={(event) => set("month", event.target.value)} />
+          <input aria-label={copy.startDay} placeholder={copy.startDay} value={form.day} onChange={(event) => set("day", event.target.value)} />
+          <input aria-label={copy.endYear} placeholder={copy.endYear} value={form.endYear} onChange={(event) => set("endYear", event.target.value)} />
+          <input aria-label={copy.endMonth} placeholder={copy.endMonth} value={form.endMonth} onChange={(event) => set("endMonth", event.target.value)} />
+          <input aria-label={copy.endDay} placeholder={copy.endDay} value={form.endDay} onChange={(event) => set("endDay", event.target.value)} />
+          <input aria-label={copy.spaceField} placeholder={copy.spaceField} value={form.spaceName} onChange={(event) => set("spaceName", event.target.value)} />
+          <input aria-label={copy.cityField} placeholder={copy.cityField} value={form.city} onChange={(event) => set("city", event.target.value)} />
+          <input aria-label={copy.countryField} placeholder={copy.countryField} value={form.country} onChange={(event) => set("country", event.target.value)} />
+          <input aria-label={copy.curatorField} placeholder={copy.curatorField} value={form.curatorName} onChange={(event) => set("curatorName", event.target.value)} />
+          <textarea aria-label={copy.participantsField} placeholder={copy.participantsField} value={form.participants} onChange={(event) => set("participants", event.target.value)} />
+          <input aria-label={copy.sourceUrlField} placeholder={copy.sourceUrlField} value={form.sourceUrl} onChange={(event) => set("sourceUrl", event.target.value)} />
+          <button className="rh-button" type="submit">{copy.addExhibitionButton}</button>
         </form>
         {message ? <p>{message}</p> : null}
       </main>

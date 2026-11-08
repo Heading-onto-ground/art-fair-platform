@@ -68,6 +68,10 @@ export default async function HistoryHealthPage() {
               <li key={row.query}>{row.query} · {row.count}</li>
             ))}
           </ul>
+          <h2>Contribution</h2>
+          <p>
+            Claims submitted {report.contribution.claimsSubmitted}. Approved {report.contribution.claimsApproved}. Exhibitions submitted {report.contribution.exhibitionsSubmitted}. First-party published {report.contribution.firstPartyPublished}. First-party with a source {report.contribution.firstPartyWithSource}. Unresolved names {report.contribution.unresolvedNames}.
+          </p>
           <h2>Journey depth</h2>
           <p>
             Depth events, with no visitor identity. 1 artist {report.journey.oneArtist}. 2 artists {report.journey.twoArtists}. 3 artists {report.journey.threeArtists}. 4 or more {report.journey.fourOrMore}.

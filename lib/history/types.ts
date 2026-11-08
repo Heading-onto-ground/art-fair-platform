@@ -56,6 +56,7 @@ export type HistoryExhibitionView = {
   artists: HistoryPersonRef[];
   sources: HistorySourceView[];
   unresolved: { label: string; status: string }[];
+  origin: string;
   provenance: string;
   review: boolean;
   coverImage: HistoryImage | null;
@@ -112,6 +113,7 @@ export type HistoryExhibitionPage = {
   curatorSlug: string | null;
   artists: HistoryPersonRef[];
   sources: HistorySourceView[];
+  origin: string;
   provenance: string;
   unresolved: { label: string; status: string }[];
   indexEligible: boolean;
