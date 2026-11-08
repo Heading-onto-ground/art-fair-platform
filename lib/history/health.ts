@@ -38,6 +38,14 @@ export type HistoryHealth = {
   journey: JourneyDepthReport;
   namedFrontier: NamedFrontier[];
   frontier: FrontierRow[];
+  contribution: {
+    claimsSubmitted: number;
+    claimsApproved: number;
+    exhibitionsSubmitted: number;
+    firstPartyPublished: number;
+    firstPartyWithSource: number;
+    unresolvedNames: number;
+  };
 };
 
 export async function loadHistoryHealth(): Promise<HistoryHealth> {
@@ -212,5 +220,22 @@ export async function loadHistoryHealth(): Promise<HistoryHealth> {
     }),
     namedFrontier: decisions,
     frontier: frontier.slice(0, 40),
+    contribution: await contributionHealth(),
   };
+}
+
+const FIRST_PARTY = ["ARTIST_SUBMITTED", "GALLERY_SUBMITTED", "INSTITUTION_SUBMITTED"] as const;
+
+async function contributionHealth(): Promise<HistoryHealth["contribution"]> {
+  const [claimsSubmitted, claimsApproved, exhibitionsSubmitted, firstPartyPublished, firstPartyWithSource, unresolvedNames] = await Promise.all([
+    prisma.artistEntityClaim.count(),
+    prisma.artistEntityClaim.count({ where: { status: "APPROVED" } }),
+    prisma.exhibitionHistoryMeta.count({ where: { origin: { in: [...FIRST_PARTY] } } }),
+    prisma.exhibitionHistoryMeta.count({ where: { origin: { in: [...FIRST_PARTY] }, publicationStatus: "PUBLIC" } }),
+    prisma.exhibitionHistoryMeta.count({
+      where: { origin: { in: [...FIRST_PARTY] }, exhibition: { historySources: { some: {} } } },
+    }),
+    prisma.historyUnresolvedName.count(),
+  ]);
+  return { claimsSubmitted, claimsApproved, exhibitionsSubmitted, firstPartyPublished, firstPartyWithSource, unresolvedNames };
 }

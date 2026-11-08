@@ -114,6 +114,59 @@ export type HistoryCopy = {
   timelineHelp: string;
   timelineHelpBody: string;
   yearAria: (year: number, count: number, dated: boolean) => string;
+  recordsOnly: string;
+  contributionNote: string;
+  addMissing: string;
+  claimYourself: string;
+  addOwnedExhibition: string;
+  manageRecord: string;
+  claimPending: string;
+  claimSubmitted: string;
+  claimApproved: string;
+  originHeading: string;
+  originRob: string;
+  originArtist: string;
+  originGallery: string;
+  originInstitution: string;
+  originLegacy: string;
+  startKicker: string;
+  searchYourself: string;
+  yourName: string;
+  claimPrompt: (name: string) => string;
+  claimThis: string;
+  createRecord: string;
+  createArtistButton: string;
+  noExistingPage: string;
+  existingArtist: string;
+  ambiguousArtist: string;
+  couldNotCreate: string;
+  couldNotClaim: string;
+  addKicker: string;
+  addTitle: string;
+  datePrecision: string;
+  precisionUnknown: string;
+  precisionYear: string;
+  precisionMonth: string;
+  precisionDay: string;
+  startYear: string;
+  startMonth: string;
+  startDay: string;
+  endYear: string;
+  endMonth: string;
+  endDay: string;
+  spaceField: string;
+  cityField: string;
+  countryField: string;
+  curatorField: string;
+  participantsField: string;
+  sourceUrlField: string;
+  addExhibitionButton: string;
+  savedForReview: string;
+  couldNotAdd: string;
+  artistNameField: string;
+  nativeNameField: string;
+  birthYearField: string;
+  officialWebsiteField: string;
   pageTitle: string;
   pageDescription: string;
   recordsDocumented: string;
@@ -228,6 +281,59 @@ const en: HistoryCopy = {
   timelineHelp: "How to read this timeline",
   timelineHelpBody: "Open circles mark year-only records. Filled circles include a month or day. A number is the count for that year. Empty stretches are missing ROB records, not missing activity.",
   yearAria: (year, count, dated) => `${year}, ${count} exhibition${count === 1 ? "" : "s"}, ${dated ? "dated" : "year only"}`,
+  recordsOnly: "ROB shows confirmed records only.",
+  contributionNote: "ROB distinguishes who added a record from the source supporting it.",
+  addMissing: "Missing an exhibition? Add a record",
+  claimYourself: "Is this you? Claim this record",
+  addOwnedExhibition: "Add an exhibition record",
+  manageRecord: "Manage my records",
+  claimPending: "Record claim under review",
+  claimSubmitted: "Claim submitted. Status: pending review.",
+  claimApproved: "This record is already linked to your account.",
+  originHeading: "Origin",
+  originRob: "ROB researched",
+  originArtist: "Artist submitted",
+  originGallery: "Gallery submitted",
+  originInstitution: "Institution submitted",
+  originLegacy: "Legacy first-party record",
+  startKicker: "Start your history",
+  searchYourself: "Search yourself.",
+  yourName: "Your name",
+  claimPrompt: (name) => `You asked to claim ${name}. Search that name, or claim it directly if you already know the page.`,
+  claimThis: "Claim this page",
+  createRecord: "Create artist record",
+  createArtistButton: "Create artist",
+  noExistingPage: "No existing page matches. You can create the artist record.",
+  existingArtist: "This name already has a record. Claim that page instead of creating another.",
+  ambiguousArtist: "More than one record matches that name. Search and claim the right page.",
+  couldNotCreate: "Could not create the artist.",
+  couldNotClaim: "Could not submit the claim.",
+  addKicker: "Add your first exhibition",
+  addTitle: "Exhibition",
+  datePrecision: "Date precision",
+  precisionUnknown: "Unknown",
+  precisionYear: "Year",
+  precisionMonth: "Month",
+  precisionDay: "Day",
+  startYear: "Start year",
+  startMonth: "Start month",
+  startDay: "Start day",
+  endYear: "End year",
+  endMonth: "End month",
+  endDay: "End day",
+  spaceField: "Space",
+  cityField: "City",
+  countryField: "Country",
+  curatorField: "Curator",
+  participantsField: "Participants, one name per line",
+  sourceUrlField: "Source URL",
+  addExhibitionButton: "Add exhibition",
+  savedForReview: "Saved for review.",
+  couldNotAdd: "Could not add the exhibition.",
+  artistNameField: "Artist name",
+  nativeNameField: "Native name",
+  birthYearField: "Birth year",
+  officialWebsiteField: "Official website",
   pageTitle: "ROB — Artist History & Documented Connections",
   pageDescription: "Search artists and explore documented exhibitions, spaces, curators, and artist connections. ROB builds verified art histories from official sources.",
   recordsDocumented: "records currently documented in ROB",
@@ -342,6 +448,59 @@ const ko: HistoryCopy = {
   timelineHelp: "이 시간축을 읽는 법",
   timelineHelpBody: "빈 원은 연도만 있는 기록입니다. 채워진 원은 월이나 일이 있습니다. 숫자는 그해의 건수입니다. 비어 있는 구간은 활동이 없었다는 뜻이 아니라, ROB에 기록이 없다는 뜻입니다.",
   yearAria: (year, count, dated) => `${year}년, 전시 ${count}건, ${dated ? "날짜 있음" : "연도만"}`,
+  recordsOnly: "ROB에는 확인된 기록만 표시합니다.",
+  contributionNote: "ROB는 입력된 내용을 그대로 경력으로 확정하지 않습니다. 기록의 출처와 등록 주체를 구분해 표시합니다.",
+  addMissing: "빠진 전시가 있나요? 기록 추가",
+  claimYourself: "이 작가 본인인가요? 기록 관리 신청",
+  addOwnedExhibition: "전시 기록 추가",
+  manageRecord: "내 기록 관리",
+  claimPending: "기록 관리 신청 검토 중",
+  claimSubmitted: "신청을 받았습니다. 검토 중입니다.",
+  claimApproved: "이 기록은 이미 이 계정과 연결되어 있습니다.",
+  originHeading: "등록 주체",
+  originRob: "ROB 조사",
+  originArtist: "작가 등록",
+  originGallery: "갤러리 등록",
+  originInstitution: "기관 등록",
+  originLegacy: "기존 기록",
+  startKicker: "내 기록 시작하기",
+  searchYourself: "내 작가 기록 찾기",
+  yourName: "내 이름",
+  claimPrompt: (name) => `${name} 기록의 관리를 신청했습니다. 이름을 검색하거나, 페이지를 알고 있으면 바로 신청하세요.`,
+  claimThis: "이 기록 관리 신청",
+  createRecord: "새 작가 기록 시작",
+  createArtistButton: "기록 시작",
+  noExistingPage: "같은 이름의 작가 페이지가 없습니다. 새 기록을 시작할 수 있습니다.",
+  existingArtist: "같은 이름의 기록이 있습니다. 새로 만들지 말고 그 기록의 관리를 신청하세요.",
+  ambiguousArtist: "같은 이름의 기록이 둘 이상입니다. 검색해서 맞는 기록을 신청하세요.",
+  couldNotCreate: "작가 기록을 만들지 못했습니다.",
+  couldNotClaim: "신청을 보내지 못했습니다.",
+  addKicker: "전시 기록 추가",
+  addTitle: "전시",
+  datePrecision: "날짜 정밀도",
+  precisionUnknown: "미상",
+  precisionYear: "연",
+  precisionMonth: "월",
+  precisionDay: "일",
+  startYear: "시작 연도",
+  startMonth: "시작 월",
+  startDay: "시작 일",
+  endYear: "종료 연도",
+  endMonth: "종료 월",
+  endDay: "종료 일",
+  spaceField: "공간",
+  cityField: "도시",
+  countryField: "국가",
+  curatorField: "큐레이터",
+  participantsField: "참여자, 한 줄에 한 이름",
+  sourceUrlField: "출처 주소",
+  addExhibitionButton: "전시 추가",
+  savedForReview: "검토를 위해 저장되었습니다.",
+  couldNotAdd: "전시를 추가하지 못했습니다.",
+  artistNameField: "작가 이름",
+  nativeNameField: "원어 이름",
+  birthYearField: "출생 연도",
+  officialWebsiteField: "공식 웹사이트",
   pageTitle: "ROB — 작가의 전시 이력과 기록된 연결",
   pageDescription: "작가를 검색하고 공식 출처로 확인된 전시, 공간, 큐레이터와 작가 간 연결을 따라가세요.",
   recordsDocumented: "현재 ROB에 기록된 이력",
@@ -352,6 +511,16 @@ const ko: HistoryCopy = {
 
 export function historyCopy(locale: HistoryLocale): HistoryCopy {
   return locale === "ko" ? ko : en;
+}
+
+export function historyOriginLabel(locale: HistoryLocale, origin: string): string {
+  const copy = historyCopy(locale);
+  if (origin === "ROB_RESEARCHED") return copy.originRob;
+  if (origin === "ARTIST_SUBMITTED") return copy.originArtist;
+  if (origin === "GALLERY_SUBMITTED") return copy.originGallery;
+  if (origin === "INSTITUTION_SUBMITTED") return copy.originInstitution;
+  if (origin === "LEGACY_FIRST_PARTY") return copy.originLegacy;
+  return copy.originLegacy;
 }
 
 export function countNoun(locale: HistoryLocale, count: number, kind: "record" | "exhibition"): string {

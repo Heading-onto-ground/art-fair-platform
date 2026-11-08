@@ -32,7 +32,10 @@ export async function POST(req: Request) {
       officialWebsite: typeof body.officialWebsite === "string" ? body.officialWebsite : null,
       profileId: profile?.id ?? null,
     });
-    if (!created.ok) return NextResponse.json({ error: created.error }, { status: 400 });
+    if (!created.ok) {
+      if ("slug" in created && created.slug) return NextResponse.json({ slug: created.slug, existing: true }, { status: 409 });
+      return NextResponse.json({ error: created.error }, { status: 400 });
+    }
     revalidateTag(PUBLIC_HISTORY_CACHE_TAG);
     return NextResponse.json({ slug: created.artist.slug });
   } catch (err) {

@@ -3,7 +3,7 @@ import JourneyContinueLink from "@/app/components/history/JourneyContinueLink";
 import TopBar from "@/app/components/TopBar";
 import type { HistoryExhibitionPage } from "@/lib/history/types";
 import ReportIssue from "@/app/components/history/ReportIssue";
-import { historyCopy, type HistoryLocale } from "@/lib/history/locale";
+import { historyCopy, historyOriginLabel, type HistoryLocale } from "@/lib/history/locale";
 import { artistDisplayNames } from "@/lib/history/names";
 import { pinnedPath } from "@/lib/history/requestLocale";
 import "./history.css";
@@ -38,8 +38,9 @@ export default function HistoryExhibition({ record, locale = "en" }: { record: H
           ))}
         </ul>
         {record.curatorName ? <p>{copy.curatorLabel}: {record.curatorName}</p> : null}
+        <p className="rh-origin">{copy.originHeading}: {historyOriginLabel(locale, record.origin)}</p>
         <details>
-          <summary>{copy.source}: {record.provenance}</summary>
+          <summary>{copy.source}</summary>
           {record.sources.length === 0 ? <p>{copy.noSource}</p> : null}
           {record.sources.map((source) => (
             <p key={source.id}><a href={source.url}>{source.sourceName}</a></p>

@@ -5,7 +5,8 @@ import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import TopBar from "@/app/components/TopBar";
 import LocaleSwitch from "@/app/components/history/LocaleSwitch";
-import { historyCopy, type HistoryLocale } from "@/lib/history/locale";
+import { historyCopy, historyOriginLabel, type HistoryLocale } from "@/lib/history/locale";
+import type { ClaimViewStatus } from "@/lib/history/contribution";
 import { artistDisplayName, artistDisplayNames, lookupArtistName } from "@/lib/history/names";
 import { rememberExplorationDepth, trackHistory } from "@/lib/history/analytics";
 import { depthEventForTrail, markForwardArtist, pushRobEvent, pushRobEventOnce, takeForwardArtist } from "@/lib/publicGrowth/analytics";
@@ -191,11 +192,38 @@ export default function HistoryExperience({ artist, locale = "en" }: { artist: H
   const [failedHeroUrl, setFailedHeroUrl] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
   const [trail, setTrail] = useState<JourneyStep[]>([]);
+  const [claimStatus, setClaimStatus] = useState<ClaimViewStatus>("NONE");
+  const approvedTracked = useRef(false);
   const trailIdRef = useRef(validJourneyId(searchParams.get("j")) ?? "");
   const hero = artist.heroImage && failedHeroUrl !== artist.heroImage.url ? artist.heroImage : null;
   const dropHero = useCallback(() => {
     if (artist.heroImage) setFailedHeroUrl(artist.heroImage.url);
   }, [artist.heroImage]);
+
+  useEffect(() => {
+    const controller = new AbortController();
+    approvedTracked.current = false;
+    void (async () => {
+      try {
+        const response = await fetch(`/api/history/claims?artist=${encodeURIComponent(artist.slug)}`, {
+          signal: controller.signal,
+          cache: "no-store",
+        });
+        const data = await response.json().catch(() => null);
+        if (controller.signal.aborted) return;
+        const status = data?.status;
+        if (status !== "NONE" && status !== "PENDING" && status !== "APPROVED" && status !== "REJECTED") return;
+        setClaimStatus(status);
+        if (status === "APPROVED") {
+          approvedTracked.current = true;
+          trackHistory("CLAIM_APPROVED_RECORD_OPENED", `/artists/${artist.slug}`);
+        }
+      } catch {
+        // A missed claim status leaves the public record readable.
+      }
+    })();
+    return () => controller.abort();
+  }, [artist.slug]);
 
   const from = searchParams.get("from");
   const via = searchParams.get("via");
@@ -913,6 +941,7 @@ export default function HistoryExperience({ artist, locale = "en" }: { artist: H
                   </button>
                 ) : null}
 
+                <p className="rh-origin">{copy.originHeading}: {historyOriginLabel(locale, selected.origin)}</p>
                 <div className="rh-source-row">
                   <button
                     className="rh-source-button"
@@ -923,7 +952,7 @@ export default function HistoryExperience({ artist, locale = "en" }: { artist: H
                       trackHistory("SOURCE_OPENED");
                     }}
                   >
-                    {selected.provenance} <span aria-hidden="true">{sourcesOpen ? "−" : "+"}</span>
+                    {copy.source} <span aria-hidden="true">{sourcesOpen ? "−" : "+"}</span>
                   </button>
                 </div>
                 {sourcesOpen ? (
@@ -944,10 +973,32 @@ export default function HistoryExperience({ artist, locale = "en" }: { artist: H
             ) : null}
 
             <div className="rh-history-foot">
-              <p>{copy.coveragePartial}</p>
-              <Link href={publicHref(`/history/add?artist=${artist.slug}`)} onClick={() => trackHistory("EXHIBITION_ADD_STARTED")}>
-                {copy.addExhibition} →
-              </Link>
+              <div>
+                <p>{copy.recordsOnly}</p>
+                <p>{copy.documentedLine(artist.exhibitionCount)}</p>
+                <p>{copy.coveragePartial}</p>
+                <p>{copy.contributionNote}</p>
+              </div>
+              <div className="rh-history-actions">
+                {claimStatus === "APPROVED" ? (
+                  <>
+                    <Link href={publicHref(`/history/add?artist=${artist.slug}`)} onClick={() => trackHistory("EXHIBITION_ADD_STARTED")}>
+                      {copy.addOwnedExhibition} →
+                    </Link>
+                    <Link href={publicHref(`/history/add?artist=${artist.slug}`)}>{copy.manageRecord}</Link>
+                  </>
+                ) : (
+                  <Link href={publicHref(`/history/add?artist=${artist.slug}`)} onClick={() => trackHistory("EXHIBITION_ADD_STARTED")}>
+                    {copy.addMissing} →
+                  </Link>
+                )}
+                {claimStatus === "PENDING" ? <p>{copy.claimPending}</p> : null}
+                {claimStatus === "APPROVED" || claimStatus === "PENDING" ? null : (
+                  <Link href={publicHref(`/history/start?artist=${artist.slug}`)} onClick={() => trackHistory("CLAIM_STARTED")}>
+                    {copy.claimYourself} →
+                  </Link>
+                )}
+              </div>
             </div>
           </section>
         ) : null}
@@ -1046,11 +1097,21 @@ export default function HistoryExperience({ artist, locale = "en" }: { artist: H
             {artist.birthYear ? <p>{copy.born(artist.birthYear)}</p> : null}
             {artist.city || artist.country ? <p>{[artist.city, artist.country].filter(Boolean).join(", ")}</p> : null}
             {artist.officialWebsite ? <p><a href={artist.officialWebsite}>{copy.officialWebsite} ↗</a></p> : null}
-            <p>
-              <Link href={publicHref(`/history/start?artist=${artist.slug}`)} onClick={() => trackHistory("CLAIM_STARTED")}>
-                {copy.claimPage} →
-              </Link>
-            </p>
+            {claimStatus === "APPROVED" ? (
+              <p>
+                <Link href={publicHref(`/history/add?artist=${artist.slug}`)} onClick={() => trackHistory("EXHIBITION_ADD_STARTED")}>
+                  {copy.addOwnedExhibition} →
+                </Link>
+              </p>
+            ) : claimStatus === "PENDING" ? (
+              <p>{copy.claimPending}</p>
+            ) : (
+              <p>
+                <Link href={publicHref(`/history/start?artist=${artist.slug}`)} onClick={() => trackHistory("CLAIM_STARTED")}>
+                  {copy.claimYourself} →
+                </Link>
+              </p>
+            )}
           </section>
         ) : null}
       </main>

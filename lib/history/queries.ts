@@ -253,6 +253,7 @@ export function toExhibitionView(row: ExhibitionRow): HistoryExhibitionView {
     artists,
     unresolved: (row.unresolvedNames ?? []).map((name) => ({ label: name.label, status: name.status })),
     sources,
+    origin: originOf(row),
     provenance: limited && row.historyMeta?.sourceClearance !== "APPROVED"
       ? visitorSourceLabel(limited.sourceName)
       : provenanceLabel({
@@ -615,6 +616,7 @@ export async function loadExhibitionPage(key: string): Promise<HistoryExhibition
     curatorSlug: view.curatorSlug,
     artists: view.artists,
     sources: view.sources,
+    origin: view.origin,
     provenance: view.provenance,
     unresolved: meta.exhibition.unresolvedNames.map((name) => ({ label: name.label, status: name.status })),
     indexEligible: view.artists.length > 0,
