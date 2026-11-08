@@ -10,6 +10,19 @@ export type HistorySearchResult = {
   signature: number[];
 };
 
+/** A name written on a public exhibition, without an artist page. Not a confirmed participation. */
+export type HistorySearchMention = {
+  exhibitionId: string;
+  exhibitionSlug: string;
+  title: string;
+  dateLabel: string | null;
+  spaceName: string | null;
+  spaceSlug: string | null;
+  sourceName: string | null;
+  sourceUrl: string | null;
+  artists: { slug: string; canonicalName: string; nativeName: string | null }[];
+};
+
 export type HistorySourceView = {
   id: string;
   url: string;

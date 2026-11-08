@@ -32,6 +32,27 @@
   margin: 0 0 8px;
 }
 
+.rh-search-mentions {
+  margin: 0 0 14px;
+}
+
+.rh-search-mentions ul {
+  margin: 8px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.rh-search-mentions li {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin: 0 0 12px;
+}
+
+.rh-mention-artists {
+  display: block;
+}
+
 .rh-home-copy .rh-search-results {
   margin-top: 22px;
   padding-bottom: 4px;

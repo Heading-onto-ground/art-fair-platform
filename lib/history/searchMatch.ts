@@ -32,3 +32,30 @@ export function rankSearchRows<T extends SearchLabelRow>(rows: T[], rawQuery: st
     .slice(0, 8)
     .map((item) => item.row);
 }
+
+export type RecordedMentionInput = {
+  label: string;
+  exhibitionId: string;
+  exhibitionSlug: string | null;
+  title: string;
+  artists: { slug: string; canonicalName: string; nativeName: string | null }[];
+};
+
+/** Exact identity only. A longer label is a different name, not a confirmed participant. */
+export function rankRecordedMentions(rows: readonly RecordedMentionInput[], rawQuery: string): RecordedMentionInput[] {
+  const query = rawQuery.trim();
+  if (!query) return [];
+  const ranked = rows
+    .filter((row) => row.exhibitionSlug && aliasLookupEqual(row.label, query))
+    .map((row) => ({ row }))
+    .sort((left, right) => left.row.title.localeCompare(right.row.title));
+  const seen = new Set<string>();
+  const out: RecordedMentionInput[] = [];
+  for (const item of ranked) {
+    if (seen.has(item.row.exhibitionId)) continue;
+    seen.add(item.row.exhibitionId);
+    out.push(item.row);
+    if (out.length === 8) break;
+  }
+  return out;
+}

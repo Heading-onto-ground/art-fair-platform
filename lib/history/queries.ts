@@ -34,7 +34,7 @@ import {
   type ContributorKind,
   type HistoryOrigin,
 } from "@/lib/history/policy";
-import { rankSearchRows, searchProbe } from "@/lib/history/searchMatch";
+import { rankRecordedMentions, rankSearchRows, searchProbe } from "@/lib/history/searchMatch";
 import { buildDocumentedPaths, selectDiversePaths } from "@/lib/history/paths";
 import { publishedArtistHero } from "@/lib/history/imageRegistry";
 import type {
@@ -43,6 +43,7 @@ import type {
   HistoryExhibitionPage,
   HistoryExhibitionView,
   HistoryPersonRef,
+  HistorySearchMention,
   HistorySearchResult,
   HistorySourceView,
   HistorySpacePage,
@@ -475,6 +476,106 @@ export async function searchArtists(rawQuery: string): Promise<HistorySearchResu
       exhibitionCount: ids.size,
       signature: signatureFor(dated),
     };
+  });
+}
+
+function recordedMentionDate(meta: {
+  datePrecision: string;
+  startYear: number | null;
+  startMonth: number | null;
+  startDay: number | null;
+} | null): string | null {
+  if (!meta) return null;
+  const label = formatHistoryDate({
+    precision: meta.datePrecision,
+    year: meta.startYear,
+    month: meta.datePrecision === "DAY" || meta.datePrecision === "MONTH" ? meta.startMonth : null,
+    day: meta.datePrecision === "DAY" ? meta.startDay : null,
+  });
+  return label === "Date not recorded" ? null : label;
+}
+
+function recordedMentionSource(sources: {
+  url: string;
+  sourceName: string;
+  clearanceStatus: string;
+  internalUseDecision: string;
+  contentScope: string;
+}[]): { sourceName: string; sourceUrl: string } | null {
+  const source = sources.find((item) =>
+    item.clearanceStatus === "APPROVED" ||
+    ((item.internalUseDecision === "ALLOW_LIMITED" || item.internalUseDecision === "FACTUAL_USE_OK") && item.contentScope === "FACTUAL_METADATA_ONLY"),
+  );
+  if (!source?.url || !source.sourceName) return null;
+  return { sourceName: source.sourceName, sourceUrl: source.url };
+}
+
+export async function searchRecordedMentions(rawQuery: string): Promise<HistorySearchMention[]> {
+  const query = rawQuery.trim();
+  const probe = searchProbe(query);
+  if (!probe) return [];
+  const rows = await prisma.historyUnresolvedName.findMany({
+    where: {
+      label: { contains: probe, mode: "insensitive" },
+      exhibition: publicExhibitionWhere,
+    },
+    select: {
+      label: true,
+      exhibition: {
+        select: {
+          id: true,
+          title: true,
+          historyMeta: { select: { slug: true, datePrecision: true, startYear: true, startMonth: true, startDay: true } },
+          space: { select: { name: true, slugRecord: { select: { slug: true } } } },
+          historySources: {
+            select: {
+              source: {
+                select: { url: true, sourceName: true, clearanceStatus: true, internalUseDecision: true, contentScope: true },
+              },
+            },
+          },
+          historyArtists: {
+            select: { artist: { select: { slug: true, canonicalName: true, nativeName: true } } },
+          },
+        },
+      },
+    },
+    take: 40,
+  });
+  const ranked = rankRecordedMentions(
+    rows.map((row) => ({
+      label: row.label,
+      exhibitionId: row.exhibition.id,
+      exhibitionSlug: row.exhibition.historyMeta?.slug ?? null,
+      title: row.exhibition.title,
+      artists: row.exhibition.historyArtists.flatMap((item) =>
+        item.artist.slug
+          ? [{ slug: item.artist.slug, canonicalName: item.artist.canonicalName, nativeName: item.artist.nativeName }]
+          : [],
+      ),
+    })),
+    query,
+  );
+  const byId = new Map(rows.map((row) => [row.exhibition.id, row.exhibition]));
+  return ranked.flatMap((row) => {
+    const exhibition = byId.get(row.exhibitionId);
+    if (!row.exhibitionSlug || !exhibition) return [];
+    const source = recordedMentionSource(exhibition.historySources.map((item) => item.source));
+    return [{
+      exhibitionId: row.exhibitionId,
+      exhibitionSlug: row.exhibitionSlug,
+      title: decodeDisplayText(row.title),
+      dateLabel: recordedMentionDate(exhibition.historyMeta),
+      spaceName: exhibition.space?.name ? decodeDisplayText(exhibition.space.name) : null,
+      spaceSlug: exhibition.space?.slugRecord?.slug ?? null,
+      sourceName: source ? decodeDisplayText(source.sourceName) : null,
+      sourceUrl: source?.sourceUrl ?? null,
+      artists: row.artists.map((artist) => ({
+        slug: artist.slug,
+        canonicalName: decodeDisplayText(artist.canonicalName),
+        nativeName: artist.nativeName ? decodeDisplayText(artist.nativeName) : null,
+      })),
+    }];
   });
 }
 

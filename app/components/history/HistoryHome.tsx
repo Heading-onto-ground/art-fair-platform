@@ -18,15 +18,22 @@ import {
   reuseCompletedSearch,
   type SearchPhase,
 } from "@/lib/history/searchFlow";
-import type { HistorySearchResult } from "@/lib/history/types";
+import type { HistorySearchMention, HistorySearchResult } from "@/lib/history/types";
 import "./history.css";
 import "./home.css";
 
-async function fetchSearch(q: string, signal: AbortSignal): Promise<{ ok: true; results: HistorySearchResult[] } | { ok: false }> {
+async function fetchSearch(
+  q: string,
+  signal: AbortSignal,
+): Promise<{ ok: true; results: HistorySearchResult[]; mentions: HistorySearchMention[] } | { ok: false }> {
   const response = await fetch(`/api/history/search?q=${encodeURIComponent(q)}`, { signal, cache: "no-store" });
   const data = await response.json().catch(() => null);
   if (!response.ok || !data || data.unavailable || data.error) return { ok: false };
-  return { ok: true, results: Array.isArray(data.results) ? data.results as HistorySearchResult[] : [] };
+  return {
+    ok: true,
+    results: Array.isArray(data.results) ? data.results as HistorySearchResult[] : [],
+    mentions: Array.isArray(data.mentions) ? data.mentions as HistorySearchMention[] : [],
+  };
 }
 
 type Discovery = {
@@ -47,6 +54,7 @@ export default function HistoryHome({ discovery = null, locale = "en" }: { disco
     artistDisplayNames({ canonicalName: artist.canonicalName || artist.name || "", nativeName: artist.nativeName, locale });
   const [query, setQuery] = useState("");
   const [results, setResults] = useState<HistorySearchResult[] | null>(null);
+  const [mentions, setMentions] = useState<HistorySearchMention[]>([]);
   const [suggestions, setSuggestions] = useState<HistorySearchResult[]>([]);
   const [open, setOpen] = useState(false);
   const [active, setActive] = useState(-1);
@@ -54,7 +62,7 @@ export default function HistoryHome({ discovery = null, locale = "en" }: { disco
   const [pendingQuery, setPendingQuery] = useState<string | null>(null);
   const started = useRef(false);
   const box = useRef<HTMLDivElement>(null);
-  const completed = useRef<{ query: string; results: HistorySearchResult[] } | null>(null);
+  const completed = useRef<{ query: string; results: HistorySearchResult[]; mentions: HistorySearchMention[] } | null>(null);
   const submitSeq = useRef(0);
   const submitAbort = useRef<AbortController | null>(null);
   const inflightQuery = useRef<string | null>(null);
@@ -83,7 +91,7 @@ export default function HistoryHome({ discovery = null, locale = "en" }: { disco
             setOpen(false);
             return;
           }
-          completed.current = { query: q, results: found.results };
+          completed.current = { query: q, results: found.results, mentions: found.mentions };
           setSuggestions(found.results);
           setOpen(found.results.length > 0);
           setActive(-1);
@@ -126,8 +134,9 @@ export default function HistoryHome({ discovery = null, locale = "en" }: { disco
     }
   }
 
-  function showResults(q: string, found: HistorySearchResult[]) {
+  function showResults(q: string, found: HistorySearchResult[], foundMentions: HistorySearchMention[]) {
     setResults(found);
+    setMentions(found.length === 0 ? foundMentions : []);
     const next = finishSearch({ ok: true, results: found });
     setPhase(next);
     if (next === "empty") {
@@ -156,7 +165,7 @@ export default function HistoryHome({ discovery = null, locale = "en" }: { disco
     trackHistory("SEARCH_PERFORMED");
     pushRobEvent("SEARCH_STARTED", { route: "/" });
     if (completed.current && reuseCompletedSearch(completed.current.query, q)) {
-      showResults(q, completed.current.results);
+      showResults(q, completed.current.results, completed.current.mentions);
       if (submitSeq.current === seq) {
         inflightQuery.current = null;
         setPendingQuery(null);
@@ -175,8 +184,8 @@ export default function HistoryHome({ discovery = null, locale = "en" }: { disco
         setPhase("error");
         return;
       }
-      completed.current = { query: q, results: found.results };
-      showResults(q, found.results);
+      completed.current = { query: q, results: found.results, mentions: found.mentions };
+      showResults(q, found.results, found.mentions);
     } catch {
       if (submitSeq.current !== seq) return;
       setResults(null);
@@ -249,6 +258,45 @@ export default function HistoryHome({ discovery = null, locale = "en" }: { disco
               {phase === "searching" ? <p>{copy.searching}</p> : null}
               {phase === "empty" && pendingQuery === null ? (
                 <>
+                  {mentions.length > 0 ? (
+                    <section className="rh-search-mentions" aria-label={copy.recordedMention}>
+                      <p>{copy.unconfirmedName}</p>
+                      <p>{copy.recordedMention}</p>
+                      <ul>
+                        {mentions.map((mention) => (
+                          <li key={mention.exhibitionId}>
+                            <strong>{mention.title}</strong>
+                            <span>{mention.dateLabel ?? copy.yearNotRecorded}</span>
+                            {mention.spaceName ? (
+                              <span>
+                                {mention.spaceSlug ? (
+                                  <Link href={publicHref(`/spaces/${mention.spaceSlug}`)}>{mention.spaceName}</Link>
+                                ) : (
+                                  mention.spaceName
+                                )}
+                              </span>
+                            ) : null}
+                            {mention.sourceUrl && mention.sourceName ? (
+                              <span>
+                                <a href={mention.sourceUrl}>{mention.sourceName}</a>
+                              </span>
+                            ) : null}
+                            {mention.artists.length > 0 ? (
+                              <span className="rh-mention-artists">
+                                {mention.artists.map((artist, index) => (
+                                  <Fragment key={artist.slug}>
+                                    {index > 0 ? ", " : null}
+                                    <Link href={publicHref(`/artists/${artist.slug}`)}>{shownName(artist).primary}</Link>
+                                  </Fragment>
+                                ))}
+                              </span>
+                            ) : null}
+                            <Link href={publicHref(`/exhibitions/${mention.exhibitionSlug}`)}>{copy.viewExhibition}</Link>
+                          </li>
+                        ))}
+                      </ul>
+                    </section>
+                  ) : null}
                   <ResearchOffer query={query} locale={locale} />
                   <p>
                     <Link href={publicHref("/history/start")}>{copy.startHistory}</Link>
