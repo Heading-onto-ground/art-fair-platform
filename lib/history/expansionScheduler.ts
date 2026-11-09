@@ -22,6 +22,7 @@ import {
   type ExpansionEvent,
   type ExpansionPolicy,
 } from "@/lib/history/expansionPolicy";
+import { graphHealth, sourceFamilyDistribution } from "@/lib/history/expansionGraphValue";
 import { rankCandidates, selectDailyBatch, type RankedCandidate } from "@/lib/history/expansionRank";
 import { aliasLookupEqual } from "@/lib/history/identity";
 import { blankJob, type KnownArtist } from "@/lib/history/researchAdvance";
@@ -29,12 +30,13 @@ import { acceptedCandidateSourceUrl, jobIsOpen, workflowOwned, type CandidateSou
 import { rosterStreamName, TRUSTED_ARTIST_ROSTERS } from "@/lib/history/artistRosters";
 
 /**
- * Daily bounded scheduler for Global Artist Expansion V1.
+ * Daily bounded scheduler for exhibition-first graph expansion.
  *
- * The scheduler collects candidates, ranks them, selects a bounded batch,
- * creates or reuses ResearchJobs, starts durable Workflows, records the run,
- * and returns. It performs no crawling. The research engine that visitor
- * Discovery uses performs every verification and publication step.
+ * One run selects at most dailyResearchLimit research actions. The unit is
+ * an investigation, not a new artist. The scheduler collects candidates,
+ * ranks them for verified bridge value, creates or reuses ResearchJobs,
+ * starts durable Workflows, records the run, and returns. It performs no
+ * crawling. Visitor Discovery uses the same research engine.
  */
 
 export type ExpansionMode = "DRY_RUN" | "SCHEDULED" | "MANUAL";
@@ -76,6 +78,10 @@ export type SelectedCandidateView = {
   reasons: string[];
   expectedSourceFamilies: string[];
   demandCount: number;
+  researchReason: string;
+  potentialPaths: number;
+  connectsComponents: boolean;
+  existingArtistLinks: number;
   action: "STARTED" | "REUSED_OPEN_JOB" | "RESOLVED_EXISTING" | "APPLIED_FINISHED_JOB" | "DRY_RUN" | "START_FAILED" | "SKIPPED_BUDGET";
   jobId: string | null;
 };
@@ -107,6 +113,9 @@ export type ExpansionRunRecord = {
     skippedDuplicateIdentity: string[];
     streams: Record<string, number>;
     errors: string[];
+    dailyUnit: "RESEARCH_ACTION";
+    graphBefore: ReturnType<typeof graphHealth> | null;
+    sourceFamilies: { family: string; investigations: number }[];
   };
 };
 
@@ -126,6 +135,10 @@ function view(row: RankedCandidate, action: SelectedCandidateView["action"], job
     reasons: row.reasons,
     expectedSourceFamilies: row.expectedSourceFamilies,
     demandCount: row.candidate.demandCount,
+    researchReason: row.researchReason,
+    potentialPaths: row.bridge.potentialPaths,
+    connectsComponents: row.bridge.connectsComponents,
+    existingArtistLinks: row.bridge.existingArtistLinks,
     action,
     jobId,
   };
@@ -242,6 +255,9 @@ function blankRun(mode: ExpansionMode, now: Date, policy: ExpansionPolicy): Expa
       skippedDuplicateIdentity: [],
       streams: {},
       errors: [],
+      dailyUnit: "RESEARCH_ACTION",
+      graphBefore: null,
+      sourceFamilies: [],
     },
   };
 }
@@ -364,7 +380,13 @@ export async function runExpansion(input: { mode: ExpansionMode; limit?: number;
   const fetchRemaining = Math.max(0, input.policy.dailyFetchLimit - startedBefore * ESTIMATED_FETCHES_PER_JOB);
   const batch = selectDailyBatch({ ranked: selectable, researchLimit: remaining, sparseShare: input.policy.sparseShare, fetchLimit: fetchRemaining });
   run.summary.limitApplied = batch.limit;
-  run.summary.ranking = ranked.slice(0, 20).map((row) => view(row, "DRY_RUN", null));
+  run.summary.graphBefore = graphHealth(graph);
+  run.summary.dailyUnit = "RESEARCH_ACTION";
+  run.summary.sourceFamilies = sourceFamilyDistribution(batch.selected.map((row) => ({
+    sourceFamily: row.candidate.sourceHost,
+    sourceType: row.candidate.sourceType,
+  })));
+  run.summary.ranking = ranked.slice(0, 30).map((row) => view(row, "DRY_RUN", null));
   run.summary.skippedDuplicateIdentity = batch.skippedDuplicateIdentity.map((row) => row.candidate.displayName);
 
   let rows = resolved;
@@ -428,7 +450,12 @@ export async function runExpansion(input: { mode: ExpansionMode; limit?: number;
       }
       const inserted = await deps.insertJob(job);
       const researching = candidateAfterJob({ ...candidate, researchJobId: inserted.id }, inserted, deps.now());
-      const owned = { ...researching, priorityScore: row.score, payload: { ...researching.payload, reasons: row.reasons } };
+      const owned = {
+        ...researching,
+        priorityScore: row.score,
+        bridgePotentialScore: row.bridge.potentialPaths,
+        payload: { ...researching.payload, reasons: row.reasons },
+      };
       replace(owned);
       // Ownership is durable before the workflow can finish and write a terminal state.
       await deps.saveCandidates([owned]);
@@ -457,8 +484,15 @@ export async function runExpansion(input: { mode: ExpansionMode; limit?: number;
     if (!candidate) continue;
     const status = candidate.status === "NEW" ? "QUEUED" : candidate.status;
     const sameReasons = candidate.payload.reasons.join("|") === row.reasons.join("|");
-    if (status === candidate.status && candidate.priorityScore === row.score && sameReasons) continue;
-    replace({ ...candidate, status, priorityScore: row.score, payload: { ...candidate.payload, reasons: row.reasons }, updatedAt: stamp });
+    if (status === candidate.status && candidate.priorityScore === row.score && candidate.bridgePotentialScore === row.bridge.potentialPaths && sameReasons) continue;
+    replace({
+      ...candidate,
+      status,
+      priorityScore: row.score,
+      bridgePotentialScore: row.bridge.potentialPaths,
+      payload: { ...candidate.payload, reasons: row.reasons },
+      updatedAt: stamp,
+    });
   }
 
   run.summary.selected = selectedViews;

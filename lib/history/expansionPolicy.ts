@@ -31,7 +31,10 @@ export const EXPANSION_DEFAULTS = {
   /** Estimated HTTP fetches the run may schedule. */
   dailyFetchLimit: 120,
   maxSourcesPerArtist: 4,
-  /** 3 of 10 slots go to sparse existing artists. */
+  /**
+   * Historical sparse mix. Daily selection is score order and does not
+   * reserve this share ahead of a higher-scoring exhibition bridge.
+   */
   sparseShare: 0.3,
   /** New identity candidates one researched artist may add to the queue. */
   maxChildCandidates: 20,

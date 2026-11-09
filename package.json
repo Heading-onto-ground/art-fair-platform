@@ -7,7 +7,7 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "lint:web": "eslint app/api/admin/health/route.ts app/api/admin/history/expansion/route.ts app/api/cron/history-expansion/route.ts app/api/search/route.ts app/admin/history-expansion/page.tsx app/components/admin/ExpansionControls.tsx app/layout.tsx next.config.js middleware.ts prisma.config.ts vitest.config.ts lib/history/expansionPolicy.ts lib/history/artistRosters.ts lib/history/expansionCandidates.ts lib/history/expansionRank.ts lib/history/expansionFeedback.ts lib/history/expansionScheduler.ts lib/history/expansionStore.ts scripts/expansion-isolated-canary.ts \"__tests__/**/*.ts\"",
+    "lint:web": "eslint app/api/admin/health/route.ts app/api/admin/history/expansion/route.ts app/api/cron/history-expansion/route.ts app/api/search/route.ts app/admin/history-expansion/page.tsx app/components/admin/ExpansionControls.tsx app/layout.tsx next.config.js middleware.ts prisma.config.ts vitest.config.ts lib/history/expansionPolicy.ts lib/history/artistRosters.ts lib/history/expansionCandidates.ts lib/history/expansionRank.ts lib/history/expansionGraphValue.ts lib/history/exhibitionFrontier.ts lib/history/expansionFeedback.ts lib/history/expansionScheduler.ts lib/history/expansionStore.ts scripts/expansion-isolated-canary.ts \"__tests__/**/*.ts\"",
     "typecheck": "tsc --noEmit",
     "postinstall": "prisma generate",
     "prisma:generate": "prisma generate",

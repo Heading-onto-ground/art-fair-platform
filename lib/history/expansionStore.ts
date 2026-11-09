@@ -25,6 +25,8 @@ import {
   type ExpansionEvent,
   type ExpansionPolicy,
 } from "@/lib/history/expansionPolicy";
+import { exhibitionFrontiers } from "@/lib/history/exhibitionFrontier";
+import { graphHealth, type GraphHealth } from "@/lib/history/expansionGraphValue";
 import { runExpansion, type ExpansionDeps, type ExpansionMode, type ExpansionRunRecord } from "@/lib/history/expansionScheduler";
 import { publicExhibitionWhere } from "@/lib/history/queries";
 import { isAutonomousJob, type ResearchJobRecord } from "@/lib/history/researchJob";
@@ -448,12 +450,15 @@ export type ExpansionHealth = {
   topMissingQueries: { query: string; count: number; lastSearched: string | null }[];
   nextCandidates: { displayName: string; status: string; priorityScore: number; sourceType: string; reasons: string[] }[];
   reviewCandidates: { displayName: string; status: string; failureCode: string | null; nextEligibleAt: string | null }[];
+  graph: GraphHealth;
+  entityOnlyArtists: number;
+  frontierCount: number;
 };
 
 export async function loadExpansionHealth(now = new Date()): Promise<ExpansionHealth> {
   const dayKey = now.toISOString().slice(0, 10);
   const range = dayRange(dayKey);
-  const [artists, grouped, runs, demand, next, review, jobsToday, exhibitionsToday, participationsToday, breaker] = await Promise.all([
+  const [artists, grouped, runs, demand, next, review, jobsToday, exhibitionsToday, participationsToday, breaker, expansionGraph] = await Promise.all([
     prisma.artistEntity.findMany({ select: { id: true, canonicalName: true, participations: { where: { exhibition: publicExhibitionWhere }, select: { id: true } } } }),
     prisma.artistResearchCandidate.groupBy({ by: ["status"], _count: { _all: true } }),
     prisma.expansionRun.findMany({ orderBy: { startedAt: "desc" }, take: 10 }),
@@ -464,6 +469,7 @@ export async function loadExpansionHealth(now = new Date()): Promise<ExpansionHe
     prisma.exhibition.findMany({ where: { createdAt: range, historyMeta: { origin: "ROB_RESEARCHED", publicationStatus: "PUBLIC" } }, select: { id: true, historyArtists: { select: { artistEntityId: true } } } }),
     prisma.historyParticipation.count({ where: { createdAt: range } }),
     breakerSignals(),
+    loadExpansionGraph(),
   ]);
   const candidates: Record<string, number> = {};
   let candidateTotal = 0;
@@ -529,6 +535,9 @@ export async function loadExpansionHealth(now = new Date()): Promise<ExpansionHe
       return { displayName: row.displayName, status: row.status, priorityScore: row.priorityScore, sourceType: row.sourceType, reasons: payload.reasons };
     }),
     reviewCandidates: review.map((row) => ({ displayName: row.displayName, status: row.status, failureCode: row.failureCode, nextEligibleAt: row.nextEligibleAt?.toISOString() ?? null })),
+    graph: graphHealth(expansionGraph),
+    entityOnlyArtists: Math.max(0, artists.length - expansionGraph.artists.length),
+    frontierCount: exhibitionFrontiers(expansionGraph).length,
   };
 }
 

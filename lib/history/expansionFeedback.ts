@@ -112,6 +112,14 @@ export function candidateAfterJob(candidate: CandidateRecord, job: ResearchJobRe
       outcomes,
       existingArtistSlug: job.resolvedArtistSlug ?? candidate.payload.existingArtistSlug,
       identityKey: job.payload.identity?.id ?? candidate.payload.identityKey,
+      graphYield: job.stage === "DONE"
+        ? {
+          verifiedFacts: job.verifiedFactCount,
+          published: outcome.published,
+          expanded: outcome.expanded,
+          noResultReason: outcome.failureCode,
+        }
+        : candidate.payload.graphYield,
     },
     updatedAt: stamp,
   };

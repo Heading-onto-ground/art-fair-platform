@@ -17,8 +17,10 @@ import {
 } from "@/lib/history/expansionCandidates";
 import { classifyRosterEntries, parseArtistRoster, rosterStreamName, TRUSTED_ARTIST_ROSTERS } from "@/lib/history/artistRosters";
 import { fetchTrustedDocument } from "@/lib/history/trustedCrawl";
-import { expansionPolicyFrom } from "@/lib/history/expansionPolicy";
-import { rankCandidates, selectDailyBatch } from "@/lib/history/expansionRank";
+import { exhibitionFrontiers } from "@/lib/history/exhibitionFrontier";
+import { GRAPH_MILESTONE, graphHealth } from "@/lib/history/expansionGraphValue";
+import { expansionPolicyFrom, parseBooleanFlag } from "@/lib/history/expansionPolicy";
+import { GRAPH_RANK_WEIGHTS, rankCandidates, selectDailyBatch } from "@/lib/history/expansionRank";
 import { resolveArtistSlug } from "@/lib/history/identity";
 
 const FIXTURES = ["ada painter", "canary painter", "pending check name", "zzzz no artist"];
@@ -304,9 +306,55 @@ async function main() {
       };
     });
     const findRank = (name: string) => ranked.find((row) => row.candidate.normalizedName === name)?.rank ?? null;
+    const safety = await client.query<{ mismatch: number; fixtures: number }>(`
+      SELECT
+        (SELECT COUNT(*)::int FROM "ArtistResearchCandidate" c
+          JOIN "ResearchJob" j ON j.id = c."researchJobId"
+          WHERE c.status = 'RESEARCHING' AND j.stage = 'DONE') AS mismatch,
+        (SELECT COUNT(*)::int FROM "ArtistResearchCandidate"
+          WHERE lower("displayName") IN ('ada painter', 'canary painter', 'pending check name', 'zzzz no artist')
+             OR lower("displayName") LIKE 'canary painter %') AS fixtures
+    `);
+    const describe = (row: (typeof ranked)[number]) => ({
+      rank: row.rank,
+      target: row.candidate.displayName,
+      candidateType: row.candidate.sourceType,
+      reason: row.researchReason,
+      priority: row.score,
+      sourceFamily: row.candidate.sourceHost,
+      existingOrNew: row.kind,
+      knownExhibitions: row.candidate.payload.exhibitionCount,
+      potentialExistingArtistLinks: row.bridge.existingArtistLinks,
+      estimatedGraphBridgeGain: row.bridge.potentialPaths,
+      connectsComponents: row.bridge.connectsComponents,
+      visitorDemand: row.candidate.demandCount,
+      cooldown: row.candidate.nextEligibleAt,
+      trustedSourceHints: row.expectedSourceFamilies,
+      why: row.reasons,
+    });
+    const envPath = process.env.ROB_ENV_FILE ?? "C:/Users/USER/Documents/art-fair-platform/.env.local";
+    let enabledLine: string | null = process.env.ROB_EXPANSION_ENABLED ?? null;
+    if (!enabledLine) {
+      try {
+        const line = readFileSync(envPath, "utf8").split(/\r?\n/).find((item) => item.startsWith("ROB_EXPANSION_ENABLED="));
+        enabledLine = line ? line.slice("ROB_EXPANSION_ENABLED=".length).trim().replace(/^"|"$/g, "") : null;
+      } catch {
+        enabledLine = null;
+      }
+    }
     console.log(JSON.stringify({
       mode: "READ_ONLY",
       writes: 0,
+      dailyUnit: "RESEARCH_ACTION",
+      expansionEnabled: parseBooleanFlag(enabledLine),
+      weights: GRAPH_RANK_WEIGHTS,
+      milestone: GRAPH_MILESTONE,
+      graph: {
+        ...graphHealth(graph),
+        entityOnly: Math.max(0, Number(counts.rows[0]?.artists ?? 0) - graph.artists.length),
+      },
+      frontiers: exhibitionFrontiers(graph).length,
+      safety: safety.rows[0],
       counts: counts.rows[0],
       realVisitorQueries: demand.length,
       rosterErrors,
@@ -316,7 +364,9 @@ async function main() {
       fixtureContamination: contaminated.length + leaked.length,
       fixtureSamples: contaminated.slice(0, 10).map((row) => row.label),
       top50: view,
-      next10: batch.selected.map((row) => ({ name: row.candidate.displayName, kind: row.kind, score: row.score, reasons: row.reasons })),
+      top30: ranked.slice(0, 30).map(describe),
+      selected10: batch.selected.map(describe),
+      next10: batch.selected.map((row) => ({ name: row.candidate.displayName, kind: row.kind, reason: row.researchReason, score: row.score, reasons: row.reasons })),
       kawsRank: findRank("kaws"),
       koreanRank: findRank("카우스"),
       estimatedFetches: batch.selected.length * 8,

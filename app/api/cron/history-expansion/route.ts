@@ -10,10 +10,11 @@ export const runtime = "nodejs";
 export const maxDuration = 60;
 
 /**
- * ROB History: daily Global Artist Expansion scheduler.
+ * ROB History: daily graph-expansion scheduler.
  *
- * Collects candidates, ranks them, starts a bounded number of durable
- * research workflows, and returns. Crawling happens inside the workflows.
+ * Selects a bounded number of research actions, starts durable workflows,
+ * and returns. The daily unit is an investigation, not a new artist.
+ * Crawling happens inside the workflows.
  * ROB_EXPANSION_ENABLED=false makes this route a safe no-op; visitor
  * Discovery and search are unaffected by that flag.
  */
