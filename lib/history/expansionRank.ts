@@ -86,12 +86,16 @@ function demandPoints(count: number): number {
   return Math.min(count, GRAPH_RANK_WEIGHTS.demandCap) * GRAPH_RANK_WEIGHTS.demandPerSearch;
 }
 
+function explicitExhibitionSupply(type: CandidateSourceType): boolean {
+  return type === "UNRESOLVED_PARTICIPANT" || type === "GROUP_ROSTER" || type === "TRUSTED_EXHIBITION_ARCHIVE";
+}
+
 function researchReasonFor(candidate: CandidateRecord, bridge: BridgeEstimate): ResearchReason {
   const shared = candidate.payload.sharedExistingArtists.length;
   const type: CandidateSourceType = candidate.sourceType;
   if (bridge.connectsComponents) return "GRAPH_BRIDGE_CANDIDATE";
-  if ((type === "UNRESOLVED_PARTICIPANT" || type === "GROUP_ROSTER") && shared >= 2) return "SHARED_EXHIBITION_FRONTIER";
-  if (type === "UNRESOLVED_PARTICIPANT" || type === "GROUP_ROSTER") return "UNRESOLVED_PARTICIPANT";
+  if (explicitExhibitionSupply(type) && shared >= 2) return "SHARED_EXHIBITION_FRONTIER";
+  if (explicitExhibitionSupply(type)) return "UNRESOLVED_PARTICIPANT";
   if (type === "SPARSE_EXISTING_ARTIST") return "SPARSE_ARTIST";
   if (type === "MUSEUM_ROSTER") return "TRUSTED_INSTITUTION_FRONTIER";
   if (type === "GALLERY_ROSTER") return "TRUSTED_ROSTER";
@@ -149,7 +153,7 @@ export function scoreCandidate(input: {
     if (member && member.size > 1 && input.largestComponent > 1 && member.size === input.largestComponent) add(weights.sparseInsideLargest, "inside the largest component");
     if (member && member.size <= 1) add(weights.sparseIsolated, "isolated until a shared exhibition exists");
   } else {
-    if (candidate.sourceType === "UNRESOLVED_PARTICIPANT" || candidate.sourceType === "GROUP_ROSTER") {
+    if (explicitExhibitionSupply(candidate.sourceType)) {
       add(weights.explicitParticipant, "explicit participant on a recorded exhibition");
       if (bridge.existingArtistLinks >= 2) add(weights.sharedExhibitionFrontier, "shared exhibition can create documented artist paths");
       const extra = Math.max(0, payload.unresolvedOccurrences - 1);

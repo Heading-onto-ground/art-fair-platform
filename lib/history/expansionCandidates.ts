@@ -104,7 +104,7 @@ export type CandidateObservation = {
 
 export type ExpansionGraph = {
   artists: { slug: string; labels: string[]; exhibitionIds: string[]; lastResearchAt?: string | null }[];
-  exhibitions: { id: string; title: string; year: number | null; space: string | null; artistSlugs: string[] }[];
+  exhibitions: { id: string; title: string; year: number | null; space: string | null; artistSlugs: string[]; sourceUrls?: string[] }[];
   unresolved: { label: string; exhibitionId: string | null; exhibitionTitle: string; artistSlugs: string[]; sourceUrl: string | null }[];
 };
 

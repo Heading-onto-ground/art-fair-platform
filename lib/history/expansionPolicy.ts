@@ -90,6 +90,7 @@ export const CANDIDATE_SOURCE_TYPES = [
   "MUSEUM_ROSTER",
   "IDENTITY_DISCOVERY",
   "SPARSE_EXISTING_ARTIST",
+  "TRUSTED_EXHIBITION_ARCHIVE",
 ] as const;
 
 export type CandidateSourceType = (typeof CANDIDATE_SOURCE_TYPES)[number];

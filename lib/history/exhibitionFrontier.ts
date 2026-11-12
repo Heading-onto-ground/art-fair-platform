@@ -1,13 +1,16 @@
-import type { ExpansionGraph } from "@/lib/history/expansionCandidates";
+import { classifyCandidateLabel, type ExpansionGraph } from "@/lib/history/expansionCandidates";
 import { componentMembership } from "@/lib/history/growth";
 import { expansionSnapshot } from "@/lib/history/expansionGraphValue";
 import { densityForCount } from "@/lib/history/policy";
 
 /**
- * A public exhibition is a frontier when it can extend the verified graph:
- * an unresolved participant, a sparse artist already on it, two or more
- * existing artists, or artists who are not yet in one component.
- * Frontiers are research seeds. They do not publish facts.
+ * A public exhibition is a display frontier when it contains an unresolved
+ * label, a sparse artist, two or more existing artists, or artists who are
+ * not yet in one component. That count describes the graph. It is not a
+ * research queue: a group of history-ready artists is not actionable.
+ * Actionable frontiers need a person-like unresolved participant, a sparse
+ * artist, or a real cross-component link. Unresearched archive pages are
+ * counted separately as new exhibition targets.
  */
 
 export type ExhibitionFrontier = {
@@ -63,4 +66,13 @@ export function exhibitionFrontiers(graph: ExpansionGraph): ExhibitionFrontier[]
     right.unresolvedLabels.length - left.unresolvedLabels.length
     || right.existingArtistSlugs.length - left.existingArtistSlugs.length
     || left.title.localeCompare(right.title));
+}
+
+export function isActionableFrontier(frontier: ExhibitionFrontier): boolean {
+  const personLike = frontier.unresolvedLabels.some((label) => classifyCandidateLabel(label) === "PERSON_LIKE");
+  return personLike || frontier.sparseArtistSlugs.length > 0 || frontier.connectsComponents;
+}
+
+export function actionableFrontiers(graph: ExpansionGraph): ExhibitionFrontier[] {
+  return exhibitionFrontiers(graph).filter(isActionableFrontier);
 }
