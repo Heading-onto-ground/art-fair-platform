@@ -70,10 +70,13 @@ export default async function HistoryExpansionPage() {
             {health.graph.bridgePathCount} verified artist-to-artist paths. {health.graph.artistsDegreeAtLeast1} artists with a documented connection. {health.graph.artistsDegreeAtLeast3} artists with degree 3 or more. {health.graph.connectedComponents} components, largest {health.graph.largestComponent}. {health.graph.isolatedArtists} artists on the public graph are still alone.
           </p>
           <p>
-            Public exhibitions {health.graph.publicExhibitionCount}. Participation edges {health.graph.participationCount}. Unresolved participant labels {health.graph.unresolvedParticipantCount}. Exhibition frontiers {health.frontierCount}.
+            Public exhibitions {health.graph.publicExhibitionCount}. Participation edges {health.graph.participationCount}. Unresolved participant labels {health.graph.unresolvedParticipantCount}. Graph frontiers {health.frontierCount}. Actionable frontiers {health.actionableFrontierCount}.
           </p>
           <p>
             Density: ENTITY_ONLY {health.entityOnlyArtists}, LOW_DENSITY {health.graph.lowDensity}, HISTORY_READY {health.graph.historyReady}, RICH_HISTORY {health.graph.richHistory}. ArtistEntity rows {health.totalArtists}. Indexable artists {health.indexableArtists}. Candidates {health.candidateTotal}.
+          </p>
+          <p>
+            Trusted archive pages discovered {(health.lastRun?.summary.archive?.families ?? []).reduce((sum, family) => sum + family.archivePagesFetched, 0)}. New exhibition research targets {health.lastRun?.summary.archive?.newTargets ?? 0}. Archive targets already seen {health.lastRun?.summary.archive?.knownSkipped ?? 0}. Exhibition URLs found {health.lastRun?.summary.archive?.exhibitionUrlsFound ?? 0}.
           </p>
           <p>
             Internal milestone, not a promise: {GRAPH_MILESTONE.usefulArtists} useful artists and {GRAPH_MILESTONE.verifiedExhibitionsMin}–{GRAPH_MILESTONE.verifiedExhibitionsMax} verified exhibitions, with most HISTORY_READY artists connected through a verified exhibition. Later: {GRAPH_MILESTONE.laterArtists} useful artists and {GRAPH_MILESTONE.laterExhibitions}+ exhibitions.

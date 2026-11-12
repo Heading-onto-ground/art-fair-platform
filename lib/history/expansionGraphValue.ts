@@ -63,7 +63,14 @@ export type GraphYieldNote = {
 export function expansionSnapshot(graph: ExpansionGraph): GrowthSnapshot {
   return {
     artists: graph.artists.map((artist) => ({ slug: artist.slug, labels: artist.labels, exhibitionIds: artist.exhibitionIds })),
-    exhibitions: graph.exhibitions.map((exhibition) => ({ ...exhibition, city: null })),
+    exhibitions: graph.exhibitions.map((exhibition) => ({
+      id: exhibition.id,
+      title: exhibition.title,
+      year: exhibition.year,
+      space: exhibition.space,
+      city: null,
+      artistSlugs: exhibition.artistSlugs,
+    })),
     unresolved: graph.unresolved.map((row) => ({ label: row.label, exhibitionTitle: row.exhibitionTitle })),
   };
 }

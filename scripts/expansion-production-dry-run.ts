@@ -17,7 +17,8 @@ import {
 } from "@/lib/history/expansionCandidates";
 import { classifyRosterEntries, parseArtistRoster, rosterStreamName, TRUSTED_ARTIST_ROSTERS } from "@/lib/history/artistRosters";
 import { fetchTrustedDocument } from "@/lib/history/trustedCrawl";
-import { exhibitionFrontiers } from "@/lib/history/exhibitionFrontier";
+import { harvestExhibitionArchive } from "@/lib/history/exhibitionArchive";
+import { actionableFrontiers, exhibitionFrontiers } from "@/lib/history/exhibitionFrontier";
 import { GRAPH_MILESTONE, graphHealth } from "@/lib/history/expansionGraphValue";
 import { expansionPolicyFrom, parseBooleanFlag } from "@/lib/history/expansionPolicy";
 import { GRAPH_RANK_WEIGHTS, rankCandidates, selectDailyBatch } from "@/lib/history/expansionRank";
@@ -140,12 +141,22 @@ async function main() {
     const jobRows = await client.query<{ normalizedQuery: string; status: string; stage: string }>(`
       SELECT "normalizedQuery", status, stage FROM "ResearchJob"
     `);
+    const seenArchiveRows = await client.query<{ urls: unknown }>(`
+      SELECT summary->'archive'->'inspectedExhibitionUrls' AS urls
+      FROM "ExpansionRun"
+      ORDER BY "startedAt" DESC
+      LIMIT 30
+    `);
+    const candidateUrlRows = await client.query<{ sourceUrl: string }>(`
+      SELECT "sourceUrl" FROM "ArtistResearchCandidate" WHERE "sourceUrl" IS NOT NULL
+    `);
 
     const artists = new Map<string, ExpansionGraph["artists"][number]>();
     const exhibitions = new Map<string, ExpansionGraph["exhibitions"][number]>();
     for (const row of publicRows.rows) {
-      const exhibition = exhibitions.get(row.id) ?? { id: row.id, title: row.title, year: row.startYear, space: row.space, artistSlugs: [] };
+      const exhibition = exhibitions.get(row.id) ?? { id: row.id, title: row.title, year: row.startYear, space: row.space, artistSlugs: [], sourceUrls: [] };
       if (row.slug && !exhibition.artistSlugs.includes(row.slug)) exhibition.artistSlugs.push(row.slug);
+      if (row.sourceUrl && exhibition.sourceUrls && !exhibition.sourceUrls.includes(row.sourceUrl)) exhibition.sourceUrls.push(row.sourceUrl);
       exhibitions.set(row.id, exhibition);
       if (!row.slug) continue;
       const artist = artists.get(row.slug) ?? { slug: row.slug, labels: [], exhibitionIds: [] };
@@ -332,6 +343,36 @@ async function main() {
       trustedSourceHints: row.expectedSourceFamilies,
       why: row.reasons,
     });
+    const remembered = seenArchiveRows.rows.flatMap((row) => Array.isArray(row.urls) ? row.urls.filter((url): url is string => typeof url === "string") : []);
+    const harvest = await harvestExhibitionArchive({
+      graph,
+      knownUrls: [...remembered, ...candidateUrlRows.rows.map((row) => row.sourceUrl)],
+      seenAt,
+      limit: policy.maxChildCandidates,
+      fetchDocument: async (url) => {
+        const page = await fetchTrustedDocument(url, { timeoutMs: 12_000 });
+        return { html: page.html ?? null, requests: page.requests };
+      },
+    });
+    const archiveContamination = harvest.observations.filter((row) => isExpansionFixtureLabel(row.label) || FIXTURES.some((name) => row.label.toLowerCase().includes(name)));
+    const afterMerged = mergeObservations({
+      existing: merged.rows,
+      observations: harvest.observations,
+      now: seenAt,
+      observationLimit: 100,
+      writeLimit: 50,
+    });
+    const afterRanked = rankCandidates({ candidates: afterMerged.rows, graph, now: new Date() });
+    const countReasons = (rows: typeof ranked) => {
+      const counts: Record<string, number> = {};
+      for (const row of rows) counts[row.researchReason] = (counts[row.researchReason] ?? 0) + 1;
+      return counts;
+    };
+    const countSources = (rows: typeof ranked) => {
+      const counts: Record<string, number> = {};
+      for (const row of rows) counts[row.candidate.sourceType] = (counts[row.candidate.sourceType] ?? 0) + 1;
+      return counts;
+    };
     const envPath = process.env.ROB_ENV_FILE ?? "C:/Users/USER/Documents/art-fair-platform/.env.local";
     let enabledLine: string | null = process.env.ROB_EXPANSION_ENABLED ?? null;
     if (!enabledLine) {
@@ -354,6 +395,7 @@ async function main() {
         entityOnly: Math.max(0, Number(counts.rows[0]?.artists ?? 0) - graph.artists.length),
       },
       frontiers: exhibitionFrontiers(graph).length,
+      actionableFrontiers: actionableFrontiers(graph).length,
       safety: safety.rows[0],
       counts: counts.rows[0],
       realVisitorQueries: demand.length,
@@ -361,15 +403,35 @@ async function main() {
       rosterAudit,
       observations: observations.length,
       candidateRowsConsidered: merged.observed,
-      fixtureContamination: contaminated.length + leaked.length,
-      fixtureSamples: contaminated.slice(0, 10).map((row) => row.label),
+      fixtureContamination: contaminated.length + leaked.length + archiveContamination.length,
+      fixtureSamples: [...contaminated, ...archiveContamination].slice(0, 10).map((row) => row.label),
       top50: view,
       top30: ranked.slice(0, 30).map(describe),
+      top30After: afterRanked.slice(0, 30).map(describe),
+      top30SourceTypesBefore: countSources(ranked.slice(0, 30)),
+      top30SourceTypesAfter: countSources(afterRanked.slice(0, 30)),
+      reasonCountsBefore: countReasons(ranked),
+      reasonCountsAfter: countReasons(afterRanked),
       selected10: batch.selected.map(describe),
+      archive: {
+        requests: harvest.requests,
+        note: harvest.note,
+        errors: harvest.errors,
+        observations: harvest.observations.map((row) => ({
+          label: row.label,
+          sharedExistingArtists: row.sharedExistingArtists ?? [],
+          sourceUrl: row.sourceUrl,
+          institution: row.via?.institution ?? null,
+          exhibitionTitle: row.via?.exhibitionTitle ?? null,
+        })),
+        pages: harvest.pages,
+      },
       next10: batch.selected.map((row) => ({ name: row.candidate.displayName, kind: row.kind, reason: row.researchReason, score: row.score, reasons: row.reasons })),
       kawsRank: findRank("kaws"),
       koreanRank: findRank("카우스"),
       estimatedFetches: batch.selected.length * 8,
+      archiveRequests: harvest.requests,
+      estimatedFetchesWithArchive: harvest.requests + 9 * 8,
     }, null, 2));
   } finally {
     await client.query("ROLLBACK");

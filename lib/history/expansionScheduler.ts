@@ -28,6 +28,7 @@ import { aliasLookupEqual } from "@/lib/history/identity";
 import { blankJob, type KnownArtist } from "@/lib/history/researchAdvance";
 import { acceptedCandidateSourceUrl, jobIsOpen, workflowOwned, type CandidateSourceHint, type ResearchJobRecord } from "@/lib/history/researchJob";
 import { rosterStreamName, TRUSTED_ARTIST_ROSTERS } from "@/lib/history/artistRosters";
+import { harvestExhibitionArchive, type ArchiveRunNote } from "@/lib/history/exhibitionArchive";
 
 /**
  * Daily bounded scheduler for exhibition-first graph expansion.
@@ -35,8 +36,10 @@ import { rosterStreamName, TRUSTED_ARTIST_ROSTERS } from "@/lib/history/artistRo
  * One run selects at most dailyResearchLimit research actions. The unit is
  * an investigation, not a new artist. The scheduler collects candidates,
  * ranks them for verified bridge value, creates or reuses ResearchJobs,
- * starts durable Workflows, records the run, and returns. It performs no
- * crawling. Visitor Discovery uses the same research engine.
+ * starts durable Workflows, records the run, and returns. A scheduled run
+ * may also read a small trusted exhibition-archive window. That read only
+ * queues explicit participants. Publication stays on the research gates.
+ * Visitor Discovery uses the same research engine.
  */
 
 export type ExpansionMode = "DRY_RUN" | "SCHEDULED" | "MANUAL";
@@ -52,6 +55,9 @@ export type ExpansionDeps = {
   artistIds: () => Promise<Map<string, string>>;
   /** Optional trusted roster index fetch. One request per roster per run. */
   fetchRoster?: (url: string) => Promise<string | null>;
+  /** Optional exhibition-archive fetch. Used only by a scheduled run, and only after the kill switch. */
+  fetchArchive?: (url: string) => Promise<{ html: string | null; requests: number }>;
+  seenArchiveUrls?: () => Promise<string[]>;
   jobsStartedToday: (dayKey: string) => Promise<number>;
   openVisitorJobs: () => Promise<number>;
   listJobsForQuery: (normalizedQuery: string) => Promise<ResearchJobRecord[]>;
@@ -116,6 +122,7 @@ export type ExpansionRunRecord = {
     dailyUnit: "RESEARCH_ACTION";
     graphBefore: ReturnType<typeof graphHealth> | null;
     sourceFamilies: { family: string; investigations: number }[];
+    archive: ArchiveRunNote | null;
   };
 };
 
@@ -258,6 +265,7 @@ function blankRun(mode: ExpansionMode, now: Date, policy: ExpansionPolicy): Expa
       dailyUnit: "RESEARCH_ACTION",
       graphBefore: null,
       sourceFamilies: [],
+      archive: null,
     },
   };
 }
@@ -318,6 +326,27 @@ export async function runExpansion(input: { mode: ExpansionMode; limit?: number;
   const reconciledState = await reconcile(stored, graph, deps, input.policy, now);
   run.summary.reconciled = reconciledState.reconciled;
 
+  let archiveObservations: CandidateObservation[] = [];
+  if (input.mode === "SCHEDULED" && deps.fetchArchive) {
+    try {
+      const remembered = deps.seenArchiveUrls ? await deps.seenArchiveUrls() : [];
+      const candidateUrls = stored.flatMap((row) => [row.sourceUrl, ...row.payload.sourceHints, ...row.payload.provenance.map((item) => item.sourceUrl)]);
+      const harvest = await harvestExhibitionArchive({
+        graph,
+        knownUrls: [...remembered, ...candidateUrls.filter((url): url is string => Boolean(url))],
+        seenAt: stamp,
+        limit: input.policy.maxChildCandidates,
+        fetchDocument: deps.fetchArchive,
+      });
+      archiveObservations = harvest.observations;
+      run.summary.archive = harvest.note;
+      run.estimatedFetches += harvest.requests;
+      run.summary.errors.push(...harvest.errors);
+    } catch (error) {
+      run.summary.errors.push(`archive: ${error instanceof Error ? error.message : "fetch failed"}`);
+    }
+  }
+
   const observations: CandidateObservation[] = [];
   const streams: Record<string, number> = {};
   const push = (name: string, rows: CandidateObservation[]) => {
@@ -328,6 +357,7 @@ export async function runExpansion(input: { mode: ExpansionMode; limit?: number;
   push("UNRESOLVED_PARTICIPANT", unresolvedObservations(graph, stamp));
   push("SPARSE_EXISTING_ARTIST", sparseArtistObservations(graph, demand, stamp));
   push("GROUP_ROSTER", reconciledState.children);
+  push("TRUSTED_EXHIBITION_ARCHIVE", archiveObservations);
   if (deps.fetchRoster) {
     for (const roster of TRUSTED_ARTIST_ROSTERS) {
       if (!roster.enabled) continue;
@@ -364,8 +394,15 @@ export async function runExpansion(input: { mode: ExpansionMode; limit?: number;
   const freshChildKeys = new Set(
     reconciledState.children.map((child) => normalizeCandidateName(child.label)).filter((key): key is string => Boolean(key)),
   );
+  const freshArchiveKeys = new Set(
+    archiveObservations.map((row) => normalizeCandidateName(row.label)).filter((key): key is string => Boolean(key)),
+  );
   const requestedLabels = input.mode === "SCHEDULED" ? [] : (input.onlyLabels ?? []).map((label) => label.trim()).filter(Boolean);
-  const eligible = ranked.filter((row) => !freshChildKeys.has(row.candidate.normalizedName) || storedKeys.has(row.candidate.normalizedName));
+  const eligible = ranked.filter((row) => {
+    const key = row.candidate.normalizedName;
+    const queuedForLater = (freshChildKeys.has(key) || freshArchiveKeys.has(key)) && !storedKeys.has(key);
+    return !queuedForLater;
+  });
   const selectable = requestedLabels.length === 0
     ? eligible
     : eligible.filter((row) => requestedLabels.some((label) => aliasLookupEqual(label, row.candidate.displayName)));
@@ -375,9 +412,12 @@ export async function runExpansion(input: { mode: ExpansionMode; limit?: number;
   run.summary.openVisitorJobs = openVisitor;
   const requested = input.limit != null && Number.isFinite(input.limit) ? Math.max(0, Math.trunc(input.limit)) : input.policy.dailyResearchLimit;
   // Visitor research keeps priority. Earlier starts today consume the daily cap, not the size of this request.
+  // An archive pass is one research action and its HTTP requests count against the same fetch budget.
   const dailyRoom = Math.max(0, input.policy.dailyResearchLimit - startedBefore - openVisitor);
-  const remaining = Math.min(requested, dailyRoom);
-  const fetchRemaining = Math.max(0, input.policy.dailyFetchLimit - startedBefore * ESTIMATED_FETCHES_PER_JOB);
+  const archiveRequests = run.summary.archive?.requests ?? 0;
+  const archiveSlot = archiveRequests > 0 ? 1 : 0;
+  const remaining = Math.max(0, Math.min(requested, dailyRoom) - archiveSlot);
+  const fetchRemaining = Math.max(0, input.policy.dailyFetchLimit - startedBefore * ESTIMATED_FETCHES_PER_JOB - archiveRequests);
   const batch = selectDailyBatch({ ranked: selectable, researchLimit: remaining, sparseShare: input.policy.sparseShare, fetchLimit: fetchRemaining });
   run.summary.limitApplied = batch.limit;
   run.summary.graphBefore = graphHealth(graph);

@@ -25,7 +25,8 @@ import {
   type ExpansionEvent,
   type ExpansionPolicy,
 } from "@/lib/history/expansionPolicy";
-import { exhibitionFrontiers } from "@/lib/history/exhibitionFrontier";
+import { actionableFrontiers, exhibitionFrontiers } from "@/lib/history/exhibitionFrontier";
+import { normalizeExhibitionUrl } from "@/lib/history/exhibitionArchive";
 import { graphHealth, type GraphHealth } from "@/lib/history/expansionGraphValue";
 import { runExpansion, type ExpansionDeps, type ExpansionMode, type ExpansionRunRecord } from "@/lib/history/expansionScheduler";
 import { publicExhibitionWhere } from "@/lib/history/queries";
@@ -138,7 +139,7 @@ export async function loadExpansionGraph(): Promise<ExpansionGraph> {
             artist: { select: { slug: true, canonicalName: true, nativeName: true, aliases: { select: { label: true } } } },
           },
         },
-        historySources: { select: { source: { select: { url: true } } }, take: 1 },
+        historySources: { select: { source: { select: { url: true } } }, take: 5 },
       },
     }),
     prisma.historyUnresolvedName.findMany({
@@ -176,6 +177,7 @@ export async function loadExpansionGraph(): Promise<ExpansionGraph> {
       year: exhibition.historyMeta?.startYear ?? null,
       space: exhibition.space?.name ?? null,
       artistSlugs: exhibition.historyArtists.map((row) => row.artist.slug),
+      sourceUrls: [...new Set(exhibition.historySources.map((row) => row.source.url).filter((url): url is string => Boolean(url)))],
     })),
     unresolved: unresolved.map((row) => ({
       label: row.label,
@@ -348,6 +350,11 @@ export function expansionDeps(input: { startWorkflow: ExpansionDeps["startWorkfl
         const page = await fetchTrustedDocument(url, { timeoutMs: 12_000 });
         return page.blocked ? null : page.html ?? null;
       },
+    fetchArchive: async (url) => {
+      const page = await fetchTrustedDocument(url, { timeoutMs: 12_000 });
+      return { html: page.html ?? null, requests: page.requests };
+    },
+    seenArchiveUrls: loadSeenArchiveUrls,
     jobsStartedToday,
     openVisitorJobs,
     listJobsForQuery,
@@ -453,6 +460,7 @@ export type ExpansionHealth = {
   graph: GraphHealth;
   entityOnlyArtists: number;
   frontierCount: number;
+  actionableFrontierCount: number;
 };
 
 export async function loadExpansionHealth(now = new Date()): Promise<ExpansionHealth> {
@@ -538,7 +546,28 @@ export async function loadExpansionHealth(now = new Date()): Promise<ExpansionHe
     graph: graphHealth(expansionGraph),
     entityOnlyArtists: Math.max(0, artists.length - expansionGraph.artists.length),
     frontierCount: exhibitionFrontiers(expansionGraph).length,
+    actionableFrontierCount: actionableFrontiers(expansionGraph).length,
   };
+}
+
+export async function loadSeenArchiveUrls(): Promise<string[]> {
+  const runs = await prisma.expansionRun.findMany({
+    orderBy: { startedAt: "desc" },
+    take: 30,
+    select: { summary: true },
+  });
+  const urls: string[] = [];
+  for (const run of runs) {
+    const summary = run.summary as { archive?: { inspectedExhibitionUrls?: unknown } | null };
+    const inspected = summary.archive?.inspectedExhibitionUrls;
+    if (!Array.isArray(inspected)) continue;
+    for (const url of inspected) {
+      if (typeof url !== "string") continue;
+      const key = normalizeExhibitionUrl(url);
+      if (key && !urls.includes(key)) urls.push(key);
+    }
+  }
+  return urls;
 }
 
 export { CIRCUIT_BREAKER };
