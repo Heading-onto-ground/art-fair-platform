@@ -2,6 +2,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { getAdminSession } from "@/lib/adminAuth";
 import { EXPANSION_KILL_SWITCH } from "@/lib/history/expansionPolicy";
+import { GRAPH_MILESTONE, graphDelta } from "@/lib/history/expansionGraphValue";
 import { loadExpansionHealth, runExpansionWithStore } from "@/lib/history/expansionStore";
 import type { ExpansionRunRecord } from "@/lib/history/expansionScheduler";
 import { isMissingHistorySchema } from "@/lib/history/schemaError";
@@ -11,16 +12,21 @@ export const dynamic = "force-dynamic";
 
 function dailySummary(health: Awaited<ReturnType<typeof loadExpansionHealth>>): string[] {
   const t = health.today;
+  const graph = health.graph;
+  const before = health.lastRun?.summary.graphBefore ?? null;
+  const delta = before ? graphDelta(before, graph) : null;
   return [
-    `ROB GLOBAL EXPANSION — ${t.dayKey}`,
-    `Candidates observed: ${health.lastRun?.candidatesObserved ?? 0}`,
-    `New candidates: ${health.lastRun?.candidatesInserted ?? 0}`,
-    `Research jobs started: ${t.workflowStarts}`,
-    `Artists published: ${t.published}`,
-    `Existing artists expanded: ${t.expanded}`,
+    `ROB DAILY GRAPH EXPANSION — ${t.dayKey}`,
+    `Daily unit: research action`,
+    `Research actions started: ${t.workflowStarts}`,
     `Exhibitions added: ${t.newExhibitions}`,
     `Participation edges added: ${t.newParticipations}`,
-    `New artist bridges: ${t.newSharedPairs}`,
+    `Artist → Exhibition → Artist paths added: ${t.newSharedPairs}`,
+    `New artists published: ${t.published}`,
+    `Sparse artists enriched: ${t.expanded}`,
+    `HISTORY_READY on the public graph: ${graph.historyReady}${delta ? ` (delta ${delta.historyReady})` : ""}`,
+    `RICH_HISTORY on the public graph: ${graph.richHistory}${delta ? ` (delta ${delta.richHistory})` : ""}`,
+    `Connected components: ${graph.connectedComponents}${delta ? ` (delta ${delta.connectedComponents})` : ""}`,
     `Needs review: ${t.needsReview}`,
     `No trusted source: ${t.noTrustedSource}`,
   ];
@@ -41,8 +47,8 @@ export default async function HistoryExpansionPage() {
   return (
     <main style={{ maxWidth: 880, margin: "40px auto", padding: "0 20px", fontFamily: "Georgia, serif" }}>
       <p><Link href="/admin">Admin</Link> · <Link href="/admin/history-health">History health</Link></p>
-      <h1>Global Artist Expansion</h1>
-      <p>Internal operator view. Autonomous research uses the same identity, source, participation, duplicate, space, and publication gates as visitor Discovery.</p>
+      <h1>Daily Graph Expansion</h1>
+      <p>Internal operator view. Each day runs a bounded set of research actions. The useful result is a verified Artist → Exhibition → Artist path, not a new name. Autonomous research uses the same identity, source, participation, duplicate, space, and publication gates as visitor Discovery.</p>
       {unavailable || !health ? <p>Expansion tables are not available. Apply prisma/sql/add-artist-research-candidates.sql first.</p> : null}
       {health ? (
         <>
@@ -57,9 +63,21 @@ export default async function HistoryExpansionPage() {
             Data quality: {health.dataQuality.missingCanonicalName} artists missing canonical name. {health.dataQuality.sameNameRecords} same-name artist records require review.
           </p>
           <p>
-            Daily research limit {health.policy.dailyResearchLimit}. Fetch budget {health.policy.dailyFetchLimit}. Candidate observations {health.policy.dailyCandidateLimit}/day, writes {health.policy.dailyCandidateWriteLimit}/day. Sparse share {Math.round(health.policy.sparseShare * 100)}%. Child candidates per artist {health.policy.maxChildCandidates}.
+            Daily research actions {health.policy.dailyResearchLimit}. Fetch budget {health.policy.dailyFetchLimit}. Candidate observations {health.policy.dailyCandidateLimit}/day, writes {health.policy.dailyCandidateWriteLimit}/day. Sparse share is recorded at {Math.round(health.policy.sparseShare * 100)}% and does not reserve slots ahead of a higher-scoring exhibition bridge. Child candidates per action {health.policy.maxChildCandidates}.
           </p>
-          <p>{health.totalArtists} ArtistEntity rows. {health.indexableArtists} indexable artists. {health.candidateTotal} candidates.</p>
+          <h2>Graph growth</h2>
+          <p>
+            {health.graph.bridgePathCount} verified artist-to-artist paths. {health.graph.artistsDegreeAtLeast1} artists with a documented connection. {health.graph.artistsDegreeAtLeast3} artists with degree 3 or more. {health.graph.connectedComponents} components, largest {health.graph.largestComponent}. {health.graph.isolatedArtists} artists on the public graph are still alone.
+          </p>
+          <p>
+            Public exhibitions {health.graph.publicExhibitionCount}. Participation edges {health.graph.participationCount}. Unresolved participant labels {health.graph.unresolvedParticipantCount}. Exhibition frontiers {health.frontierCount}.
+          </p>
+          <p>
+            Density: ENTITY_ONLY {health.entityOnlyArtists}, LOW_DENSITY {health.graph.lowDensity}, HISTORY_READY {health.graph.historyReady}, RICH_HISTORY {health.graph.richHistory}. ArtistEntity rows {health.totalArtists}. Indexable artists {health.indexableArtists}. Candidates {health.candidateTotal}.
+          </p>
+          <p>
+            Internal milestone, not a promise: {GRAPH_MILESTONE.usefulArtists} useful artists and {GRAPH_MILESTONE.verifiedExhibitionsMin}–{GRAPH_MILESTONE.verifiedExhibitionsMax} verified exhibitions, with most HISTORY_READY artists connected through a verified exhibition. Later: {GRAPH_MILESTONE.laterArtists} useful artists and {GRAPH_MILESTONE.laterExhibitions}+ exhibitions.
+          </p>
           <ul>
             {Object.entries(health.candidates).sort().map(([status, count]) => (
               <li key={status}>{status} · {count}</li>
@@ -69,17 +87,17 @@ export default async function HistoryExpansionPage() {
           <pre style={{ background: "#f6f3ee", padding: 12, whiteSpace: "pre-wrap" }}>{dailySummary(health).join("\n")}</pre>
           <p>Verified facts today {health.today.verifiedFacts}. Failed jobs today {health.today.failedJobs}. Workflow starts today {health.today.workflowStarts}.</p>
           <ExpansionControls enabled={health.policy.enabled} dailyLimit={health.policy.dailyResearchLimit} paused={health.paused} />
-          <h2>What will ROB research next?</h2>
+          <h2>Next research actions</h2>
           {preview ? (
             <>
               <p>Dry ranking. Nothing was created. Limit for this run {preview.summary.limitApplied} ({preview.summary.jobsStartedBefore} already started today, {preview.summary.openVisitorJobs} open visitor jobs).</p>
               <ol>
                 {preview.summary.ranking.map((row) => (
                   <li key={row.candidateId}>
-                    <strong>{row.displayName}</strong> · {row.kind} · {row.sourceType} · score {row.score}
+                    <strong>{row.displayName}</strong> · {row.researchReason} · {row.kind} · {row.sourceType} · score {row.score} · paths {row.potentialPaths}{row.connectsComponents ? " · component bridge" : ""}
                     {preview.summary.selected.some((item) => item.candidateId === row.candidateId) ? " · would run" : ""}
                     <br />
-                    <small>{row.reasons.join("; ")} · expected sources: {row.expectedSourceFamilies.join(", ")}</small>
+                    <small>{row.reasons.join("; ")} · expected sources: {row.expectedSourceFamilies.join(", ")} · links {row.existingArtistLinks}</small>
                   </li>
                 ))}
               </ol>
@@ -89,10 +107,13 @@ export default async function HistoryExpansionPage() {
           <h2>Last run</h2>
           {health.lastRun ? (
             <>
-              <p>{health.lastRun.runKey} · {health.lastRun.mode} · {health.lastRun.status} · started {health.lastRun.jobsStarted} · reused {health.lastRun.jobsReused} · observed {health.lastRun.candidatesObserved} · estimated fetches {health.lastRun.estimatedFetches} · failures {health.lastRun.failureCount}</p>
+              <p>{health.lastRun.runKey} · {health.lastRun.mode} · {health.lastRun.status} · research actions {health.lastRun.jobsStarted} · reused {health.lastRun.jobsReused} · observed {health.lastRun.candidatesObserved} · estimated fetches {health.lastRun.estimatedFetches} · failures {health.lastRun.failureCount}</p>
+              {(health.lastRun.summary.sourceFamilies ?? []).length > 0 ? (
+                <p>Source families: {health.lastRun.summary.sourceFamilies.map((row) => `${row.family} ${row.investigations}`).join(" · ")}</p>
+              ) : null}
               <ul>
                 {health.lastRun.summary.selected.map((row) => (
-                  <li key={row.candidateId}>{row.displayName} · {row.action}{row.jobId ? ` · job ${row.jobId}` : ""} · {row.reasons.join("; ")}</li>
+                  <li key={row.candidateId}>{row.displayName} · {row.researchReason ?? row.sourceType} · {row.action}{row.jobId ? ` · job ${row.jobId}` : ""} · paths {row.potentialPaths ?? "n/a"} · {row.reasons.join("; ")}</li>
                 ))}
               </ul>
               {health.lastRun.summary.errors.length > 0 ? <p>Errors: {health.lastRun.summary.errors.join(" | ")}</p> : null}

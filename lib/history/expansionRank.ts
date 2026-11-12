@@ -1,22 +1,62 @@
 import { componentMembership, type GrowthSnapshot } from "@/lib/history/growth";
 import { densityForCount } from "@/lib/history/policy";
 import { sameResearchTarget, type CandidateRecord, type ExpansionGraph } from "@/lib/history/expansionCandidates";
-import { ESTIMATED_FETCHES_PER_JOB, type CandidateStatus } from "@/lib/history/expansionPolicy";
+import { estimateBridge, type BridgeEstimate, type ResearchReason } from "@/lib/history/expansionGraphValue";
+import { ESTIMATED_FETCHES_PER_JOB, type CandidateSourceType, type CandidateStatus } from "@/lib/history/expansionPolicy";
 
 /**
- * Priority ranking for Global Artist Expansion V1.
+ * Priority ranking for exhibition-first Daily Graph Expansion.
  *
- * Allowed signals are factual or product-utility signals only: real visitor
- * demand, unresolved participant occurrences, graph adjacency, bridge
- * potential, trusted source hints, density, and previous outcomes.
- * No market, fame, follower, or auction signal exists in this file.
+ * The daily unit is one research action. Score prefers a verified shared
+ * exhibition that can create Artist → Exhibition → Artist paths. Visitor
+ * demand can raise a score. It cannot outrank a strong documented bridge,
+ * and it cannot bypass provenance.
+ * No market, fame, follower, auction, or celebrity signal exists in this file.
  */
+
+/**
+ * Weights audited from the previous ranker, then retuned so a shared
+ * exhibition outranks roster-only and isolated demand. Demand stays capped.
+ * One source family cannot fill the batch while a close alternative exists.
+ */
+export const GRAPH_RANK_WEIGHTS = {
+  explicitParticipant: 26,
+  sharedExhibitionFrontier: 22,
+  perSharedArtist: 8,
+  maxSharedArtists: 6,
+  componentBridge: 32,
+  trustedSourceHint: 4,
+  maxTrustedHints: 3,
+  visitorDemandType: 8,
+  demandPerSearch: 3,
+  demandCap: 12,
+  galleryRoster: 12,
+  museumRoster: 12,
+  sparseEmpty: 18,
+  sparseLowDensity: 28,
+  sparseHistoryReady: 10,
+  sparseRich: -30,
+  sparseInsideLargest: 8,
+  sparseIsolated: -8,
+  sparseTrustedExhibition: 16,
+  repeatOccurrence: 6,
+  maxRepeat: 4,
+  attemptPenalty: -10,
+  maxAttempts: 3,
+  ambiguousOutcome: -25,
+  noTrustedOutcome: -8,
+  sourceBlockedOutcome: -6,
+  sourceFamilyCapShare: 0.6,
+  sourceFamilyAlternativeRatio: 0.8,
+} as const;
 
 export type RankedCandidate = {
   rank: number;
   candidate: CandidateRecord;
   score: number;
   reasons: string[];
+  researchReason: ResearchReason;
+  bridge: BridgeEstimate;
   kind: "NEW_IDENTITY" | "SPARSE_EXISTING";
   estimatedFetches: number;
   expectedSourceFamilies: string[];
@@ -43,7 +83,19 @@ export function candidateKind(candidate: CandidateRecord): RankedCandidate["kind
 
 function demandPoints(count: number): number {
   if (count <= 0) return 0;
-  return Math.min(count, 12) * 3;
+  return Math.min(count, GRAPH_RANK_WEIGHTS.demandCap) * GRAPH_RANK_WEIGHTS.demandPerSearch;
+}
+
+function researchReasonFor(candidate: CandidateRecord, bridge: BridgeEstimate): ResearchReason {
+  const shared = candidate.payload.sharedExistingArtists.length;
+  const type: CandidateSourceType = candidate.sourceType;
+  if (bridge.connectsComponents) return "GRAPH_BRIDGE_CANDIDATE";
+  if ((type === "UNRESOLVED_PARTICIPANT" || type === "GROUP_ROSTER") && shared >= 2) return "SHARED_EXHIBITION_FRONTIER";
+  if (type === "UNRESOLVED_PARTICIPANT" || type === "GROUP_ROSTER") return "UNRESOLVED_PARTICIPANT";
+  if (type === "SPARSE_EXISTING_ARTIST") return "SPARSE_ARTIST";
+  if (type === "MUSEUM_ROSTER") return "TRUSTED_INSTITUTION_FRONTIER";
+  if (type === "GALLERY_ROSTER") return "TRUSTED_ROSTER";
+  return "SEARCH_DEMAND";
 }
 
 function hostOf(url: string): string | null {
@@ -67,11 +119,19 @@ export function scoreCandidate(input: {
   graph: ExpansionGraph;
   membership: ReadonlyMap<string, { id: number; size: number }>;
   largestComponent: number;
-}): { score: number; reasons: string[] } {
+}): { score: number; reasons: string[]; bridge: BridgeEstimate; researchReason: ResearchReason } {
   const { candidate } = input;
+  const weights = GRAPH_RANK_WEIGHTS;
   const payload = candidate.payload;
+  const linked = estimateBridge(payload.sharedExistingArtists, input.membership);
+  // An existing artist already has these paths. Counting them again would
+  // rank a dense history above a participant who would create new paths.
+  const bridge: BridgeEstimate = candidate.sourceType === "SPARSE_EXISTING_ARTIST"
+    ? { ...linked, potentialPaths: 0 }
+    : linked;
+  const researchReason = researchReasonFor(candidate, bridge);
   let score = 0;
-  const reasons: string[] = [];
+  const reasons: string[] = [`research reason ${researchReason}`];
   const add = (points: number, reason: string) => {
     if (points === 0) return;
     score += points;
@@ -81,41 +141,44 @@ export function scoreCandidate(input: {
   if (candidate.sourceType === "SPARSE_EXISTING_ARTIST") {
     const density = densityForCount(payload.exhibitionCount);
     const member = payload.existingArtistSlug ? input.membership.get(payload.existingArtistSlug) : undefined;
-    if (density === "EMPTY") add(24, "existing artist with no public exhibition");
-    else if (density === "LOW_DENSITY") add(30, "existing artist with sparse history");
-    else if (density === "HISTORY_READY") add(12, "history-ready artist with room to grow");
-    else add(-30, "rich history already");
-    if (member && member.size > 1 && input.largestComponent > 1 && member.size === input.largestComponent) add(10, "inside the largest component");
-    if (member && member.size <= 1) add(-8, "isolated until a shared exhibition exists");
+    if (density === "EMPTY") add(weights.sparseEmpty, "existing artist with no public exhibition");
+    else if (density === "LOW_DENSITY") add(weights.sparseLowDensity, "existing artist with sparse history");
+    else if (density === "HISTORY_READY") add(weights.sparseHistoryReady, "history-ready artist with room to grow");
+    else add(weights.sparseRich, "rich history already");
+    if (linked.existingArtistLinks > 0) add(weights.sparseTrustedExhibition, "trusted exhibition already links this artist");
+    if (member && member.size > 1 && input.largestComponent > 1 && member.size === input.largestComponent) add(weights.sparseInsideLargest, "inside the largest component");
+    if (member && member.size <= 1) add(weights.sparseIsolated, "isolated until a shared exhibition exists");
   } else {
     if (candidate.sourceType === "UNRESOLVED_PARTICIPANT" || candidate.sourceType === "GROUP_ROSTER") {
-      add(22, "explicit participant on a recorded exhibition");
+      add(weights.explicitParticipant, "explicit participant on a recorded exhibition");
+      if (bridge.existingArtistLinks >= 2) add(weights.sharedExhibitionFrontier, "shared exhibition can create documented artist paths");
       const extra = Math.max(0, payload.unresolvedOccurrences - 1);
-      if (extra > 0) add(Math.min(extra, 4) * 8, `same label appears ${payload.unresolvedOccurrences} times`);
+      if (extra > 0) add(Math.min(extra, weights.maxRepeat) * weights.repeatOccurrence, `same label appears ${payload.unresolvedOccurrences} times`);
     }
-    if (candidate.sourceType === "REAL_VISITOR_DEMAND") add(10, "real visitor search did not find this artist");
-    if (candidate.sourceType === "GALLERY_ROSTER") add(14, "listed on a trusted representing-gallery roster");
-    if (candidate.sourceType === "MUSEUM_ROSTER") add(14, "listed on a trusted museum roster");
+    if (candidate.sourceType === "REAL_VISITOR_DEMAND") add(weights.visitorDemandType, "real visitor search did not find this artist");
+    if (candidate.sourceType === "GALLERY_ROSTER") add(weights.galleryRoster, "listed on a trusted representing-gallery roster");
+    if (candidate.sourceType === "MUSEUM_ROSTER") add(weights.museumRoster, "listed on a trusted museum roster");
   }
 
   const demand = demandPoints(candidate.demandCount);
   if (demand > 0) add(demand, `visitor missing-search demand ${candidate.demandCount}`);
 
   const shared = payload.sharedExistingArtists.filter((slug) => input.membership.has(slug));
-  if (shared.length > 0) add(Math.min(shared.length, 5) * 6, `shares a verified exhibition with ${shared.length} ROB artist${shared.length === 1 ? "" : "s"}`);
-  const components = new Set(shared.map((slug) => input.membership.get(slug)?.id).filter((id): id is number => id != null));
-  if (components.size >= 2) add(28, `could connect ${components.size} graph components`);
+  if (candidate.sourceType !== "SPARSE_EXISTING_ARTIST" && shared.length > 0) {
+    add(Math.min(shared.length, weights.maxSharedArtists) * weights.perSharedArtist, `shares a verified exhibition with ${shared.length} ROB artist${shared.length === 1 ? "" : "s"}`);
+  }
+  if (bridge.connectsComponents) add(weights.componentBridge, `could connect ${bridge.componentCount} graph components`);
 
-  const hints = Math.min(payload.sourceHints.length, 3);
-  if (hints > 0) add(hints * 6, `${payload.sourceHints.length} trusted source hint${payload.sourceHints.length === 1 ? "" : "s"}`);
+  const hints = Math.min(payload.sourceHints.length, weights.maxTrustedHints);
+  if (hints > 0) add(hints * weights.trustedSourceHint, `${payload.sourceHints.length} trusted source hint${payload.sourceHints.length === 1 ? "" : "s"}`);
 
-  if (candidate.attemptCount > 0) add(-10 * Math.min(candidate.attemptCount, 3), `${candidate.attemptCount} previous attempt${candidate.attemptCount === 1 ? "" : "s"}`);
+  if (candidate.attemptCount > 0) add(weights.attemptPenalty * Math.min(candidate.attemptCount, weights.maxAttempts), `${candidate.attemptCount} previous attempt${candidate.attemptCount === 1 ? "" : "s"}`);
   const outcomes = payload.outcomes;
-  if (outcomes.includes("IDENTITY_AMBIGUOUS")) add(-25, "ambiguous identity on a previous run");
-  if (outcomes.includes("NO_TRUSTED_SOURCE")) add(-8, "no trusted source on a previous run");
-  if (outcomes.includes("SOURCE_BLOCKED")) add(-6, "official source was blocked on a previous run");
+  if (outcomes.includes("IDENTITY_AMBIGUOUS")) add(weights.ambiguousOutcome, "ambiguous identity on a previous run");
+  if (outcomes.includes("NO_TRUSTED_SOURCE")) add(weights.noTrustedOutcome, "no trusted source on a previous run");
+  if (outcomes.includes("SOURCE_BLOCKED")) add(weights.sourceBlockedOutcome, "official source was blocked on a previous run");
 
-  return { score, reasons };
+  return { score, reasons, bridge, researchReason };
 }
 
 export function rankCandidates(input: {
@@ -140,6 +203,8 @@ export function rankCandidates(input: {
         candidate,
         score: result.score,
         reasons: result.reasons,
+        researchReason: result.researchReason,
+        bridge: result.bridge,
         kind: candidateKind(candidate),
         estimatedFetches: ESTIMATED_FETCHES_PER_JOB,
         expectedSourceFamilies: expectedSourceFamilies(candidate),
@@ -157,16 +222,22 @@ export type BatchSelection = {
   selected: RankedCandidate[];
   skippedDuplicateIdentity: RankedCandidate[];
   limit: number;
+  /** Actual sparse artists selected by score, not a reserved quota. */
   newSlots: number;
   sparseSlots: number;
+  /** Operator setting. Selection does not reserve this share. */
+  configuredSparseShare: number;
   fetchBudgetLimit: number;
 };
 
 /**
  * Bounded daily batch. The research limit is the hard cap; the fetch budget
- * can only lower it. Slots are split between new identities and sparse
- * existing artists; an empty pool gives its slots to the other pool.
- * A second spelling of an already selected identity is skipped.
+ * can only lower it. Selection follows score. `sparseShare` is retained for
+ * operators and is not a slot reservation: a lower-scoring sparse artist
+ * does not displace a higher-scoring exhibition bridge.
+ * One source family cannot fill the batch while a close-scoring alternative
+ * from another family is still waiting. A second spelling of an already
+ * selected identity is skipped. Fewer than the limit is acceptable.
  */
 export function selectDailyBatch(input: {
   ranked: readonly RankedCandidate[];
@@ -176,31 +247,55 @@ export function selectDailyBatch(input: {
 }): BatchSelection {
   const fetchBudgetLimit = Math.max(0, Math.floor(input.fetchLimit / ESTIMATED_FETCHES_PER_JOB));
   const limit = Math.max(0, Math.min(Math.trunc(input.researchLimit), fetchBudgetLimit));
-  const sparseSlots = Math.min(limit, Math.round(limit * input.sparseShare));
-  const newSlots = limit - sparseSlots;
+  const familyCap = Math.max(1, Math.ceil(limit * GRAPH_RANK_WEIGHTS.sourceFamilyCapShare));
   const selected: RankedCandidate[] = [];
   const skippedDuplicateIdentity: RankedCandidate[] = [];
-  const take = (kind: RankedCandidate["kind"], slots: number) => {
-    let used = 0;
-    for (const row of input.ranked) {
-      if (used >= slots) break;
-      if (row.kind !== kind || selected.includes(row)) continue;
-      if (selected.some((chosen) => sameResearchTarget(chosen.candidate, row.candidate))) {
-        if (!skippedDuplicateIdentity.includes(row)) skippedDuplicateIdentity.push(row);
+  const deferred: RankedCandidate[] = [];
+  const familyCount = new Map<string, number>();
+  const familyOf = (row: RankedCandidate) => row.candidate.sourceHost ?? row.candidate.sourceType;
+  const blocked = (row: RankedCandidate) => selected.some((chosen) => sameResearchTarget(chosen.candidate, row.candidate));
+  for (const row of input.ranked) {
+    if (selected.length >= limit) break;
+    if (blocked(row)) {
+      if (!skippedDuplicateIdentity.includes(row)) skippedDuplicateIdentity.push(row);
+      continue;
+    }
+    const family = familyOf(row);
+    const count = familyCount.get(family) ?? 0;
+    if (count >= familyCap) {
+      const alternative = input.ranked.find((other) =>
+        other !== row
+        && !selected.includes(other)
+        && !deferred.includes(other)
+        && familyOf(other) !== family
+        && !blocked(other)
+        && other.score >= row.score * GRAPH_RANK_WEIGHTS.sourceFamilyAlternativeRatio);
+      if (alternative) {
+        deferred.push(row);
         continue;
       }
-      selected.push(row);
-      used += 1;
     }
-    return used;
-  };
-  const usedNew = take("NEW_IDENTITY", newSlots);
-  const usedSparse = take("SPARSE_EXISTING", sparseSlots);
-  const remaining = limit - usedNew - usedSparse;
-  if (remaining > 0) {
-    const filledNew = take("NEW_IDENTITY", remaining);
-    if (remaining - filledNew > 0) take("SPARSE_EXISTING", remaining - filledNew);
+    selected.push(row);
+    familyCount.set(family, count + 1);
+  }
+  for (const row of deferred) {
+    if (selected.length >= limit) break;
+    if (blocked(row)) {
+      if (!skippedDuplicateIdentity.includes(row)) skippedDuplicateIdentity.push(row);
+      continue;
+    }
+    selected.push(row);
   }
   selected.sort((left, right) => left.rank - right.rank);
-  return { selected, skippedDuplicateIdentity, limit, newSlots, sparseSlots, fetchBudgetLimit };
+  const sparseSlots = selected.filter((row) => row.kind === "SPARSE_EXISTING").length;
+  const newSlots = selected.length - sparseSlots;
+  return {
+    selected,
+    skippedDuplicateIdentity,
+    limit,
+    newSlots,
+    sparseSlots,
+    configuredSparseShare: input.sparseShare,
+    fetchBudgetLimit,
+  };
 }

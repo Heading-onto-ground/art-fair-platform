@@ -350,7 +350,7 @@ describe("global artist expansion", () => {
     expect(harness.jobs.every((job) => job.demandQuality === AUTONOMOUS_DEMAND_QUALITY && job.payload.origin === "DAILY_EXPANSION")).toBe(true);
   });
 
-  it("reserves sparse-artist slots without dropping the new-artist majority", async () => {
+  it("follows exhibition-bridge score instead of reserving a sparse quota", async () => {
     const current = graph();
     current.artists.push(
       ...Array.from({ length: 10 }, (_, index) => ({
@@ -371,8 +371,12 @@ describe("global artist expansion", () => {
     const harness = memory({ graph: current, demand: names(20, "Incoming Painter") });
     const run = await runExpansion({ mode: "MANUAL", policy: policy({ dailyResearchLimit: 10, sparseShare: 0.3 }) }, harness.deps);
     const selected = run.summary.selected.filter((row) => row.action === "STARTED");
-    expect(selected.filter((row) => row.kind === "NEW_IDENTITY")).toHaveLength(7);
-    expect(selected.filter((row) => row.kind === "SPARSE_EXISTING")).toHaveLength(3);
+    // Isolated sparse artists outscore one-off missing-name searches, so the
+    // old 7/3 reservation no longer pulls weaker new names into the batch.
+    expect(selected.filter((row) => row.kind === "SPARSE_EXISTING").length).toBeGreaterThan(0);
+    expect(selected.filter((row) => row.kind === "NEW_IDENTITY")).toHaveLength(0);
+    expect(selected).toHaveLength(10);
+    expect(run.summary.dailyUnit).toBe("RESEARCH_ACTION");
     expect(sparseArtistObservations(graph("rich"), [], stamp).some((row) => row.existingArtistSlug === "lee-ufan")).toBe(false);
     expect(sparseArtistObservations(graph("sparse"), [], stamp).filter((row) => row.existingArtistSlug === "lee-ufan")).toHaveLength(1);
   });

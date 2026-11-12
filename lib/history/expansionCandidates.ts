@@ -4,6 +4,7 @@ import { aliasLookupEqual, mayRelinkUnresolvedName, normalizeArtistLookup, resol
 import { densityForCount, type HistoryDensity } from "@/lib/history/policy";
 import { classifyRosterEntries, parseArtistRoster, rosterByIndex, type ArtistRosterEntry } from "@/lib/history/artistRosters";
 import { classifyTrustedUrl, type CrawlFact } from "@/lib/history/trustedCrawl";
+import type { GraphYieldNote } from "@/lib/history/expansionGraphValue";
 import type { CandidateContext, CandidateSourceType, CandidateStatus } from "@/lib/history/expansionPolicy";
 
 /**
@@ -43,6 +44,8 @@ export type CandidatePayload = {
   labelClass: LabelClass;
   /** Structured identity id, such as a Wikidata QID. This is not a published alias. */
   identityKey: string | null;
+  /** Outcome of the research action that owned this candidate. Null until that job finishes. */
+  graphYield: GraphYieldNote | null;
 };
 
 export type CandidateRecord = {
@@ -171,6 +174,7 @@ export function emptyCandidatePayload(labelClass: LabelClass = "PERSON_LIKE"): C
     outcomes: [],
     labelClass,
     identityKey: null,
+    graphYield: null,
   };
 }
 
@@ -192,6 +196,19 @@ export function coerceCandidatePayload(value: unknown): CandidatePayload {
     outcomes: strings(raw.outcomes),
     labelClass: raw.labelClass === "ORGANIZATION" || raw.labelClass === "EXHIBITION_TITLE" || raw.labelClass === "INVALID" || raw.labelClass === "ENTITY_TYPE_REVIEW" ? raw.labelClass : "PERSON_LIKE",
     identityKey: typeof raw.identityKey === "string" && raw.identityKey.trim() ? raw.identityKey.trim() : null,
+    graphYield: graphYieldOf(raw.graphYield),
+  };
+}
+
+function graphYieldOf(value: unknown): GraphYieldNote | null {
+  if (!value || typeof value !== "object") return null;
+  const raw = value as Partial<GraphYieldNote>;
+  if (typeof raw.verifiedFacts !== "number") return null;
+  return {
+    verifiedFacts: raw.verifiedFacts,
+    published: raw.published === true,
+    expanded: raw.expanded === true,
+    noResultReason: typeof raw.noResultReason === "string" ? raw.noResultReason : null,
   };
 }
 

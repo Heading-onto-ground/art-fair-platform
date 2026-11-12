@@ -44,7 +44,7 @@ export default function ExpansionControls({ enabled, dailyLimit, paused }: { ena
       </p>
       {paused ? <p>AUTONOMOUS_EXPANSION_PAUSED · {paused}. The batch stays paused with the circuit breaker.</p> : null}
       <label>
-        Artists in this batch{" "}
+        Research actions in this batch{" "}
         <input
           type="number"
           min={1}
