@@ -283,6 +283,22 @@ export function discoveryHref(applied: ParsedDiscovery, cursor?: string | null):
   return query ? `/pro/discover?${query}` : "/pro/discover";
 }
 
+export function discoveryFilterSummary(filters: DiscoveryFilters): string {
+  const parts: string[] = [];
+  if (filters.q) parts.push(filters.q);
+  if (filters.city) parts.push(filters.city);
+  if (filters.country) parts.push(filters.country);
+  if (filters.from != null && filters.to != null) {
+    parts.push(filters.from === filters.to ? String(filters.from) : `${filters.from}–${filters.to}`);
+  }
+  if (filters.recent) parts.push(RECENT_LABEL[filters.recent]);
+  if (filters.min != null) parts.push(`전시 ${filters.min}건 이상`);
+  if (filters.density) parts.push(densityLabel(filters.density));
+  if (filters.connected) parts.push(`${koreanAnd(filters.connected)} 공동 전시`);
+  if (filters.space) parts.push(filters.space);
+  return parts.join(" · ");
+}
+
 function utc(year: number, monthIndex: number, day: number, endOfDay = false): number {
   if (endOfDay) return Date.UTC(year, monthIndex, day, 23, 59, 59, 999);
   return Date.UTC(year, monthIndex, day);

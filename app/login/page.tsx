@@ -12,6 +12,17 @@ import { F, S } from "@/lib/design";
 type Role = "artist" | "gallery" | "curator";
 type MeResponse = { session: { userId: string; role: Role; email?: string } | null; profile: any | null };
 
+function allowsReturn(redirectTo: string, role: string | null | undefined) {
+  if (!redirectTo.startsWith("/") || redirectTo.startsWith("//") || redirectTo.includes("..") || redirectTo.includes("\\")) {
+    return false;
+  }
+  if (redirectTo.startsWith("/pro/")) return true;
+  if (role === "artist" && (redirectTo.startsWith("/exhibitions") || redirectTo.startsWith("/artist"))) return true;
+  if (role === "gallery" && redirectTo.startsWith("/gallery")) return true;
+  if (role === "curator" && redirectTo.startsWith("/curator")) return true;
+  return false;
+}
+
 export default function LoginPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -45,18 +56,12 @@ export default function LoginPage() {
     const roleParam = searchParams.get("role");
     if (roleParam === "artist" || roleParam === "gallery" || roleParam === "curator") setRole(roleParam);
     const redirectTo = searchParams.get("redirect");
-    if (redirectTo && redirectTo.startsWith("/") && !redirectTo.startsWith("//")) {
+    if (redirectTo && redirectTo.startsWith("/") && !redirectTo.startsWith("//") && !redirectTo.includes("..")) {
       fetch("/api/auth/me?lite=1", { cache: "no-store" })
         .then(r => r.json())
         .then((d: MeResponse) => {
           const r = d?.session?.role;
-          if (r === "artist" && (redirectTo.startsWith("/exhibitions") || redirectTo.startsWith("/artist"))) {
-            router.replace(redirectTo);
-          } else if (r === "gallery" && redirectTo.startsWith("/gallery")) {
-            router.replace(redirectTo);
-          } else if (r === "curator" && redirectTo.startsWith("/curator")) {
-            router.replace(redirectTo);
-          }
+          if (allowsReturn(redirectTo, r)) router.replace(redirectTo);
         })
         .catch(() => {});
     }
@@ -76,19 +81,9 @@ export default function LoginPage() {
   const gotoByRole = (realRole: string | null | undefined) => {
     const redirectTo = searchParams.get("redirect");
     // Use redirect param if it's a valid path and role matches
-    if (redirectTo && redirectTo.startsWith("/") && !redirectTo.startsWith("//")) {
-      if (realRole === "artist" && (redirectTo.startsWith("/exhibitions") || redirectTo.startsWith("/artist"))) {
-        router.push(redirectTo);
-        return;
-      }
-      if (realRole === "gallery" && redirectTo.startsWith("/gallery")) {
-        router.push(redirectTo);
-        return;
-      }
-      if (realRole === "curator" && redirectTo.startsWith("/curator")) {
-        router.push(redirectTo);
-        return;
-      }
+    if (redirectTo && allowsReturn(redirectTo, realRole)) {
+      router.push(redirectTo);
+      return;
     }
     if (realRole === "artist") router.push("/");
     else if (realRole === "gallery") router.push("/gallery");
