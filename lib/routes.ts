@@ -25,6 +25,7 @@ export const NOINDEX_PATHS = [
   "/embed/",
   "/verify-day1",
   "/research",
+  "/pro",
 ] as const;
 
 /** Public legacy surfaces that stay reachable but must not be search documents. */
