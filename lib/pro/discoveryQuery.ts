@@ -18,7 +18,7 @@ import {
  * The public where is the same object Artist World uses. Artist country and city are not selected.
  * At a few thousand public exhibitions this stays in one pass. Push the filters into SQL only if that read stops being cheap.
  */
-export async function queryDiscovery(applied: ParsedDiscovery, now = new Date()): Promise<DiscoveryOutcome> {
+export async function loadPublicDiscoveryGraph() {
   const [entities, exhibitions] = await Promise.all([
     prisma.artistEntity.findMany({
       select: {
@@ -109,5 +109,9 @@ export async function queryDiscovery(applied: ParsedDiscovery, now = new Date())
     confirmedProfileIds: exhibition.artists.map((join) => join.artistId),
   }));
 
-  return discoverArtists(buildDiscoveryGraph(exhibitionRows, entityRows), applied, { now });
+  return buildDiscoveryGraph(exhibitionRows, entityRows);
+}
+
+export async function queryDiscovery(applied: ParsedDiscovery, now = new Date()): Promise<DiscoveryOutcome> {
+  return discoverArtists(await loadPublicDiscoveryGraph(), applied, { now });
 }

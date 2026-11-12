@@ -2,12 +2,14 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import TopBar from "@/app/components/TopBar";
+import { getServerSession } from "@/lib/auth";
 import { isHistoryUnavailable } from "@/lib/history/schemaError";
 import { HISTORY_READY_MIN, RICH_HISTORY_MIN } from "@/lib/history/policy";
-import { queryDiscovery } from "@/lib/pro/discoveryQuery";
+import { loadPublicDiscoveryGraph } from "@/lib/pro/discoveryQuery";
 import { isProDiscoveryEnabled } from "@/lib/pro/discoveryFlag";
 import {
   DISCOVERY_COPY,
+  discoverArtists,
   discoveryFilterKeys,
   discoveryHref,
   parseDiscoveryRequest,
@@ -15,6 +17,12 @@ import {
   type DiscoveryOutcome,
   type ParsedDiscovery,
 } from "@/lib/pro/discoveryPolicy";
+import { canonicalSavedFilter } from "@/lib/pro/privatePolicy";
+import { markSavedSearchViewed, watchedArtistIds } from "@/lib/pro/privateStore";
+import ProBeacon from "../ProBeacon";
+import ProNav from "../ProNav";
+import SaveSearch from "../SaveSearch";
+import WatchButton from "../WatchButton";
 import ArtistOpenLink from "./ArtistOpenLink";
 import DiscoverAnalytics from "./DiscoverAnalytics";
 import "@/app/components/history/history.css";
@@ -35,10 +43,26 @@ export default async function ProDiscoverPage({
   if (!isProDiscoveryEnabled()) notFound();
   const applied = parseDiscoveryRequest(searchParams);
   const keys = discoveryFilterKeys(applied);
+  const savedId = firstParam(searchParams.saved);
+  const session = getServerSession();
+  const loginHref = session ? undefined : `/login?redirect=${encodeURIComponent(discoveryHref(applied))}`;
   let outcome: DiscoveryOutcome | null = null;
   let unavailable = false;
+  let watched = new Set<string>();
   try {
-    outcome = await queryDiscovery(applied);
+    const graph = await loadPublicDiscoveryGraph();
+    outcome = discoverArtists(graph, applied);
+    try {
+      if (session && savedId) {
+        const filter = canonicalSavedFilter(applied);
+        if (filter) await markSavedSearchViewed(session.userId, savedId, filter, graph);
+      }
+      if (session && outcome) {
+        watched = await watchedArtistIds(session.userId, outcome.cards.map((card) => card.id));
+      }
+    } catch (error) {
+      if (!isHistoryUnavailable(error)) throw error;
+    }
   } catch (error) {
     if (!isHistoryUnavailable(error)) throw error;
     unavailable = true;
@@ -49,20 +73,31 @@ export default async function ProDiscoverPage({
       <TopBar />
       <main className="rh-wrap pd-wrap" id="main-content">
         <DiscoverAnalytics searched={keys.length > 0} filterKeys={keys.join(",")} />
+        {savedId ? <ProBeacon event="PRO_SAVED_SEARCH_OPENED" path="/pro/discover" /> : null}
         <p className="rh-kicker">ROB Pro</p>
+        <ProNav current="discover" />
         <h1 className="pd-title">어떤 작가를 찾고 있나요?</h1>
         <p className="rh-lead">Find artists through their actual activity.</p>
         <p className="pd-disclaimer">{DISCOVERY_COPY.disclaimer}</p>
         <div className="pd-layout">
-          <FilterForm applied={applied} />
+          <div>
+            <FilterForm applied={applied} />
+            <SaveSearch filters={canonicalSavedFilter(applied)} loginHref={loginHref} />
+          </div>
           <section className="pd-results" aria-live="polite">
             {unavailable ? <p>전시 기록을 불러오지 못했습니다.</p> : null}
-            {outcome ? <Results outcome={outcome} /> : null}
+            {outcome ? <Results outcome={outcome} watched={watched} loginHref={loginHref} /> : null}
           </section>
         </div>
       </main>
     </div>
   );
+}
+
+function firstParam(value: string | string[] | undefined): string | null {
+  const raw = Array.isArray(value) ? value[0] : value;
+  const trimmed = raw?.trim() ?? "";
+  return trimmed || null;
 }
 
 function FilterForm({ applied }: { applied: ParsedDiscovery }) {
@@ -141,7 +176,15 @@ function FilterForm({ applied }: { applied: ParsedDiscovery }) {
   );
 }
 
-function Results({ outcome }: { outcome: DiscoveryOutcome }) {
+function Results({
+  outcome,
+  watched,
+  loginHref,
+}: {
+  outcome: DiscoveryOutcome;
+  watched: Set<string>;
+  loginHref?: string;
+}) {
   if (outcome.status === "unknown_artist") {
     return <p>그 이름의 확인된 작가 기록을 찾지 못했습니다. 공동 전시는 확인된 전시 참여자만 사용합니다.</p>;
   }
@@ -175,7 +218,7 @@ function Results({ outcome }: { outcome: DiscoveryOutcome }) {
       <ul className="rh-results">
         {outcome.cards.map((card) => (
           <li key={card.id}>
-            <ResultCard card={card} />
+            <ResultCard card={card} watching={watched.has(card.id)} loginHref={loginHref} />
           </li>
         ))}
       </ul>
@@ -188,7 +231,7 @@ function Results({ outcome }: { outcome: DiscoveryOutcome }) {
   );
 }
 
-function ResultCard({ card }: { card: DiscoveryCard }) {
+function ResultCard({ card, watching, loginHref }: { card: DiscoveryCard; watching: boolean; loginHref?: string }) {
   const span = card.careerStart != null && card.careerEnd != null ? `${card.careerStart}–${card.careerEnd}` : null;
   return (
     <article className="pd-card">
@@ -243,6 +286,9 @@ function ResultCard({ card }: { card: DiscoveryCard }) {
           {card.sparseNote} ROB에는 이 작가의 확인된 전시 기록이 현재 {card.exhibitionCount}건 있습니다.
         </p>
       ) : null}
+      <div className="pd-card-actions">
+        <WatchButton artistEntityId={card.id} slug={card.slug} watching={watching} loginHref={loginHref} />
+      </div>
     </article>
   );
 }

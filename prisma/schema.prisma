@@ -31,6 +31,8 @@ model User {
   curatorProfile CuratorProfile?
   adminSupportThread AdminSupportThread?
   artistClaims   ArtistEntityClaim[]
+  artistWatches  ArtistWatch[]
+  savedDiscoverySearches SavedDiscoverySearch[]
 }
 
 // 가입자 ↔ 관리자 플랫폼 내 쪽지 (이메일 아님)
@@ -755,6 +757,7 @@ model ArtistEntity {
   aliases         ArtistAlias[]
   claims          ArtistEntityClaim[]
   participations  HistoryParticipation[]
+  watches         ArtistWatch[]
 
   @@index([canonicalName])
 }
@@ -1002,4 +1005,33 @@ model ExpansionRun {
 
   @@index([startedAt])
   @@index([mode])
+}
+
+// Private gallery research. These rows are never part of the public graph.
+model ArtistWatch {
+  id             String       @id @default(cuid())
+  userId         String
+  artistEntityId String
+  createdAt      DateTime     @default(now())
+  user           User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  artist         ArtistEntity @relation(fields: [artistEntityId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, artistEntityId])
+  @@index([userId])
+}
+
+model SavedDiscoverySearch {
+  id                String   @id @default(cuid())
+  userId            String
+  name              String
+  filterJson        Json
+  baselineIds       Json
+  baselineCapped    Boolean  @default(false)
+  resultTotalAtView Int      @default(0)
+  lastViewedAt      DateTime @default(now())
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+  user              User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
 }

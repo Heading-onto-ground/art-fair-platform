@@ -14,6 +14,8 @@ const HISTORY_TABLES = [
   "ResearchJob",
   "ArtistResearchCandidate",
   "ExpansionRun",
+  "ArtistWatch",
+  "SavedDiscoverySearch",
 ];
 
 export function isMissingHistorySchema(error: unknown): boolean {
