@@ -16,6 +16,8 @@ const HISTORY_TABLES = [
   "ExpansionRun",
   "ArtistWatch",
   "SavedDiscoverySearch",
+  "ArtistShortlist",
+  "PrivateArtistNote",
 ];
 
 export function isMissingHistorySchema(error: unknown): boolean {

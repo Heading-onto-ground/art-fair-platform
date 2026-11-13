@@ -19,9 +19,11 @@ import {
 } from "@/lib/pro/discoveryPolicy";
 import { canonicalSavedFilter } from "@/lib/pro/privatePolicy";
 import { markSavedSearchViewed, watchedArtistIds } from "@/lib/pro/privateStore";
+import { shortlistedArtistIds } from "@/lib/pro/shortlistStore";
 import ProBeacon from "../ProBeacon";
 import ProNav from "../ProNav";
 import SaveSearch from "../SaveSearch";
+import ShortlistButton from "../ShortlistButton";
 import WatchButton from "../WatchButton";
 import ArtistOpenLink from "./ArtistOpenLink";
 import DiscoverAnalytics from "./DiscoverAnalytics";
@@ -49,6 +51,7 @@ export default async function ProDiscoverPage({
   let outcome: DiscoveryOutcome | null = null;
   let unavailable = false;
   let watched = new Set<string>();
+  let shortlisted = new Set<string>();
   try {
     const graph = await loadPublicDiscoveryGraph();
     outcome = discoverArtists(graph, applied);
@@ -58,7 +61,15 @@ export default async function ProDiscoverPage({
         if (filter) await markSavedSearchViewed(session.userId, savedId, filter, graph);
       }
       if (session && outcome) {
-        watched = await watchedArtistIds(session.userId, outcome.cards.map((card) => card.id));
+        const ids = outcome.cards.map((card) => card.id);
+        const [watchResult, shortlistResult] = await Promise.allSettled([
+          watchedArtistIds(session.userId, ids),
+          shortlistedArtistIds(session.userId, ids),
+        ]);
+        if (watchResult.status === "fulfilled") watched = watchResult.value;
+        else if (!isHistoryUnavailable(watchResult.reason)) throw watchResult.reason;
+        if (shortlistResult.status === "fulfilled") shortlisted = shortlistResult.value;
+        else if (!isHistoryUnavailable(shortlistResult.reason)) throw shortlistResult.reason;
       }
     } catch (error) {
       if (!isHistoryUnavailable(error)) throw error;
@@ -86,7 +97,7 @@ export default async function ProDiscoverPage({
           </div>
           <section className="pd-results" aria-live="polite">
             {unavailable ? <p>전시 기록을 불러오지 못했습니다.</p> : null}
-            {outcome ? <Results outcome={outcome} watched={watched} loginHref={loginHref} /> : null}
+            {outcome ? <Results outcome={outcome} watched={watched} shortlisted={shortlisted} loginHref={loginHref} /> : null}
           </section>
         </div>
       </main>
@@ -179,10 +190,12 @@ function FilterForm({ applied }: { applied: ParsedDiscovery }) {
 function Results({
   outcome,
   watched,
+  shortlisted,
   loginHref,
 }: {
   outcome: DiscoveryOutcome;
   watched: Set<string>;
+  shortlisted: Set<string>;
   loginHref?: string;
 }) {
   if (outcome.status === "unknown_artist") {
@@ -218,7 +231,7 @@ function Results({
       <ul className="rh-results">
         {outcome.cards.map((card) => (
           <li key={card.id}>
-            <ResultCard card={card} watching={watched.has(card.id)} loginHref={loginHref} />
+            <ResultCard card={card} watching={watched.has(card.id)} shortlisted={shortlisted.has(card.id)} loginHref={loginHref} />
           </li>
         ))}
       </ul>
@@ -231,7 +244,17 @@ function Results({
   );
 }
 
-function ResultCard({ card, watching, loginHref }: { card: DiscoveryCard; watching: boolean; loginHref?: string }) {
+function ResultCard({
+  card,
+  watching,
+  shortlisted,
+  loginHref,
+}: {
+  card: DiscoveryCard;
+  watching: boolean;
+  shortlisted: boolean;
+  loginHref?: string;
+}) {
   const span = card.careerStart != null && card.careerEnd != null ? `${card.careerStart}–${card.careerEnd}` : null;
   return (
     <article className="pd-card">
@@ -288,6 +311,7 @@ function ResultCard({ card, watching, loginHref }: { card: DiscoveryCard; watchi
       ) : null}
       <div className="pd-card-actions">
         <WatchButton artistEntityId={card.id} slug={card.slug} watching={watching} loginHref={loginHref} />
+        <ShortlistButton artistEntityId={card.id} slug={card.slug} shortlisted={shortlisted} loginHref={loginHref} />
       </div>
     </article>
   );
