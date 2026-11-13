@@ -33,6 +33,8 @@ model User {
   artistClaims   ArtistEntityClaim[]
   artistWatches  ArtistWatch[]
   savedDiscoverySearches SavedDiscoverySearch[]
+  artistShortlists ArtistShortlist[]
+  privateArtistNotes PrivateArtistNote[]
 }
 
 // 가입자 ↔ 관리자 플랫폼 내 쪽지 (이메일 아님)
@@ -758,6 +760,8 @@ model ArtistEntity {
   claims          ArtistEntityClaim[]
   participations  HistoryParticipation[]
   watches         ArtistWatch[]
+  shortlists      ArtistShortlist[]
+  privateNotes    PrivateArtistNote[]
 
   @@index([canonicalName])
 }
@@ -1033,5 +1037,39 @@ model SavedDiscoverySearch {
   updatedAt         DateTime @updatedAt
   user              User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
+  @@index([userId])
+}
+
+// Private shortlist. One row per user and artist. Not a watch and not a note.
+// User deletion cascades the row. ArtistEntity deletion cascades only this private row,
+// matching ArtistWatch, and does not alter Exhibition or HistoryParticipation.
+// If the artist leaves the public graph while the entity remains, the row stays.
+model ArtistShortlist {
+  id             String       @id @default(cuid())
+  userId         String
+  artistEntityId String
+  status         String       @default("REVIEW") // REVIEW | INTERESTED | CONTACT_LATER | PASSED
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+  user           User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  artist         ArtistEntity @relation(fields: [artistEntityId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, artistEntityId])
+  @@index([userId])
+}
+
+// Private research note. One current note per user and artist, not a history and not a shortlist row.
+// Removing a shortlist row does not delete this note. Deleting this note does not remove the shortlist row.
+model PrivateArtistNote {
+  id             String       @id @default(cuid())
+  userId         String
+  artistEntityId String
+  body           String
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+  user           User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  artist         ArtistEntity @relation(fields: [artistEntityId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, artistEntityId])
   @@index([userId])
 }

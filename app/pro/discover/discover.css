@@ -113,9 +113,12 @@
   color: #f4efe6;
 }
 .pd-watch:focus-visible,
+.pd-shortlist:focus-visible,
 .pd-save button:focus-visible,
 .pd-nav a:focus-visible,
-.pd-save input:focus-visible {
+.pd-save input:focus-visible,
+.pd-status select:focus-visible,
+.pd-note-editor textarea:focus-visible {
   outline: 2px solid currentColor;
   outline-offset: 2px;
 }
@@ -133,6 +136,46 @@
   flex-wrap: wrap;
   gap: 8px;
   margin-top: 8px;
+  min-width: 0;
+  max-width: 100%;
+}
+.pd-shortlist {
+  font: inherit;
+  color: inherit;
+  background: transparent;
+  border: 1px solid currentColor;
+  border-radius: 0;
+  padding: 6px 10px;
+  cursor: pointer;
+  text-decoration: none;
+  display: inline-block;
+  max-width: 100%;
+  box-sizing: border-box;
+}
+.pd-shortlist[aria-pressed="true"] {
+  background: #1c1915;
+  color: #f4efe6;
+}
+.pd-shortlist-controls,
+.pd-status,
+.pd-note-editor {
+  display: grid;
+  gap: 8px;
+  min-width: 0;
+  max-width: 100%;
+}
+.pd-status select,
+.pd-note-editor textarea {
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
+  font: inherit;
+  color: inherit;
+}
+.pd-note-preview {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  margin: 8px 0;
 }
 @media (min-width: 960px) {
   .pd-layout {
@@ -147,5 +190,16 @@
   }
   .pd-card h2 {
     font-size: 28px;
+  }
+}
+@media (max-width: 390px) {
+  .pd-wrap,
+  .pd-card,
+  .pd-shortlist-controls,
+  .pd-status,
+  .pd-note-editor,
+  .pd-card-actions {
+    max-width: 100%;
+    overflow-x: hidden;
   }
 }

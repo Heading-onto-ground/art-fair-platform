@@ -36,6 +36,22 @@ const nextConfig = {
         ],
       },
       {
+        source: "/pro/shortlist",
+        headers: [{ key: "Cache-Control", value: "private, no-store" }],
+      },
+      {
+        source: "/api/pro/shortlist",
+        headers: [{ key: "Cache-Control", value: "private, no-store" }],
+      },
+      {
+        source: "/api/pro/shortlist/:artistId",
+        headers: [{ key: "Cache-Control", value: "private, no-store" }],
+      },
+      {
+        source: "/api/pro/notes/:artistId",
+        headers: [{ key: "Cache-Control", value: "private, no-store" }],
+      },
+      {
         source: '/embed/:path*',
         headers: [
           { key: 'X-Content-Type-Options', value: 'nosniff' },
