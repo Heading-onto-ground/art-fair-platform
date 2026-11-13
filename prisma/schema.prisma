@@ -35,6 +35,7 @@ model User {
   savedDiscoverySearches SavedDiscoverySearch[]
   artistShortlists ArtistShortlist[]
   privateArtistNotes PrivateArtistNote[]
+  activityAlerts ActivityAlert[]
 }
 
 // 가입자 ↔ 관리자 플랫폼 내 쪽지 (이메일 아님)
@@ -651,6 +652,7 @@ model Exhibition {
   historySources ExhibitionSource[]
   historyArtists HistoryParticipation[]
   unresolvedNames HistoryUnresolvedName[]
+  activityAlerts ActivityAlert[]
 
   @@index([createdBy])
 }
@@ -762,6 +764,7 @@ model ArtistEntity {
   watches         ArtistWatch[]
   shortlists      ArtistShortlist[]
   privateNotes    PrivateArtistNote[]
+  activityAlerts  ActivityAlert[]
 
   @@index([canonicalName])
 }
@@ -1072,4 +1075,28 @@ model PrivateArtistNote {
 
   @@unique([userId, artistEntityId])
   @@index([userId])
+}
+
+// Private in-app alert. One row per watcher, artist, exhibition, and type.
+// Created only after a public participation is recorded, and only for a watch that already existed.
+// Unwatching does not delete these rows. User deletion cascades them.
+// ArtistEntity or Exhibition deletion cascades only this private row and does not rewrite other public graph rows.
+model ActivityAlert {
+  id                   String       @id @default(cuid())
+  userId               String
+  artistEntityId       String
+  exhibitionId         String
+  type                 String       @default("EXHIBITION_RECORDED")
+  eventYear            Int?
+  isHistoricalBackfill Boolean      @default(false)
+  recordedAt           DateTime
+  readAt               DateTime?
+  createdAt            DateTime     @default(now())
+  user                 User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  artist               ArtistEntity @relation(fields: [artistEntityId], references: [id], onDelete: Cascade)
+  exhibition           Exhibition   @relation(fields: [exhibitionId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, artistEntityId, exhibitionId, type])
+  @@index([userId, createdAt])
+  @@index([userId, readAt])
 }

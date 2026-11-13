@@ -118,9 +118,40 @@
 .pd-nav a:focus-visible,
 .pd-save input:focus-visible,
 .pd-status select:focus-visible,
-.pd-note-editor textarea:focus-visible {
+.pd-note-editor textarea:focus-visible,
+.pd-alert-actions a:focus-visible,
+.pd-alert-actions button:focus-visible,
+.pd-alert-toolbar a:focus-visible,
+.pd-alert-toolbar button:focus-visible {
   outline: 2px solid currentColor;
   outline-offset: 2px;
+}
+.pd-alert-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 16px;
+  align-items: center;
+  margin: 12px 0;
+}
+.pd-alert-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 16px;
+  align-items: center;
+  margin-top: 12px;
+}
+.pd-alert-actions button,
+.pd-alert-toolbar button {
+  font: inherit;
+  color: inherit;
+  background: transparent;
+  border: 1px solid currentColor;
+  min-height: 44px;
+  padding: 8px 12px;
+}
+.pd-alert-message {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
 }
 .pd-save {
   display: grid;
@@ -198,7 +229,10 @@
   .pd-shortlist-controls,
   .pd-status,
   .pd-note-editor,
-  .pd-card-actions {
+  .pd-card-actions,
+  .pd-alert-card,
+  .pd-alert-actions,
+  .pd-alert-toolbar {
     max-width: 100%;
     overflow-x: hidden;
   }
