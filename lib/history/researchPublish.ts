@@ -107,6 +107,7 @@ export async function publishResearchFact(job: ResearchJobRecord, fact: CrawlFac
       update: {},
       create: { exhibitionId: exact.id, artistEntityId: artist.id },
     });
+    await followPublicParticipation(exact.id, artist.id);
     return { ok: true, artistId: artist.id, artistSlug: artist.slug };
   }
   const spaceId = await ensureSpace(fact);
@@ -140,6 +141,7 @@ export async function publishResearchFact(job: ResearchJobRecord, fact: CrawlFac
     select: { id: true },
   });
   await prisma.historyParticipation.create({ data: { exhibitionId: exhibition.id, artistEntityId: artist.id } });
+  await followPublicParticipation(exhibition.id, artist.id);
   for (const person of fact.participants) {
     if (person.slug === artist.slug) continue;
     if (person.identity === "EXACT" && person.slug) continue;
@@ -162,4 +164,9 @@ export async function publishResearchFact(job: ResearchJobRecord, fact: CrawlFac
   });
   await prisma.exhibitionSource.create({ data: { exhibitionId: exhibition.id, sourceId: source.id } });
   return { ok: true, artistId: artist.id, artistSlug: artist.slug };
+}
+
+async function followPublicParticipation(exhibitionId: string, artistEntityId: string) {
+  const { recordPublicParticipationAlerts } = await import("@/lib/pro/activityAlertStore");
+  await recordPublicParticipationAlerts({ exhibitionId, artistEntityIds: [artistEntityId] });
 }

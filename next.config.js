@@ -52,6 +52,22 @@ const nextConfig = {
         headers: [{ key: "Cache-Control", value: "private, no-store" }],
       },
       {
+        source: "/pro/alerts",
+        headers: [{ key: "Cache-Control", value: "private, no-store" }],
+      },
+      {
+        source: "/api/pro/alerts",
+        headers: [{ key: "Cache-Control", value: "private, no-store" }],
+      },
+      {
+        source: "/api/pro/alerts/read-all",
+        headers: [{ key: "Cache-Control", value: "private, no-store" }],
+      },
+      {
+        source: "/api/pro/alerts/:id/read",
+        headers: [{ key: "Cache-Control", value: "private, no-store" }],
+      },
+      {
         source: '/embed/:path*',
         headers: [
           { key: 'X-Content-Type-Options', value: 'nosniff' },

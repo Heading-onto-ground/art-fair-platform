@@ -18,6 +18,7 @@ const HISTORY_TABLES = [
   "SavedDiscoverySearch",
   "ArtistShortlist",
   "PrivateArtistNote",
+  "ActivityAlert",
 ];
 
 export function isMissingHistorySchema(error: unknown): boolean {

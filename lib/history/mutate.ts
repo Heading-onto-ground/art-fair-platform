@@ -241,8 +241,10 @@ export async function addArtistExhibition(input: {
     },
   });
 
+  const linkedArtistIds: string[] = [];
   if (ownerId && claimApproved) {
     await prisma.historyParticipation.create({ data: { exhibitionId: exhibition.id, artistEntityId: ownerId } });
+    linkedArtistIds.push(ownerId);
   }
 
   for (const label of input.participantNames.map((name) => name.trim()).filter(Boolean)) {
@@ -254,6 +256,7 @@ export async function addArtistExhibition(input: {
         update: {},
         create: { exhibitionId: exhibition.id, artistEntityId: matches[0] },
       });
+      linkedArtistIds.push(matches[0]);
     } else {
       await prisma.historyUnresolvedName.create({ data: { exhibitionId: exhibition.id, label, status } });
     }
@@ -269,6 +272,11 @@ export async function addArtistExhibition(input: {
       },
     });
     await prisma.exhibitionSource.create({ data: { exhibitionId: exhibition.id, sourceId: source.id } });
+  }
+
+  if (write.publicationStatus === "PUBLIC" && linkedArtistIds.length > 0) {
+    const { recordPublicParticipationAlerts } = await import("@/lib/pro/activityAlertStore");
+    await recordPublicParticipationAlerts({ exhibitionId: exhibition.id, artistEntityIds: linkedArtistIds });
   }
 
   return { ok: true as const, slug, exhibitionId: exhibition.id, publicationStatus: write.publicationStatus };
