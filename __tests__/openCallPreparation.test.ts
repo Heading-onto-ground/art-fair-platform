@@ -177,6 +177,7 @@ describe("release boundaries", () => {
     expect(externalAt).toBeGreaterThan(internalAt);
     expect(applications.slice(internalAt, externalAt)).toContain("new_application");
     expect(applications).toContain('if (!facts.canEmailOrganizer) outreachReason = "reprint_not_organizer"');
+    expect(applications).toContain('error: "apply_on_source"');
     const page = readFileSync(path.join(process.cwd(), "app/open-calls/[id]/page.tsx"), "utf8");
     expect(page).toContain("PREPARATION_DISCLAIMER_KO");
     expect(PREPARATION_DISCLAIMER_KO).toBe("이 상태는 ROB에서 관리하는 개인 준비 기록이며, 실제 지원 접수 상태와는 다릅니다.");

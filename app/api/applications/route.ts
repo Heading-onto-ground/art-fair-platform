@@ -256,6 +256,9 @@ export async function POST(req: Request) {
     if (!openCall) {
       return NextResponse.json({ error: "open call not found" }, { status: 404 });
     }
+    if (openCall.isExternal) {
+      return NextResponse.json({ error: "apply_on_source" }, { status: 409 });
+    }
 
     stage = "find_existing";
     let existing = null;
