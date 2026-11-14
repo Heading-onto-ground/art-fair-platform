@@ -11,6 +11,7 @@ import { useFetch } from "@/lib/useFetch";
 import { useLanguage } from "@/lib/useLanguage";
 import { t } from "@/lib/translate";
 import { F, S } from "@/lib/design";
+import { listingFacts, locationLine } from "@/lib/openCall/listingFacts";
 import { preparationStatusLabel, type PreparationStatus } from "@/lib/openCall/preparationStatus";
 
 type OpenCall = {
@@ -298,7 +299,9 @@ export default function OpenCallsPage() {
           <div style={{ padding: 20, border: "1px solid rgba(139,74,74,0.2)", background: "rgba(139,74,74,0.04)", color: "#8B4A4A", fontFamily: F, fontSize: 12 }}>{error?.message ?? "Failed to load"}</div>
         ) : (
           <div style={{ display: "grid", gap: 1, background: "#E8E3DB" }}>
-            {filtered.map((o, index) => (
+            {filtered.map((o, index) => {
+              const place = locationLine(listingFacts(o), o.city);
+              return (
               <div key={o.id} onClick={() => { if (!isLoggedIn) { setShowSignup(true); return; } router.push(`/open-calls/${o.id}`); }} style={{ background: "#FFFFFF", padding: "32px 36px", cursor: "pointer", transition: "background 0.3s" }}
                 onMouseEnter={(e) => { e.currentTarget.style.background = "#FAF8F4"; }}
                 onMouseLeave={(e) => { e.currentTarget.style.background = "#FFFFFF"; }}>
@@ -309,7 +312,7 @@ export default function OpenCallsPage() {
                     posterImage={o.posterImage}
                     gallery={o.gallery}
                     theme={o.theme}
-                    city={o.city}
+                    city={place.text}
                     country={o.country}
                     deadline={o.deadline}
                     width={110}
@@ -321,7 +324,7 @@ export default function OpenCallsPage() {
                         {String(index + 1).padStart(2, "0")}
                       </span>
                       <span style={{ fontFamily: F, fontSize: 10, fontWeight: 500, letterSpacing: "0.1em", textTransform: "uppercase", color: "#8B7355" }}>
-                        {o.country} / {o.city}
+                        {o.country} / {place.text}
                       </span>
                     </div>
                     <h3 style={{ fontFamily: S, fontSize: 24, fontWeight: 400, color: "#1A1A1A", marginBottom: 6 }}>
@@ -430,7 +433,8 @@ export default function OpenCallsPage() {
                   </div>
                 </div>
               </div>
-            ))}
+              );
+            })}
             {filtered.length === 0 && (
               <div style={{ background: "#FFFFFF", padding: 48, textAlign: "center" }}>
                 <p style={{ fontFamily: F, fontSize: 13, color: "#B0AAA2" }}>{t("oc_no_results", lang)}</p>
