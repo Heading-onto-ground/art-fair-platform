@@ -80,15 +80,25 @@ export function deadlineFromOpportunityText(input: {
   return parseExplicitDeadline(content, now);
 }
 
-export function rejectionReason(text: string): "RESULT_ANNOUNCEMENT" | "EXHIBITION_ANNOUNCEMENT" | null {
+export function rejectionReason(text: string): "RESULT_ANNOUNCEMENT" | "EXHIBITION_ANNOUNCEMENT" | "NOT_ARTIST_OPPORTUNITY" | null {
   const value = String(text || "");
   if (/선정\s*결과|모집\s*결과|결과\s*발표|results?\s+announcement|selected\s+artists|winners?\s+announced/i.test(value)) {
     return "RESULT_ANNOUNCEMENT";
   }
+  const artistCall = /작가\s*모집|작가\s*공모|오픈콜|입주|레지던시|레지던스|call\s+for\s+artists|open\s+call|residency/i.test(value);
+  if (/갤러리스트|역량강화\s*교육|교육생\s*모집|직원\s*채용|구인\s*공고/i.test(value) && !artistCall) {
+    return "NOT_ARTIST_OPPORTUNITY";
+  }
   const exhibition = /전시\s*안내|전시\s*후기|exhibition\s+announcement|now\s+on\s+view|opening\s+reception/i.test(value);
-  const application = /오픈콜|공모|작가\s*모집|call\s+for\s+artists|open\s+call|residency|deadline|지원|입주/i.test(value);
+  const application = artistCall || /공모|deadline|지원|입주/i.test(value);
   if (exhibition && !application) return "EXHIBITION_ANNOUNCEMENT";
   return null;
+}
+
+export function organizerFromOpportunityTitle(title: string, fallback: string): string {
+  const cleaned = String(title || "").replace(/\s*\(20\d{2}[\s\S]*$/, "").trim();
+  if (!cleaned || fallback !== "Open Call") return fallback;
+  return cleaned.slice(0, 80);
 }
 
 export function isActiveDeadline(deadline: string, now = Date.now()): boolean {

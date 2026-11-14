@@ -15,6 +15,7 @@ import {
   isScheduledCronRequest,
   isSyntheticCrawlRow,
   openCallIdentityKey,
+  organizerFromOpportunityTitle,
   parseExplicitDeadline,
   planCrawlInserts,
   rejectionReason,
@@ -403,7 +404,7 @@ function parseRssItemsAsOpenCalls(input: {
     const slug = toSlug(`${input.source}_${title}_${link}`);
     rows.push({
       source: input.source,
-      gallery: input.galleryLabel,
+      gallery: organizerFromOpportunityTitle(title, input.galleryLabel),
       galleryId: `__external_${input.source}_${slug}`,
       city: input.city,
       country: input.country,
