@@ -11,6 +11,8 @@ import { useFetch } from "@/lib/useFetch";
 import { useLanguage } from "@/lib/useLanguage";
 import { t } from "@/lib/translate";
 import { F, S } from "@/lib/design";
+import { listingFacts, locationLine } from "@/lib/openCall/listingFacts";
+import { preparationStatusLabel, type PreparationStatus } from "@/lib/openCall/preparationStatus";
 
 type OpenCall = {
   id: string; galleryId: string; gallery: string; city: string; country: string;
@@ -78,6 +80,7 @@ export default function OpenCallsPage() {
   const [showOriginalById, setShowOriginalById] = useState<Record<string, boolean>>({});
   const [translatingById, setTranslatingById] = useState<Record<string, boolean>>({});
   const [appliedOpenCallIds, setAppliedOpenCallIds] = useState<Set<string>>(new Set());
+  const [prepByOpenCallId, setPrepByOpenCallId] = useState<Record<string, PreparationStatus>>({});
   const { lang } = useLanguage();
   const normalizedPreferredCountry = useMemo(() => normalizeCountry(preferredCountry), [preferredCountry]);
 
@@ -108,6 +111,24 @@ export default function OpenCallsPage() {
         setPreferredCountry("");
       });
   }, []);
+
+  useEffect(() => {
+    if (!artistProfile || openCalls.length === 0) return;
+    let cancelled = false;
+    Promise.all(openCalls.map(async (oc) => {
+      const res = await fetch(`/api/open-calls/${oc.id}/preparation`, { credentials: "include", cache: "no-store" });
+      if (!res.ok) return null;
+      const data = await res.json().catch(() => null);
+      const status = data?.preparation?.status as PreparationStatus | undefined;
+      return status ? [oc.id, status] as const : null;
+    })).then((rows) => {
+      if (cancelled) return;
+      const next: Record<string, PreparationStatus> = {};
+      for (const row of rows) if (row) next[row[0]] = row[1];
+      setPrepByOpenCallId(next);
+    }).catch(() => {});
+    return () => { cancelled = true; };
+  }, [artistProfile, openCalls]);
 
   const countries = useMemo(() => {
     const set = new Set(
@@ -278,7 +299,9 @@ export default function OpenCallsPage() {
           <div style={{ padding: 20, border: "1px solid rgba(139,74,74,0.2)", background: "rgba(139,74,74,0.04)", color: "#8B4A4A", fontFamily: F, fontSize: 12 }}>{error?.message ?? "Failed to load"}</div>
         ) : (
           <div style={{ display: "grid", gap: 1, background: "#E8E3DB" }}>
-            {filtered.map((o, index) => (
+            {filtered.map((o, index) => {
+              const place = locationLine(listingFacts(o), o.city);
+              return (
               <div key={o.id} onClick={() => { if (!isLoggedIn) { setShowSignup(true); return; } router.push(`/open-calls/${o.id}`); }} style={{ background: "#FFFFFF", padding: "32px 36px", cursor: "pointer", transition: "background 0.3s" }}
                 onMouseEnter={(e) => { e.currentTarget.style.background = "#FAF8F4"; }}
                 onMouseLeave={(e) => { e.currentTarget.style.background = "#FFFFFF"; }}>
@@ -289,7 +312,7 @@ export default function OpenCallsPage() {
                     posterImage={o.posterImage}
                     gallery={o.gallery}
                     theme={o.theme}
-                    city={o.city}
+                    city={place.text}
                     country={o.country}
                     deadline={o.deadline}
                     width={110}
@@ -301,7 +324,7 @@ export default function OpenCallsPage() {
                         {String(index + 1).padStart(2, "0")}
                       </span>
                       <span style={{ fontFamily: F, fontSize: 10, fontWeight: 500, letterSpacing: "0.1em", textTransform: "uppercase", color: "#8B7355" }}>
-                        {o.country} / {o.city}
+                        {o.country} / {place.text}
                       </span>
                     </div>
                     <h3 style={{ fontFamily: S, fontSize: 24, fontWeight: 400, color: "#1A1A1A", marginBottom: 6 }}>
@@ -374,6 +397,11 @@ export default function OpenCallsPage() {
                         </button>
                       );
                     })()}
+                    {prepByOpenCallId[o.id] && (
+                      <span style={{ display: "inline-block", marginBottom: 8, marginRight: 6, padding: "4px 10px", background: "#FFFFFF", border: "1px solid #E8E3DB", fontFamily: F, fontSize: 10, fontWeight: 600, color: "#6A6660", letterSpacing: "0.06em" }}>
+                        {preparationStatusLabel(prepByOpenCallId[o.id], lang)}
+                      </span>
+                    )}
                     {appliedOpenCallIds.has(o.id) && (
                       <span style={{ display: "inline-block", marginBottom: 8, padding: "4px 10px", background: "rgba(61,107,61,0.08)", border: "1px solid rgba(61,107,61,0.3)", fontFamily: F, fontSize: 10, fontWeight: 600, color: "#3D6B3D", letterSpacing: "0.06em" }}>
                         ✓ {lang === "ko" ? "지원됨" : lang === "ja" ? "申請済" : "Applied"}
@@ -405,7 +433,8 @@ export default function OpenCallsPage() {
                   </div>
                 </div>
               </div>
-            ))}
+              );
+            })}
             {filtered.length === 0 && (
               <div style={{ background: "#FFFFFF", padding: 48, textAlign: "center" }}>
                 <p style={{ fontFamily: F, fontSize: 13, color: "#B0AAA2" }}>{t("oc_no_results", lang)}</p>
