@@ -1,6 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
 import {
   commitCrawlEffects,
+  organizerFromOpportunityTitle,
   crawlRunStatus,
   deadlineFromOpportunityText,
   externalIdsSafeToExpire,
@@ -59,9 +60,11 @@ describe("deadline parsing", () => {
 });
 
 describe("candidate rejection", () => {
-  it("rejects result announcements and ordinary exhibition announcements", () => {
+  it("rejects result announcements, exhibition notices, and non-artist training", () => {
     expect(rejectionReason("2026 공모 선정 결과 발표")).toBe("RESULT_ANNOUNCEMENT");
     expect(rejectionReason("Exhibition announcement: the summer show is now on view")).toBe("EXHIBITION_ANNOUNCEMENT");
+    expect(rejectionReason("경기창작캠퍼스 2026 갤러리스트 역량강화 교육 모집 공고")).toBe("NOT_ARTIST_OPPORTUNITY");
+    expect(organizerFromOpportunityTitle("2027 엠아트센터 창작활동 지원작가 모집 공고(2026-11-09~2026-11-29)", "Open Call")).toContain("엠아트센터");
   });
 
   it("rejects expired opportunities and keeps a real future deadline", () => {
