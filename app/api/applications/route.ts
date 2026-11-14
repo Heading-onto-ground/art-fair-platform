@@ -13,6 +13,7 @@ import { createNotification } from "@/app/data/notifications";
 import { sendApplicationEmail } from "@/lib/email";
 import { prisma } from "@/lib/prisma";
 import { findBestGalleryEmail } from "@/lib/galleryEmailDirectory";
+import { listingFacts } from "@/lib/openCall/listingFacts";
 
 export const dynamic = "force-dynamic";
 
@@ -379,14 +380,20 @@ export async function POST(req: Request) {
       // 외부 오픈콜 → 갤러리에 자동 아웃리치 이메일 발송
       const artistName = profile.name ?? session.userId;
       const platformUrl = "https://art-fair-platform.vercel.app";
-      const fallbackEmail = await findBestGalleryEmail({
-        galleryId: openCall.galleryId,
-        galleryName: openCall.gallery,
-        website: openCall.galleryWebsite || openCall.externalUrl || "",
-        country: openCall.country || "",
-      });
-      const targetEmail = String(openCall.externalEmail || fallbackEmail || "").trim();
+      const facts = listingFacts(openCall);
+      const fallbackEmail = facts.canEmailOrganizer
+        ? await findBestGalleryEmail({
+          galleryId: openCall.galleryId,
+          galleryName: openCall.gallery,
+          website: openCall.galleryWebsite || openCall.externalUrl || "",
+          country: openCall.country || "",
+        })
+        : "";
+      const targetEmail = facts.canEmailOrganizer
+        ? String(openCall.externalEmail || fallbackEmail || "").trim()
+        : "";
       const canSendOutreach = looksLikeEmail(targetEmail);
+      if (!facts.canEmailOrganizer) outreachReason = "reprint_not_organizer";
       outreachTargetEmail = canSendOutreach ? targetEmail : null;
 
       // instagram fallback: fetch from ExternalGalleryDirectory if email missing
@@ -440,12 +447,19 @@ ${platformUrl}
 
       // 이메일 발송 (비동기, 실패해도 지원은 성공)
       if (!canSendOutreach) {
-        outreachReason = "missing_external_email";
-        console.warn("Auto-outreach skipped: missing/invalid external email", {
-          openCallId,
-          gallery: openCall.gallery,
-          externalEmail: openCall.externalEmail,
-        });
+        if (facts.canEmailOrganizer) {
+          outreachReason = "missing_external_email";
+          console.warn("Auto-outreach skipped: missing/invalid external email", {
+            openCallId,
+            gallery: openCall.gallery,
+            externalEmail: openCall.externalEmail,
+          });
+        } else {
+          console.warn("Auto-outreach skipped: republished notice is not the organizer", {
+            openCallId,
+            gallery: openCall.gallery,
+          });
+        }
       } else {
         // 이메일 발송 (비동기, 실패해도 지원은 성공)
         try {

@@ -36,6 +36,7 @@ model User {
   artistShortlists ArtistShortlist[]
   privateArtistNotes PrivateArtistNote[]
   activityAlerts ActivityAlert[]
+  openCallPreparations OpenCallPreparation[]
 }
 
 // 가입자 ↔ 관리자 플랫폼 내 쪽지 (이메일 아님)
@@ -282,6 +283,7 @@ model OpenCall {
   galleryDescription String?
   createdAt          DateTime @default(now())
   updatedAt          DateTime @updatedAt
+  preparations       OpenCallPreparation[]
 
   @@index([country])
   @@index([galleryId])
@@ -1099,4 +1101,22 @@ model ActivityAlert {
   @@unique([userId, artistEntityId, exhibitionId, type])
   @@index([userId, createdAt])
   @@index([userId, readAt])
+}
+
+// Private artist preparation. One row per user and open call.
+// This is not an application to the organizer and is not shown to other users.
+// User deletion cascades the row. Open call deletion cascades only this private row.
+model OpenCallPreparation {
+  id         String   @id @default(cuid())
+  userId     String
+  openCallId String
+  status     String
+  note       String?
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  openCall   OpenCall @relation(fields: [openCallId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, openCallId])
+  @@index([userId])
 }
