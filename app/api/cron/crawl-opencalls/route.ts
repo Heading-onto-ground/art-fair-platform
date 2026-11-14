@@ -5,6 +5,21 @@ import { prisma } from "@/lib/prisma";
 import { syncGalleryEmailDirectory } from "@/lib/galleryEmailDirectory";
 import { validateExternalOpenCalls } from "@/lib/openCallValidation";
 import { isCronAuthorized } from "@/lib/cronAuth";
+import {
+  LIVE_INSERT_CAP,
+  crawlRunStatus,
+  deadlineFromOpportunityText,
+  isActiveDeadline,
+  isCrawlStale,
+  isReadOnlyCrawl,
+  isScheduledCronRequest,
+  isSyntheticCrawlRow,
+  openCallIdentityKey,
+  parseExplicitDeadline,
+  planCrawlInserts,
+  rejectionReason,
+  settleSources,
+} from "@/lib/openCall/crawlRecovery";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 300;
@@ -67,7 +82,7 @@ async function findActiveRunningCrawlRun(jobName: string): Promise<string | null
 
 async function finishCrawlRun(input: {
   id: string | null;
-  status: "success" | "error";
+  status: "success" | "partial" | "error";
   itemsNew?: number;
   itemsUpdated?: number;
   error?: string | null;
@@ -164,14 +179,7 @@ function openCallKey(input: {
   externalUrl?: string;
   galleryWebsite?: string;
 }) {
-  const host = hostFromUrl(input.externalUrl || input.galleryWebsite);
-  const gallery = normalizeText(input.gallery);
-  const country = normalizeText(input.country);
-  const city = normalizeText(input.city);
-  const theme = normalizeText(input.theme);
-  const deadline = String(input.deadline || "").trim();
-  if (host) return `h:${host}|d:${deadline}|t:${theme}`;
-  return `g:${gallery}|c:${country}|city:${city}|d:${deadline}|t:${theme}`;
+  return openCallIdentityKey(input);
 }
 
 function toSlug(input: string) {
@@ -198,82 +206,12 @@ function stripCdata(input: string) {
     .trim();
 }
 
-function parseDateLike(input: string): string | null {
-  const s = String(input || "");
-  const m = s.match(/(20\d{2})\s*[.\-/]\s*(\d{1,2})\s*[.\-/]\s*(\d{1,2})/);
-  if (!m) return null;
-  const yyyy = m[1];
-  const mm = String(Number(m[2])).padStart(2, "0");
-  const dd = String(Number(m[3])).padStart(2, "0");
-  return `${yyyy}-${mm}-${dd}`;
-}
-
-function parseDateRangeEndLike(input: string): string | null {
-  const all = Array.from(String(input || "").matchAll(/(20\d{2})\s*[.\-/]\s*(\d{1,2})\s*[.\-/]\s*(\d{1,2})/g));
-  if (all.length === 0) return null;
-  const last = all[all.length - 1];
-  const yyyy = last[1];
-  const mm = String(Number(last[2])).padStart(2, "0");
-  const dd = String(Number(last[3])).padStart(2, "0");
-  return `${yyyy}-${mm}-${dd}`;
-}
-
-function parseShortDateRangeEndLike(input: string): string | null {
-  const all = Array.from(String(input || "").matchAll(/(\d{1,2})\s*[.\-/]\s*(\d{1,2})(?!\d)/g));
-  if (all.length === 0) return null;
-  const now = new Date();
-  const nowTs = now.getTime();
-  const candidates: Array<{ ts: number; value: string }> = [];
-  for (const m of all) {
-    const mm = Number(m[1]);
-    const dd = Number(m[2]);
-    if (!Number.isFinite(mm) || !Number.isFinite(dd) || mm < 1 || mm > 12 || dd < 1 || dd > 31) continue;
-    let yyyy = now.getUTCFullYear();
-    let d = new Date(Date.UTC(yyyy, mm - 1, dd, 23, 59, 59));
-    if (d.getTime() < nowTs) d = new Date(Date.UTC(yyyy + 1, mm - 1, dd, 23, 59, 59));
-    candidates.push({
-      ts: d.getTime(),
-      value: `${d.getUTCFullYear()}-${String(mm).padStart(2, "0")}-${String(dd).padStart(2, "0")}`,
-    });
-  }
-  if (candidates.length === 0) return null;
-  candidates.sort((a, b) => b.ts - a.ts);
-  return candidates[0].value;
-}
-
 function parseDeadlineFlexible(input: string): string | null {
-  const rangeEnd = parseDateRangeEndLike(input);
-  if (rangeEnd) return rangeEnd;
-  const full = parseDateLike(input);
-  if (full) return full;
-  const shortRangeEnd = parseShortDateRangeEndLike(input);
-  if (shortRangeEnd) return shortRangeEnd;
-  const short = String(input || "").match(/(\d{1,2})\s*[.\-/]\s*(\d{1,2})(?!\d)/);
-  if (!short) return null;
-  const now = new Date();
-  let yyyy = now.getUTCFullYear();
-  const mm = Number(short[1]);
-  const dd = Number(short[2]);
-  if (!Number.isFinite(mm) || !Number.isFinite(dd) || mm < 1 || mm > 12 || dd < 1 || dd > 31) return null;
-  const candidate = new Date(Date.UTC(yyyy, mm - 1, dd, 23, 59, 59));
-  // If date already passed this year, assume next cycle.
-  if (candidate.getTime() < now.getTime()) yyyy += 1;
-  return `${yyyy}-${String(mm).padStart(2, "0")}-${String(dd).padStart(2, "0")}`;
-}
-
-function parseDateFromPubDate(input: string): string | null {
-  const ts = Date.parse(String(input || "").trim());
-  if (!Number.isFinite(ts)) return null;
-  const d = new Date(ts);
-  return `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, "0")}-${String(d.getUTCDate()).padStart(2, "0")}`;
+  return parseExplicitDeadline(input);
 }
 
 function isDeadlineActive(deadline: string) {
-  const d = String(deadline || "").trim();
-  if (!/^\d{4}-\d{2}-\d{2}$/.test(d)) return false;
-  const endOfDayUtc = new Date(`${d}T23:59:59Z`);
-  if (Number.isNaN(endOfDayUtc.getTime())) return false;
-  return endOfDayUtc.getTime() >= Date.now();
+  return isActiveDeadline(deadline);
 }
 
 function absoluteUrl(base: string, href: string): string {
@@ -297,7 +235,11 @@ async function fetchText(url: string, timeoutMs = 10000): Promise<string> {
       cache: "no-store",
     });
     if (!res.ok) return "";
-    return await res.text();
+    const advertised = Number(res.headers.get("content-length") || 0);
+    if (Number.isFinite(advertised) && advertised > 1_500_000) return "";
+    const text = await res.text();
+    if (text.length > 1_500_000) return "";
+    return text;
   } catch {
     return "";
   } finally {
@@ -411,7 +353,8 @@ function parseHtmlLinksAsOpenCalls(input: {
     if (!input.isRelevant(titleRaw)) continue;
     const block = input.html.slice(Math.max(0, m.index - 220), Math.min(input.html.length, m.index + 420));
     if (input.shouldSkip && input.shouldSkip(`${titleRaw} ${block}`)) continue;
-    const deadline = parseDeadlineFlexible(block);
+    if (rejectionReason(`${titleRaw} ${block}`)) continue;
+    const deadline = parseDeadlineFlexible(`${titleRaw} ${block}`);
     if (!deadline) continue;
     const link = absoluteUrl(input.baseUrl, hrefRaw);
     const slug = toSlug(`${input.source}_${titleRaw}_${link}`);
@@ -451,11 +394,11 @@ function parseRssItemsAsOpenCalls(input: {
     const link = stripHtml(stripCdata((item.match(/<link>([\s\S]*?)<\/link>/i) || [])[1] || ""));
     const desc = stripHtml(stripCdata((item.match(/<description>([\s\S]*?)<\/description>/i) || [])[1] || ""));
     const category = stripHtml(stripCdata((item.match(/<category>([\s\S]*?)<\/category>/i) || [])[1] || ""));
-    const pubDate = stripHtml(stripCdata((item.match(/<pubDate>([\s\S]*?)<\/pubDate>/i) || [])[1] || ""));
     if (!title || !link) continue;
     const mergedText = `${title} ${category} ${desc}`;
     if (!looksLikeKoreanRssOpenCall({ title, category, desc })) continue;
-    const deadline = parseDeadlineFlexible(mergedText) || parseDeadlineFlexible(pubDate) || parseDateFromPubDate(pubDate);
+    if (rejectionReason(mergedText)) continue;
+    const deadline = deadlineFromOpportunityText({ title, category, description: desc });
     if (!deadline) continue;
     const slug = toSlug(`${input.source}_${title}_${link}`);
     rows.push({
@@ -491,12 +434,11 @@ function parseJapaneseRssItemsAsOpenCalls(input: {
     const link = stripHtml(stripCdata((item.match(/<link>([\s\S]*?)<\/link>/i) || [])[1] || ""));
     const desc = stripHtml(stripCdata((item.match(/<description>([\s\S]*?)<\/description>/i) || [])[1] || ""));
     const category = stripHtml(stripCdata((item.match(/<category>([\s\S]*?)<\/category>/i) || [])[1] || ""));
-    const pubDate = stripHtml(stripCdata((item.match(/<pubDate>([\s\S]*?)<\/pubDate>/i) || [])[1] || ""));
     if (!title || !link) continue;
     const mergedText = `${title} ${category} ${desc}`;
     if (!looksLikeJapaneseRssOpenCall({ title, category, desc })) continue;
-    if (looksLikeJapaneseExhibitionNotice(mergedText)) continue;
-    const deadline = parseDeadlineFlexible(mergedText) || parseDeadlineFlexible(pubDate) || parseDateFromPubDate(pubDate);
+    if (looksLikeJapaneseExhibitionNotice(mergedText) || rejectionReason(mergedText)) continue;
+    const deadline = deadlineFromOpportunityText({ title, category, description: desc });
     if (!deadline) continue;
     const slug = toSlug(`${input.source}_${title}_${link}`);
     const gallery = resolveJapanSourceGalleryLabel({
@@ -554,11 +496,11 @@ function parseGlobalRssItemsAsOpenCalls(input: {
     const link = stripHtml(stripCdata((item.match(/<link>([\s\S]*?)<\/link>/i) || [])[1] || ""));
     const desc = stripHtml(stripCdata((item.match(/<description>([\s\S]*?)<\/description>/i) || [])[1] || ""));
     const category = stripHtml(stripCdata((item.match(/<category>([\s\S]*?)<\/category>/i) || [])[1] || ""));
-    const pubDate = stripHtml(stripCdata((item.match(/<pubDate>([\s\S]*?)<\/pubDate>/i) || [])[1] || ""));
     if (!title || !link) continue;
     if (!looksLikeGlobalRssOpenCall({ title, category, desc })) continue;
     const mergedText = `${title} ${category} ${desc}`;
-    const deadline = parseDeadlineFlexible(mergedText) || parseDeadlineFlexible(pubDate) || parseDateFromPubDate(pubDate);
+    if (rejectionReason(mergedText)) continue;
+    const deadline = deadlineFromOpportunityText({ title, category, description: desc });
     if (!deadline) continue;
     const slug = toSlug(`${input.source}_${title}_${link}`);
     rows.push({
@@ -707,7 +649,7 @@ async function crawlEflux(): Promise<CrawledOpenCall[]> {
     });
     rows.push(...parsed);
   }
-  return rows.length > 0 ? rows : crawlEfluxFallback();
+  return rows;
 }
 
 // Live Res Artis / Transartists scraper
@@ -732,7 +674,7 @@ async function crawlTransartists(): Promise<CrawledOpenCall[]> {
     });
     rows.push(...parsed);
   }
-  return rows.length > 0 ? rows : crawlTransartistsFallback();
+  return rows;
 }
 
 // a-n.co.uk (UK artist network open calls)
@@ -888,7 +830,7 @@ async function crawlKoreanArtHub(): Promise<CrawledOpenCall[]> {
     });
     parsed.push(...rows);
   }
-  return parsed.length ? parsed : crawlKoreanArtHubFallback();
+  return parsed;
 }
 
 async function crawlKoreanArtBlogsWithDebug() {
@@ -953,9 +895,9 @@ async function crawlKoreanArtBlogsWithDebug() {
     parsed.push(...rows);
   }
 
-  const usedFallback = parsed.length === 0;
+  const usedFallback = false;
   return {
-    rows: usedFallback ? crawlKoreanArtBlogsFallback() : parsed,
+    rows: parsed,
     debug: {
       rssUrlsConfigured: rssUrls.length,
       rssFetched,
@@ -1033,9 +975,9 @@ async function crawlJapanOpenCallsWithDebug() {
     parsed.push(...rows);
   }
 
-  const usedFallback = parsed.length === 0;
+  const usedFallback = false;
   return {
-    rows: usedFallback ? crawlJapanOpenCallsFallback() : parsed,
+    rows: parsed,
     debug: {
       rssUrlsConfigured: rssUrls.length,
       rssFetched,
@@ -1084,7 +1026,8 @@ async function cleanupExpiredExternalOpenCalls() {
   return res.count;
 }
 
-async function runCrawlJob() {
+async function runCrawlJob(options?: { readOnly?: boolean }) {
+  const readOnly = options?.readOnly === true;
   const enabled = (process.env.CRAWL_OPENCALLS_ENABLED || "1") !== "0";
   if (!enabled) {
     return {
@@ -1092,11 +1035,15 @@ async function runCrawlJob() {
       imported: [],
       skipped: 0,
       cleaned: 0,
+      readOnly,
+      dbWrites: 0,
+      runStatus: "success" as const,
+      sourceReport: [],
       sources: ["e-flux", "resartis", "an-uk", "global-rss", "arthub-kr", "korean-art-blog", "japan-open-call", "instagram"],
     };
   }
-  const cleaned = await cleanupExhibitionEntries();
-  const cleanedExpired = await cleanupExpiredExternalOpenCalls();
+  const cleaned = readOnly ? 0 : await cleanupExhibitionEntries();
+  const cleanedExpired = readOnly ? 0 : await cleanupExpiredExternalOpenCalls();
   const existingOpenCalls = await listOpenCalls();
   const existingIds = new Set(existingOpenCalls.map((oc) => oc.galleryId));
   const existingUrls = new Set(
@@ -1118,35 +1065,40 @@ async function runCrawlJob() {
     )
   );
 
-  const [eflux, artrabbit, transartists, anUK, globalRss, arthubKr, krBlogsWithDebug, jpOpenCallsWithDebug, instagram] = await Promise.all([
-    crawlEflux(),
-    Promise.resolve(crawlArtrabbit()),
-    crawlTransartists(),
-    crawlANUK(),
-    crawlGlobalRss(),
-    crawlKoreanArtHub(),
-    crawlKoreanArtBlogsWithDebug(),
-    crawlJapanOpenCallsWithDebug(),
-    crawlInstagramOpenCalls(),
+  let koreanArtBlogDebug: Awaited<ReturnType<typeof crawlKoreanArtBlogsWithDebug>>["debug"] | null = null;
+  let japanOpenCallDebug: Awaited<ReturnType<typeof crawlJapanOpenCallsWithDebug>>["debug"] | null = null;
+  const settled = await settleSources<CrawledOpenCall>([
+    { source: "e-flux", run: crawlEflux },
+    { source: "artrabbit", run: async () => crawlArtrabbit() },
+    { source: "resartis", run: crawlTransartists },
+    { source: "an-uk", run: crawlANUK },
+    { source: "global-rss", run: crawlGlobalRss },
+    { source: "arthub-kr", run: crawlKoreanArtHub },
+    { source: "korean-art-blog", run: async () => {
+      const result = await crawlKoreanArtBlogsWithDebug();
+      koreanArtBlogDebug = result.debug;
+      return result.rows;
+    } },
+    { source: "japan-open-call", run: async () => {
+      const result = await crawlJapanOpenCallsWithDebug();
+      japanOpenCallDebug = result.debug;
+      return result.rows;
+    } },
+    { source: "instagram", run: crawlInstagramOpenCalls },
   ]);
-  const krBlogs = krBlogsWithDebug.rows;
-  const jpOpenCalls = jpOpenCallsWithDebug.rows;
-  const allCrawled: CrawledOpenCall[] = [...eflux, ...artrabbit, ...transartists, ...anUK, ...globalRss, ...arthubKr, ...krBlogs, ...jpOpenCalls, ...instagram];
-  const activeCrawled = allCrawled.filter((c) => isDeadlineActive(c.deadline));
-
-  const seenInBatch = new Set<string>();
-  const newCalls = activeCrawled.filter((c) => {
-    const key = openCallKey(c);
-    if (existingKeys.has(key)) return false;
-    if (seenInBatch.has(key)) return false;
-    if (existingIds.has(c.galleryId) && (!c.externalUrl || existingUrls.has(c.externalUrl))) return false;
-    if (c.externalUrl && existingUrls.has(c.externalUrl)) return false;
-    seenInBatch.add(key);
-    return true;
+  const allCrawled = settled.flatMap((item) => item.rows);
+  const sourceFailures = settled.filter((item) => !item.ok).length;
+  const plan = planCrawlInserts({
+    candidates: allCrawled.filter((call) => !(existingIds.has(call.galleryId) && (!call.externalUrl || existingUrls.has(call.externalUrl)))),
+    existingKeys,
+    existingUrls,
+    cap: LIVE_INSERT_CAP,
   });
+  const newCalls = plan.wouldInsert;
 
   const imported: any[] = [];
   const importErrors: Array<{ source: string; gallery: string; reason: string }> = [];
+  if (!readOnly) {
   for (const call of newCalls) {
     try {
       const created = await createOpenCall({
@@ -1177,28 +1129,38 @@ async function runCrawlJob() {
       });
     }
   }
+  }
 
   let emailDirectory: any = { collected: 0, upserted: 0, discovered: 0, skipped: true };
   let emailDirectoryError: string | null = null;
+  let validation: any = { total: 0, verified: 0, suspicious: 0, invalid: 0, unreachable: 0, pruned: 0, skipped: true };
+  let validationError: string | null = null;
+  if (!readOnly) {
   try {
     emailDirectory = await syncGalleryEmailDirectory();
   } catch (e: any) {
     emailDirectoryError = String(e?.message || "email directory sync failed");
   }
-
-  let validation: any = { total: 0, verified: 0, suspicious: 0, invalid: 0, unreachable: 0, pruned: 0, skipped: true };
-  let validationError: string | null = null;
   try {
     validation = await validateExternalOpenCalls();
   } catch (e: any) {
     validationError = String(e?.message || "validation failed");
   }
+  }
+  const runStatus = crawlRunStatus({
+    sourceAttempts: settled.length,
+    sourceFailures,
+    fatal: false,
+  });
+  const slowest = [...settled].sort((a, b) => b.durationMs - a.durationMs)[0];
 
   return {
-    message: `Crawler completed. ${imported.length} new open calls imported.`,
+    message: readOnly
+      ? `Read-only crawl observed ${plan.wouldInsert.length} insert candidates.`
+      : `Crawler completed. ${imported.length} new open calls imported.`,
     imported,
-    skipped: activeCrawled.length - imported.length,
-    droppedExpired: allCrawled.length - activeCrawled.length,
+    skipped: plan.duplicates.length,
+    droppedExpired: plan.expired.length,
     cleaned,
     cleanedExpired,
     emailDirectory,
@@ -1206,15 +1168,53 @@ async function runCrawlJob() {
     importErrors: importErrors.slice(0, 20),
     emailDirectoryError,
     validationError,
-    koreanArtBlogDebug: krBlogsWithDebug.debug,
-    japanOpenCallDebug: jpOpenCallsWithDebug.debug,
-    sources: ["e-flux", "resartis", "an-uk", "global-rss", "arthub-kr", "korean-art-blog", "japan-open-call", "instagram"],
+    koreanArtBlogDebug,
+    japanOpenCallDebug,
+    readOnly,
+    dbWrites: readOnly ? 0 : imported.length + cleaned + cleanedExpired,
+    runStatus,
+    sourceReport: settled.map((item) => ({
+      source: item.source,
+      fetchStatus: item.ok ? (item.rows.length ? "ok" : "empty") : "error",
+      durationMs: item.durationMs,
+      rawItems: item.rows.length,
+      error: item.error,
+    })),
+    slowestSource: slowest ? { source: slowest.source, durationMs: slowest.durationMs } : null,
+    wouldInsert: plan.wouldInsert.slice(0, 20).map((row) => ({
+      source: row.source,
+      title: row.theme,
+      organizer: row.gallery,
+      country: row.country,
+      deadline: row.deadline,
+      sourceUrl: row.externalUrl,
+    })),
+    wouldInsertCount: plan.wouldInsert.length,
+    heldByCap: plan.heldByCap.length,
+    rejected: plan.rejected.length,
+    duplicates: plan.duplicates.length,
+    expired: plan.expired.length,
+    syntheticBlocked: plan.synthetic.length,
+    sources: settled.map((item) => item.source),
   };
+}
+
+async function readOnlyResponse() {
+  const started = Date.now();
+  const result = await runCrawlJob({ readOnly: true });
+  return NextResponse.json({
+    ...result,
+    ok: true,
+    readOnly: true,
+    dbWrites: 0,
+    totalRuntimeMs: Date.now() - started,
+  });
 }
 
 export async function POST(req: Request) {
   const auth = requireCronAuth(req);
   if (auth) return auth;
+  if (isReadOnlyCrawl(req.headers)) return readOnlyResponse();
 
   const jobName = "crawl-opencalls";
   const activeRunId = await findActiveRunningCrawlRun(jobName);
@@ -1223,7 +1223,7 @@ export async function POST(req: Request) {
   }
 
   let runId: string | null = null;
-  let status: "success" | "error" = "success";
+  let status: "success" | "partial" | "error" = "success";
   let error: string | null = null;
   let itemsNew = 0;
   let crawlResult: Awaited<ReturnType<typeof runCrawlJob>> | null = null;
@@ -1232,6 +1232,10 @@ export async function POST(req: Request) {
     runId = await insertCrawlRun(jobName);
     crawlResult = await runCrawlJob();
     itemsNew = Array.isArray(crawlResult?.imported) ? crawlResult.imported.length : 0;
+    status = crawlResult?.runStatus || "success";
+    if (status !== "success") {
+      error = (crawlResult?.sourceReport || []).filter((item) => item.fetchStatus === "error").map((item) => item.source).join(",") || null;
+    }
   } catch (e: any) {
     status = "error";
     error = String(e?.message || "unknown").slice(0, 500);
@@ -1265,12 +1269,9 @@ export async function POST(req: Request) {
 export async function GET(req: Request) {
   const auth = requireCronAuth(req);
   if (auth) return auth;
-  const url = new URL(req.url);
+  if (isReadOnlyCrawl(req.headers)) return readOnlyResponse();
 
-  const isCron = req.headers.get("x-vercel-cron") === "1";
-  const manualRun = req.headers.get("x-cron-run") === "1";
-
-  if (isCron || manualRun) {
+  if (isScheduledCronRequest(req.headers)) {
     const jobName = "crawl-opencalls";
     const activeRunId = await findActiveRunningCrawlRun(jobName);
     if (activeRunId) {
@@ -1278,13 +1279,17 @@ export async function GET(req: Request) {
     }
 
     let runId: string | null = null;
-    let status: "success" | "error" = "success";
+    let status: "success" | "partial" | "error" = "success";
     let error: string | null = null;
     let itemsNew = 0;
     try {
       runId = await insertCrawlRun(jobName);
       const data = await runCrawlJob();
-      itemsNew = Array.isArray((data as any)?.imported) ? (data as any).imported.length : 0;
+      itemsNew = Array.isArray(data?.imported) ? data.imported.length : 0;
+      status = data?.runStatus || "success";
+      if (status !== "success") {
+        error = (data?.sourceReport || []).filter((item) => item.fetchStatus === "error").map((item) => item.source).join(",") || null;
+      }
     } catch (e: any) {
       status = "error";
       error = String(e?.message || "unknown").slice(0, 500);
@@ -1303,6 +1308,7 @@ export async function GET(req: Request) {
   const existing = await listOpenCalls();
   const externalCount = existing.filter((oc) => oc.isExternal).length;
   const lastCrawl = await getLastCrawl("crawl-opencalls");
+  const lastSuccess = await getLastSuccessfulCrawl("crawl-opencalls");
 
   return NextResponse.json({
     sources: [
@@ -1318,5 +1324,20 @@ export async function GET(req: Request) {
     externalOpenCalls: externalCount,
     internalOpenCalls: existing.length - externalCount,
     lastCrawl,
+    lastSuccessAt: lastSuccess ? lastSuccess.toISOString() : null,
+    stale: isCrawlStale(lastSuccess),
+    staleAfterHours: 48,
   });
+}
+
+async function getLastSuccessfulCrawl(jobName: string): Promise<Date | null> {
+  await ensureCrawlRunsTable();
+  const rows = (await prisma.$queryRawUnsafe(
+    `SELECT finished_at FROM crawl_runs WHERE job_name = $1 AND status = 'success' AND finished_at IS NOT NULL ORDER BY finished_at DESC LIMIT 1`,
+    jobName
+  )) as Array<{ finished_at: Date | string | null }>;
+  const value = rows?.[0]?.finished_at;
+  if (!value) return null;
+  const date = value instanceof Date ? value : new Date(value);
+  return Number.isNaN(date.getTime()) ? null : date;
 }
