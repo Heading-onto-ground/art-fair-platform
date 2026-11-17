@@ -284,6 +284,8 @@ model OpenCall {
   createdAt          DateTime @default(now())
   updatedAt          DateTime @updatedAt
   preparations       OpenCallPreparation[]
+  opportunities      Opportunity[]      @relation("OpportunityLegacy")
+  opportunitySources OpportunitySource[] @relation("OpportunitySourceLegacy")
 
   @@index([country])
   @@index([galleryId])
@@ -1119,4 +1121,64 @@ model OpenCallPreparation {
 
   @@unique([userId, openCallId])
   @@index([userId])
+}
+
+// Logical artist opportunity. Additive over OpenCall.
+// Unknown facts stay null. This table is server-only.
+model Opportunity {
+  id                    String    @id @default(cuid())
+  type                  String?
+  title                 String
+  organizerName         String?
+  organizerType         String?
+  country               String?
+  city                  String?
+  locationText          String?
+  deadline              String?
+  deadlineTimezone      String?
+  applicationStart      String?
+  eventStart            String?
+  eventEnd              String?
+  feeAmount             Int?
+  feeCurrency           String?
+  feeRequired           Boolean?
+  eligibility           String?
+  disciplines           String?
+  internationalEligible Boolean?
+  description           String?
+  officialUrl           String?
+  sourceUrl             String?
+  sourceHost            String?
+  sourceLanguage        String?
+  sourceClass           String?
+  status                String
+  verificationStatus    String
+  verifiedAt            DateTime?
+  discoveredAt          DateTime?
+  fingerprint           String    @unique
+  legacyOpenCallId      String?   @unique
+  createdAt             DateTime  @default(now())
+  updatedAt             DateTime  @updatedAt
+  legacyOpenCall        OpenCall? @relation("OpportunityLegacy", fields: [legacyOpenCallId], references: [id], onDelete: SetNull)
+  sources               OpportunitySource[]
+
+  @@index([status, verificationStatus])
+}
+
+// One discovery page for a logical opportunity. Several sources can share one opportunity.
+model OpportunitySource {
+  id               String      @id @default(cuid())
+  opportunityId    String
+  sourceUrl        String
+  sourceHost       String?
+  sourceLanguage   String?
+  sourceClass      String?
+  discoveredAt     DateTime    @default(now())
+  legacyOpenCallId String?
+  opportunity      Opportunity @relation(fields: [opportunityId], references: [id], onDelete: Cascade)
+  legacyOpenCall   OpenCall?   @relation("OpportunitySourceLegacy", fields: [legacyOpenCallId], references: [id], onDelete: SetNull)
+
+  @@unique([opportunityId, sourceUrl])
+  @@unique([legacyOpenCallId])
+  @@index([opportunityId])
 }
