@@ -139,6 +139,7 @@ function opportunityType(text: string): OpportunityType | null {
   if (/레지던시|레지던스|artist[- ]in[- ]residence|\bresidency\b/i.test(text)) return "RESIDENCY";
   if (/공동주택|공공미술|미술작품\s*선정/.test(text)) return "PUBLIC_ART";
   if (/아트\s*페어|art\s+fair/i.test(text)) return "FAIR";
+  if (/참가비\s*지원|지원사업/.test(text)) return "GRANT";
   if (/공모전/.test(text)) return "PRIZE";
   if (/기획전|전시\s*개요|개인전/.test(text)) return "EXHIBITION";
   if (/대관/.test(text)) return "PROGRAM";

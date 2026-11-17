@@ -160,6 +160,29 @@ describe("opportunity domain", () => {
     expect(misa).toMatchObject({ type: "EXHIBITION", organizerName: "MISAJANG 미사장", city: "서울", sourceClass: "REPRINT" });
     expect(misa?.officialUrl).toBe("https://www.misajang.com");
     expect(hanok).toMatchObject({ type: "PRIZE", organizerName: "갤러리한옥", city: "서울", disciplines: "불화, 민화", officialUrl: null });
+    const chungju = draftOpportunity({
+      id: "chungju-1",
+      gallery: "2026 충주문화예술지원사업 대외활동 참가비 지원 공고",
+      city: "Seoul",
+      country: "한국",
+      theme: "2026 충주문화예술지원사업 대외활동 참가비 지원 공고_공모전 · 대회 · 콩쿠르 등(2026-03-13~2026-11-30)",
+      deadline: "2026-11-30",
+      isExternal: true,
+      externalUrl: "https://blog.naver.com/venice87/224478585489",
+      galleryWebsite: "https://rss.blog.naver.com/venice87.xml",
+      galleryDescription: "접수일정 ▶ 2026-03-13~2026-11-30 주관 ▶ 충주문화관광재단 주소 ▶ 충북 충주시 중앙로 128 2층 홈페이지 ▶ https://cjcf.or.kr/new/bbs/board.php?bo_table=offering&wr_id=44",
+    }, NOW);
+    expect(chungju).toMatchObject({
+      type: "GRANT",
+      organizerName: "충주문화관광재단",
+      organizerType: "ORGANIZATION",
+      country: "한국",
+      city: "충주시",
+      sourceClass: "REPRINT",
+      verificationStatus: "VERIFIED_AGGREGATOR",
+    });
+    expect(chungju?.officialUrl).toContain("cjcf.or.kr");
+    expect(chungju?.city).not.toBe("Seoul");
   });
 
   it("splits fingerprints by organizer and by deadline", () => {
