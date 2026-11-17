@@ -239,7 +239,8 @@ export function applicationRouteLabel(isExternal: boolean | undefined, lang = "k
 export function deadlineStatus(deadline: string, now = new Date()): "open" | "closed" | "unknown" {
   const day = String(deadline || "").slice(0, 10);
   if (!/^\d{4}-\d{2}-\d{2}$/.test(day)) return "unknown";
-  const end = new Date(`${day}T23:59:59+09:00`);
+  // A date-only deadline stays open until that calendar date has ended in UTC−12.
+  const end = new Date(`${day}T23:59:59-12:00`);
   if (Number.isNaN(end.getTime())) return "unknown";
   return now.getTime() <= end.getTime() ? "open" : "closed";
 }

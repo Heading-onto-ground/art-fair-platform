@@ -106,7 +106,9 @@ describe("open call listing facts", () => {
 
   it("treats the deadline date as still open through the end of that day", () => {
     expect(deadlineStatus("2026-11-16", new Date("2026-11-16T10:00:00+09:00"))).toBe("open");
-    expect(deadlineStatus("2026-11-15", new Date("2026-11-16T10:00:00+09:00"))).toBe("closed");
+    expect(deadlineStatus("2026-11-16", new Date("2026-11-16T10:00:00-05:00"))).toBe("open");
+    expect(deadlineStatus("2026-11-15", new Date("2026-11-16T10:00:00+09:00"))).toBe("open");
+    expect(deadlineStatus("2026-11-15", new Date("2026-11-16T21:00:00+09:00"))).toBe("closed");
     expect(deadlineStatus("soon")).toBe("unknown");
   });
 
