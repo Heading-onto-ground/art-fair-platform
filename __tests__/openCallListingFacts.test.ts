@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { listingFacts, locationLine } from "@/lib/openCall/listingFacts";
+import { applyDestination, costLines, costSummary, deadlineStatus, listingFacts, locationLine } from "@/lib/openCall/listingFacts";
 
 const spacenamu = {
   city: "Seoul",
@@ -19,7 +19,9 @@ describe("open call listing facts", () => {
     expect(facts.organizerEmail).toBe("spacenamu_@naver.com");
     expect(facts.statedPlace).toContain("양산시");
     expect(facts.cityNeedsCheck).toBe(true);
+    expect(facts.organizerName).toBe("스페이스나무 뮤지엄");
     expect(facts.kind).toBe("공모전");
+    expect(applyDestination(facts, spacenamu.externalUrl)?.kind).toBe("official");
     expect(facts.fee).toBeNull();
     expect(facts.support).toBeNull();
     expect(facts.canEmailOrganizer).toBe(false);
@@ -68,6 +70,46 @@ describe("open call listing facts", () => {
       externalEmail: "contact@sia-promotion.org",
     });
     expect(facts.canEmailOrganizer).toBe(true);
+  });
+
+  it("keeps a free application fee separate from unconfirmed participation costs", () => {
+    const facts = listingFacts({
+      city: "Seoul",
+      theme: "참여 공모",
+      galleryDescription: "참가비 ▶ 무료 선정 후 참가비 ▶ 50,000원 운송비 작가 부담 판매 수수료 ▶ 30%",
+      externalUrl: "https://blog.naver.com/venice87/9",
+    });
+    expect(costSummary(facts)).toBe("지원비 없음 · 선정 후 참가비 50,000원 · 운송·설치 작가 부담 · 판매 수수료 30%");
+    expect(costLines(facts).map((line) => [line.key, line.value])).toEqual([
+      ["application", "없음"],
+      ["participation", "50,000원"],
+      ["shipping", "작가 부담"],
+      ["commission", "30%"],
+      ["other", "미확인"],
+    ]);
+    expect(costSummary(facts)).not.toBe("무료");
+  });
+
+  it("sends a reprinted notice link ahead of the aggregator when no official site is named", () => {
+    const facts = listingFacts({
+      city: "Seoul",
+      theme: "갤러리한옥",
+      galleryDescription: "주관 ▶ 갤러리한옥 홈페이지 ▶ https://blog.naver.com/gallery_hanok/1",
+      externalUrl: "https://blog.naver.com/venice87/1",
+    });
+    expect(facts.officialApplicationUrl).toBeNull();
+    expect(applyDestination(facts, "https://blog.naver.com/venice87/1")).toEqual({
+      href: "https://blog.naver.com/gallery_hanok/1",
+      kind: "notice",
+    });
+  });
+
+  it("treats the deadline date as still open through the end of that day", () => {
+    expect(deadlineStatus("2026-11-16", new Date("2026-11-16T10:00:00+09:00"))).toBe("open");
+    expect(deadlineStatus("2026-11-16", new Date("2026-11-16T10:00:00-05:00"))).toBe("open");
+    expect(deadlineStatus("2026-11-15", new Date("2026-11-16T10:00:00+09:00"))).toBe("open");
+    expect(deadlineStatus("2026-11-15", new Date("2026-11-16T21:00:00+09:00"))).toBe("closed");
+    expect(deadlineStatus("soon")).toBe("unknown");
   });
 
   it("does not treat a blank reprint address or a Naver homepage as confirmed", () => {

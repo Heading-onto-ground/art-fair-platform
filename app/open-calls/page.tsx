@@ -2,16 +2,16 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import TopBar from "@/app/components/TopBar";
 import ArtistBottomNav from "@/app/components/ArtistBottomNav";
-import SignupPromptModal from "@/app/components/SignupPromptModal";
 import { CardSkeleton } from "@/app/components/Skeleton";
 import OpenCallPoster from "@/app/components/OpenCallPoster";
 import { useFetch } from "@/lib/useFetch";
 import { useLanguage } from "@/lib/useLanguage";
 import { t } from "@/lib/translate";
 import { F, S } from "@/lib/design";
-import { listingFacts, locationLine } from "@/lib/openCall/listingFacts";
+import { applicationRouteLabel, costSummary, deadlineStatus, eligibilityDisplay, listingFacts, locationLine, organizerDisplay, typeDisplay } from "@/lib/openCall/listingFacts";
 import { preparationStatusLabel, type PreparationStatus } from "@/lib/openCall/preparationStatus";
 
 type OpenCall = {
@@ -42,7 +42,7 @@ function formatDeadlineLocal(deadline: string, lang: string): string {
 
 type ScoreBreakdown = { country: number; genre: number; city: number; bio: number; total: number };
 
-function computeMatchScore(profile: any, oc: OpenCall): ScoreBreakdown {
+function computeMatchScore(profile: any, oc: OpenCall, cityNeedsCheck: boolean): ScoreBreakdown {
   const result: ScoreBreakdown = { country: 0, genre: 0, city: 0, bio: 0, total: 0 };
   if (!profile) return result;
   if (profile.country && normalizeCountry(profile.country) === normalizeCountry(oc.country)) result.country = 35;
@@ -53,7 +53,7 @@ function computeMatchScore(profile: any, oc: OpenCall): ScoreBreakdown {
     const matched = words.filter((w: string) => haystack.includes(w));
     if (matched.length > 0) result.genre = Math.round(40 * matched.length / Math.max(words.length, 1));
   }
-  if (profile.city && oc.city && profile.city.toLowerCase() === oc.city.toLowerCase()) result.city = 15;
+  if (!cityNeedsCheck && profile.city && oc.city && profile.city.toLowerCase() === oc.city.toLowerCase()) result.city = 15;
   const bio = String(profile.bio || "").toLowerCase();
   if (bio) {
     const themeWords = oc.theme.toLowerCase().split(/\s+/).filter((w: string) => w.length > 3);
@@ -68,17 +68,10 @@ export default function OpenCallsPage() {
   const { data, error, isLoading, mutate } = useFetch<{ openCalls: OpenCall[] }>("/api/open-calls");
   const openCalls = data?.openCalls ?? [];
   const [countryFilter, setCountryFilter] = useState<string>("ALL");
-  const [showSignup, setShowSignup] = useState(false);
-  const [isLoggedIn, setIsLoggedIn] = useState(true);
   const [preferredCountry, setPreferredCountry] = useState("");
   const [artistProfile, setArtistProfile] = useState<any>(null);
   const [scoreModal, setScoreModal] = useState<{ oc: OpenCall; breakdown: ScoreBreakdown } | null>(null);
   const [hasAutoSelectedCountry, setHasAutoSelectedCountry] = useState(false);
-  const [translatedById, setTranslatedById] = useState<
-    Record<string, { theme?: string; galleryDescription?: string }>
-  >({});
-  const [showOriginalById, setShowOriginalById] = useState<Record<string, boolean>>({});
-  const [translatingById, setTranslatingById] = useState<Record<string, boolean>>({});
   const [appliedOpenCallIds, setAppliedOpenCallIds] = useState<Set<string>>(new Set());
   const [prepByOpenCallId, setPrepByOpenCallId] = useState<Record<string, PreparationStatus>>({});
   const { lang } = useLanguage();
@@ -93,7 +86,6 @@ export default function OpenCallsPage() {
     fetch("/api/auth/me", { cache: "no-store" })
       .then((r) => r.json())
       .then((data: MeResponse) => {
-        setIsLoggedIn(!!data?.session);
         setPreferredCountry((data?.profile?.country ?? "").trim());
         if (data?.session?.role === "artist") {
           setArtistProfile(data?.profile ?? null);
@@ -107,7 +99,6 @@ export default function OpenCallsPage() {
         }
       })
       .catch(() => {
-        setIsLoggedIn(false);
         setPreferredCountry("");
       });
   }, []);
@@ -168,6 +159,12 @@ export default function OpenCallsPage() {
   }, [router, filtered]);
 
   useEffect(() => {
+    document.title = lang === "ko"
+      ? "전시·공모 오픈콜 | ROB"
+      : "Exhibition and open-call opportunities | ROB";
+  }, [lang]);
+
+  useEffect(() => {
     if (hasAutoSelectedCountry) return;
     if (countryFilter !== "ALL") {
       setHasAutoSelectedCountry(true);
@@ -179,71 +176,43 @@ export default function OpenCallsPage() {
     setHasAutoSelectedCountry(true);
   }, [hasAutoSelectedCountry, countryFilter, normalizedPreferredCountry, countries]);
 
-  async function translateOpenCall(id: string, theme: string, galleryDescription?: string) {
-    const texts = [theme, galleryDescription?.trim() || ""].filter(Boolean);
-    if (texts.length === 0) return;
-    const res = await fetch("/api/translate", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ texts, targetLang: lang }),
-    });
-    const data = await res.json().catch(() => null);
-    if (!res.ok || !Array.isArray(data?.translated)) return;
-    const translated = data.translated as string[];
-    setTranslatedById((prev) => ({
-      ...prev,
-      [id]: {
-        theme: translated[0] || prev[id]?.theme,
-        galleryDescription: texts.length > 1 ? translated[1] || prev[id]?.galleryDescription : prev[id]?.galleryDescription,
-      },
-    }));
-  }
-
-  async function toggleTranslation(openCall: OpenCall) {
-    if (lang === "en") return;
-    const hasTranslated = !!translatedById[openCall.id]?.theme;
-    if (hasTranslated) {
-      setShowOriginalById((prev) => ({ ...prev, [openCall.id]: !prev[openCall.id] }));
-      return;
-    }
-    setTranslatingById((prev) => ({ ...prev, [openCall.id]: true }));
-    try {
-      await translateOpenCall(openCall.id, openCall.theme, openCall.galleryDescription);
-      setShowOriginalById((prev) => ({ ...prev, [openCall.id]: false }));
-    } finally {
-      setTranslatingById((prev) => ({ ...prev, [openCall.id]: false }));
-    }
-  }
-
-  useEffect(() => {
-    if (lang === "en" || openCalls.length === 0) return;
-    const targets = openCalls
-      .filter((o) => !translatedById[o.id]?.theme)
-      .slice(0, 8);
-    if (targets.length === 0) return;
-    (async () => {
-      for (const item of targets) {
-        await translateOpenCall(item.id, item.theme, item.galleryDescription);
-      }
-    })();
-  }, [openCalls, lang, translatedById]);
-
   return (
     <>
       <TopBar />
       <style jsx global>{`
+        .oc-list-main { padding: 56px 40px 88px; max-width: 960px; margin: 0 auto; }
+        .oc-list-title { font-family: var(--font-cormorant), Georgia, serif; font-size: 42px; font-weight: 400; color: #1A1A1A; margin: 8px 0 0; line-height: 1.15; }
+        .oc-card-title { font-family: var(--font-cormorant), Georgia, serif; font-size: 24px; font-weight: 500; color: #1A1A1A; margin: 0 0 8px; line-height: 1.35; overflow-wrap: anywhere; }
+        .oc-facts { display: grid; grid-template-columns: 1fr 1fr; gap: 8px 16px; margin: 14px 0 0; padding: 0; list-style: none; }
+        .oc-facts li { min-width: 0; }
+        .oc-facts span { display: block; font-family: var(--font-inter), sans-serif; font-size: 11px; font-weight: 600; letter-spacing: 0.06em; color: #6A6660; margin-bottom: 2px; }
+        .oc-facts strong { display: block; font-family: var(--font-inter), sans-serif; font-size: 14px; font-weight: 500; color: #1A1A1A; line-height: 1.45; overflow-wrap: anywhere; }
+        .oc-next { display: inline-flex; align-items: center; margin-top: 14px; padding: 10px 14px; background: #1A1A1A; color: #FDFBF7; font-family: var(--font-inter), sans-serif; font-size: 13px; font-weight: 600; letter-spacing: 0; text-decoration: none; }
+        .oc-calendar { display: inline-flex; margin-top: 14px; margin-left: 8px; padding: 10px 12px; background: transparent; color: #5C5854; border: 1px solid #E8E3DB; font-family: var(--font-inter), sans-serif; font-size: 13px; text-decoration: none; }
         @media (max-width: 768px) {
-          .oc-list-inner { flex-direction: column !important; }
-          .oc-list-poster { width: 100% !important; height: auto !important; aspect-ratio: 3/4 !important; max-height: 300px !important; }
+          .oc-list-main { padding: 28px 16px calc(96px + env(safe-area-inset-bottom)) !important; }
+          .oc-list-title { font-size: 34px; }
+          .oc-list-inner { align-items: flex-start !important; }
+          .oc-list-poster { width: 72px !important; height: 96px !important; max-height: 96px !important; aspect-ratio: auto !important; }
+          .oc-list-side { text-align: left !important; margin-left: 0 !important; width: 100%; }
+          .oc-facts { grid-template-columns: 1fr; }
         }
       `}</style>
-      <main className="mobile-app-main" style={{ padding: "56px 40px", maxWidth: 960, margin: "0 auto" }}>
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end", marginBottom: 48 }}>
+      <main id="main-content" className="mobile-app-main oc-list-main">
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end", gap: 16, marginBottom: 28 }}>
           <div>
-            <span style={{ fontFamily: F, fontSize: 10, fontWeight: 500, letterSpacing: "0.2em", color: "#8B7355", textTransform: "uppercase" }}>{t("oc_opportunities", lang)}</span>
-            <h1 style={{ fontFamily: S, fontSize: 42, fontWeight: 300, color: "#1A1A1A", marginTop: 8 }}>{t("oc_title", lang)}</h1>
+            <span style={{ fontFamily: F, fontSize: 11, fontWeight: 600, letterSpacing: "0.14em", color: "#8B7355", textTransform: "uppercase" }}>{t("oc_opportunities", lang)}</span>
+            <h1 className="oc-list-title">{t("oc_title", lang)}</h1>
+            <p style={{ fontFamily: F, fontSize: 16, lineHeight: 1.5, color: "#1A1A1A", maxWidth: 560, margin: "12px 0 0" }}>
+              {lang === "ko" ? "다음 전시·공모, 마감과 비용부터 확인하세요." : "Check the deadline and costs before the next exhibition or open call."}
+            </p>
+            <p style={{ fontFamily: F, fontSize: 14, lineHeight: 1.6, color: "#3F3C38", maxWidth: 560, margin: "6px 0 0" }}>
+              {lang === "ko"
+                ? "목록은 공고를 비교하는 자리입니다. 확인되지 않은 자격과 비용은 미확인으로 두며, 접수는 외부 사이트와 ROB을 구분해 안내합니다."
+                : "Use the list to compare calls. Unconfirmed eligibility and costs stay unconfirmed, and each call says whether you apply on an external site or on ROB."}
+            </p>
           </div>
-          <button onClick={load} style={{ padding: "10px 20px", border: "1px solid #E8E3DB", background: "transparent", color: "#8A8580", fontFamily: F, fontSize: 10, fontWeight: 500, letterSpacing: "0.1em", textTransform: "uppercase", cursor: "pointer" }}>
+          <button onClick={load} style={{ padding: "10px 14px", border: "1px solid #E8E3DB", background: "transparent", color: "#5C5854", fontFamily: F, fontSize: 13, fontWeight: 600, cursor: "pointer", flexShrink: 0 }}>
             {t("refresh", lang)}
           </button>
         </div>
@@ -266,7 +235,7 @@ export default function OpenCallsPage() {
                   fontWeight: 500,
                   letterSpacing: "0.08em",
                   textTransform: "uppercase",
-                  color: active ? "#1A1A1A" : "#B0AAA2",
+                  color: active ? "#1A1A1A" : "#5C5854",
                   cursor: "pointer",
                   marginBottom: -1,
                   whiteSpace: "nowrap",
@@ -300,13 +269,15 @@ export default function OpenCallsPage() {
         ) : (
           <div style={{ display: "grid", gap: 1, background: "#E8E3DB" }}>
             {filtered.map((o, index) => {
-              const place = locationLine(listingFacts(o), o.city);
+              const facts = listingFacts(o);
+              const place = locationLine(facts, o.city);
+              const closed = deadlineStatus(o.deadline) === "closed";
+              const nextLabel = lang === "ko" ? "조건 확인" : "Check conditions";
               return (
-              <div key={o.id} onClick={() => { if (!isLoggedIn) { setShowSignup(true); return; } router.push(`/open-calls/${o.id}`); }} style={{ background: "#FFFFFF", padding: "32px 36px", cursor: "pointer", transition: "background 0.3s" }}
+              <article key={o.id} onClick={() => router.push(`/open-calls/${o.id}`)} style={{ background: "#FFFFFF", padding: "28px 28px", cursor: "pointer" }}
                 onMouseEnter={(e) => { e.currentTarget.style.background = "#FAF8F4"; }}
                 onMouseLeave={(e) => { e.currentTarget.style.background = "#FFFFFF"; }}>
-                <div className="oc-list-inner" style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 20 }}>
-                  {/* Poster Image */}
+                <div className="oc-list-inner" style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 20, flexWrap: "wrap" }}>
                   <OpenCallPoster
                     className="oc-list-poster"
                     posterImage={o.posterImage}
@@ -315,137 +286,93 @@ export default function OpenCallsPage() {
                     city={place.text}
                     country={o.country}
                     deadline={o.deadline}
-                    width={110}
-                    height={148}
+                    width={88}
+                    height={118}
                   />
-                  <div style={{ flex: 1 }}>
-                    <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 12 }}>
-                      <span style={{ fontFamily: S, fontSize: 20, fontWeight: 300, color: "#D4CEC4" }}>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 8, flexWrap: "wrap" }}>
+                      <span style={{ fontFamily: S, fontSize: 18, fontWeight: 400, color: "#8A8580" }}>
                         {String(index + 1).padStart(2, "0")}
                       </span>
-                      <span style={{ fontFamily: F, fontSize: 10, fontWeight: 500, letterSpacing: "0.1em", textTransform: "uppercase", color: "#8B7355" }}>
+                      <span style={{ fontFamily: F, fontSize: 12, fontWeight: 600, letterSpacing: "0.04em", color: "#5C5854" }}>
                         {o.country} / {place.text}
                       </span>
+                      <span style={{ fontFamily: F, fontSize: 12, fontWeight: 600, color: "#5C5854" }}>
+                        {typeDisplay(facts.kind)}
+                      </span>
                     </div>
-                    <h3 style={{ fontFamily: S, fontSize: 24, fontWeight: 400, color: "#1A1A1A", marginBottom: 6 }}>
-                      {o.gallery}
-                    </h3>
-                    <p style={{ fontFamily: F, fontSize: 13, fontWeight: 300, color: "#8A8580" }}>
-                      {lang !== "en" && translatedById[o.id]?.theme && !showOriginalById[o.id]
-                        ? translatedById[o.id]?.theme
-                        : o.theme}
-                    </p>
-                    <p
-                      style={{
-                        fontFamily: F,
-                        fontSize: 12,
-                        fontWeight: 300,
-                        color: "#6A6660",
-                        marginTop: 10,
-                        lineHeight: 1.6,
-                      }}
-                    >
-                      {lang === "ko"
-                        ? `오픈콜 정보 · 전시 ${o.exhibitionDate || "-"} · 지원 마감 ${o.deadline}`
-                        : lang === "ja"
-                          ? `オープンコール情報 · 展示日 ${o.exhibitionDate || "-"} · 応募締切 ${o.deadline}`
-                          : `Open call info · Exhibition ${o.exhibitionDate || "-"} · Deadline ${o.deadline}`}
-                    </p>
-                    {lang !== "en" && (
-                      <div style={{ marginTop: 10 }}>
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            toggleTranslation(o);
-                          }}
-                          disabled={!!translatingById[o.id]}
-                          style={{
-                            fontFamily: F,
-                            fontSize: 10,
-                            letterSpacing: "0.08em",
-                            textTransform: "uppercase",
-                            color: "#8A8580",
-                            border: "1px solid #E8E3DB",
-                            padding: "6px 10px",
-                            background: "#FFFFFF",
-                            cursor: translatingById[o.id] ? "wait" : "pointer",
-                          }}
-                        >
-                          {translatingById[o.id]
-                            ? "..."
-                            : showOriginalById[o.id]
-                              ? t("oc_show_translation", lang)
-                              : t("oc_show_original", lang)}
-                        </button>
-                      </div>
-                    )}
+                    <h2 className="oc-card-title">{o.gallery}</h2>
+                    <ul className="oc-facts">
+                      <li>
+                        <span>{lang === "ko" ? "주최" : "Organizer"}</span>
+                        <strong>{organizerDisplay(facts.organizerName, lang)}</strong>
+                      </li>
+                      <li>
+                        <span>{lang === "ko" ? "지원 자격" : "Eligibility"}</span>
+                        <strong>{eligibilityDisplay(facts.eligibility)}</strong>
+                      </li>
+                      <li>
+                        <span>{lang === "ko" ? "비용" : "Cost"}</span>
+                        <strong>{costSummary(facts, lang)}</strong>
+                      </li>
+                      <li>
+                        <span>{lang === "ko" ? "접수" : "Application"}</span>
+                        <strong>{applicationRouteLabel(o.isExternal, lang)}</strong>
+                      </li>
+                    </ul>
+                    <Link href={`/open-calls/${o.id}`} className="oc-next" onClick={(e) => e.stopPropagation()}>
+                      {nextLabel}
+                    </Link>
+                    <a href={`/api/open-calls/${o.id}/calendar`} className="oc-calendar" onClick={(e) => e.stopPropagation()}>
+                      {t("oc_calendar_short", lang)}
+                    </a>
                   </div>
-                  <div style={{ textAlign: "right", flexShrink: 0, marginLeft: 24 }}>
+                  <div className="oc-list-side" style={{ textAlign: "right", flexShrink: 0 }}>
                     {artistProfile && (() => {
-                      const bd = computeMatchScore(artistProfile, o);
+                      const bd = computeMatchScore(artistProfile, o, facts.cityNeedsCheck);
                       if (bd.total === 0) return null;
-                      const color = bd.total >= 70 ? "#3D6B3D" : bd.total >= 40 ? "#7A6030" : "#8A8580";
-                      const bg = bd.total >= 70 ? "rgba(61,107,61,0.08)" : bd.total >= 40 ? "rgba(122,96,48,0.08)" : "rgba(138,133,128,0.08)";
+                      const color = bd.total >= 70 ? "#1F4D32" : bd.total >= 40 ? "#6A4E22" : "#5C5854";
+                      const bg = bd.total >= 70 ? "rgba(31,77,50,0.08)" : bd.total >= 40 ? "rgba(106,78,34,0.08)" : "rgba(92,88,84,0.08)";
                       return (
                         <button
                           onClick={(e) => { e.stopPropagation(); setScoreModal({ oc: o, breakdown: bd }); }}
-                          style={{ marginBottom: 8, padding: "4px 10px", background: bg, border: `1px solid ${color}44`, display: "inline-block", cursor: "pointer" }}
+                          style={{ marginBottom: 8, padding: "4px 10px", background: bg, border: `1px solid ${color}`, display: "inline-block", cursor: "pointer" }}
                         >
-                          <span style={{ fontFamily: F, fontSize: 10, fontWeight: 600, color, letterSpacing: "0.06em" }}>
-                            {bd.total}% {lang === "ko" ? "매칭" : lang === "ja" ? "マッチ" : "Match"} ›
+                          <span style={{ fontFamily: F, fontSize: 12, fontWeight: 600, color }}>
+                            {bd.total}% {lang === "ko" ? "매칭" : lang === "ja" ? "マッチ" : "Match"}
                           </span>
                         </button>
                       );
                     })()}
                     {prepByOpenCallId[o.id] && (
-                      <span style={{ display: "inline-block", marginBottom: 8, marginRight: 6, padding: "4px 10px", background: "#FFFFFF", border: "1px solid #E8E3DB", fontFamily: F, fontSize: 10, fontWeight: 600, color: "#6A6660", letterSpacing: "0.06em" }}>
+                      <span style={{ display: "inline-block", marginBottom: 8, marginRight: 6, padding: "4px 10px", background: "#FFFFFF", border: "1px solid #C8C0B4", fontFamily: F, fontSize: 12, fontWeight: 600, color: "#3F3C38" }}>
                         {preparationStatusLabel(prepByOpenCallId[o.id], lang)}
                       </span>
                     )}
-                    {appliedOpenCallIds.has(o.id) && (
-                      <span style={{ display: "inline-block", marginBottom: 8, padding: "4px 10px", background: "rgba(61,107,61,0.08)", border: "1px solid rgba(61,107,61,0.3)", fontFamily: F, fontSize: 10, fontWeight: 600, color: "#3D6B3D", letterSpacing: "0.06em" }}>
-                        ✓ {lang === "ko" ? "지원됨" : lang === "ja" ? "申請済" : "Applied"}
+                    {!o.isExternal && appliedOpenCallIds.has(o.id) && (
+                      <span style={{ display: "inline-block", marginBottom: 8, padding: "4px 10px", background: "rgba(31,77,50,0.08)", border: "1px solid #1F4D32", fontFamily: F, fontSize: 12, fontWeight: 600, color: "#1F4D32" }}>
+                        {lang === "ko" ? "ROB 제출 완료" : "Submitted on ROB"}
                       </span>
                     )}
-                    <span style={{ fontFamily: F, fontSize: 9, fontWeight: 500, letterSpacing: "0.1em", textTransform: "uppercase", color: "#B0AAA2" }}>
-                      {lang === "ko" ? "작가 지원 마감일" : t("deadline", lang)}
+                    <span style={{ display: "block", fontFamily: F, fontSize: 12, fontWeight: 600, color: "#5C5854" }}>
+                      {closed ? (lang === "ko" ? "마감됨" : "Closed") : (lang === "ko" ? "지원 마감" : t("deadline", lang))}
                     </span>
-                    <div style={{ fontFamily: S, fontSize: 18, fontWeight: 400, color: "#1A1A1A", marginTop: 4 }}>{formatDeadlineLocal(o.deadline, lang)}</div>
-                    <a
-                      href={`/api/open-calls/${o.id}/calendar`}
-                      onClick={(e) => e.stopPropagation()}
-                      style={{
-                        display: "inline-block",
-                        marginTop: 8,
-                        fontFamily: F,
-                        fontSize: 10,
-                        letterSpacing: "0.07em",
-                        textTransform: "uppercase",
-                        color: "#8A8580",
-                        border: "1px solid #E8E3DB",
-                        background: "#FFFFFF",
-                        padding: "6px 10px",
-                        textDecoration: "none",
-                      }}
-                    >
-                    {t("oc_calendar_short", lang)}
-                    </a>
+                    <div style={{ fontFamily: S, fontSize: 22, fontWeight: 500, color: closed ? "#8B4A4A" : "#1A1A1A", marginTop: 2 }}>{formatDeadlineLocal(o.deadline, lang)}</div>
                   </div>
                 </div>
-              </div>
+              </article>
               );
             })}
             {filtered.length === 0 && (
               <div style={{ background: "#FFFFFF", padding: 48, textAlign: "center" }}>
-                <p style={{ fontFamily: F, fontSize: 13, color: "#B0AAA2" }}>{t("oc_no_results", lang)}</p>
+                <p style={{ fontFamily: F, fontSize: 15, color: "#3F3C38", margin: 0 }}>
+                  {lang === "ko" ? "이 조건에 해당하는 공고가 없습니다." : t("oc_no_results", lang)}
+                </p>
               </div>
             )}
           </div>
         )}
       </main>
-
-      {/* Signup modal for non-logged-in users */}
-      <SignupPromptModal isOpen={showSignup} onClose={() => setShowSignup(false)} context="view" />
 
       {/* Match score breakdown modal */}
       {scoreModal && (

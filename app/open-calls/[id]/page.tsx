@@ -7,8 +7,9 @@ import OpenCallPoster from "@/app/components/OpenCallPoster";
 import { useLanguage } from "@/lib/useLanguage";
 import { t } from "@/lib/translate";
 import { F, S } from "@/lib/design";
-import { eligibilityDisplay, feeDisplay, listingFacts, locationLine, typeDisplay } from "@/lib/openCall/listingFacts";
-import { PREPARATION_DISCLAIMER_KO, PREPARATION_STATUSES, preparationStatusLabel, type PreparationStatus } from "@/lib/openCall/preparationStatus";
+import { applicationRouteLabel, applyDestination, costLines, deadlineStatus, eligibilityDisplay, listingFacts, locationLine, organizerDisplay, typeDisplay } from "@/lib/openCall/listingFacts";
+import { PREPARATION_DISCLAIMER_KO, preparationStatusLabel, type PreparationStatus } from "@/lib/openCall/preparationStatus";
+import { pushRobEventOnce } from "@/lib/publicGrowth/analytics";
 
 type Role = "artist" | "gallery";
 type MeResponse = { session: { userId: string; role: Role; email?: string } | null; profile: any | null };
@@ -20,6 +21,7 @@ async function fetchMe(): Promise<MeResponse | null> { try { const res = await f
 
 const inp: React.CSSProperties = { width: "100%", padding: "12px 14px", border: "1px solid #E8E3DB", background: "#FFFFFF", color: "#1A1A1A", fontFamily: F, fontSize: 13, outline: "none" };
 const btn = (disabled: boolean): React.CSSProperties => ({ padding: "14px 28px", border: "none", background: disabled ? "#E8E3DB" : "#1A1A1A", color: disabled ? "#8A8580" : "#FDFBF7", fontFamily: F, fontSize: 11, fontWeight: 500, letterSpacing: "0.1em", textTransform: "uppercase", cursor: disabled ? "not-allowed" : "pointer" });
+const primaryLink: React.CSSProperties = { ...btn(false), display: "inline-flex", alignItems: "center", textDecoration: "none", fontSize: 15, letterSpacing: "0.01em", textTransform: "none", padding: "14px 18px" };
 
 function hostFromUrl(url?: string): string {
   if (!url) return "";
@@ -89,23 +91,6 @@ export default function OpenCallDetailPage({ params }: { params: { id: string } 
 
   async function translateTheme() { if (!openCall?.theme) return; if (translatedTheme) { setShowTranslation(!showTranslation); return; } setTranslating(true); try { const translated = await translateText(openCall.theme, lang); if (translated) { setTranslatedTheme(translated); setShowTranslation(true); } if (openCall.galleryDescription) { const descTranslated = await translateText(openCall.galleryDescription, lang); if (descTranslated) setTranslatedDesc(descTranslated); } } catch (e) { console.error(e); } finally { setTranslating(false); } }
 
-  // Auto-translate when language is not English and open call loads
-  useEffect(() => {
-    if (!openCall || lang === "en" || translatedTheme) return;
-    (async () => {
-      setTranslating(true);
-      try {
-        const [themeResult, descResult] = await Promise.all([
-          openCall.theme ? translateText(openCall.theme, lang) : Promise.resolve(null),
-          openCall.galleryDescription ? translateText(openCall.galleryDescription, lang) : Promise.resolve(null),
-        ]);
-        if (themeResult) { setTranslatedTheme(themeResult); setShowTranslation(true); }
-        if (descResult) setTranslatedDesc(descResult);
-      } catch (e) { console.error(e); }
-      finally { setTranslating(false); }
-    })();
-  }, [openCall?.id, lang]);
-
   useEffect(() => {
     let cancelled = false;
     (async () => {
@@ -133,6 +118,14 @@ export default function OpenCallDetailPage({ params }: { params: { id: string } 
       cancelled = true;
     };
   }, [params.id]);
+
+  useEffect(() => {
+    if (!openCall) return;
+    pushRobEventOnce("OPEN_CALL_DETAIL_VIEWED", openCall.id, {
+      open_call_id: openCall.id,
+      application_route: openCall.isExternal ? "external" : "rob",
+    });
+  }, [openCall?.id, openCall?.isExternal]);
 
   useEffect(() => { if (!openCall || !me?.session) return; const session = me.session; (async () => { try { setLoadingApps(true); const res = await fetch(`/api/applications?openCallId=${openCall.id}`, { cache: "default", credentials: "include" }); const data = await res.json().catch(() => null); if (!res.ok) { setApplications([]); setMyApplication(null); return; } const list = Array.isArray(data?.applications) ? data.applications : []; if (session.role === "artist") { setMyApplication(list[0] ?? null); setApplications([]); } else if (session.role === "gallery") { setApplications(session.userId === openCall.galleryId ? list : []); setMyApplication(null); } } finally { setLoadingApps(false); } })(); }, [openCall?.id, me?.session?.userId]);
 
@@ -165,8 +158,15 @@ export default function OpenCallDetailPage({ params }: { params: { id: string } 
       });
       const data = await res.json().catch(() => null);
       if (!res.ok || !data?.preparation) throw new Error(data?.error ?? "Failed");
+      const previous = prepStatus;
       setPrepStatus(data.preparation.status);
       setPrepNote(data.preparation.note ?? "");
+      if (status === "SAVED" && previous !== "SAVED") {
+        pushRobEventOnce("OPEN_CALL_SAVED", openCall.id, { open_call_id: openCall.id });
+      }
+      if ((status === "PREPARING" || status === "READY") && previous !== "PREPARING" && previous !== "READY" && previous !== "APPLIED") {
+        pushRobEventOnce("OPEN_CALL_PREP_STARTED", openCall.id, { open_call_id: openCall.id });
+      }
     } catch (e: unknown) {
       setError(e instanceof Error ? e.message : "Failed");
     } finally {
@@ -192,7 +192,16 @@ export default function OpenCallDetailPage({ params }: { params: { id: string } 
 
   async function contactGallery() { if (!openCall) return; setContacting(true); setError(null); try { const m = me ?? (await fetchMe()); if (!m?.session) { router.push("/login"); return; } if (m.session.role !== "artist") throw new Error("Artists only"); const res = await fetch("/api/chat", { method: "POST", headers: { "Content-Type": "application/json" }, credentials: "include", body: JSON.stringify({ openCallId: openCall.id, galleryId: openCall.galleryId }) }); const data = await res.json().catch(() => null); if (!res.ok || !data?.roomId) throw new Error(data?.error ?? "Failed"); router.push(`/chat/${data.roomId}`); } catch (e: any) { setError(e?.message ?? "Failed"); } finally { setContacting(false); } }
 
-  async function applyToOpenCall() { if (!openCall) return; setApplying(true); setError(null); try { const res = await fetch("/api/applications", { method: "POST", headers: { "Content-Type": "application/json" }, credentials: "include", body: JSON.stringify({ openCallId: openCall.id, message: applyMessage.trim() || undefined }) }); const data = await res.json().catch(() => null); if (!res.ok || !data?.application) throw new Error(data?.error ?? "Failed"); setMyApplication(data.application as Application); setOutreachResult((data?.outreach ?? null) as OutreachResult | null); if (data.emailSent) setEmailSent(true); } catch (e: any) { setError(e?.message ?? "Failed"); } finally { setApplying(false); } }
+  async function applyToOpenCall() { if (!openCall) return; setApplying(true); setError(null); try { const res = await fetch("/api/applications", { method: "POST", headers: { "Content-Type": "application/json" }, credentials: "include", body: JSON.stringify({ openCallId: openCall.id, message: applyMessage.trim() || undefined }) }); const data = await res.json().catch(() => null); if (!res.ok || !data?.application) throw new Error(data?.error ?? "Failed"); setMyApplication(data.application as Application); setOutreachResult((data?.outreach ?? null) as OutreachResult | null); if (data.emailSent) setEmailSent(true); pushRobEventOnce("OPEN_CALL_INTERNAL_SUBMITTED", openCall.id, { open_call_id: openCall.id, application_route: "rob" }); } catch (e: any) { setError(e?.message ?? "Failed"); } finally { setApplying(false); } }
+
+  function trackApplyExit(destination: "official" | "notice" | "source") {
+    if (!openCall) return;
+    pushRobEventOnce("OPEN_CALL_APPLY_EXIT", `${openCall.id}:${destination}`, {
+      open_call_id: openCall.id,
+      destination,
+      application_route: "external",
+    });
+  }
 
   async function markShipped() { if (!myApplication) return; setShipSaving(true); setError(null); try { const res = await fetch(`/api/applications/${myApplication.id}`, { method: "PATCH", headers: { "Content-Type": "application/json" }, credentials: "include", body: JSON.stringify({ shippingStatus: "shipped", shippingNote: shipNote.trim() || undefined, shippingCarrier: shipCarrier.trim() || undefined, trackingNumber: shipTrackingNumber.trim() || undefined, trackingUrl: shipTrackingUrl.trim() || undefined }) }); const data = await res.json().catch(() => null); if (!res.ok || !data?.application) throw new Error(data?.error ?? "Failed"); setMyApplication(data.application as Application); } catch (e: any) { setError(e?.message ?? "Failed"); } finally { setShipSaving(false); } }
 
@@ -204,12 +213,39 @@ export default function OpenCallDetailPage({ params }: { params: { id: string } 
   const isOwner = role === "gallery" && me?.session?.userId === openCall?.galleryId;
   const facts = openCall ? listingFacts(openCall) : null;
   const place = facts && openCall ? locationLine(facts, openCall.city) : null;
+  const destination = facts && openCall ? applyDestination(facts, openCall.externalUrl) : null;
+  const closed = openCall ? deadlineStatus(openCall.deadline) === "closed" : false;
+  const costs = facts ? costLines(facts, lang) : [];
+  const applyLabels = {
+    official: lang === "ko" ? "공식 지원 페이지 확인" : "Check the official application page",
+    notice: lang === "ko" ? "공고에 적힌 페이지에서 확인" : "Check the page named in the notice",
+    source: lang === "ko" ? "원문에서 지원 방법 확인" : "Check how to apply on the source",
+  };
+  const prepChoices: PreparationStatus[] = prepStatus === "PLANNING"
+    ? ["PLANNING", "SAVED", "PREPARING", "READY", "APPLIED", "RESULT_RECORDED"]
+    : ["SAVED", "PREPARING", "READY", "APPLIED", "RESULT_RECORDED"];
 
   return (
     <>
       <TopBar />
-      <style>{`@media (max-width: 420px) { .oc-detail-main { padding: 24px 16px !important; } .oc-detail-body { padding: 20px !important; } .oc-prep-controls { display: flex; flex-wrap: wrap; } }`}</style>
-      <main className="oc-detail-main" style={{ padding: "48px 40px", maxWidth: 860, margin: "0 auto" }}>
+      <style>{`
+        .oc-detail-main { padding: 48px 40px 88px; max-width: 860px; margin: 0 auto; }
+        .oc-decision { display: grid; grid-template-columns: 1fr 1fr; gap: 14px 20px; margin-top: 22px; }
+        .oc-decision p { font-family: var(--font-inter), sans-serif; font-size: 16px; line-height: 1.45; color: #1A1A1A; margin: 0; overflow-wrap: anywhere; }
+        .oc-decision .oc-label { font-size: 12px; font-weight: 600; letter-spacing: 0.04em; color: #5C5854; margin: 0 0 4px; }
+        .oc-cost { margin: 8px 0 0; padding: 0; list-style: none; }
+        .oc-cost li { display: flex; justify-content: space-between; gap: 8px 12px; flex-wrap: wrap; padding: 6px 0; border-bottom: 1px solid #F0EDE8; font-family: var(--font-inter), sans-serif; font-size: 15px; color: #1A1A1A; }
+        .oc-cost span { color: #5C5854; }
+        .oc-call-title { font-family: var(--font-cormorant), Georgia, serif; font-size: 36px; font-weight: 500; color: #1A1A1A; margin: 8px 0 0; line-height: 1.25; overflow-wrap: anywhere; }
+        @media (max-width: 768px) {
+          .oc-detail-main { padding: 24px 16px calc(96px + env(safe-area-inset-bottom)) !important; }
+          .oc-detail-body { padding: 20px !important; }
+          .oc-decision { grid-template-columns: 1fr; }
+          .oc-call-title { font-size: 30px; }
+          .oc-prep-controls { display: flex; flex-wrap: wrap; }
+        }
+      `}</style>
+      <main id="main-content" className="oc-detail-main">
         <button onClick={() => router.back()} style={{ marginBottom: 28, background: "transparent", border: "none", color: "#8A8580", fontFamily: F, fontSize: 11, fontWeight: 500, letterSpacing: "0.08em", cursor: "pointer" }}>
           &larr; {t("back", lang)}
         </button>
@@ -219,41 +255,46 @@ export default function OpenCallDetailPage({ params }: { params: { id: string } 
         : !openCall ? <p style={{ fontFamily: F, color: "#B0AAA2" }}>Not found</p>
         : (
           <div style={{ border: "1px solid #E8E3DB", background: "#FFFFFF", overflow: "hidden" }}>
-            {/* Hero Poster */}
-            <OpenCallPoster
-              posterImage={openCall.posterImage}
-              gallery={openCall.gallery}
-              theme={openCall.theme}
-              city={place && !place.usesStoredCity ? place.text : openCall.city}
-              country={openCall.country}
-              deadline={openCall.deadline}
-              hero
-            />
+            {openCall.posterImage && (
+              <OpenCallPoster
+                posterImage={openCall.posterImage}
+                gallery={openCall.gallery}
+                theme={openCall.theme}
+                city={place && !place.usesStoredCity ? place.text : openCall.city}
+                country={openCall.country}
+                deadline={openCall.deadline}
+                hero
+              />
+            )}
 
             <div className="oc-detail-body" style={{ padding: 40 }}>
             <span style={{ fontFamily: F, fontSize: 10, fontWeight: 500, letterSpacing: "0.1em", textTransform: "uppercase", color: "#8B7355" }}>
               {openCall.country} / {place?.text || openCall.city}
             </span>
             {facts?.cityNeedsCheck && (
-              <div style={{ fontFamily: F, fontSize: 12, color: "#8A8580", marginTop: 8, lineHeight: 1.6 }}>
+              <div style={{ fontFamily: F, fontSize: 14, color: "#3F3C38", marginTop: 8, lineHeight: 1.6 }}>
                 {lang === "ko"
                   ? (facts.statedPlace
-                    ? `수집된 도시 ${openCall.city}는 본문 장소와 달라 전시 위치로 표시하지 않습니다.`
-                    : `수집된 도시 ${openCall.city}는 공고 본문에서 확인되지 않아 전시 위치로 표시하지 않습니다.`)
+                    ? `수집된 도시명 ${openCall.city}은 본문 장소와 달라 전시 위치로 표시하지 않습니다.`
+                    : `수집된 도시명 ${openCall.city}은 공고 본문에서 확인되지 않아 전시 위치로 표시하지 않습니다.`)
                   : (facts.statedPlace
                     ? `The stored city ${openCall.city} conflicts with the notice, so it is not shown as the location.`
                     : `The stored city ${openCall.city} is not supported by the notice, so it is not shown as the location.`)}
               </div>
             )}
-            {facts?.statedPlace && (
+            {facts?.statedPlace && place?.usesStoredCity && (
               <div style={{ fontFamily: F, fontSize: 12, color: "#6A6660", marginTop: 8, lineHeight: 1.6 }}>
                 {lang === "ko" ? "공고 본문 장소" : "Place stated in the notice"}: {facts.statedPlace}
               </div>
             )}
 
-            <h1 style={{ fontFamily: S, fontSize: 36, fontWeight: 400, color: "#1A1A1A", margin: "8px 0 0" }}>
+            <h1 className="oc-call-title">
               {openCall.gallery}
             </h1>
+            <p style={{ fontFamily: F, fontSize: 14, color: "#3F3C38", margin: "8px 0 0" }}>
+              {applicationRouteLabel(openCall.isExternal, lang)}
+              {facts ? ` · ${typeDisplay(facts.kind)}` : ""}
+            </p>
 
             {(facts?.organizerUrl || (openCall.galleryWebsite && !facts?.websiteIsFeed) || openCall.externalUrl) && (
               <div style={{ marginTop: 12, display: "flex", gap: 8, flexWrap: "wrap" }}>
@@ -321,86 +362,116 @@ export default function OpenCallDetailPage({ params }: { params: { id: string } 
               </div>
             )}
 
-            {openCall.galleryDescription && (
-              <p style={{ fontFamily: F, fontSize: 13, color: "#8A8580", marginTop: 12, lineHeight: 1.7, fontWeight: 300 }}>
-                {showTranslation && translatedDesc ? translatedDesc : openCall.galleryDescription}
+            <section className="oc-decision" aria-label={lang === "ko" ? "지원 판단" : "Application decision"}>
+              <div>
+                <p className="oc-label">{lang === "ko" ? "주최" : "Organizer"}</p>
+                <p>{organizerDisplay(facts?.organizerName ?? null, lang)}</p>
+                {facts?.sourceRole === "reprint" && facts.organizerName && (
+                  <p style={{ marginTop: 4, fontSize: 13, color: "#5C5854" }}>{lang === "ko" ? "공고 본문에 적힌 주관입니다." : "Named in the notice text."}</p>
+                )}
+              </div>
+              <div>
+                <p className="oc-label">{lang === "ko" ? "지원 자격" : "Eligibility"}</p>
+                <p>{facts ? eligibilityDisplay(facts.eligibility) : ""}</p>
+              </div>
+              <div>
+                <p className="oc-label">{closed ? (lang === "ko" ? "마감됨" : "Closed") : (lang === "ko" ? "지원 마감" : "Deadline")}</p>
+                <p style={{ color: closed ? "#8B4A4A" : "#1A1A1A" }}>{formatDeadlineLocal(openCall.deadline, lang)}</p>
+                <p style={{ marginTop: 4, fontSize: 13, color: "#5C5854" }}>
+                  {openCall.exhibitionDate
+                    ? (lang === "ko" ? `전시 일정 ${openCall.exhibitionDate}` : `Exhibition ${openCall.exhibitionDate}`)
+                    : (lang === "ko" ? "전시 일정 미확인" : "Exhibition dates unconfirmed")}
+                </p>
+              </div>
+              <div>
+                <p className="oc-label">{lang === "ko" ? "비용" : "Costs"}</p>
+                <ul className="oc-cost">
+                  {costs.map((line) => (
+                    <li key={line.key}><span>{line.label}</span><strong style={{ fontWeight: 600 }}>{line.value}</strong></li>
+                  ))}
+                </ul>
+                <p style={{ marginTop: 8, fontSize: 13, color: "#3F3C38" }}>
+                  {lang === "ko"
+                    ? "없는 항목은 공고 원문 확인이 필요합니다. 지원비가 없어도 다른 비용까지 없다는 뜻은 아닙니다."
+                    : "Unconfirmed items have to be checked in the notice. No application fee does not mean the rest is free."}
+                </p>
+              </div>
+            </section>
+            {facts?.support && (
+              <p style={{ fontFamily: F, fontSize: 14, color: "#3F3C38", margin: "14px 0 0" }}>
+                {lang === "ko" ? "공고에 적힌 지원" : "Support named in the notice"}: {facts.support}
               </p>
             )}
 
-            <div style={{ marginTop: 28, display: "grid", gap: 16 }}>
-              <div style={{ display: "flex", alignItems: "flex-start", gap: 12 }}>
-                <div style={{ flex: 1 }}>
-                  <span style={{ fontFamily: F, fontSize: 10, fontWeight: 500, letterSpacing: "0.1em", color: "#B0AAA2", textTransform: "uppercase" }}>{t("oc_theme", lang)}</span>
-                  <div style={{ marginTop: 4 }}>
-                    {showTranslation && translatedTheme ? (
-                      <><div style={{ fontFamily: S, fontSize: 22, fontWeight: 400, color: "#8B7355" }}>{translatedTheme}</div><div style={{ fontFamily: F, fontSize: 12, color: "#B0AAA2", fontStyle: "italic", marginTop: 4 }}>{t("oc_original_text", lang)}: {openCall.theme}</div></>
-                    ) : (
-                      <div style={{ fontFamily: S, fontSize: 22, fontWeight: 400, color: "#1A1A1A" }}>{openCall.theme}</div>
-                    )}
-                  </div>
-                </div>
-                <button onClick={translateTheme} disabled={translating} style={{ ...inp, width: "auto", padding: "6px 14px", fontSize: 10, color: "#8A8580", cursor: translating ? "wait" : "pointer", whiteSpace: "nowrap" }}>
-                  {translating ? "..." : showTranslation ? t("oc_show_original", lang) : t("oc_show_translation", lang)}
-                </button>
-              </div>
-
-              <div>
-                <span style={{ fontFamily: F, fontSize: 10, fontWeight: 500, letterSpacing: "0.1em", color: "#B0AAA2", textTransform: "uppercase" }}>
-                  {lang === "ko" ? "전시 날짜" : "Exhibition date"}
-                </span>
-                <div style={{ fontFamily: S, fontSize: 22, fontWeight: 400, color: "#1A1A1A", marginTop: 4 }}>{openCall.exhibitionDate || "-"}</div>
-              </div>
-
-              <div>
-                <span style={{ fontFamily: F, fontSize: 10, fontWeight: 500, letterSpacing: "0.1em", color: "#B0AAA2", textTransform: "uppercase" }}>
-                  {lang === "ko" ? "작가 지원 마감일" : t("deadline", lang)}
-                </span>
-                <div style={{ fontFamily: S, fontSize: 22, fontWeight: 400, color: "#1A1A1A", marginTop: 4 }}>{formatDeadlineLocal(openCall.deadline, lang)}</div>
-              </div>
-
-              {([
-                [lang === "ko" ? "유형" : "Type", facts ? typeDisplay(facts.kind) : ""],
-                [lang === "ko" ? "참가비" : "Entry fee", facts ? feeDisplay(facts.fee) : ""],
-                [lang === "ko" ? "지원 자격" : "Eligibility", facts ? eligibilityDisplay(facts.eligibility) : ""],
-                [lang === "ko" ? "지원 내용" : "Support", facts?.support || (lang === "ko" ? "지원 내용 확인 필요" : "Support needs confirmation")],
-              ] as Array<[string, string]>).map(([label, value]) => (
-                <div key={label}>
-                  <span style={{ fontFamily: F, fontSize: 10, fontWeight: 500, letterSpacing: "0.1em", color: "#B0AAA2", textTransform: "uppercase" }}>{label}</span>
-                  <div style={{ fontFamily: S, fontSize: 22, fontWeight: 400, color: "#1A1A1A", marginTop: 4 }}>{value}</div>
-                </div>
-              ))}
-
-            </div>
-
-            {/* Actions */}
-            <div style={{ marginTop: 28, display: "flex", gap: 12, flexWrap: "wrap" }}>
-              {canContact && !openCall.isExternal && <button onClick={contactGallery} disabled={contacting} style={btn(contacting)}>{contacting ? "..." : t("oc_contact_gallery", lang)}</button>}
-              {openCall.isExternal && (facts?.officialApplicationUrl || openCall.externalUrl) && (
+            <div style={{ marginTop: 22 }}>
+              {openCall.isExternal && destination && (
                 <a
-                  href={facts?.officialApplicationUrl || openCall.externalUrl}
+                  href={destination.href}
                   target="_blank"
                   rel="noreferrer"
-                  style={{ ...btn(false), display: "inline-flex", alignItems: "center", textDecoration: "none" }}
+                  onClick={() => trackApplyExit(destination.kind)}
+                  style={primaryLink}
                 >
-                  {facts?.officialApplicationUrl
-                    ? (lang === "ko" ? "공식 지원 페이지 확인" : "Check the official application page")
-                    : (lang === "ko" ? "원문에서 지원 방법 확인" : "Check how to apply on the source")}
+                  {closed
+                    ? (lang === "ko" ? "원문에서 마감 여부 확인" : "Check whether the notice is closed")
+                    : applyLabels[destination.kind]}
                 </a>
               )}
-              <a
-                href={`/api/open-calls/${openCall.id}/calendar`}
-                onClick={(e) => e.stopPropagation()}
-                style={{
-                  ...btn(false),
-                  display: "inline-flex",
-                  alignItems: "center",
-                  textDecoration: "none",
-                }}
-              >
-                {t("oc_add_calendar", lang)}
-              </a>
-              <button onClick={() => router.push("/open-calls")} style={{ ...btn(false), background: "transparent", color: "#8A8580", border: "1px solid #E8E3DB" }}>{t("oc_back_to_list", lang)}</button>
+              {openCall.isExternal && !destination && (
+                <p style={{ fontFamily: F, fontSize: 15, color: "#1A1A1A", margin: 0 }}>
+                  {lang === "ko" ? "지원 경로 미확인. 공고 원문 확인이 필요합니다." : "Application path unconfirmed. Check the original notice."}
+                </p>
+              )}
+              {!openCall.isExternal && role === "artist" && (
+                <a href="#rob-application" style={primaryLink}>
+                  {lang === "ko" ? "ROB에서 지원서 작성" : "Write the application on ROB"}
+                </a>
+              )}
+              {!openCall.isExternal && role !== "artist" && (
+                <a href={`/login?redirect=${encodeURIComponent(`/open-calls/${openCall.id}`)}`} style={primaryLink}>
+                  {lang === "ko" ? "로그인 후 ROB에서 지원" : "Log in to apply on ROB"}
+                </a>
+              )}
+              {openCall.isExternal && (
+                <p style={{ fontFamily: F, fontSize: 13, color: "#3F3C38", margin: "8px 0 0" }}>
+                  {lang === "ko" ? "링크를 열어도 접수 완료로 기록되지 않습니다." : "Opening the link is not recorded as a submission."}
+                </p>
+              )}
+              <div style={{ display: "flex", gap: 16, flexWrap: "wrap", marginTop: 12 }}>
+                <a href={`/api/open-calls/${openCall.id}/calendar`} style={{ fontFamily: F, fontSize: 14, color: "#3F3C38" }}>{t("oc_add_calendar", lang)}</a>
+                {canContact && !openCall.isExternal && (
+                  <button onClick={contactGallery} disabled={contacting} style={{ background: "transparent", border: "none", padding: 0, color: "#3F3C38", fontFamily: F, fontSize: 14, cursor: contacting ? "wait" : "pointer" }}>
+                    {contacting ? "..." : t("oc_contact_gallery", lang)}
+                  </button>
+                )}
+              </div>
             </div>
+
+            {!me?.session && (
+              <p style={{ fontFamily: F, fontSize: 14, lineHeight: 1.6, color: "#3F3C38", margin: "18px 0 0" }}>
+                <a href={`/login?redirect=${encodeURIComponent(`/open-calls/${openCall.id}`)}`} style={{ color: "#1A1A1A" }}>
+                  {lang === "ko" ? "로그인" : "Log in"}
+                </a>
+                {lang === "ko" ? "하면 이 공고를 저장하고 준비 상태를 남길 수 있습니다. 저장은 접수 완료가 아닙니다." : " to save this call and keep a private preparation status. Saving is not a submission."}
+              </p>
+            )}
+
+            {openCall.theme && openCall.theme !== openCall.gallery && (
+              <p style={{ fontFamily: F, fontSize: 14, color: "#5C5854", margin: "18px 0 0", lineHeight: 1.5 }}>{openCall.theme}</p>
+            )}
+            {openCall.galleryDescription && (
+              <details style={{ marginTop: 16 }}>
+                <summary style={{ fontFamily: F, fontSize: 14, color: "#1A1A1A", cursor: "pointer" }}>
+                  {lang === "ko" ? "공고 본문" : "Notice text"}
+                </summary>
+                <p style={{ fontFamily: F, fontSize: 14, color: "#3F3C38", marginTop: 10, lineHeight: 1.7 }}>
+                  {showTranslation && translatedDesc ? translatedDesc : openCall.galleryDescription}
+                </p>
+                <button onClick={translateTheme} disabled={translating} style={{ ...inp, width: "auto", marginTop: 8, padding: "8px 12px", fontSize: 13, color: "#3F3C38", cursor: translating ? "wait" : "pointer" }}>
+                  {translating ? "..." : showTranslation ? (lang === "ko" ? "원문 보기" : "Show the original") : (lang === "ko" ? "본문 번역" : "Translate")}
+                </button>
+              </details>
+            )}
 
             {/* Artist apply */}
             {role === "artist" && (
@@ -408,11 +479,12 @@ export default function OpenCallDetailPage({ params }: { params: { id: string } 
                 <h3 style={{ fontFamily: S, fontSize: 24, fontWeight: 400, color: "#1A1A1A", margin: "0 0 8px" }}>
                   {lang === "ko" ? "개인 준비 기록" : "Private preparation"}
                 </h3>
-                <p style={{ fontFamily: F, fontSize: 12, color: "#6A6660", lineHeight: 1.6, margin: "0 0 12px" }}>
+                <p style={{ fontFamily: F, fontSize: 14, color: "#3F3C38", lineHeight: 1.6, margin: "0 0 12px" }}>
                   {PREPARATION_DISCLAIMER_KO}
+                  {lang === "ko" ? " 저장, 준비 완료, 접수 완료 표시는 서로 다른 기록입니다." : " Saved, ready, and marked submitted are different records."}
                 </p>
                 <div className="oc-prep-controls" role="group" aria-label={lang === "ko" ? "개인 준비 상태" : "Private preparation status"} style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 10 }}>
-                  {PREPARATION_STATUSES.map((status) => {
+                  {prepChoices.map((status) => {
                     const selected = prepStatus === status;
                     return (
                     <button
@@ -424,11 +496,11 @@ export default function OpenCallDetailPage({ params }: { params: { id: string } 
                       style={{
                         border: selected ? "1px solid #1A1A1A" : "1px solid #E8E3DB",
                         background: selected ? "#1A1A1A" : "#FFFFFF",
-                        color: selected ? "#FDFBF7" : "#8A8580",
                         fontFamily: F,
-                        fontSize: 10,
-                        letterSpacing: "0.08em",
-                        padding: "6px 10px",
+                        fontSize: 13,
+                        letterSpacing: "0.02em",
+                        padding: "10px 12px",
+                        color: selected ? "#FDFBF7" : "#3F3C38",
                         cursor: prepSaving ? "wait" : "pointer",
                       }}
                     >
@@ -456,7 +528,7 @@ export default function OpenCallDetailPage({ params }: { params: { id: string } 
                 )}
 
                 {openCall.isExternal ? null : (
-                <>
+                <div id="rob-application">
                 <h3 style={{ fontFamily: S, fontSize: 24, fontWeight: 400, color: "#1A1A1A", margin: "16px 0 8px" }}>{t("oc_apply_to", lang)}</h3>
                 {myApplication ? (
                   <div>
@@ -541,7 +613,7 @@ export default function OpenCallDetailPage({ params }: { params: { id: string } 
                     </button>
                   </div>
                 )}
-                </>
+                </div>
                 )}
               </div>
             )}
