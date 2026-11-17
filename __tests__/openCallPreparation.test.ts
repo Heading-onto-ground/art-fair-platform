@@ -4,6 +4,8 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import {
   ELIGIBILITY_UNKNOWN,
   FEE_UNKNOWN,
+  costLines,
+  costSummary,
   eligibilityDisplay,
   feeDisplay,
   listingFacts,
@@ -92,7 +94,7 @@ describe("open call source facts", () => {
     expect(feeDisplay(facts.fee)).toBe(FEE_UNKNOWN);
     expect(feeDisplay(facts.fee)).not.toBe("무료");
     expect(eligibilityDisplay(facts.eligibility)).toBe(ELIGIBILITY_UNKNOWN);
-    expect(typeDisplay(facts.kind)).toBe("유형 확인 필요");
+    expect(typeDisplay(facts.kind)).toBe("유형 미확인");
     expect(facts.canEmailOrganizer).toBe(false);
   });
 
@@ -104,7 +106,10 @@ describe("open call source facts", () => {
       externalUrl: "https://air-j.info/en/program/sado/",
       externalEmail: "contact@sia-promotion.org",
     });
-    expect(feeDisplay(facts.fee)).toBe("무료");
+    expect(feeDisplay(facts.fee)).toBe("지원비 없음");
+    expect(costSummary(facts)).toBe("지원비 없음 · 그 외 미확인");
+    expect(costLines(facts).find((line) => line.key === "shipping")?.value).toBe("미확인");
+    expect(costSummary(facts)).not.toBe("무료");
     expect(facts.kind).toBe("레지던시");
     expect(facts.canEmailOrganizer).toBe(false);
     expect(facts.officialApplicationUrl).toBeNull();
@@ -148,6 +153,8 @@ describe("private preparation state", () => {
     expect((await call("DELETE", "ext-1")).status).toBe(200);
     expect((await (await call("GET", "ext-1")).json()).preparation).toBeNull();
     expect(parsePreparationStatus("RESULT_RECORDED")).toBe("RESULT_RECORDED");
+    expect(parsePreparationStatus("SAVED")).toBe("SAVED");
+    expect(parsePreparationStatus("READY")).toBe("READY");
   });
 });
 
@@ -184,6 +191,15 @@ describe("release boundaries", () => {
     expect(page).toContain("공식 지원 페이지 확인");
     expect(page).toContain("원문에서 지원 방법 확인");
     expect(page).toContain("aria-pressed");
+    expect(page).toContain("function trackApplyExit");
+    const exitFn = page.slice(page.indexOf("function trackApplyExit"), page.indexOf("async function markShipped"));
+    expect(exitFn).toContain("OPEN_CALL_APPLY_EXIT");
+    expect(exitFn).not.toContain("savePrep");
+    expect(exitFn).not.toContain("APPLIED");
+    expect(page).toContain("OPEN_CALL_DETAIL_VIEWED");
+    expect(page).toContain("OPEN_CALL_SAVED");
+    expect(page).toContain("OPEN_CALL_PREP_STARTED");
+    expect(page).toContain("링크를 열어도 접수 완료로 기록되지 않습니다.");
   });
 
   it("does not expose preparation rows in admin pages", () => {
