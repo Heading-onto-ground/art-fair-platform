@@ -62,6 +62,8 @@ type Data = {
   genre?: string | null;
   startedYear?: number | null;
   profileImage?: string | null;
+  instagram?: string | null;
+  website?: string | null;
   exhibitions: Exhibition[];
   selfExhibitions?: SelfExhibition[];
   series: SeriesItem[];
@@ -317,12 +319,36 @@ export default function ArtistProfileV2() {
                     rel="noopener noreferrer"
                     className="px-6 py-3 border border-[#E5E7EB] bg-white hover:bg-[#F8F9FA] text-[#1A1A1A] text-xs font-semibold uppercase tracking-wider rounded-lg transition-colors"
                   >
-                    View PDF CV
+                    View Portfolio PDF
                   </Link>
                 )}
               </div>
+              {(data.instagram || data.website) && (
+                <div className="mt-4 flex flex-wrap justify-center gap-3 text-sm">
+                  {data.instagram && (
+                    <a
+                      href={`https://instagram.com/${String(data.instagram).replace(/^@/, "")}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-[#1A1A1A] underline underline-offset-4 decoration-[#D1D5DB] hover:decoration-[#1A1A1A]"
+                    >
+                      Instagram {data.instagram}
+                    </a>
+                  )}
+                  {data.website && (
+                    <a
+                      href={data.website}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-[#1A1A1A] underline underline-offset-4 decoration-[#D1D5DB] hover:decoration-[#1A1A1A]"
+                    >
+                      Website
+                    </a>
+                  )}
+                </div>
+              )}
               <p className="mt-4 text-xs sm:text-sm text-[#6B7280] max-w-[560px] leading-relaxed">
-                Creation before certification. This page is a living record of the artist's practice.
+                Portfolio hosted on ROB · Creation before certification. This page is a living record of the artist's practice.
               </p>
             </div>
           </div>
