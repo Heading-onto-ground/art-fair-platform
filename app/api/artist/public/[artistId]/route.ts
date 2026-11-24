@@ -63,7 +63,7 @@ export async function GET(_req: Request, { params }: { params: { artistId: strin
     select: { id: true, eventType: true, title: true, year: true, description: true },
   }).catch(() => []);
 
-  const visibleArtworks = await prisma.artwork.findMany({
+  const artworkQuery = prisma.artwork.findMany({
     where: { artistId: profile.id, isPublic: true },
     orderBy: [
       { portfolioOrder: { sort: "asc", nulls: "last" } },
@@ -74,6 +74,8 @@ export async function GET(_req: Request, { params }: { params: { artistId: strin
       images: { select: { url: true, position: true }, orderBy: { position: "asc" } },
     },
   });
+  type VisibleArtwork = Awaited<typeof artworkQuery>[number];
+  const visibleArtworks = await artworkQuery.catch(() => [] as VisibleArtwork[]);
   // isPublic works can illustrate a series. Only inPortfolio works are the artist's portfolio selection.
   const artworks = visibleArtworks.filter((work: { inPortfolio: boolean }) => work.inPortfolio);
 

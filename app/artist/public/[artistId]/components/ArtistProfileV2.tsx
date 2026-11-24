@@ -309,6 +309,15 @@ export default function ArtistProfileV2({ locale = "ko" }: { locale?: HistoryLoc
               </p>
             )}
             <div className="mt-6 flex flex-wrap justify-center gap-3">
+              {isOwner && (
+                <button
+                  type="button"
+                  onClick={() => setShowAddModal(true)}
+                  className="px-6 py-3 bg-[#0066FF] hover:bg-[#0052CC] text-white text-xs font-semibold uppercase tracking-wider rounded-lg transition-colors shadow-sm"
+                >
+                  Add Exhibition
+                </button>
+              )}
               {data.userId && (
                 <Link
                   href={`/api/artist-portfolio/${encodeURIComponent(data.userId)}`}
@@ -498,7 +507,7 @@ export default function ArtistProfileV2({ locale = "ko" }: { locale?: HistoryLoc
           </section>
         )}
 
-        {timelineItems.length > 0 && (
+        {(timelineItems.length > 0 || isOwner) && (
         <section className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-10 sm:py-12">
           <div className="flex flex-col lg:flex-row lg:items-start gap-6 lg:gap-8">
             <div className="flex-1 min-w-0">
@@ -517,6 +526,7 @@ export default function ArtistProfileV2({ locale = "ko" }: { locale?: HistoryLoc
                 )}
               </div>
 
+              {timelineItems.length > 0 ? (
               <div className="relative pl-6 sm:pl-8 border-l-2 border-[#E5E7EB]">
                   {timelineItems.map((item, i) => {
                     const d = new Date(item.date);
@@ -582,6 +592,15 @@ export default function ArtistProfileV2({ locale = "ko" }: { locale?: HistoryLoc
                     );
                   })}
               </div>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => setShowAddModal(true)}
+                  className="px-6 py-3 bg-[#0066FF] hover:bg-[#0052CC] text-white text-sm font-semibold rounded-lg transition-colors shadow-sm"
+                >
+                  Add Exhibition
+                </button>
+              )}
             </div>
 
             {/* Sticky Add Past Exhibition (desktop) */}
@@ -610,7 +629,7 @@ export default function ArtistProfileV2({ locale = "ko" }: { locale?: HistoryLoc
                 return (
                   <figure key={work.id} className="bg-white border border-[#E5E7EB] rounded-xl overflow-hidden">
                     {work.imageUrl ? (
-                      <img src={work.imageUrl} alt={work.title || ""} className="aspect-square w-full object-cover" />
+                      <img src={work.imageUrl} alt={work.title || ""} className="h-auto w-full bg-[#F8F9FA]" />
                     ) : null}
                     <figcaption className="p-4">
                       {work.title ? <h3 className="font-semibold text-[#1A1A1A]">{work.title}</h3> : null}
@@ -641,7 +660,7 @@ export default function ArtistProfileV2({ locale = "ko" }: { locale?: HistoryLoc
                   className="bg-white border border-[#E5E7EB] rounded-xl overflow-hidden hover:shadow-md transition-shadow"
                 >
                   {s.coverImageUrl ? (
-                    <img src={s.coverImageUrl} alt="" className="aspect-square w-full object-cover" />
+                    <img src={s.coverImageUrl} alt="" className="h-auto w-full bg-[#F8F9FA]" />
                   ) : null}
                   <div className="p-4">
                     <h3 className="font-semibold text-[#1A1A1A]">{s.title}</h3>
