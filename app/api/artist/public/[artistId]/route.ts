@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { seriesCoverImage } from "@/lib/artist/publicProfile";
 import { computeArtistTrust } from "@/lib/trustScore";
 import { getVerificationByArtistId } from "@/lib/verification";
 
@@ -62,8 +63,8 @@ export async function GET(_req: Request, { params }: { params: { artistId: strin
     select: { id: true, eventType: true, title: true, year: true, description: true },
   }).catch(() => []);
 
-  const artworks = await prisma.artwork.findMany({
-    where: { artistId: profile.id, isPublic: true, inPortfolio: true },
+  const visibleArtworks = await prisma.artwork.findMany({
+    where: { artistId: profile.id, isPublic: true },
     orderBy: [
       { portfolioOrder: { sort: "asc", nulls: "last" } },
       { createdAt: "desc" },
@@ -72,7 +73,9 @@ export async function GET(_req: Request, { params }: { params: { artistId: strin
       series: { select: { id: true, title: true } },
       images: { select: { url: true, position: true }, orderBy: { position: "asc" } },
     },
-  }).catch(() => []);
+  });
+  // isPublic works can illustrate a series. Only inPortfolio works are the artist's portfolio selection.
+  const artworks = visibleArtworks.filter((work: { inPortfolio: boolean }) => work.inPortfolio);
 
   const { loadHashtagsForArtworks } = await import("@/lib/artworkHashtags");
   const tagMap = await loadHashtagsForArtworks(artworks.map((a: { id: string }) => a.id)).catch(() => new Map<string, string[]>());
@@ -126,7 +129,10 @@ export async function GET(_req: Request, { params }: { params: { artistId: strin
     profileImage: profile.profileImage ?? null,
     exhibitions,
     selfExhibitions,
-    series,
+    series: series.map((item: (typeof series)[number]) => ({
+      ...item,
+      coverImageUrl: seriesCoverImage(item.id, visibleArtworks),
+    })),
     artEvents,
     artworks: artworks.map((a: (typeof artworks)[number]) => ({
       id: a.id,
@@ -134,7 +140,7 @@ export async function GET(_req: Request, { params }: { params: { artistId: strin
       caption: a.caption,
       imageUrl: a.imageUrl,
       imageUrls: a.images.length > 0 ? a.images.map((i: { url: string }) => i.url) : [a.imageUrl],
-      medium: a.medium,
+      medium: a.medium?.trim() || null,
       postType: a.postType === "exhibition" ? "exhibition" : "work",
       seriesId: a.seriesId,
       seriesTitle: a.series?.title ?? null,

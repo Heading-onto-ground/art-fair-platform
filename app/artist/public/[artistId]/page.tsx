@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { prisma } from "@/lib/prisma";
 import ArtistProfileV2 from "./components/ArtistProfileV2";
+import { historyLocale } from "@/lib/history/requestLocale";
 import { SITE_URL as BASE_URL } from "@/lib/seo";
 
 async function getArtistName(artistId: string): Promise<string | null> {
@@ -46,5 +47,5 @@ export async function generateMetadata(
 }
 
 export default function ArtistPublicPage() {
-  return <ArtistProfileV2 />;
+  return <ArtistProfileV2 locale={historyLocale()} />;
 }

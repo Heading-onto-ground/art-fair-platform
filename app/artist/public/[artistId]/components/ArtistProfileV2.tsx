@@ -5,6 +5,8 @@ import { useParams, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import TopBar from "@/app/components/TopBar";
 import AddExhibitionModal from "./AddExhibitionModal";
+import { practiceLine } from "@/lib/artist/publicProfile";
+import type { HistoryLocale } from "@/lib/history/locale";
 
 type Exhibition = {
   galleryName: string;
@@ -21,6 +23,14 @@ type SeriesItem = {
   startYear?: number | null;
   endYear?: number | null;
   works?: string | null;
+  coverImageUrl?: string | null;
+};
+
+type PublicArtwork = {
+  id: string;
+  title?: string | null;
+  imageUrl?: string | null;
+  medium?: string | null;
 };
 
 type ArtEventItem = {
@@ -68,9 +78,10 @@ type Data = {
   selfExhibitions?: SelfExhibition[];
   series: SeriesItem[];
   artEvents: ArtEventItem[];
+  artworks?: PublicArtwork[];
 };
 
-export default function ArtistProfileV2() {
+export default function ArtistProfileV2({ locale = "ko" }: { locale?: HistoryLocale }) {
   const { artistId } = useParams<{ artistId: string }>();
   const searchParams = useSearchParams();
   const [data, setData] = useState<Data | null>(null);
@@ -140,15 +151,44 @@ export default function ArtistProfileV2() {
       setRecentlyViewed([]);
     }
   }, [data, artistId]);
-  const yearsActive = data?.startedYear
-    ? new Date().getFullYear() - data.startedYear
+  const bioText = (data?.bio || "").trim();
+  const statementText = (data?.workNote || "").trim();
+  const place = data
+    ? practiceLine({
+        city: data.city,
+        country: data.country,
+        startedYear: data.startedYear,
+        locale,
+      })
     : null;
-  const bioText = (data?.bio || data?.workNote || "").trim();
+  const copy = locale === "ko"
+    ? {
+        backToApp: "앱으로 돌아가기",
+        selectedWorks: "선택한 작품",
+        statement: "작업 노트",
+        series: "작업 시리즈",
+        proof: "작업의 증거",
+        proofNote: "기록된 전시와 활동입니다.",
+        collaborated: "함께한 작가",
+        recent: "방금 본 프로필",
+        share: "이 기록 공유하기",
+      }
+    : {
+        backToApp: "Back to the app",
+        selectedWorks: "Selected Works",
+        statement: "Artist Statement",
+        series: "Creative Series",
+        proof: "Proof of Practice",
+        proofNote: "Documented exhibitions and activity.",
+        collaborated: "Collaborated with",
+        recent: "Recently viewed",
+        share: "Share this practice record",
+      };
 
   if (notFound) {
     return (
       <>
-        <TopBar />
+        <TopBar locale={locale} />
         <main className="min-h-screen bg-[#F8F9FA] flex items-center justify-center p-6 sm:p-8">
           <p className="text-[#6B7280] text-sm">Exhibition history is not public.</p>
         </main>
@@ -159,7 +199,7 @@ export default function ArtistProfileV2() {
   if (!data) {
     return (
       <>
-        <TopBar />
+        <TopBar locale={locale} />
         <main className="min-h-screen bg-[#F8F9FA] flex items-center justify-center p-6 sm:p-8">
           <p className="text-[#6B7280] text-sm">Loading…</p>
         </main>
@@ -222,18 +262,16 @@ export default function ArtistProfileV2() {
 
   return (
     <>
-      <TopBar />
+      <TopBar locale={locale} />
       <main className="min-h-screen bg-[#F8F9FA] text-[#1A1A1A]">
-        {/* ─── 1. Hero / Header ─── */}
-        <section className="relative overflow-hidden">
-          <div className="absolute top-4 right-4 sm:top-6 sm:right-6 z-10 flex items-center gap-2">
-            {/* 앱으로 돌아가기 — 모바일에서만 표시 (웹에서 앱으로 열었을 때) */}
+        <section className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 pt-8 sm:pt-12 pb-10 sm:pb-12">
+          <div className="mb-6 flex items-center justify-end gap-2">
             <a
               href="rob-ritual://"
               className="md:hidden flex items-center gap-1.5 px-3 py-2 rounded-lg bg-[#0066FF]/90 hover:bg-[#0052CC] text-white text-xs font-medium transition-colors"
             >
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" /></svg>
-              앱으로 돌아가기
+              {copy.backToApp}
             </a>
             <button
               onClick={() => {
@@ -242,115 +280,70 @@ export default function ArtistProfileV2() {
                   setToast("Link copied!");
                 });
               }}
-              className="p-2 rounded-lg bg-white/80 hover:bg-white border border-[#E5E7EB] text-[#6B7280] hover:text-[#1A1A1A] transition-colors"
+              className="p-2 rounded-lg bg-white hover:bg-[#F3F4F6] border border-[#E5E7EB] text-[#6B7280] hover:text-[#1A1A1A] transition-colors"
               title="Share profile"
             >
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z" /></svg>
             </button>
           </div>
-          <div
-            className="hero-bg h-32 sm:h-56 md:h-72 lg:h-80 w-full bg-cover bg-center"
-            style={{
-              backgroundImage: data.profileImage
-                ? `url(${data.profileImage})`
-                : "linear-gradient(135deg, #E5E7EB 0%, #D1D5DB 100%)",
-              transform: "scale(1.08)",
-            }}
-          />
-          <div
-            className="absolute inset-0"
-            style={{
-              background: "linear-gradient(180deg, rgba(0,0,0,0.15) 0%, transparent 35%, #F8F9FA 85%)",
-            }}
-          />
-          <div className="relative max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 -mt-14 sm:-mt-20 md:-mt-24 pb-10 sm:pb-12">
-            <div className="flex flex-col items-center text-center">
-              <div className="w-24 h-24 sm:w-[100px] sm:h-[100px] md:w-[120px] md:h-[120px] rounded-full border-4 border-white shadow-xl overflow-hidden bg-[#E5E7EB] flex items-center justify-center ring-2 ring-[#E5E7EB]">
-                {data.profileImage ? (
-                  <img
-                    src={data.profileImage}
-                    alt={data.name}
-                    className="w-full h-full object-cover"
-                  />
-                ) : (
-                  <span className="text-2xl sm:text-3xl md:text-4xl font-semibold text-[#9CA3AF]">
-                    {data.name?.charAt(0)?.toUpperCase() || "A"}
-                  </span>
-                )}
-              </div>
-              <h1 className="mt-4 sm:mt-5 text-2xl sm:text-3xl md:text-4xl lg:text-[48px] font-bold text-[#1A1A1A] tracking-tight">
-                {data.name}
-              </h1>
-              {bioText && (
-                <p className="mt-2 sm:mt-3 text-base sm:text-lg md:text-2xl text-[#6B7280] max-w-[560px] leading-relaxed">
-                  {bioText}
-                </p>
+          <div className="flex flex-col items-center text-center">
+            {data.profileImage ? (
+              <img
+                src={data.profileImage}
+                alt={data.name}
+                className="mb-5 h-24 w-24 rounded-full border-4 border-white object-cover shadow-xl sm:h-[100px] sm:w-[100px]"
+              />
+            ) : null}
+            <h1 className="text-2xl sm:text-3xl md:text-4xl lg:text-[48px] font-bold text-[#1A1A1A] tracking-tight">
+              {data.name}
+            </h1>
+            {place && (
+              <p className="mt-3 text-sm sm:text-base text-[#6B7280]">{place}</p>
+            )}
+            {data.genre && (
+              <p className="mt-1 text-sm text-[#1A1A1A]">{data.genre}</p>
+            )}
+            {bioText && (
+              <p className="mt-5 text-base sm:text-lg text-[#6B7280] max-w-[640px] leading-relaxed">
+                {bioText}
+              </p>
+            )}
+            <div className="mt-6 flex flex-wrap justify-center gap-3">
+              {data.userId && (
+                <Link
+                  href={`/api/artist-portfolio/${encodeURIComponent(data.userId)}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="px-6 py-3 border border-[#E5E7EB] bg-white hover:bg-[#F8F9FA] text-[#1A1A1A] text-xs font-semibold uppercase tracking-wider rounded-lg transition-colors"
+                >
+                  View Portfolio PDF
+                </Link>
               )}
-              <div className="mt-4 flex flex-wrap justify-center gap-2">
-                {data.country && (
-                  <span className="px-3 py-1.5 text-xs font-medium rounded-full bg-white/90 border border-[#E5E7EB] text-[#1A1A1A] shadow-sm">
-                    {data.country}
-                  </span>
-                )}
-                {data.genre && (
-                  <span className="px-3 py-1.5 text-xs font-medium rounded-full bg-white/90 border border-[#E5E7EB] text-[#1A1A1A] shadow-sm">
-                    {data.genre}
-                  </span>
-                )}
-                {yearsActive != null && (
-                  <span className="px-3 py-1.5 text-xs font-medium rounded-full bg-white/90 border border-[#E5E7EB] text-[#1A1A1A] shadow-sm">
-                    {yearsActive}yrs
-                  </span>
-                )}
-              </div>
-              <div className="mt-6 flex flex-wrap justify-center gap-3">
-                {isOwner && (
-                  <button
-                    onClick={() => setShowAddModal(true)}
-                    className="px-6 py-3 bg-[#0066FF] hover:bg-[#0052CC] text-white text-xs font-semibold uppercase tracking-wider rounded-lg transition-colors shadow-sm"
-                  >
-                    Add Exhibition
-                  </button>
-                )}
-                {data.userId && (
-                  <Link
-                    href={`/api/artist-portfolio/${encodeURIComponent(data.userId)}`}
+            </div>
+            {(data.instagram || data.website) && (
+              <div className="mt-4 flex flex-wrap justify-center gap-3 text-sm">
+                {data.instagram && (
+                  <a
+                    href={`https://instagram.com/${String(data.instagram).replace(/^@/, "")}`}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="px-6 py-3 border border-[#E5E7EB] bg-white hover:bg-[#F8F9FA] text-[#1A1A1A] text-xs font-semibold uppercase tracking-wider rounded-lg transition-colors"
+                    className="text-[#1A1A1A] underline underline-offset-4 decoration-[#D1D5DB] hover:decoration-[#1A1A1A]"
                   >
-                    View Portfolio PDF
-                  </Link>
+                    Instagram {data.instagram}
+                  </a>
+                )}
+                {data.website && (
+                  <a
+                    href={data.website}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-[#1A1A1A] underline underline-offset-4 decoration-[#D1D5DB] hover:decoration-[#1A1A1A]"
+                  >
+                    Website
+                  </a>
                 )}
               </div>
-              {(data.instagram || data.website) && (
-                <div className="mt-4 flex flex-wrap justify-center gap-3 text-sm">
-                  {data.instagram && (
-                    <a
-                      href={`https://instagram.com/${String(data.instagram).replace(/^@/, "")}`}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="text-[#1A1A1A] underline underline-offset-4 decoration-[#D1D5DB] hover:decoration-[#1A1A1A]"
-                    >
-                      Instagram {data.instagram}
-                    </a>
-                  )}
-                  {data.website && (
-                    <a
-                      href={data.website}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="text-[#1A1A1A] underline underline-offset-4 decoration-[#D1D5DB] hover:decoration-[#1A1A1A]"
-                    >
-                      Website
-                    </a>
-                  )}
-                </div>
-              )}
-              <p className="mt-4 text-xs sm:text-sm text-[#6B7280] max-w-[560px] leading-relaxed">
-                Portfolio hosted on ROB · Creation before certification. This page is a living record of the artist's practice.
-              </p>
-            </div>
+            )}
           </div>
         </section>
 
@@ -505,14 +498,14 @@ export default function ArtistProfileV2() {
           </section>
         )}
 
-        {/* ─── 2. Timeline Section ─── */}
+        {timelineItems.length > 0 && (
         <section className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-10 sm:py-12">
           <div className="flex flex-col lg:flex-row lg:items-start gap-6 lg:gap-8">
             <div className="flex-1 min-w-0">
               <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
                 <div>
-                  <h2 className="text-xl font-semibold text-[#1A1A1A]">Proof of Practice</h2>
-                  <p className="text-sm text-[#6B7280] mt-1">작품/전시/활동의 축적 자체가 작가의 증거입니다.</p>
+                  <h2 className="text-xl font-semibold text-[#1A1A1A]">{copy.proof}</h2>
+                  <p className="text-sm text-[#6B7280] mt-1">{copy.proofNote}</p>
                 </div>
                 {isOwner && (
                   <button
@@ -525,43 +518,7 @@ export default function ArtistProfileV2() {
               </div>
 
               <div className="relative pl-6 sm:pl-8 border-l-2 border-[#E5E7EB]">
-                {timelineItems.length === 0 ? (
-                  <div className="py-12 sm:py-16 px-6 text-center bg-white/80 rounded-2xl border border-dashed border-[#E5E7EB]">
-                    <div className="flex justify-center mb-6">
-                      <svg width="120" height="100" viewBox="0 0 120 100" fill="none" xmlns="http://www.w3.org/2000/svg" className="text-[#D1D5DB]">
-                        <rect x="20" y="10" width="80" height="12" rx="2" stroke="currentColor" strokeWidth="1.5" strokeDasharray="4 2" fill="none" />
-                        <circle cx="30" cy="16" r="3" fill="currentColor" opacity="0.4" />
-                        <rect x="20" y="32" width="80" height="12" rx="2" stroke="currentColor" strokeWidth="1.5" strokeDasharray="4 2" fill="none" />
-                        <circle cx="30" cy="38" r="3" fill="currentColor" opacity="0.4" />
-                        <rect x="20" y="54" width="80" height="12" rx="2" stroke="currentColor" strokeWidth="1.5" strokeDasharray="4 2" fill="none" />
-                        <circle cx="30" cy="60" r="3" fill="currentColor" opacity="0.4" />
-                        <path d="M55 75 L65 85 L85 65" stroke="#0066FF" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" opacity="0.8" />
-                        <circle cx="70" cy="75" r="12" fill="#0066FF" fillOpacity="0.15" stroke="#0066FF" strokeWidth="1.5" className="rob-empty-pulse" />
-                        <text x="70" y="79" textAnchor="middle" fill="#0066FF" fontSize="14" fontWeight="600" className="rob-empty-pulse">+</text>
-                      </svg>
-                    </div>
-                    <h3 className="text-lg font-semibold text-[#1A1A1A] mb-2">
-                      아직 공개된 창작 기록이 없어요
-                    </h3>
-                    <p className="text-sm text-[#6B7280] max-w-md mx-auto leading-relaxed mb-6">
-                      전시/활동을 추가하면 "실제 작업의 흔적"이 타임라인으로 축적됩니다.
-                      <br />
-                      서류보다 먼저, 작업 자체가 당신을 설명하게 만드세요.
-                    </p>
-                    {isOwner && (
-                      <div>
-                        <button
-                          onClick={() => setShowAddModal(true)}
-                          className="px-8 py-3.5 bg-[#0066FF] hover:bg-[#0052CC] text-white text-sm font-semibold rounded-lg transition-colors shadow-sm"
-                        >
-                          첫 전시 추가하기
-                        </button>
-                        <p className="mt-2 text-xs text-[#9CA3AF]">3분 만에 완료돼요</p>
-                      </div>
-                    )}
-                  </div>
-                ) : (
-                  timelineItems.map((item, i) => {
+                  {timelineItems.map((item, i) => {
                     const d = new Date(item.date);
                     const dateStr = `${d.getFullYear()}.${String(d.getMonth() + 1).padStart(2, "0")}`;
                     const displayTitle =
@@ -623,8 +580,7 @@ export default function ArtistProfileV2() {
                         </div>
                       </div>
                     );
-                  })
-                )}
+                  })}
               </div>
             </div>
 
@@ -643,29 +599,56 @@ export default function ArtistProfileV2() {
             )}
           </div>
         </section>
+        )}
+
+        {(data.artworks?.length ?? 0) > 0 && (
+          <section className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-10 sm:py-12">
+            <h2 className="text-xl font-semibold text-[#1A1A1A] mb-6">{copy.selectedWorks}</h2>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              {data.artworks?.map((work) => {
+                const detail = work.medium?.trim();
+                return (
+                  <figure key={work.id} className="bg-white border border-[#E5E7EB] rounded-xl overflow-hidden">
+                    {work.imageUrl ? (
+                      <img src={work.imageUrl} alt={work.title || ""} className="aspect-square w-full object-cover" />
+                    ) : null}
+                    <figcaption className="p-4">
+                      {work.title ? <h3 className="font-semibold text-[#1A1A1A]">{work.title}</h3> : null}
+                      {detail ? <p className="mt-1 text-sm text-[#6B7280]">{detail}</p> : null}
+                    </figcaption>
+                  </figure>
+                );
+              })}
+            </div>
+          </section>
+        )}
+
+        {statementText && (
+          <section className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-10 sm:py-12">
+            <h2 className="text-xl font-semibold text-[#1A1A1A] mb-4">{copy.statement}</h2>
+            <p className="text-base text-[#6B7280] leading-relaxed whitespace-pre-wrap max-w-[720px]">{statementText}</p>
+          </section>
+        )}
 
         {/* ─── 3. Works Grid ─── */}
         {data.series && data.series.length > 0 && (
           <section className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-10 sm:py-12">
-            <h2 className="text-xl font-semibold text-[#1A1A1A] mb-6">Creative Series</h2>
+            <h2 className="text-xl font-semibold text-[#1A1A1A] mb-6">{copy.series}</h2>
             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
               {data.series.map((s) => (
                 <div
                   key={s.id}
                   className="bg-white border border-[#E5E7EB] rounded-xl overflow-hidden hover:shadow-md transition-shadow"
                 >
-                  <div className="aspect-square bg-[#E5E7EB] flex items-center justify-center">
-                    <span className="text-4xl text-[#9CA3AF]">
-                      {s.title?.charAt(0) || "?"}
-                    </span>
-                  </div>
+                  {s.coverImageUrl ? (
+                    <img src={s.coverImageUrl} alt="" className="aspect-square w-full object-cover" />
+                  ) : null}
                   <div className="p-4">
                     <h3 className="font-semibold text-[#1A1A1A]">{s.title}</h3>
-                    <p className="text-sm text-[#6B7280] mt-1">
-                      {s.startYear ?? "?"} — {s.endYear ?? "present"}
-                    </p>
-                    {data.genre && (
-                      <p className="text-xs text-[#6B7280] mt-0.5">{data.genre}</p>
+                    {(s.startYear || s.endYear) && (
+                      <p className="text-sm text-[#6B7280] mt-1">
+                        {[s.startYear, s.endYear].filter((year) => year != null).join(" – ")}
+                      </p>
                     )}
                   </div>
                 </div>
@@ -698,9 +681,9 @@ export default function ArtistProfileV2() {
           </section>
         )}
 
-        {/* ─── 5. Network ─── */}
+        {(uniqueCollabs.length > 0 || collaborators.length > 0) && (
         <section className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-10 sm:py-12">
-          <h2 className="text-xl font-semibold text-[#1A1A1A] mb-6">Collaborated with</h2>
+          <h2 className="text-xl font-semibold text-[#1A1A1A] mb-6">{copy.collaborated}</h2>
           <div className="flex flex-col sm:flex-row sm:items-center gap-6">
             {/* Circular node graph: 3개 이상일 때만 표시 (적을 때 빈 원만 여러 개 뜨는 것 방지) */}
             {(() => {
@@ -748,24 +731,6 @@ export default function ArtistProfileV2() {
               );
             })()}
             <div className="flex flex-wrap gap-3 sm:flex-1">
-              {uniqueCollabs.length === 0 && collaborators.length === 0 ? (
-                <div className="flex flex-col gap-3">
-                  <p className="text-sm text-[#6B7280]">
-                    아직 협업 기록이 없어요
-                  </p>
-                  <p className="text-xs text-[#9CA3AF]">
-                    전시를 추가하면 함께한 작가들이 자동으로 연결돼요.
-                  </p>
-                  {isOwner && (
-                    <button
-                      onClick={() => setShowAddModal(true)}
-                      className="self-start px-4 py-2 text-sm font-medium text-[#0066FF] hover:bg-[#0066FF]/10 rounded-lg transition-colors"
-                    >
-                      지금 전시 추가하기
-                    </button>
-                  )}
-                </div>
-              ) : (
                 <div className="flex flex-col gap-3 sm:flex-1">
                   <div className="flex flex-wrap gap-3">
                     {(uniqueCollabs.length > 0 ? uniqueCollabs : collaborators.map((n) => ({ name: n, artistId: "" }))).map((c) => (
@@ -808,16 +773,16 @@ export default function ArtistProfileV2() {
                     </button>
                   )}
                 </div>
-              )}
             </div>
           </div>
         </section>
+        )}
 
         {/* ─── 5-1. 방금 본 프로필 ─── */}
         {recentlyViewed.length > 0 && (
           <section className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-10">
             <h3 className="text-sm font-semibold text-[#6B7280] uppercase tracking-wider mb-4">
-              방금 본 프로필
+              {copy.recent}
             </h3>
             <div className="flex flex-wrap gap-3">
               {recentlyViewed.map(({ artistId: aid, name }) => (
@@ -840,6 +805,9 @@ export default function ArtistProfileV2() {
 
         {/* ─── 6. Footer ─── */}
         <section className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-10 sm:py-12 pb-20 sm:pb-24">
+          <p className="mb-6 text-xs sm:text-sm text-[#6B7280] leading-relaxed">
+            Portfolio hosted on ROB · Creation before certification. This page is a living record of artistic practice.
+          </p>
           <button
             onClick={() => {
               const url = window.location.href;
@@ -853,7 +821,7 @@ export default function ArtistProfileV2() {
             }}
             className="px-6 py-3 border border-[#E5E7EB] bg-white hover:bg-[#F8F9FA] text-[#1A1A1A] text-sm font-medium rounded-lg transition-colors"
           >
-            Share this practice record
+            {copy.share}
           </button>
         </section>
       </main>
