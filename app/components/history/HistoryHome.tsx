@@ -8,6 +8,7 @@ import ResearchOffer from "@/app/components/history/ResearchOffer";
 import { trackHistory, trackMissingSearch } from "@/lib/history/analytics";
 import { pushRobEvent } from "@/lib/publicGrowth/analytics";
 import { historyCopy, type HistoryLocale } from "@/lib/history/locale";
+import { t } from "@/lib/translate";
 import { artistDisplayNames } from "@/lib/history/names";
 import { usePublicHref } from "@/app/components/history/LocaleUrl";
 import {
@@ -206,11 +207,10 @@ export default function HistoryHome({ discovery = null, locale = "en" }: { disco
         <section className="rh-home-hero">
           <div className="rh-home-copy">
             <LocaleSwitch locale={locale} />
-            <p className="rh-kicker">
-              ROB <span className="rh-guide" aria-hidden="true" /> {copy.homeKicker}
-            </p>
-            <h1 className="rh-title">{copy.searchTitle}</h1>
-            <p className="rh-lead">{copy.searchLeadFull}</p>
+            <p className="rh-kicker">{t("home_kicker", locale)}</p>
+            <h1 className="rh-title">{t("home_title", locale)}</h1>
+            <p className="rh-lead">{t("home_lead", locale)}</p>
+            <p className="rh-home-note">{t("home_note", locale)}</p>
             <form className="rh-search" onSubmit={onSubmit} role="search">
               <div className="rh-search-wrap" ref={box}>
                 <label className="rh-sr-only" htmlFor="artist-search">
@@ -254,6 +254,10 @@ export default function HistoryHome({ discovery = null, locale = "en" }: { disco
                 {phase === "searching" ? copy.searching : copy.searchButton}
               </button>
             </form>
+            <div className="rh-home-actions">
+              <Link href={publicHref("/history/explore")}>{t("home_explore_art", locale)} →</Link>
+              <Link href={publicHref("/#opportunities")}>{t("home_opportunities_kicker", locale)} →</Link>
+            </div>
             <div className="rh-search-feedback" role="status" aria-live="polite">
               {phase === "searching" ? <p>{copy.searching}</p> : null}
               {phase === "empty" && pendingQuery === null ? (
@@ -419,40 +423,61 @@ export default function HistoryHome({ discovery = null, locale = "en" }: { disco
           </div>
         </section>
 
-        <section className="rh-home-principles" aria-label={copy.howWorks}>
-          <article>
-            <span>01</span>
-            <h2>{copy.seeTime}</h2>
-            <p>{copy.seeTimeBody}</p>
-          </article>
-          <article>
-            <span>02</span>
-            <h2>{copy.openMomentTitle}</h2>
-            <p>{copy.openMomentBody}</p>
-          </article>
-          <article>
-            <span>03</span>
-            <h2>{copy.crossBridge}</h2>
-            <p>{copy.crossBridgeBody}</p>
-          </article>
+        <section className="rh-home-section" id="opportunities">
+          <p className="rh-kicker">{t("home_opportunities_kicker", locale)}</p>
+          <h2>{t("home_opportunities_title", locale)}</h2>
+          <p className="rh-home-note">{t("home_opportunities_body", locale)}</p>
+          <p className="rh-home-actions">
+            <Link href={publicHref("/open-calls")}>{t("home_view_open_calls", locale)} →</Link>
+          </p>
+        </section>
+
+        <section className="rh-home-section" id="for-artists">
+          <p className="rh-kicker">{t("home_for_artists_kicker", locale)}</p>
+          <h2>{t("home_for_artists_title", locale)}</h2>
+          <p className="rh-home-note">{t("home_for_artists_body", locale)}</p>
+          <div className="rh-home-principles" aria-label={t("home_for_artists_kicker", locale)}>
+            <article>
+              <span>01</span>
+              <h2>{t("home_step_portfolio", locale)}</h2>
+              <p>{t("home_step_portfolio_body", locale)}</p>
+            </article>
+            <article>
+              <span>02</span>
+              <h2>{t("home_step_practice", locale)}</h2>
+              <p>{t("home_step_practice_body", locale)}</p>
+            </article>
+            <article>
+              <span>03</span>
+              <h2>{t("home_step_opportunities", locale)}</h2>
+              <p>{t("home_step_opportunities_body", locale)}</p>
+            </article>
+          </div>
+          <p className="rh-home-actions">
+            <Link href={publicHref("/contact")}>{t("home_write", locale)} →</Link>
+          </p>
+          <p className="rh-home-note">{t("home_pilot_note", locale)}</p>
         </section>
 
         <section className="rh-below">
           <Link className="rh-home-panel" href={publicHref("/history/explore")}>
-            <span className="rh-kicker">{copy.explore}</span>
+            <span className="rh-kicker">{t("home_explore_art", locale)}</span>
             <strong>{copy.browseGraph}</strong>
             <p>{copy.browseGraphBody}</p>
           </Link>
           <Link className="rh-home-panel" href={publicHref("/now")}>
-            <span className="rh-kicker">{copy.now}</span>
+            <span className="rh-kicker">{t("nav_now", locale)}</span>
             <strong>{copy.seeNow}</strong>
             <p>{copy.seeNowBody}</p>
           </Link>
         </section>
-        <p className="rh-muted">
-          <Link href={publicHref("/about/how-to-use")}>{locale === "ko" ? "사용법" : "How to use"}</Link>
-          {" · "}
-          <Link href={publicHref("/about/why-rob")}>{locale === "ko" ? "ROB 소개" : "Why ROB"}</Link>
+        <p className="rh-home-footer">
+          <Link href={publicHref("/now")}>{t("nav_now", locale)}</Link>
+          <Link href={publicHref("/guide")}>{t("nav_guide", locale)}</Link>
+          <Link href={publicHref("/contact")}>{t("nav_contact", locale)}</Link>
+          <Link href="/community">{t("nav_community", locale)}</Link>
+          <Link href={publicHref("/about/how-to-use")}>{t("home_how_to", locale)}</Link>
+          <Link href={publicHref("/about/why-rob")}>{t("home_why", locale)}</Link>
         </p>
       </main>
     </div>
