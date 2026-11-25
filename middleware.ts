@@ -33,10 +33,26 @@ function applySecurityHeaders(res: NextResponse, isProduction: boolean, allowFra
   return res;
 }
 
-function withLocaleHeaders(req: NextRequest, locale: "ko" | "en") {
+function edgeCountry(req: NextRequest): string | null {
+  if (process.env.ROB_LOCALE_SIMULATION === "1") {
+    const simulated = req.cookies.get("rob_country_sim")?.value?.toUpperCase();
+    if (simulated && /^[A-Z]{2}$/.test(simulated)) return simulated;
+  }
+  const header = req.headers.get("x-vercel-ip-country");
+  if (header && /^[A-Za-z]{2}$/.test(header)) return header.toUpperCase();
+  const geo = req.geo?.country;
+  if (geo && /^[A-Za-z]{2}$/.test(geo)) return geo.toUpperCase();
+  return null;
+}
+
+function forwardHeaders(req: NextRequest, locale: "ko" | "en" | null) {
   const requestHeaders = new Headers(req.headers);
-  requestHeaders.set("x-rob-locale", locale);
-  requestHeaders.set("x-rob-locale-pinned", "1");
+  const country = edgeCountry(req);
+  if (country) requestHeaders.set("x-vercel-ip-country", country);
+  if (locale) {
+    requestHeaders.set("x-rob-locale", locale);
+    requestHeaders.set("x-rob-locale-pinned", "1");
+  }
   return requestHeaders;
 }
 
@@ -62,13 +78,14 @@ export function middleware(req: NextRequest) {
   }
 
   const nextFor = (allowFraming = false) => {
+    const requestHeaders = forwardHeaders(req, locale);
     const response = locale
       ? NextResponse.rewrite((() => {
           const url = req.nextUrl.clone();
           url.pathname = path;
           return url;
-        })(), { request: { headers: withLocaleHeaders(req, locale) } })
-      : NextResponse.next();
+        })(), { request: { headers: requestHeaders } })
+      : NextResponse.next({ request: { headers: requestHeaders } });
     if (path === "/research" || path.startsWith("/research/")) response.headers.set("X-Robots-Tag", "noindex, nofollow");
     else if (legacyNoindexPath(path)) response.headers.set("X-Robots-Tag", "noindex, follow");
     return applySecurityHeaders(response, isProduction, allowFraming);
@@ -108,7 +125,7 @@ export function middleware(req: NextRequest) {
       return nextFor();
     }
     if (!hasSession) {
-      const loginUrl = new URL("/login", req.url);
+      const loginUrl = new URL(withLocalePrefix("/login", locale), req.url);
       // Preserve the destination so login can redirect back after auth
       if (path !== "/") {
         loginUrl.searchParams.set("redirect", path);

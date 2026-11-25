@@ -8,6 +8,7 @@ import ResearchOffer from "@/app/components/history/ResearchOffer";
 import { trackHistory, trackMissingSearch } from "@/lib/history/analytics";
 import { pushRobEvent } from "@/lib/publicGrowth/analytics";
 import { historyCopy, type HistoryLocale } from "@/lib/history/locale";
+import { homeCopy } from "@/lib/locale/homeCopy";
 import { artistDisplayNames } from "@/lib/history/names";
 import { usePublicHref } from "@/app/components/history/LocaleUrl";
 import {
@@ -49,6 +50,7 @@ const fallbackArtists = [
 
 export default function HistoryHome({ discovery = null, locale = "en" }: { discovery?: Discovery | null; locale?: HistoryLocale }) {
   const copy = historyCopy(locale);
+  const page = homeCopy(locale);
   const publicHref = usePublicHref();
   const shownName = (artist: { canonicalName?: string | null; name?: string | null; nativeName?: string | null }) =>
     artistDisplayNames({ canonicalName: artist.canonicalName || artist.name || "", nativeName: artist.nativeName, locale });
@@ -206,11 +208,10 @@ export default function HistoryHome({ discovery = null, locale = "en" }: { disco
         <section className="rh-home-hero">
           <div className="rh-home-copy">
             <LocaleSwitch locale={locale} />
-            <p className="rh-kicker">
-              ROB <span className="rh-guide" aria-hidden="true" /> {copy.homeKicker}
-            </p>
-            <h1 className="rh-title">{copy.searchTitle}</h1>
-            <p className="rh-lead">{copy.searchLeadFull}</p>
+            <p className="rh-kicker">Role of Bridge</p>
+            <h1 className="rh-title">{page.heroTitle}</h1>
+            <p className="rh-lead">{page.heroPlace}</p>
+            <p>{page.heroLead}</p>
             <form className="rh-search" onSubmit={onSubmit} role="search">
               <div className="rh-search-wrap" ref={box}>
                 <label className="rh-sr-only" htmlFor="artist-search">
@@ -419,40 +420,39 @@ export default function HistoryHome({ discovery = null, locale = "en" }: { disco
           </div>
         </section>
 
-        <section className="rh-home-principles" aria-label={copy.howWorks}>
+        <section className="rh-home-principles" id="explore" aria-label={page.exploreTitle}>
           <article>
-            <span>01</span>
-            <h2>{copy.seeTime}</h2>
-            <p>{copy.seeTimeBody}</p>
+            <span>{page.exploreKicker}</span>
+            <h2>{copy.searchTitle}</h2>
+            <p>{page.exploreLead}</p>
+            <p>
+              <Link href={publicHref("/artists/lee-ufan")}>{page.artistHistory} · Lee Ufan</Link>
+              {" · "}
+              <Link href={publicHref("/artists/park-seo-bo")}>{page.artistHistory} · Park Seo-Bo</Link>
+            </p>
           </article>
-          <article>
-            <span>02</span>
-            <h2>{copy.openMomentTitle}</h2>
-            <p>{copy.openMomentBody}</p>
+          <article id="opportunities">
+            <span>{page.opportunitiesKicker}</span>
+            <h2>{page.opportunitiesTitle}</h2>
+            <p>{page.opportunitiesLead}</p>
+            <p><Link href="/open-calls">{page.browseOpportunities}</Link></p>
           </article>
-          <article>
-            <span>03</span>
-            <h2>{copy.crossBridge}</h2>
-            <p>{copy.crossBridgeBody}</p>
+          <article id="for-artists">
+            <span>{page.artistsKicker}</span>
+            <h2>{page.artistsTitle}</h2>
+            <p>{page.stepPortfolio}</p>
+            <p>{page.stepPractice}</p>
+            <p>{page.stepGalleries}</p>
+            <p>{page.stepApplication}</p>
+            <p>{page.pilotNote}</p>
           </article>
-        </section>
-
-        <section className="rh-below">
-          <Link className="rh-home-panel" href={publicHref("/history/explore")}>
-            <span className="rh-kicker">{copy.explore}</span>
-            <strong>{copy.browseGraph}</strong>
-            <p>{copy.browseGraphBody}</p>
-          </Link>
-          <Link className="rh-home-panel" href="/now">
-            <span className="rh-kicker">{copy.now}</span>
-            <strong>{copy.seeNow}</strong>
-            <p>{copy.seeNowBody}</p>
-          </Link>
         </section>
         <p className="rh-muted">
-          <Link href={publicHref("/about/how-to-use")}>{locale === "ko" ? "사용법" : "How to use"}</Link>
+          <Link href={publicHref("/about/why-rob")}>{page.footerAbout}</Link>
           {" · "}
-          <Link href={publicHref("/about/why-rob")}>{locale === "ko" ? "ROB 소개" : "Why ROB"}</Link>
+          <Link href={publicHref("/contact")}>{page.footerContact}</Link>
+          {" · "}
+          <Link href={publicHref("/guide")}>{page.footerGuide}</Link>
         </p>
       </main>
     </div>

@@ -19,6 +19,18 @@ export function portfolioArtworks<T extends { isPublic: boolean; inPortfolio: bo
  * A public work that is not in the portfolio can still illustrate its series
  * without being added to the portfolio.
  */
+export function publicArtworkImagePath(id: string): string {
+  return `/api/public-artwork/${encodeURIComponent(id)}/image`;
+}
+
+export function seriesCoverArtworkId(
+  seriesId: string,
+  works: Array<{ id: string; seriesId: string | null; isPublic: boolean; inPortfolio: boolean; hasImage: boolean }>,
+): string | null {
+  const linked = works.filter((work) => work.seriesId === seriesId && work.isPublic && work.hasImage);
+  return (linked.find((work) => work.inPortfolio) ?? linked[0])?.id ?? null;
+}
+
 export function seriesCoverImage(seriesId: string, works: PublicArtworkRecord[]): string | null {
   const linked = works.filter(
     (work) => work.seriesId === seriesId && work.isPublic && Boolean(work.imageUrl),

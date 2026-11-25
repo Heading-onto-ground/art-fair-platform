@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { prisma } from "@/lib/prisma";
 import ArtistProfileV2 from "./components/ArtistProfileV2";
+import { loadPublicArtist } from "@/lib/artist/loadPublicArtist";
 import { historyLocale } from "@/lib/history/requestLocale";
 import { SITE_URL as BASE_URL } from "@/lib/seo";
 
@@ -46,6 +47,7 @@ export async function generateMetadata(
   };
 }
 
-export default function ArtistPublicPage() {
-  return <ArtistProfileV2 locale={historyLocale()} />;
+export default async function ArtistPublicPage({ params }: { params: { artistId: string } }) {
+  const data = await loadPublicArtist(params.artistId);
+  return <ArtistProfileV2 locale={historyLocale()} initialData={data} />;
 }

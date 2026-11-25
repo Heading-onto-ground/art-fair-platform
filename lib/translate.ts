@@ -1,3 +1,5 @@
+import { productionLocaleList } from "@/lib/i18n/registry";
+
 type Lang = "en" | "ko" | "ja" | "fr";
 
 type Dictionary = {
@@ -314,12 +316,11 @@ export function t(key: string, lang: string = "en"): string {
   return dictionary[key]?.[lang] || dictionary[key]?.["en"] || key;
 }
 
-// Get all available language codes
+export function dictionaryGaps(locale: "en" | "ko"): string[] {
+  return Object.keys(dictionary).filter((key) => !dictionary[key]?.[locale]);
+}
+
+/** Languages a visitor can select. Incomplete locales stay out of this list. */
 export function getAvailableLanguages(): { code: string; name: string }[] {
-  return [
-    { code: "en", name: "English" },
-    { code: "ko", name: "한국어" },
-    { code: "ja", name: "日本語" },
-    { code: "fr", name: "Français" },
-  ];
+  return productionLocaleList().map((item) => ({ code: item.code, name: item.nativeName }));
 }

@@ -6,6 +6,7 @@ import { historyCopy } from "@/lib/history/locale";
 import { historyLocale, pinnedLocale } from "@/lib/history/requestLocale";
 import GoogleTagManager from "@/app/components/GoogleTagManager";
 import { LocaleUrlProvider } from "@/app/components/history/LocaleUrl";
+import { LocaleProvider } from "@/lib/i18n/LocaleProvider";
 import { gtmContainerId, siteVerification } from "@/lib/publicGrowth/analytics";
 
 // ── Self-hosted fonts via next/font (no render-blocking @import) ──
@@ -26,11 +27,8 @@ const cormorant = Cormorant_Garamond({
 
 export async function generateMetadata(): Promise<Metadata> {
   const locale = historyLocale();
-  const ko = locale === "ko";
-  const title = ko ? "ROB — 작가의 전시 이력과 기록된 연결" : "ROB — Artist History & Documented Connections";
-  const description = ko
-    ? "작가를 검색하고 공식 출처로 확인된 전시, 공간, 큐레이터와 작가 간 연결을 따라가세요."
-    : "Search artists and explore documented exhibitions, spaces, curators, and artist connections. ROB builds verified art histories from official sources.";
+  const title = historyCopy(locale).pageTitle;
+  const description = historyCopy(locale).pageDescription;
   const verification = siteVerification(
     process.env.NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION,
     process.env.NEXT_PUBLIC_NAVER_SITE_VERIFICATION,
@@ -41,7 +39,7 @@ export async function generateMetadata(): Promise<Metadata> {
     description,
     openGraph: {
       type: "website",
-      locale: ko ? "ko_KR" : "en_US",
+      locale: locale === "ko" ? "ko_KR" : "en_US",
       siteName: "ROB",
       title,
       description,
@@ -75,9 +73,11 @@ export default async function RootLayout({
         <a href="#main-content" className="skip-link">
           {copy.skipToContent}
         </a>
-        <LocaleUrlProvider locale={pinnedLocale()}>
-          <ToastProvider>{children}</ToastProvider>
-        </LocaleUrlProvider>
+        <LocaleProvider locale={locale}>
+          <LocaleUrlProvider locale={pinnedLocale()}>
+            <ToastProvider>{children}</ToastProvider>
+          </LocaleUrlProvider>
+        </LocaleProvider>
       </body>
     </html>
   );

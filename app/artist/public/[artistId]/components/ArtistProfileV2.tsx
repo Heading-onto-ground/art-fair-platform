@@ -81,12 +81,12 @@ type Data = {
   artworks?: PublicArtwork[];
 };
 
-export default function ArtistProfileV2({ locale = "ko" }: { locale?: HistoryLocale }) {
+export default function ArtistProfileV2({ locale = "en", initialData }: { locale?: HistoryLocale; initialData?: Data | null }) {
   const { artistId } = useParams<{ artistId: string }>();
   const searchParams = useSearchParams();
-  const [data, setData] = useState<Data | null>(null);
+  const [data, setData] = useState<Data | null>(initialData ?? null);
   const [me, setMe] = useState<{ session?: { userId: string; role: string } } | null>(null);
-  const [notFound, setNotFound] = useState(false);
+  const [notFound, setNotFound] = useState(initialData === null);
   const [showAddModal, setShowAddModal] = useState(false);
   const [toast, setToast] = useState<string | null>(null);
   const [toastWithShare, setToastWithShare] = useState(false);
@@ -98,13 +98,15 @@ export default function ArtistProfileV2({ locale = "ko" }: { locale?: HistoryLoc
   const RECENTLY_VIEWED_KEY = "rob-recently-viewed-profiles";
 
   useEffect(() => {
-    fetch(`/api/artist/public/${artistId}`)
-      .then((r) => (r.ok ? r.json() : null))
-      .then((d) => {
-        if (!d || d.error) setNotFound(true);
-        else setData(d);
-      })
-      .catch(() => setNotFound(true));
+    if (initialData === undefined) {
+      fetch(`/api/artist/public/${artistId}`)
+        .then((r) => (r.ok ? r.json() : null))
+        .then((d) => {
+          if (!d || d.error) setNotFound(true);
+          else setData(d);
+        })
+        .catch(() => setNotFound(true));
+    }
     fetch("/api/auth/me?lite=1", { credentials: "include" })
       .then((r) => r.json())
       .then((d) => setMe(d))
@@ -113,7 +115,7 @@ export default function ArtistProfileV2({ locale = "ko" }: { locale?: HistoryLoc
       .then((r) => (r.ok ? r.json() : null))
       .then((d) => (d && !d.error ? setRitualSummary(d) : setRitualSummary(null)))
       .catch(() => setRitualSummary(null));
-  }, [artistId]);
+  }, [artistId, initialData]);
 
   const isOwner = me?.session?.role === "artist" && me?.session?.userId === data?.userId;
 
@@ -172,6 +174,8 @@ export default function ArtistProfileV2({ locale = "ko" }: { locale?: HistoryLoc
         collaborated: "함께한 작가",
         recent: "방금 본 프로필",
         share: "이 기록 공유하기",
+        loading: "불러오는 중…",
+        notPublic: "공개된 전시 이력이 없습니다.",
       }
     : {
         backToApp: "Back to the app",
@@ -183,6 +187,8 @@ export default function ArtistProfileV2({ locale = "ko" }: { locale?: HistoryLoc
         collaborated: "Collaborated with",
         recent: "Recently viewed",
         share: "Share this practice record",
+        loading: "Loading…",
+        notPublic: "Exhibition history is not public.",
       };
 
   if (notFound) {
@@ -190,7 +196,7 @@ export default function ArtistProfileV2({ locale = "ko" }: { locale?: HistoryLoc
       <>
         <TopBar locale={locale} />
         <main className="min-h-screen bg-[#F8F9FA] flex items-center justify-center p-6 sm:p-8">
-          <p className="text-[#6B7280] text-sm">Exhibition history is not public.</p>
+          <p className="text-[#6B7280] text-sm">{copy.notPublic}</p>
         </main>
       </>
     );
@@ -201,7 +207,7 @@ export default function ArtistProfileV2({ locale = "ko" }: { locale?: HistoryLoc
       <>
         <TopBar locale={locale} />
         <main className="min-h-screen bg-[#F8F9FA] flex items-center justify-center p-6 sm:p-8">
-          <p className="text-[#6B7280] text-sm">Loading…</p>
+          <p className="text-[#6B7280] text-sm">{copy.loading}</p>
         </main>
       </>
     );

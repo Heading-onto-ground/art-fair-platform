@@ -408,7 +408,7 @@ export default function LoginPage() {
                   margin: 0,
                 }}
               >
-                비밀번호를 잊으셨나요?
+                {tr("Forgot your password?", "비밀번호를 잊으셨나요?", "パスワードをお忘れですか?", "Mot de passe oublie ?")}
               </Link>
             </div>
           )}

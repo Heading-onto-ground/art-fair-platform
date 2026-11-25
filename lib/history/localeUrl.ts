@@ -12,6 +12,14 @@ const PUBLIC_ROOTS = [
   "/exhibitions",
   "/spaces",
   "/research",
+  "/artist",
+  "/artist/public",
+  "/login",
+  "/forgot-password",
+  "/reset-password",
+  "/open-calls",
+  "/gallery",
+  "/curator",
 ];
 
 export function splitLocalePath(pathname: string): { locale: HistoryLocale | null; path: string } {
