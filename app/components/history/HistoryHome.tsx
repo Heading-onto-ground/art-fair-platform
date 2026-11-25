@@ -208,7 +208,7 @@ export default function HistoryHome({ discovery = null, locale = "en" }: { disco
           <div className="rh-home-copy">
             <LocaleSwitch locale={locale} />
             <p className="rh-kicker">{t("home_kicker", locale)}</p>
-            <h1 className="rh-title">{t("home_title", locale)}</h1>
+            <h1 className="rh-title">{t("home_headline", locale)}</h1>
             <p className="rh-lead">{t("home_lead", locale)}</p>
             <p className="rh-home-note">{t("home_note", locale)}</p>
             <form className="rh-search" onSubmit={onSubmit} role="search">

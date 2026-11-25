@@ -21,7 +21,7 @@ describe("ROB public home", () => {
     expect(home).not.toContain("ArtistFeed");
     expect(search).toContain('role="search"');
     expect(search).toContain("copy.searchLabel");
-    expect(search).toContain("home_title");
+    expect(search).toContain("home_headline");
 
     const english = historyCopy("en");
     const korean = historyCopy("ko");

@@ -325,7 +325,7 @@ const dictionary: Dictionary = {
   nav_contact: { en: "Contact", ko: "문의" },
   nav_more: { en: "More", ko: "더 보기" },
   home_kicker: { en: "Art · Connections · Opportunities", ko: "미술 · 연결 · 기회" },
-  home_title: { en: "Discover the art world.", ko: "미술계를 발견하세요." },
+  home_headline: { en: "Discover the art world.", ko: "미술계를 발견하세요." },
   home_lead: { en: "Find your place in it.", ko: "그 안에서 당신의 자리를 찾으세요." },
   home_note: {
     en: "Explore the connections between artists, exhibitions and galleries. Discover opportunities for your own artistic practice.",
