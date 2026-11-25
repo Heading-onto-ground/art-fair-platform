@@ -3,6 +3,8 @@ import {
   displayCountry,
   portfolioArtworks,
   practiceLine,
+  publicArtworkImagePaths,
+  publicImageSources,
   seriesCoverImage,
   type PublicArtworkRecord,
 } from "@/lib/artist/publicProfile";
@@ -29,6 +31,19 @@ describe("public artist portfolio policy", () => {
     expect(seriesCoverImage("series-a", works)).toBe("chosen.jpg");
     expect(seriesCoverImage("series-b", works)).toBe("selected.jpg");
     expect(seriesCoverImage("missing", works)).toBeNull();
+  });
+
+  it("lists a path for every stored image without embedding the file", () => {
+    expect(publicImageSources("", [{ url: "data:image/jpeg;base64,QQ==" }, { url: "second" }])).toEqual([
+      "data:image/jpeg;base64,QQ==",
+      "second",
+    ]);
+    expect(publicImageSources("cover-only", [])).toEqual(["cover-only"]);
+    expect(publicArtworkImagePaths("work", 2)).toEqual([
+      "/api/public-artwork/work/image",
+      "/api/public-artwork/work/image?i=1",
+    ]);
+    expect(publicArtworkImagePaths("work", 2).join(" ")).not.toContain("data:");
   });
 
   it("shows South Korea in English and leaves the stored Korean value on a Korean page", () => {

@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { publicImageSources } from "@/lib/artist/publicProfile";
 
 export const dynamic = "force-dynamic";
 
@@ -39,16 +40,24 @@ function imageResponse(value: string) {
   return NextResponse.json({ error: "not found" }, { status: 404, headers: { "Cache-Control": PRIVATE_CACHE } });
 }
 
-export async function GET(_req: Request, { params }: { params: { id: string } }) {
+function imageIndex(value: string | null): number | null {
+  if (!value) return 0;
+  if (!/^\d+$/.test(value)) return null;
+  return Number(value);
+}
+
+export async function GET(req: Request, { params }: { params: { id: string } }) {
+  const index = imageIndex(new URL(req.url).searchParams.get("i"));
+  if (index === null) return NextResponse.json({ error: "not found" }, { status: 404, headers: { "Cache-Control": PRIVATE_CACHE } });
   const artwork = await prisma.artwork.findFirst({
     where: { id: params.id, isPublic: true },
     select: {
       imageUrl: true,
-      images: { select: { url: true }, orderBy: { position: "asc" }, take: 1 },
+      images: { select: { url: true }, orderBy: { position: "asc" } },
     },
   }).catch(() => null);
   if (!artwork) return NextResponse.json({ error: "not found" }, { status: 404, headers: { "Cache-Control": PRIVATE_CACHE } });
-  const source = artwork.imageUrl?.trim() || artwork.images[0]?.url?.trim() || "";
+  const source = publicImageSources(artwork.imageUrl, artwork.images)[index] || "";
   if (!source) return NextResponse.json({ error: "not found" }, { status: 404, headers: { "Cache-Control": PRIVATE_CACHE } });
   return imageResponse(source);
 }

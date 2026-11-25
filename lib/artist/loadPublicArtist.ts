@@ -1,7 +1,7 @@
 import { prisma } from "@/lib/prisma";
 import { computeArtistTrust } from "@/lib/trustScore";
 import { getVerificationByArtistId } from "@/lib/verification";
-import { publicArtworkImagePath, seriesCoverArtworkId } from "@/lib/artist/publicProfile";
+import { publicArtworkImagePath, publicArtworkImagePaths, seriesCoverArtworkId } from "@/lib/artist/publicProfile";
 
 type ProfileRow = {
   userId: string;
@@ -33,6 +33,7 @@ type ArtworkMeta = {
   portfolioOrder: number | null;
   createdAt: Date;
   hasImage: boolean;
+  imageCount: number;
 };
 
 function iso(value: Date | string | null | undefined): string | null {
@@ -69,7 +70,17 @@ export async function loadPublicArtist(artistId: string) {
     prisma.$queryRawUnsafe(
       `SELECT a.id, a.title, a.caption, a.medium, a."postType", a."seriesId", a."inPortfolio", a."portfolioOrder", a."createdAt",
               s.title AS "seriesTitle",
-              (COALESCE(a."imageUrl", '') <> '') AS "hasImage"
+              (
+                COALESCE(a."imageUrl", '') <> ''
+                OR EXISTS (
+                  SELECT 1 FROM "ArtworkImage" ai
+                  WHERE ai."artworkId" = a.id AND COALESCE(ai.url, '') <> ''
+                )
+              ) AS "hasImage",
+              (
+                SELECT COUNT(*)::int FROM "ArtworkImage" ai
+                WHERE ai."artworkId" = a.id AND COALESCE(ai.url, '') <> ''
+              ) AS "imageCount"
        FROM "Artwork" a
        LEFT JOIN "ArtworkSeries" s ON s.id = a."seriesId"
        WHERE a."artistId" = $1 AND a."isPublic" = true
@@ -98,7 +109,11 @@ export async function loadPublicArtist(artistId: string) {
   const selected = visible.filter((work) => work.inPortfolio);
   const { loadHashtagsForArtworks } = await import("@/lib/artworkHashtags");
   const tagMap = await loadHashtagsForArtworks(selected.map((work) => work.id)).catch(() => new Map<string, string[]>());
-  const imagePath = (work: ArtworkMeta) => (work.hasImage ? publicArtworkImagePath(work.id) : null);
+  const imagePaths = (work: ArtworkMeta) => {
+    const stored = Number(work.imageCount);
+    const count = stored > 0 ? stored : work.hasImage ? 1 : 0;
+    return publicArtworkImagePaths(work.id, count);
+  };
 
   const trust = computeArtistTrust({
     bio: profile.bio ?? null,
@@ -155,8 +170,8 @@ export async function loadPublicArtist(artistId: string) {
       id: work.id,
       title: work.title,
       caption: work.caption,
-      imageUrl: imagePath(work),
-      imageUrls: imagePath(work) ? [imagePath(work)] : [],
+      imageUrl: imagePaths(work)[0] ?? null,
+      imageUrls: imagePaths(work),
       medium: work.medium?.trim() || null,
       postType: work.postType === "exhibition" ? "exhibition" : "work",
       seriesId: work.seriesId,

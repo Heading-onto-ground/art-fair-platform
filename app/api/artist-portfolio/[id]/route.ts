@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
-import { getProfileByUserId } from "@/lib/auth";
+import { getAdminSession } from "@/lib/adminAuth";
+import { getProfileByUserId, getServerSession } from "@/lib/auth";
 
 export const dynamic = "force-dynamic";
 
@@ -37,6 +38,13 @@ export async function GET(
     const portfolioUrl = String(profile.portfolioUrl || "").trim();
     if (!portfolioUrl) {
       return NextResponse.json({ error: "portfolio not found" }, { status: 404 });
+    }
+
+    const publicProfile = (profile as { exhibitions_public?: boolean }).exhibitions_public === true;
+    const session = getServerSession();
+    const owner = session?.role === "artist" && session.userId === id;
+    if (!publicProfile && !owner && !getAdminSession()) {
+      return NextResponse.json({ error: "not found" }, { status: 404 });
     }
 
     if (portfolioUrl.startsWith("data:")) {
