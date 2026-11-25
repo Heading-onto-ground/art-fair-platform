@@ -32,6 +32,7 @@ function matchAccept(header: string | null | undefined): ProductionLocale | null
   });
   tags.sort((a, b) => b.q - a.q);
   for (const item of tags) {
+    if (!(item.q > 0)) continue;
     const base = item.tag.split("-")[0];
     if (base === "ko" || base === "en") return base;
   }
@@ -49,7 +50,9 @@ function explicitStoredLocale(value: string | null | undefined): ProductionLocal
 /**
  * One language decision for the whole site.
  * URL, then account (when a production value already exists), then an explicit
- * cookie, then edge country, then Accept-Language, then English.
+ * cookie, then a supported country language. A multilingual country, or a
+ * country whose language is not in production, uses a supported Accept-Language
+ * tag. q=0 tags are ignored. English is the last fallback.
  * A stored ja/fr choice falls back to English and still beats country detection.
  */
 export function resolveLocale(input: ResolveLocaleInput = {}): ResolvedLocale {
@@ -64,11 +67,13 @@ export function resolveLocale(input: ResolveLocaleInput = {}): ResolvedLocale {
   if (country === "multilingual") {
     return { locale: matchAccept(input.acceptLanguage) ?? "en", source: "country" };
   }
+  if (country?.productionEnabled && isProductionLocale(country.code)) {
+    return { locale: country.code, source: "country" };
+  }
   if (country) {
-    return {
-      locale: country.productionEnabled && isProductionLocale(country.code) ? country.code : country.fallback,
-      source: "country",
-    };
+    const accepted = matchAccept(input.acceptLanguage);
+    if (accepted) return { locale: accepted, source: "accept-language" };
+    return { locale: "en", source: "fallback" };
   }
 
   const accepted = matchAccept(input.acceptLanguage);

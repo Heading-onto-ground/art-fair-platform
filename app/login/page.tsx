@@ -6,6 +6,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import TopBar from "@/app/components/TopBar";
 import { PasswordInput } from "@/app/components/ui/PasswordInput";
 import { useLanguage } from "@/lib/useLanguage";
+import { usePublicHref } from "@/app/components/history/LocaleUrl";
 import { t } from "@/lib/translate";
 import { F, S } from "@/lib/design";
 
@@ -27,6 +28,7 @@ export default function LoginPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { lang } = useLanguage();
+  const publicHref = usePublicHref();
   const [role, setRole] = useState<Role>("artist");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -61,7 +63,7 @@ export default function LoginPage() {
         .then(r => r.json())
         .then((d: MeResponse) => {
           const r = d?.session?.role;
-          if (allowsReturn(redirectTo, r)) router.replace(redirectTo);
+          if (allowsReturn(redirectTo, r)) router.replace(publicHref(redirectTo));
         })
         .catch(() => {});
     }
@@ -82,13 +84,13 @@ export default function LoginPage() {
     const redirectTo = searchParams.get("redirect");
     // Use redirect param if it's a valid path and role matches
     if (redirectTo && allowsReturn(redirectTo, realRole)) {
-      router.push(redirectTo);
+      router.push(publicHref(redirectTo));
       return;
     }
-    if (realRole === "artist") router.push("/");
-    else if (realRole === "gallery") router.push("/gallery");
-    else if (realRole === "curator") router.push("/curator");
-    else router.push("/login");
+    if (realRole === "artist") router.push(publicHref("/"));
+    else if (realRole === "gallery") router.push(publicHref("/gallery"));
+    else if (realRole === "curator") router.push(publicHref("/curator"));
+    else router.push(publicHref("/login"));
   };
 
   const gotoByServerSession = async () => {

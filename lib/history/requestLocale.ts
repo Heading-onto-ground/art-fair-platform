@@ -2,6 +2,7 @@ import { cookies, headers } from "next/headers";
 import { ROB_LOCALE_COOKIE, type HistoryLocale } from "@/lib/history/locale";
 import { prefixPublicPath } from "@/lib/history/localeUrl";
 import { resolveLocale, type ResolvedLocale } from "@/lib/i18n/resolveLocale";
+import { localeSimulationEnabled } from "@/lib/i18n/simulation";
 
 export function pinnedLocale(): HistoryLocale | null {
   const list = headers();
@@ -12,7 +13,7 @@ export function pinnedLocale(): HistoryLocale | null {
 
 function edgeCountry(): string | null {
   const list = headers();
-  if (process.env.ROB_LOCALE_SIMULATION === "1") {
+  if (localeSimulationEnabled()) {
     const simulated = cookies().get("rob_country_sim")?.value;
     if (simulated && /^[A-Za-z]{2}$/.test(simulated)) return simulated.toUpperCase();
   }

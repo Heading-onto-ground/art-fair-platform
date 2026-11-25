@@ -7,6 +7,8 @@ import TopBar from "@/app/components/TopBar";
 import AddExhibitionModal from "./AddExhibitionModal";
 import { practiceLine } from "@/lib/artist/publicProfile";
 import type { HistoryLocale } from "@/lib/history/locale";
+import { withLocalePrefix } from "@/lib/history/localeUrl";
+import { t } from "@/lib/translate";
 
 type Exhibition = {
   galleryName: string;
@@ -174,6 +176,8 @@ export default function ArtistProfileV2({ locale = "en", initialData }: { locale
         collaborated: "함께한 작가",
         recent: "방금 본 프로필",
         share: "이 기록 공유하기",
+        linkCopied: "링크를 복사했습니다",
+        footerNote: "ROB에 호스팅된 포트폴리오 · 인증보다 창작이 먼저입니다. 이 페이지는 작업의 기록입니다.",
         loading: "불러오는 중…",
         notPublic: "공개된 전시 이력이 없습니다.",
       }
@@ -187,6 +191,8 @@ export default function ArtistProfileV2({ locale = "en", initialData }: { locale
         collaborated: "Collaborated with",
         recent: "Recently viewed",
         share: "Share this practice record",
+        linkCopied: "Link copied",
+        footerNote: "Portfolio hosted on ROB · Creation before certification. This page is a living record of artistic practice.",
         loading: "Loading…",
         notPublic: "Exhibition history is not public.",
       };
@@ -283,11 +289,11 @@ export default function ArtistProfileV2({ locale = "en", initialData }: { locale
               onClick={() => {
                 const url = window.location.href;
                 navigator.clipboard.writeText(url).then(() => {
-                  setToast("Link copied!");
+                  setToast(copy.linkCopied);
                 });
               }}
               className="p-2 rounded-lg bg-white hover:bg-[#F3F4F6] border border-[#E5E7EB] text-[#6B7280] hover:text-[#1A1A1A] transition-colors"
-              title="Share profile"
+              title={copy.share}
             >
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z" /></svg>
             </button>
@@ -331,7 +337,7 @@ export default function ArtistProfileV2({ locale = "en", initialData }: { locale
                   rel="noopener noreferrer"
                   className="px-6 py-3 border border-[#E5E7EB] bg-white hover:bg-[#F8F9FA] text-[#1A1A1A] text-xs font-semibold uppercase tracking-wider rounded-lg transition-colors"
                 >
-                  View Portfolio PDF
+                  {t("portfolio_view_pdf", locale)}
                 </Link>
               )}
             </div>
@@ -737,7 +743,7 @@ export default function ArtistProfileV2({ locale = "en", initialData }: { locale
                       return c.artistId ? (
                         <Link
                           key={c.artistId}
-                          href={`/artist/public/${c.artistId}`}
+                          href={withLocalePrefix(`/artist/public/${c.artistId}`, locale)}
                           target="_blank"
                           rel="noopener noreferrer"
                           className="absolute w-8 h-8 sm:w-9 sm:h-9 -translate-x-1/2 -translate-y-1/2 rounded-full hover:ring-2 hover:ring-[#0066FF]/50 transition-shadow cursor-pointer"
@@ -762,7 +768,7 @@ export default function ArtistProfileV2({ locale = "en", initialData }: { locale
                       c.artistId ? (
                         <Link
                           key={c.artistId}
-                          href={`/artist/public/${c.artistId}`}
+                          href={withLocalePrefix(`/artist/public/${c.artistId}`, locale)}
                           target="_blank"
                           rel="noopener noreferrer"
                           className="flex items-center gap-2 p-3 bg-white border border-[#E5E7EB] rounded-xl min-w-[100px] hover:border-[#0066FF]/30 hover:shadow-sm transition-colors"
@@ -813,7 +819,7 @@ export default function ArtistProfileV2({ locale = "en", initialData }: { locale
               {recentlyViewed.map(({ artistId: aid, name }) => (
                 <Link
                   key={aid}
-                  href={`/artist/public/${aid}`}
+                  href={withLocalePrefix(`/artist/public/${aid}`, locale)}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="flex items-center gap-2 px-4 py-3 bg-white border border-[#E5E7EB] rounded-xl hover:border-[#0066FF]/30 hover:shadow-sm transition-colors min-w-[120px]"
@@ -831,16 +837,16 @@ export default function ArtistProfileV2({ locale = "en", initialData }: { locale
         {/* ─── 6. Footer ─── */}
         <section className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-10 sm:py-12 pb-20 sm:pb-24">
           <p className="mb-6 text-xs sm:text-sm text-[#6B7280] leading-relaxed">
-            Portfolio hosted on ROB · Creation before certification. This page is a living record of artistic practice.
+            {copy.footerNote}
           </p>
           <button
             onClick={() => {
               const url = window.location.href;
               navigator.clipboard.writeText(url).then(() => {
                 if (typeof window !== "undefined" && "toast" in window) {
-                  (window as any).toast?.("Link copied!");
+                  (window as any).toast?.(copy.linkCopied);
                 } else {
-                  alert("Link copied to clipboard!");
+                  alert(copy.linkCopied);
                 }
               });
             }}

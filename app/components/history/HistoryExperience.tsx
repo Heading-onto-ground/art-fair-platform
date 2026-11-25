@@ -1073,7 +1073,7 @@ export default function HistoryExperience({ artist, locale = "en" }: { artist: H
               <p className="rh-kicker">{copy.worksArchive}</p>
               <h2>{copy.works}</h2>
             </div>
-            {artist.worksHref ? <p><Link href={artist.worksHref}>{copy.openPortfolio} →</Link></p> : null}
+            {artist.worksHref ? <p><Link href={publicHref(artist.worksHref)}>{copy.openPortfolio} →</Link></p> : null}
             {artist.works.length === 0 ? <p>{copy.noWorks}</p> : null}
             <ul className="rh-list">
               {artist.works.map((work) => (

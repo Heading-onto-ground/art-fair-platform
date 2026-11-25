@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { localeSimulationEnabled } from "@/lib/i18n/simulation";
 import { aliasSlugRedirect } from "@/lib/history/identity";
 import { splitLocalePath, withLocalePrefix } from "@/lib/history/localeUrl";
 import { legacyNoindexPath, PROTECTED_PREFIXES } from "@/lib/routes";
@@ -34,7 +35,7 @@ function applySecurityHeaders(res: NextResponse, isProduction: boolean, allowFra
 }
 
 function edgeCountry(req: NextRequest): string | null {
-  if (process.env.ROB_LOCALE_SIMULATION === "1") {
+  if (localeSimulationEnabled()) {
     const simulated = req.cookies.get("rob_country_sim")?.value?.toUpperCase();
     if (simulated && /^[A-Z]{2}$/.test(simulated)) return simulated;
   }
@@ -79,6 +80,7 @@ export function middleware(req: NextRequest) {
 
   const nextFor = (allowFraming = false) => {
     const requestHeaders = forwardHeaders(req, locale);
+    // Explicit /en and /ko stay on that language. Country never redirects them.
     const response = locale
       ? NextResponse.rewrite((() => {
           const url = req.nextUrl.clone();

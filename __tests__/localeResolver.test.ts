@@ -3,15 +3,20 @@ import { dictionaryGaps, getAvailableLanguages } from "@/lib/translate";
 import { prefixPublicPath } from "@/lib/history/localeUrl";
 import { productionLocaleList } from "@/lib/i18n/registry";
 import { resolveLocale } from "@/lib/i18n/resolveLocale";
+import { localeSimulationEnabled } from "@/lib/i18n/simulation";
 
 describe("unified locale resolver", () => {
   it("maps a new visitor from country, then browser language, then English", () => {
     expect(resolveLocale({ country: "KR", acceptLanguage: "en-US" })).toEqual({ locale: "ko", source: "country" });
     expect(resolveLocale({ country: "US", acceptLanguage: "ko-KR" })).toEqual({ locale: "en", source: "country" });
-    expect(resolveLocale({ country: "JP", acceptLanguage: "ja-JP" })).toEqual({ locale: "en", source: "country" });
-    expect(resolveLocale({ country: "DE", acceptLanguage: "de-DE" })).toEqual({ locale: "en", source: "country" });
+    expect(resolveLocale({ country: "JP", acceptLanguage: "ja-JP" })).toEqual({ locale: "en", source: "fallback" });
+    expect(resolveLocale({ country: "JP", acceptLanguage: "ko-KR,ko;q=0.9" })).toEqual({ locale: "ko", source: "accept-language" });
+    expect(resolveLocale({ country: "JP", acceptLanguage: "ja-JP,ko;q=0.8" })).toEqual({ locale: "ko", source: "accept-language" });
+    expect(resolveLocale({ country: "JP", acceptLanguage: "ko;q=0,en;q=0.8" })).toEqual({ locale: "en", source: "accept-language" });
+    expect(resolveLocale({ country: "DE", acceptLanguage: "de-DE" })).toEqual({ locale: "en", source: "fallback" });
     expect(resolveLocale({ country: "ZZ", acceptLanguage: "ko-KR,ko;q=0.9" })).toEqual({ locale: "ko", source: "accept-language" });
     expect(resolveLocale({ acceptLanguage: "ja-JP,ja;q=0.9" })).toEqual({ locale: "en", source: "fallback" });
+    expect(resolveLocale({ acceptLanguage: "ko;q=0" })).toEqual({ locale: "en", source: "fallback" });
     expect(resolveLocale({})).toEqual({ locale: "en", source: "fallback" });
   });
 
@@ -48,6 +53,14 @@ describe("unified locale resolver", () => {
     expect(prefixPublicPath("/artist/public/1wh13", "ko")).toBe("/ko/artist/public/1wh13");
     expect(prefixPublicPath("/login", "en")).toBe("/en/login");
     expect(prefixPublicPath("/open-calls", "ko")).toBe("/ko/open-calls");
+  });
+
+  it("ignores country simulation in production even when the flag is on", () => {
+    expect(localeSimulationEnabled({ VERCEL_ENV: "production", ROB_LOCALE_SIMULATION: "1", NODE_ENV: "production" })).toBe(false);
+    expect(localeSimulationEnabled({ NODE_ENV: "production", ROB_LOCALE_SIMULATION: "1" })).toBe(false);
+    expect(localeSimulationEnabled({ VERCEL_ENV: "preview", ROB_LOCALE_SIMULATION: "1", NODE_ENV: "production" })).toBe(true);
+    expect(localeSimulationEnabled({ VERCEL_ENV: "preview", NODE_ENV: "production" })).toBe(false);
+    expect(localeSimulationEnabled({ NODE_ENV: "development", ROB_LOCALE_SIMULATION: "1" })).toBe(true);
   });
 
   it("offers only production locales and has English and Korean for every dictionary key", () => {

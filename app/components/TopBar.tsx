@@ -103,6 +103,12 @@ export default function TopBar({ hideOnMobile = false, locale }: { hideOnMobile?
   const [mounted, setMounted] = useState(false);
   const { lang, setLang } = useLanguage(locale);
   const navCopy = homeCopy(lang === "ko" ? "ko" : "en");
+  const legacyLinks = [
+    { path: "/now", label: navCopy.navNow },
+    { path: "/guide", label: navCopy.navGuide },
+    { path: "/contact", label: navCopy.navContact },
+    { path: "/community", label: navCopy.navCommunity },
+  ];
   function chooseLanguage(next: string) {
     setLang(next as Language);
     if (next === "ko" || next === "en") {
@@ -441,7 +447,7 @@ export default function TopBar({ hideOnMobile = false, locale }: { hideOnMobile?
               <button onClick={() => router.push(publicHref("/history/explore"))} style={{ padding: "8px 12px", border: "none", background: "transparent", color: "#4A4A4A", fontFamily: F, fontSize: 10, fontWeight: 500, letterSpacing: "0.08em", textTransform: "uppercase", cursor: "pointer", marginRight: 8 }}>
                 {navCopy.navExplore}
               </button>
-              <button onClick={() => router.push("/open-calls")} style={{ padding: "8px 12px", border: "none", background: "transparent", color: "#4A4A4A", fontFamily: F, fontSize: 10, fontWeight: 500, letterSpacing: "0.08em", textTransform: "uppercase", cursor: "pointer", marginRight: 8 }}>
+              <button onClick={() => router.push(publicHref("/open-calls"))} style={{ padding: "8px 12px", border: "none", background: "transparent", color: "#4A4A4A", fontFamily: F, fontSize: 10, fontWeight: 500, letterSpacing: "0.08em", textTransform: "uppercase", cursor: "pointer", marginRight: 8 }}>
                 {navCopy.navOpportunities}
               </button>
               <button onClick={() => router.push(publicHref("/#for-artists"))} style={{ padding: "8px 12px", border: "none", background: "transparent", color: "#4A4A4A", fontFamily: F, fontSize: 10, fontWeight: 500, letterSpacing: "0.08em", textTransform: "uppercase", cursor: "pointer", marginRight: 8 }}>
@@ -450,7 +456,13 @@ export default function TopBar({ hideOnMobile = false, locale }: { hideOnMobile?
               <button onClick={() => router.push(publicHref("/about/why-rob"))} style={{ padding: "8px 12px", border: "none", background: "transparent", color: "#4A4A4A", fontFamily: F, fontSize: 10, fontWeight: 500, letterSpacing: "0.08em", textTransform: "uppercase", cursor: "pointer", marginRight: 8 }}>
                 {navCopy.navAbout}
               </button>
-              <button onClick={() => router.push("/login")} style={{ padding: "10px 28px", border: "1px solid #1A1A1A", background: "transparent", color: "#1A1A1A", fontFamily: F, fontSize: 10, fontWeight: 500, letterSpacing: "0.1em", textTransform: "uppercase", cursor: "pointer" }}
+              <NavDropdown
+                label={navCopy.navMore}
+                items={legacyLinks}
+                onNavigate={(path) => router.push(publicHref(path))}
+                isActive={legacyLinks.some((item) => isActive(item.path))}
+              />
+              <button onClick={() => router.push(publicHref("/login"))} style={{ padding: "10px 28px", border: "1px solid #1A1A1A", background: "transparent", color: "#1A1A1A", fontFamily: F, fontSize: 10, fontWeight: 500, letterSpacing: "0.1em", textTransform: "uppercase", cursor: "pointer" }}
                 onMouseEnter={(e) => { e.currentTarget.style.background = "#1A1A1A"; e.currentTarget.style.color = "#FDFBF7"; }}
                 onMouseLeave={(e) => { e.currentTarget.style.background = "transparent"; e.currentTarget.style.color = "#1A1A1A"; }}>
                 {navCopy.navSignIn}
@@ -681,7 +693,7 @@ export default function TopBar({ hideOnMobile = false, locale }: { hideOnMobile?
             <button onClick={() => navigate(publicHref("/history/explore"))} style={{ width: "100%", padding: "12px", border: "1px solid #E8E3DB", background: "transparent", color: "#4A4A4A", fontFamily: F, fontSize: 10, fontWeight: 500, letterSpacing: "0.09em", textTransform: "uppercase", cursor: "pointer", marginBottom: 8 }}>
               {navCopy.navExplore}
             </button>
-            <button onClick={() => navigate("/open-calls")} style={{ width: "100%", padding: "12px", border: "1px solid #E8E3DB", background: "transparent", color: "#4A4A4A", fontFamily: F, fontSize: 10, fontWeight: 500, letterSpacing: "0.09em", textTransform: "uppercase", cursor: "pointer", marginBottom: 8 }}>
+            <button onClick={() => navigate(publicHref("/open-calls"))} style={{ width: "100%", padding: "12px", border: "1px solid #E8E3DB", background: "transparent", color: "#4A4A4A", fontFamily: F, fontSize: 10, fontWeight: 500, letterSpacing: "0.09em", textTransform: "uppercase", cursor: "pointer", marginBottom: 8 }}>
               {navCopy.navOpportunities}
             </button>
             <button onClick={() => navigate(publicHref("/#for-artists"))} style={{ width: "100%", padding: "12px", border: "1px solid #E8E3DB", background: "transparent", color: "#4A4A4A", fontFamily: F, fontSize: 10, fontWeight: 500, letterSpacing: "0.09em", textTransform: "uppercase", cursor: "pointer", marginBottom: 8 }}>
@@ -690,7 +702,16 @@ export default function TopBar({ hideOnMobile = false, locale }: { hideOnMobile?
             <button onClick={() => navigate(publicHref("/about/why-rob"))} style={{ width: "100%", padding: "12px", border: "1px solid #E8E3DB", background: "transparent", color: "#4A4A4A", fontFamily: F, fontSize: 10, fontWeight: 500, letterSpacing: "0.09em", textTransform: "uppercase", cursor: "pointer", marginBottom: 8 }}>
               {navCopy.navAbout}
             </button>
-            <button onClick={() => navigate("/login")} style={{ width: "100%", padding: "14px", border: "1px solid #1A1A1A", background: "#1A1A1A", color: "#FDFBF7", fontFamily: F, fontSize: 11, fontWeight: 500, letterSpacing: "0.1em", textTransform: "uppercase", cursor: "pointer" }}>
+            {legacyLinks.map((item) => (
+              <button
+                key={item.path}
+                onClick={() => navigate(publicHref(item.path))}
+                style={{ width: "100%", padding: "12px", border: "none", background: "transparent", color: "#8A8580", fontFamily: F, fontSize: 10, fontWeight: 500, letterSpacing: "0.09em", textTransform: "uppercase", cursor: "pointer", marginBottom: 4 }}
+              >
+                {item.label}
+              </button>
+            ))}
+            <button onClick={() => navigate(publicHref("/login"))} style={{ width: "100%", padding: "14px", border: "1px solid #1A1A1A", background: "#1A1A1A", color: "#FDFBF7", fontFamily: F, fontSize: 11, fontWeight: 500, letterSpacing: "0.1em", textTransform: "uppercase", cursor: "pointer" }}>
               {navCopy.navSignIn}
             </button>
           </div>
