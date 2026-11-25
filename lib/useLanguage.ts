@@ -1,38 +1,21 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useLocaleState } from "@/lib/i18n/LocaleProvider";
 
 export type Language = "en" | "ko" | "ja" | "fr";
 
-const DEFAULT_LANG: Language = "en";
-
+/**
+ * The visible language is the locale the server already resolved.
+ * A post-hydration effect must not replace it. ja/fr selections fall back
+ * inside the provider because those locales are not production-enabled.
+ */
 export function useLanguage(initial?: Language) {
-  const locked = initial === "ko" || initial === "en";
-  const [lang, setLang] = useState<Language>(locked ? initial : DEFAULT_LANG);
-  const [mounted, setMounted] = useState(false);
-
-  useEffect(() => {
-    setMounted(true);
-    if (locked) return;
-    if (typeof navigator !== "undefined") {
-      const stored = localStorage.getItem("afp_lang") as Language | null;
-      if (stored) {
-        setLang(stored);
-        return;
-      }
-      const detected = navigator.language.slice(0, 2) as Language;
-      setLang(detected || DEFAULT_LANG);
-    }
-  }, [locked]);
+  const { locale, setLocale } = useLocaleState();
+  const lang = (initial === "ko" || initial === "en" ? initial : locale) as Language;
 
   return {
-    lang: locked || mounted ? lang : DEFAULT_LANG,
-    setLang: (v: Language) => {
-      setLang(v);
-      if (typeof localStorage !== "undefined") {
-        localStorage.setItem("afp_lang", v);
-      }
-    },
-    mounted,
+    lang,
+    setLang: (value: Language) => setLocale(value),
+    mounted: true,
   };
 }

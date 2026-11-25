@@ -1,7 +1,11 @@
 /**
  * 자동 번역 API
- * Google Translate 무료 API 사용 (일일 제한 있음)
- * 프로덕션에서는 Google Cloud Translation 또는 DeepL API 권장
+ *
+ * 현재 구현은 비공식 Google 번역 엔드포인트에 의존한다.
+ * 계약된 할당량, 데이터 처리 약관, 장애 시 보장이 없다.
+ * 응답은 캐시되지 않으므로 같은 원문도 다시 전송된다.
+ * 교체 시 유지할 키: 원문, 원문 해시, 원문 언어, 대상 언어, 번역 버전.
+ * 이 단계에서는 호출부와 엔드포인트를 바꾸지 않는다.
  */
 
 export type SupportedLang = "ko" | "en" | "ja" | "zh" | "fr" | "de" | "es";

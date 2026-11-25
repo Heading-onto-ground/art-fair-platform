@@ -7,6 +7,7 @@ import TopBar from "@/app/components/TopBar";
 import AddExhibitionModal from "./AddExhibitionModal";
 import { practiceLine } from "@/lib/artist/publicProfile";
 import type { HistoryLocale } from "@/lib/history/locale";
+import { withLocalePrefix } from "@/lib/history/localeUrl";
 
 type Exhibition = {
   galleryName: string;
@@ -172,6 +173,22 @@ export default function ArtistProfileV2({ locale = "ko" }: { locale?: HistoryLoc
         collaborated: "함께한 작가",
         recent: "방금 본 프로필",
         share: "이 기록 공유하기",
+        footerNote: "ROB에 호스팅된 포트폴리오 · 인증보다 창작이 먼저입니다. 이 페이지는 작업의 기록입니다.",
+        moreCollaborators: "협업자 더 추가하고 네트워크 키워보세요",
+        shareAction: "공유하기",
+        linkCopied: "링크를 복사했습니다",
+        unavailable: "공개된 전시 이력이 없습니다.",
+        loading: "불러오는 중…",
+        onboard1Title: "여기서 당신의 이야기를 시작하세요",
+        onboard1Body: "전시 추가를 눌러 첫 전시를 등록해 보세요.",
+        onboard2Title: "전시를 추가할수록 타임라인이 쌓여요",
+        onboard2Body: "전시를 등록하면 타임라인에 자동으로 쌓입니다.",
+        onboard3Title: "작품도 함께 올려보세요",
+        onboard3Body: "작품 시리즈를 추가하면 프로필이 더 풍부해져요.",
+        next: "다음",
+        confirm: "확인",
+        skip: "건너뛰기",
+        exhibitionAdded: "전시가 타임라인에 추가됐습니다!",
       }
     : {
         backToApp: "Back to the app",
@@ -183,6 +200,22 @@ export default function ArtistProfileV2({ locale = "ko" }: { locale?: HistoryLoc
         collaborated: "Collaborated with",
         recent: "Recently viewed",
         share: "Share this practice record",
+        footerNote: "Portfolio hosted on ROB · Creation before certification. This page is a living record of artistic practice.",
+        moreCollaborators: "Add collaborators and extend the network",
+        shareAction: "Share",
+        linkCopied: "Link copied",
+        unavailable: "Exhibition history is not public.",
+        loading: "Loading…",
+        onboard1Title: "Start the record here",
+        onboard1Body: "Add the first exhibition to this timeline.",
+        onboard2Title: "Each exhibition extends the timeline",
+        onboard2Body: "A saved exhibition appears on the timeline.",
+        onboard3Title: "Add works alongside the exhibitions",
+        onboard3Body: "A series makes the public record more complete.",
+        next: "Next",
+        confirm: "Done",
+        skip: "Skip",
+        exhibitionAdded: "The exhibition was added to the timeline.",
       };
 
   if (notFound) {
@@ -190,7 +223,7 @@ export default function ArtistProfileV2({ locale = "ko" }: { locale?: HistoryLoc
       <>
         <TopBar locale={locale} />
         <main className="min-h-screen bg-[#F8F9FA] flex items-center justify-center p-6 sm:p-8">
-          <p className="text-[#6B7280] text-sm">Exhibition history is not public.</p>
+          <p className="text-[#6B7280] text-sm">{copy.unavailable}</p>
         </main>
       </>
     );
@@ -201,7 +234,7 @@ export default function ArtistProfileV2({ locale = "ko" }: { locale?: HistoryLoc
       <>
         <TopBar locale={locale} />
         <main className="min-h-screen bg-[#F8F9FA] flex items-center justify-center p-6 sm:p-8">
-          <p className="text-[#6B7280] text-sm">Loading…</p>
+          <p className="text-[#6B7280] text-sm">{copy.loading}</p>
         </main>
       </>
     );
@@ -277,7 +310,7 @@ export default function ArtistProfileV2({ locale = "ko" }: { locale?: HistoryLoc
               onClick={() => {
                 const url = window.location.href;
                 navigator.clipboard.writeText(url).then(() => {
-                  setToast("Link copied!");
+                  setToast(copy.linkCopied);
                 });
               }}
               className="p-2 rounded-lg bg-white hover:bg-[#F3F4F6] border border-[#E5E7EB] text-[#6B7280] hover:text-[#1A1A1A] transition-colors"
@@ -731,7 +764,7 @@ export default function ArtistProfileV2({ locale = "ko" }: { locale?: HistoryLoc
                       return c.artistId ? (
                         <Link
                           key={c.artistId}
-                          href={`/artist/public/${c.artistId}`}
+                          href={withLocalePrefix(`/artist/public/${c.artistId}`, locale)}
                           target="_blank"
                           rel="noopener noreferrer"
                           className="absolute w-8 h-8 sm:w-9 sm:h-9 -translate-x-1/2 -translate-y-1/2 rounded-full hover:ring-2 hover:ring-[#0066FF]/50 transition-shadow cursor-pointer"
@@ -756,7 +789,7 @@ export default function ArtistProfileV2({ locale = "ko" }: { locale?: HistoryLoc
                       c.artistId ? (
                         <Link
                           key={c.artistId}
-                          href={`/artist/public/${c.artistId}`}
+                          href={withLocalePrefix(`/artist/public/${c.artistId}`, locale)}
                           target="_blank"
                           rel="noopener noreferrer"
                           className="flex items-center gap-2 p-3 bg-white border border-[#E5E7EB] rounded-xl min-w-[100px] hover:border-[#0066FF]/30 hover:shadow-sm transition-colors"
@@ -787,7 +820,7 @@ export default function ArtistProfileV2({ locale = "ko" }: { locale?: HistoryLoc
                       onClick={() => setShowAddModal(true)}
                       className="self-start flex items-center gap-1.5 text-xs font-medium text-[#0066FF] hover:text-[#0052CC] hover:underline"
                     >
-                      협업자 더 추가하고 네트워크 키워보세요
+                      {copy.moreCollaborators}
                       <span className="inline-flex" aria-hidden>→</span>
                     </button>
                   )}
@@ -807,7 +840,7 @@ export default function ArtistProfileV2({ locale = "ko" }: { locale?: HistoryLoc
               {recentlyViewed.map(({ artistId: aid, name }) => (
                 <Link
                   key={aid}
-                  href={`/artist/public/${aid}`}
+                  href={withLocalePrefix(`/artist/public/${aid}`, locale)}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="flex items-center gap-2 px-4 py-3 bg-white border border-[#E5E7EB] rounded-xl hover:border-[#0066FF]/30 hover:shadow-sm transition-colors min-w-[120px]"
@@ -825,16 +858,16 @@ export default function ArtistProfileV2({ locale = "ko" }: { locale?: HistoryLoc
         {/* ─── 6. Footer ─── */}
         <section className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-10 sm:py-12 pb-20 sm:pb-24">
           <p className="mb-6 text-xs sm:text-sm text-[#6B7280] leading-relaxed">
-            Portfolio hosted on ROB · Creation before certification. This page is a living record of artistic practice.
+            {copy.footerNote}
           </p>
           <button
             onClick={() => {
               const url = window.location.href;
               navigator.clipboard.writeText(url).then(() => {
                 if (typeof window !== "undefined" && "toast" in window) {
-                  (window as any).toast?.("Link copied!");
+                  (window as any).toast?.(copy.linkCopied);
                 } else {
-                  alert("Link copied to clipboard!");
+                  alert(copy.linkCopied);
                 }
               });
             }}
@@ -852,12 +885,12 @@ export default function ArtistProfileV2({ locale = "ko" }: { locale?: HistoryLoc
             <button
               onClick={() => {
                 navigator.clipboard.writeText(window.location.href);
-                setToast("Link copied!");
+                setToast(copy.linkCopied);
                 setToastWithShare(false);
               }}
               className="px-2 py-1 text-xs font-medium bg-white/20 hover:bg-white/30 rounded"
             >
-              공유하기
+              {copy.shareAction}
             </button>
           )}
         </div>
@@ -867,14 +900,14 @@ export default function ArtistProfileV2({ locale = "ko" }: { locale?: HistoryLoc
         <div className="fixed inset-0 z-[55] flex items-center justify-center p-4 bg-black/40">
           <div className="bg-white rounded-2xl p-6 max-w-sm w-full shadow-xl">
             <h3 className="font-semibold text-[#1A1A1A] mb-2">
-              {onboardingStep === 1 && "여기서 당신의 이야기를 시작하세요"}
-              {onboardingStep === 2 && "전시를 추가할수록 타임라인이 쌓여요"}
-              {onboardingStep === 3 && "작품도 함께 올려보세요"}
+              {onboardingStep === 1 && copy.onboard1Title}
+              {onboardingStep === 2 && copy.onboard2Title}
+              {onboardingStep === 3 && copy.onboard3Title}
             </h3>
             <p className="text-sm text-[#6B7280] mb-4">
-              {onboardingStep === 1 && "Add Exhibition 버튼을 눌러 첫 전시를 등록해 보세요."}
-              {onboardingStep === 2 && "전시를 등록하면 타임라인에 자동으로 쌓입니다."}
-              {onboardingStep === 3 && "작품 시리즈를 추가하면 프로필이 더 풍부해져요."}
+              {onboardingStep === 1 && copy.onboard1Body}
+              {onboardingStep === 2 && copy.onboard2Body}
+              {onboardingStep === 3 && copy.onboard3Body}
             </p>
             <div className="flex gap-3">
               {onboardingStep < 3 ? (
@@ -882,7 +915,7 @@ export default function ArtistProfileV2({ locale = "ko" }: { locale?: HistoryLoc
                   onClick={() => setOnboardingStep(step => (step ?? 1) + 1)}
                   className="flex-1 py-2.5 bg-[#0066FF] text-white text-sm font-medium rounded-lg"
                 >
-                  다음
+                  {copy.next}
                 </button>
               ) : (
                 <button
@@ -892,7 +925,7 @@ export default function ArtistProfileV2({ locale = "ko" }: { locale?: HistoryLoc
                   }}
                   className="flex-1 py-2.5 bg-[#0066FF] text-white text-sm font-medium rounded-lg"
                 >
-                  확인
+                  {copy.confirm}
                 </button>
               )}
               <button
@@ -902,7 +935,7 @@ export default function ArtistProfileV2({ locale = "ko" }: { locale?: HistoryLoc
                 }}
                 className="py-2.5 px-4 text-sm text-[#6B7280] hover:text-[#1A1A1A]"
               >
-                건너뛰기
+                {copy.skip}
               </button>
             </div>
           </div>
@@ -914,7 +947,7 @@ export default function ArtistProfileV2({ locale = "ko" }: { locale?: HistoryLoc
           onClose={() => setShowAddModal(false)}
           onSuccess={() => {
             setShowAddModal(false);
-            setToast("전시가 타임라인에 추가됐습니다!");
+            setToast(copy.exhibitionAdded);
             setToastWithShare(true);
             fetch(`/api/artist/public/${artistId}`)
               .then((r) => (r.ok ? r.json() : null))

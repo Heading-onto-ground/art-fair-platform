@@ -1,11 +1,11 @@
+import { resolveLocale } from "@/lib/i18n/resolveLocale";
+
 export const ROB_LOCALE_COOKIE = "rob_locale";
 
 export type HistoryLocale = "ko" | "en";
 
 export function resolveHistoryLocale(cookie: string | undefined, acceptLanguage: string | null | undefined): HistoryLocale {
-  if (cookie === "ko" || cookie === "en") return cookie;
-  const first = acceptLanguage?.split(",")[0]?.trim().toLowerCase() ?? "";
-  return first.startsWith("ko") ? "ko" : "en";
+  return resolveLocale({ cookieLocale: cookie, acceptLanguage }).locale;
 }
 
 export type HistoryCopy = {

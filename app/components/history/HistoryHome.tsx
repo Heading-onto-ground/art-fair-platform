@@ -443,7 +443,7 @@ export default function HistoryHome({ discovery = null, locale = "en" }: { disco
             <strong>{copy.browseGraph}</strong>
             <p>{copy.browseGraphBody}</p>
           </Link>
-          <Link className="rh-home-panel" href="/now">
+          <Link className="rh-home-panel" href={publicHref("/now")}>
             <span className="rh-kicker">{copy.now}</span>
             <strong>{copy.seeNow}</strong>
             <p>{copy.seeNowBody}</p>

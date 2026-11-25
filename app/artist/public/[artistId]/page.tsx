@@ -20,15 +20,18 @@ async function getArtistName(artistId: string): Promise<string | null> {
 export async function generateMetadata(
   { params }: { params: { artistId: string } }
 ): Promise<Metadata> {
+  const locale = historyLocale();
   const name = await getArtistName(params.artistId);
   const title = name
-    ? `${name} | Practice Record | ROB`
-    : "Practice Record | ROB";
-  const description = "A living record of artistic practice on Role of Bridge (ROB).";
+    ? `${name} | ROB`
+    : locale === "ko" ? "작업 기록 | ROB" : "Practice Record | ROB";
+  const description = locale === "ko"
+    ? "ROB에 기록된 작업의 페이지입니다."
+    : "A living record of artistic practice on Role of Bridge (ROB).";
   const url = `${BASE_URL}/artist/public/${params.artistId}`;
 
   return {
-    title,
+    title: { absolute: title },
     description,
     openGraph: {
       title,
