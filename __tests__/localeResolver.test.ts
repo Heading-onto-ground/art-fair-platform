@@ -3,6 +3,7 @@ import { dictionaryGaps, getAvailableLanguages } from "@/lib/translate";
 import { prefixPublicPath } from "@/lib/history/localeUrl";
 import { productionLocaleList } from "@/lib/i18n/registry";
 import { resolveLocale } from "@/lib/i18n/resolveLocale";
+import { localeSimulationEnabled } from "@/lib/i18n/simulation";
 
 describe("unified locale resolver", () => {
   it("maps a new visitor from country, then browser language, then English", () => {
@@ -48,6 +49,14 @@ describe("unified locale resolver", () => {
     expect(prefixPublicPath("/artist/public/1wh13", "ko")).toBe("/ko/artist/public/1wh13");
     expect(prefixPublicPath("/login", "en")).toBe("/en/login");
     expect(prefixPublicPath("/open-calls", "ko")).toBe("/ko/open-calls");
+  });
+
+  it("ignores country simulation in production even when the flag is on", () => {
+    expect(localeSimulationEnabled({ VERCEL_ENV: "production", ROB_LOCALE_SIMULATION: "1", NODE_ENV: "production" })).toBe(false);
+    expect(localeSimulationEnabled({ NODE_ENV: "production", ROB_LOCALE_SIMULATION: "1" })).toBe(false);
+    expect(localeSimulationEnabled({ VERCEL_ENV: "preview", ROB_LOCALE_SIMULATION: "1", NODE_ENV: "production" })).toBe(true);
+    expect(localeSimulationEnabled({ VERCEL_ENV: "preview", NODE_ENV: "production" })).toBe(false);
+    expect(localeSimulationEnabled({ NODE_ENV: "development", ROB_LOCALE_SIMULATION: "1" })).toBe(true);
   });
 
   it("offers only production locales and has English and Korean for every dictionary key", () => {
