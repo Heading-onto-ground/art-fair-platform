@@ -2,8 +2,8 @@ import type { Metadata } from "next";
 import { prisma } from "@/lib/prisma";
 import ArtistProfileV2 from "./components/ArtistProfileV2";
 import { loadPublicArtist } from "@/lib/artist/loadPublicArtist";
-import { historyLocale } from "@/lib/history/requestLocale";
-import { SITE_URL as BASE_URL } from "@/lib/seo";
+import { historyLocale, pinnedLocale } from "@/lib/history/requestLocale";
+import { languageAlternates, openGraphLocale, SITE_URL as BASE_URL } from "@/lib/seo";
 
 async function getArtistName(artistId: string): Promise<string | null> {
   try {
@@ -22,22 +22,34 @@ export async function generateMetadata(
   { params }: { params: { artistId: string } }
 ): Promise<Metadata> {
   const locale = historyLocale();
-  const record = locale === "ko" ? "작업 기록" : "Practice Record";
+  const record = {
+    en: "Practice Record",
+    ko: "작업 기록",
+    ja: "制作の記録",
+    "zh-Hans": "创作记录",
+    "zh-Hant": "創作記錄",
+  }[locale];
   const name = await getArtistName(params.artistId);
   const title = name ? `${name} | ${record} | ROB` : `${record} | ROB`;
-  const description = locale === "ko"
-    ? "ROB에 기록된 작업의 페이지입니다."
-    : "A living record of artistic practice on Role of Bridge (ROB).";
-  const url = `${BASE_URL}/artist/public/${params.artistId}`;
+  const description = {
+    en: "A living record of artistic practice on Role of Bridge (ROB).",
+    ko: "ROB에 기록된 작업의 페이지입니다.",
+    ja: "ROBに記録された制作のページです。",
+    "zh-Hans": "这是记录在 ROB 上的创作页面。",
+    "zh-Hant": "這是記錄在 ROB 上的創作頁面。",
+  }[locale];
+  const alternates = languageAlternates(`/artist/public/${params.artistId}`, pinnedLocale());
 
   return {
     title: { absolute: title },
     description,
+    alternates,
     openGraph: {
       title,
       description,
       type: "profile",
-      url,
+      locale: openGraphLocale(locale),
+      url: alternates.canonical,
       images: [{ url: `${BASE_URL}/og/rob-exhibition.png` }],
     },
     twitter: {

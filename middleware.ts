@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { localeSimulationEnabled } from "@/lib/i18n/simulation";
 import { aliasSlugRedirect } from "@/lib/history/identity";
+import type { HistoryLocale } from "@/lib/history/locale";
 import { splitLocalePath, withLocalePrefix } from "@/lib/history/localeUrl";
 import { legacyNoindexPath, PROTECTED_PREFIXES } from "@/lib/routes";
 
@@ -46,10 +47,11 @@ function edgeCountry(req: NextRequest): string | null {
   return null;
 }
 
-function forwardHeaders(req: NextRequest, locale: "ko" | "en" | null) {
+function forwardHeaders(req: NextRequest, locale: HistoryLocale | null, path: string) {
   const requestHeaders = new Headers(req.headers);
   const country = edgeCountry(req);
   if (country) requestHeaders.set("x-vercel-ip-country", country);
+  requestHeaders.set("x-rob-path", path || "/");
   if (locale) {
     requestHeaders.set("x-rob-locale", locale);
     requestHeaders.set("x-rob-locale-pinned", "1");
@@ -79,7 +81,7 @@ export function middleware(req: NextRequest) {
   }
 
   const nextFor = (allowFraming = false) => {
-    const requestHeaders = forwardHeaders(req, locale);
+    const requestHeaders = forwardHeaders(req, locale, path);
     // Explicit /en and /ko stay on that language. Country never redirects them.
     const response = locale
       ? NextResponse.rewrite((() => {

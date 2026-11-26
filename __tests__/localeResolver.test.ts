@@ -9,13 +9,18 @@ describe("unified locale resolver", () => {
   it("maps a new visitor from country, then browser language, then English", () => {
     expect(resolveLocale({ country: "KR", acceptLanguage: "en-US" })).toEqual({ locale: "ko", source: "country" });
     expect(resolveLocale({ country: "US", acceptLanguage: "ko-KR" })).toEqual({ locale: "en", source: "country" });
-    expect(resolveLocale({ country: "JP", acceptLanguage: "ja-JP" })).toEqual({ locale: "en", source: "fallback" });
-    expect(resolveLocale({ country: "JP", acceptLanguage: "ko-KR,ko;q=0.9" })).toEqual({ locale: "ko", source: "accept-language" });
-    expect(resolveLocale({ country: "JP", acceptLanguage: "ja-JP,ko;q=0.8" })).toEqual({ locale: "ko", source: "accept-language" });
-    expect(resolveLocale({ country: "JP", acceptLanguage: "ko;q=0,en;q=0.8" })).toEqual({ locale: "en", source: "accept-language" });
+    expect(resolveLocale({ country: "JP", acceptLanguage: "ja-JP" })).toEqual({ locale: "ja", source: "country" });
+    expect(resolveLocale({ country: "JP", acceptLanguage: "ko-KR,ko;q=0.9" })).toEqual({ locale: "ja", source: "country" });
+    expect(resolveLocale({ country: "CN", acceptLanguage: "en-US" })).toEqual({ locale: "zh-Hans", source: "country" });
+    expect(resolveLocale({ country: "TW", acceptLanguage: "en-US" })).toEqual({ locale: "zh-Hant", source: "country" });
+    expect(resolveLocale({ country: "MO" })).toEqual({ locale: "zh-Hant", source: "country" });
+    expect(resolveLocale({ country: "HK", acceptLanguage: "zh-HK,zh;q=0.9,en;q=0.8" })).toEqual({ locale: "zh-Hant", source: "country" });
+    expect(resolveLocale({ country: "SG", acceptLanguage: "zh-CN,en;q=0.8" })).toEqual({ locale: "zh-Hans", source: "country" });
+    expect(resolveLocale({ country: "JP", acceptLanguage: "ko;q=0,en;q=0.8" })).toEqual({ locale: "ja", source: "country" });
     expect(resolveLocale({ country: "DE", acceptLanguage: "de-DE" })).toEqual({ locale: "en", source: "fallback" });
     expect(resolveLocale({ country: "ZZ", acceptLanguage: "ko-KR,ko;q=0.9" })).toEqual({ locale: "ko", source: "accept-language" });
-    expect(resolveLocale({ acceptLanguage: "ja-JP,ja;q=0.9" })).toEqual({ locale: "en", source: "fallback" });
+    expect(resolveLocale({ acceptLanguage: "ja-JP,ja;q=0.9" })).toEqual({ locale: "ja", source: "accept-language" });
+    expect(resolveLocale({ acceptLanguage: "zh-TW,zh;q=0.9,en;q=0.8" })).toEqual({ locale: "zh-Hant", source: "accept-language" });
     expect(resolveLocale({ acceptLanguage: "ko;q=0" })).toEqual({ locale: "en", source: "fallback" });
     expect(resolveLocale({})).toEqual({ locale: "en", source: "fallback" });
   });
@@ -31,6 +36,9 @@ describe("unified locale resolver", () => {
     expect(resolveLocale({ urlLocale: "ko", country: "US", cookieLocale: "en" })).toEqual({ locale: "ko", source: "url" });
     expect(resolveLocale({ urlLocale: "en", cookieLocale: "ko" })).toEqual({ locale: "en", source: "url" });
     expect(resolveLocale({ urlLocale: "ko", cookieLocale: "en" })).toEqual({ locale: "ko", source: "url" });
+    expect(resolveLocale({ urlLocale: "ja", country: "KR", cookieLocale: "ko" })).toEqual({ locale: "ja", source: "url" });
+    expect(resolveLocale({ urlLocale: "zh-Hans", cookieLocale: "en" })).toEqual({ locale: "zh-Hans", source: "url" });
+    expect(resolveLocale({ urlLocale: "zh-Hant", country: "CN" })).toEqual({ locale: "zh-Hant", source: "url" });
   });
 
   it("uses an existing account language only when no URL locale is present", () => {
@@ -38,9 +46,11 @@ describe("unified locale resolver", () => {
     expect(resolveLocale({ urlLocale: "en", accountLocale: "ko" })).toEqual({ locale: "en", source: "url" });
   });
 
-  it("falls a stored Japanese or French choice back to English without asking the country again", () => {
-    expect(resolveLocale({ cookieLocale: "ja", country: "KR" })).toEqual({ locale: "en", source: "cookie" });
+  it("keeps a stored Japanese choice and still falls an unreleased language back to English", () => {
+    expect(resolveLocale({ cookieLocale: "ja", country: "KR" })).toEqual({ locale: "ja", source: "cookie" });
+    expect(resolveLocale({ cookieLocale: "zh-Hant", country: "CN" })).toEqual({ locale: "zh-Hant", source: "cookie" });
     expect(resolveLocale({ cookieLocale: "fr", country: "FR" })).toEqual({ locale: "en", source: "cookie" });
+    expect(resolveLocale({ cookieLocale: "de", country: "DE" })).toEqual({ locale: "en", source: "cookie" });
   });
 
   it("uses the browser language for a multilingual country", () => {
@@ -53,6 +63,9 @@ describe("unified locale resolver", () => {
     expect(prefixPublicPath("/artist/public/1wh13", "ko")).toBe("/ko/artist/public/1wh13");
     expect(prefixPublicPath("/login", "en")).toBe("/en/login");
     expect(prefixPublicPath("/open-calls", "ko")).toBe("/ko/open-calls");
+    expect(prefixPublicPath("/artist/public/1wh13", "ja")).toBe("/ja/artist/public/1wh13");
+    expect(prefixPublicPath("/", "zh-Hans")).toBe("/zh-Hans");
+    expect(prefixPublicPath("/open-calls", "zh-Hant")).toBe("/zh-Hant/open-calls");
   });
 
   it("ignores country simulation in production even when the flag is on", () => {
@@ -64,10 +77,14 @@ describe("unified locale resolver", () => {
   });
 
   it("offers only production locales and has English and Korean for every dictionary key", () => {
-    expect(getAvailableLanguages().map((item) => item.code)).toEqual(["en", "ko"]);
-    expect(productionLocaleList().map((item) => item.code)).toEqual(["en", "ko"]);
+    expect(getAvailableLanguages().map((item) => item.code)).toEqual(["en", "ko", "ja", "zh-Hans", "zh-Hant"]);
+    expect(productionLocaleList().map((item) => item.code)).toEqual(["en", "ko", "ja", "zh-Hans", "zh-Hant"]);
     expect(dictionaryGaps("en")).toEqual([]);
     expect(dictionaryGaps("ko")).toEqual([]);
+    expect(dictionaryGaps("ja")).toEqual([]);
+    expect(dictionaryGaps("zh-Hans")).toEqual([]);
+    expect(dictionaryGaps("zh-Hant")).toEqual([]);
+    expect(productionLocaleList().some((item) => item.code === "de" || item.code === "fr")).toBe(false);
     expect(productionLocaleList().every((item) => item.seo && item.publicUrl)).toBe(true);
   });
 });

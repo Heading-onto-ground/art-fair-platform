@@ -1,5 +1,5 @@
 import type { MetadataRoute } from "next";
-import { withLocalePrefix } from "@/lib/history/localeUrl";
+import { LOCALE_URLS, withLocalePrefix } from "@/lib/history/localeUrl";
 import { SITE_URL } from "@/lib/seo";
 
 type Entry = MetadataRoute.Sitemap[number];
@@ -13,8 +13,7 @@ function entry(path: string, lastModified?: Date | null): Entry {
 function localized(path: string, lastModified?: Date | null): Entry[] {
   return [
     entry(path, lastModified),
-    entry(withLocalePrefix(path, "ko"), lastModified),
-    entry(withLocalePrefix(path, "en"), lastModified),
+    ...LOCALE_URLS.map((locale) => entry(withLocalePrefix(path, locale), lastModified)),
   ];
 }
 

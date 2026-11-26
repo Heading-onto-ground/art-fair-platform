@@ -21,6 +21,9 @@ describe("canonical host", () => {
     expect(home.canonical).toBe(`${HOST}/ko`);
     expect(home.languages.ko).toBe(`${HOST}/ko`);
     expect(home.languages.en).toBe(`${HOST}/en`);
+    expect(home.languages.ja).toBe(`${HOST}/ja`);
+    expect(home.languages["zh-Hans"]).toBe(`${HOST}/zh-Hans`);
+    expect(home.languages["zh-Hant"]).toBe(`${HOST}/zh-Hant`);
     expect(home.languages["x-default"]).toBe(`${HOST}/`);
     expect(Object.values(home.languages).some((url) => url.includes("www."))).toBe(false);
   });
@@ -99,6 +102,10 @@ describe("sitemap eligibility", () => {
 describe("locale URLs", () => {
   it("gives each language a stable prefix and preserves the unprefixed product URL", () => {
     expect(splitLocalePath("/ko/artists/lee-ufan")).toEqual({ locale: "ko", path: "/artists/lee-ufan" });
+    expect(splitLocalePath("/ja")).toEqual({ locale: "ja", path: "/" });
+    expect(splitLocalePath("/zh-Hans/artists/lee-ufan")).toEqual({ locale: "zh-Hans", path: "/artists/lee-ufan" });
+    expect(splitLocalePath("/zh-Hant/open-calls")).toEqual({ locale: "zh-Hant", path: "/open-calls" });
+    expect(splitLocalePath("/artists/lee-ufan").locale).toBeNull();
     expect(withLocalePrefix("/artists/lee-ufan?j=1", "en")).toBe("/en/artists/lee-ufan?j=1");
     expect(prefixPublicPath("/artists/lee-ufan", null)).toBe("/artists/lee-ufan");
     expect(prefixPublicPath("/artists/lee-ufan", "ko")).toBe("/ko/artists/lee-ufan");
@@ -106,6 +113,7 @@ describe("locale URLs", () => {
     expect(prefixPublicPath("/login", "ko")).toBe("/ko/login");
     expect(prefixPublicPath("/artist/public/1wh13", "en")).toBe("/en/artist/public/1wh13");
     expect(swapLocalePrefix("/ko/artists/lee-ufan?event=1", "en")).toBe("/en/artists/lee-ufan?event=1");
+    expect(swapLocalePrefix("/en/artists/lee-ufan", "zh-Hant")).toBe("/zh-Hant/artists/lee-ufan");
     expect(swapLocalePrefix("/artists/lee-ufan", "ko")).toBe("/artists/lee-ufan");
   });
 });

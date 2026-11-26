@@ -36,7 +36,7 @@ function normalizeCountry(input: string): string {
 function formatDeadlineLocal(deadline: string, lang: string): string {
   const d = new Date(deadline);
   if (Number.isNaN(d.getTime())) return deadline;
-  const locale = lang === "ko" ? "ko-KR" : lang === "ja" ? "ja-JP" : lang === "fr" ? "fr-FR" : "en-US";
+  const locale = lang === "ko" ? "ko-KR" : lang === "ja" ? "ja-JP" : lang === "zh-Hans" ? "zh-CN" : lang === "zh-Hant" ? "zh-TW" : lang === "fr" ? "fr-FR" : "en-US";
   return new Intl.DateTimeFormat(locale, { year: "numeric", month: "short", day: "numeric" }).format(d);
 }
 
@@ -216,7 +216,7 @@ export default function OpenCallsPage() {
   }
 
   useEffect(() => {
-    if (lang === "en" || openCalls.length === 0) return;
+    if (lang !== "ko" || openCalls.length === 0) return;
     const targets = openCalls
       .filter((o) => !translatedById[o.id]?.theme)
       .slice(0, 8);
@@ -349,9 +349,13 @@ export default function OpenCallsPage() {
                         ? `오픈콜 정보 · 전시 ${o.exhibitionDate || "-"} · 지원 마감 ${o.deadline}`
                         : lang === "ja"
                           ? `オープンコール情報 · 展示日 ${o.exhibitionDate || "-"} · 応募締切 ${o.deadline}`
+                          : lang === "zh-Hans"
+                            ? `公开征集 · 展览 ${o.exhibitionDate || "-"} · 申请截止 ${o.deadline}`
+                            : lang === "zh-Hant"
+                              ? `公開徵集 · 展覽 ${o.exhibitionDate || "-"} · 申請截止 ${o.deadline}`
                           : `Open call info · Exhibition ${o.exhibitionDate || "-"} · Deadline ${o.deadline}`}
                     </p>
-                    {lang !== "en" && (
+                    {lang === "ko" && (
                       <div style={{ marginTop: 10 }}>
                         <button
                           onClick={(e) => {
@@ -392,7 +396,7 @@ export default function OpenCallsPage() {
                           style={{ marginBottom: 8, padding: "4px 10px", background: bg, border: `1px solid ${color}44`, display: "inline-block", cursor: "pointer" }}
                         >
                           <span style={{ fontFamily: F, fontSize: 10, fontWeight: 600, color, letterSpacing: "0.06em" }}>
-                            {bd.total}% {lang === "ko" ? "매칭" : lang === "ja" ? "マッチ" : "Match"} ›
+                            {bd.total}% {lang === "ko" ? "매칭" : lang === "ja" ? "マッチ" : lang === "zh-Hans" || lang === "zh-Hant" ? "匹配" : "Match"} ›
                           </span>
                         </button>
                       );

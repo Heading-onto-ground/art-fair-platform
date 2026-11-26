@@ -1,4 +1,5 @@
 import { productionLocaleList } from "@/lib/i18n/registry";
+import { zhUi } from "@/lib/i18n/zhUi";
 
 type Lang = "en" | "ko" | "ja" | "fr";
 
@@ -310,18 +311,29 @@ const dictionary: Dictionary = {
   community_cat_exhibition: { en: "Exhibition", ko: "전시", ja: "展覧会", fr: "Exposition" },
   community_cat_inspiration: { en: "Inspiration", ko: "영감", ja: "インスピ", fr: "Inspiration" },
   community_cat_daily: { en: "Daily Chat", ko: "일상 잡담", ja: "日常トーク", fr: "Bavardage" },
-  share_general_link: { en: "Share link", ko: "공유 링크" },
-  share_english_gallery_link: { en: "English link for galleries", ko: "갤러리 제출용 영어 링크" },
-  share_copied: { en: "Copied", ko: "복사됨" },
-  share_copy: { en: "Copy", ko: "복사" },
-  portfolio_view_pdf: { en: "View Portfolio PDF", ko: "포트폴리오 PDF 보기" },
+  share_general_link: { en: "Share link", ko: "공유 링크", ja: "共有リンク", fr: "Lien de partage" },
+  share_english_gallery_link: { en: "English link for galleries", ko: "갤러리 제출용 영어 링크", ja: "ギャラリー提出用の英語リンク", fr: "Lien anglais pour les galeries" },
+  share_copied: { en: "Copied", ko: "복사됨", ja: "コピーしました", fr: "Copié" },
+  share_copy: { en: "Copy", ko: "복사", ja: "コピー", fr: "Copier" },
+  portfolio_view_pdf: { en: "View Portfolio PDF", ko: "포트폴리오 PDF 보기", ja: "ポートフォリオPDFを見る", fr: "Voir le PDF du portfolio" },
+  gallery_directory_kicker: { en: "Directory", ko: "디렉터리", ja: "ディレクトリ", fr: "Répertoire" },
+  gallery_directory_lead: { en: "Browse galleries by country", ko: "국가별로 갤러리를 살펴보세요", ja: "国別にギャラリーを見る", fr: "Parcourir les galeries par pays" },
+  gallery_search_placeholder: { en: "Search by name or city...", ko: "이름 또는 도시로 검색...", ja: "名前または都市で検索...", fr: "Rechercher par nom ou ville..." },
+  gallery_more_cities: { en: "More cities", ko: "도시 더보기", ja: "都市をさらに表示", fr: "Plus de villes" },
+  gallery_fewer_cities: { en: "Show fewer", ko: "접기", ja: "閉じる", fr: "Réduire" },
 };
+
+for (const [key, value] of Object.entries(zhUi)) {
+  if (!dictionary[key]) continue;
+  dictionary[key]["zh-Hans"] = value["zh-Hans"];
+  dictionary[key]["zh-Hant"] = value["zh-Hant"];
+}
 
 export function t(key: string, lang: string = "en"): string {
   return dictionary[key]?.[lang] || dictionary[key]?.["en"] || key;
 }
 
-export function dictionaryGaps(locale: "en" | "ko"): string[] {
+export function dictionaryGaps(locale: string): string[] {
   return Object.keys(dictionary).filter((key) => !dictionary[key]?.[locale]);
 }
 

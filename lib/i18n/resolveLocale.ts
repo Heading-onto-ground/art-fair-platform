@@ -22,6 +22,20 @@ export type ResolvedLocale = {
   source: LocaleSource;
 };
 
+function tagLocale(tag: string): ProductionLocale | null {
+  const value = tag.toLowerCase();
+  if (value === "zh-hant" || value.startsWith("zh-tw") || value.startsWith("zh-hk") || value.startsWith("zh-mo")) {
+    return isProductionLocale("zh-Hant") ? "zh-Hant" : null;
+  }
+  if (value === "zh-hans" || value.startsWith("zh-cn") || value.startsWith("zh-sg") || value === "zh") {
+    return isProductionLocale("zh-Hans") ? "zh-Hans" : null;
+  }
+  if (value === "ja" || value.startsWith("ja-")) return isProductionLocale("ja") ? "ja" : null;
+  if (value === "ko" || value.startsWith("ko-")) return isProductionLocale("ko") ? "ko" : null;
+  if (value === "en" || value.startsWith("en-")) return isProductionLocale("en") ? "en" : null;
+  return null;
+}
+
 function matchAccept(header: string | null | undefined): ProductionLocale | null {
   if (!header) return null;
   const tags = header.split(",").map((part) => {
@@ -33,8 +47,8 @@ function matchAccept(header: string | null | undefined): ProductionLocale | null
   tags.sort((a, b) => b.q - a.q);
   for (const item of tags) {
     if (!(item.q > 0)) continue;
-    const base = item.tag.split("-")[0];
-    if (base === "ko" || base === "en") return base;
+    const locale = tagLocale(item.tag);
+    if (locale) return locale;
   }
   return null;
 }
@@ -53,7 +67,8 @@ function explicitStoredLocale(value: string | null | undefined): ProductionLocal
  * cookie, then a supported country language. A multilingual country, or a
  * country whose language is not in production, uses a supported Accept-Language
  * tag. q=0 tags are ignored. English is the last fallback.
- * A stored ja/fr choice falls back to English and still beats country detection.
+ * A stored choice for a language that is not in production falls back to
+ * English and still beats country detection. Japanese and Chinese choices stay.
  */
 export function resolveLocale(input: ResolveLocaleInput = {}): ResolvedLocale {
   if (isProductionLocale(input.urlLocale)) return { locale: input.urlLocale, source: "url" };

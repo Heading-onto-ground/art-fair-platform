@@ -3,7 +3,8 @@ import { Inter, Cormorant_Garamond } from "next/font/google";
 import "./globals.css";
 import { ToastProvider } from "@/lib/toast";
 import { historyCopy } from "@/lib/history/locale";
-import { historyLocale, pinnedLocale } from "@/lib/history/requestLocale";
+import { historyLocale, pinnedLocale, requestPath } from "@/lib/history/requestLocale";
+import { languageAlternates, openGraphLocale } from "@/lib/seo";
 import GoogleTagManager from "@/app/components/GoogleTagManager";
 import { LocaleUrlProvider } from "@/app/components/history/LocaleUrl";
 import { LocaleProvider } from "@/lib/i18n/LocaleProvider";
@@ -37,9 +38,10 @@ export async function generateMetadata(): Promise<Metadata> {
     metadataBase: new URL(process.env.NEXT_PUBLIC_APP_URL || "https://rob-roleofbridge.com"),
     title: { default: title, template: "%s | ROB" },
     description,
+    alternates: languageAlternates(requestPath(), pinnedLocale()),
     openGraph: {
       type: "website",
-      locale: locale === "ko" ? "ko_KR" : "en_US",
+      locale: openGraphLocale(locale),
       siteName: "ROB",
       title,
       description,

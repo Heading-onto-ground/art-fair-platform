@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import type { HistoryLocale } from "@/lib/history/locale";
-import { withLocalePrefix } from "@/lib/history/localeUrl";
+import { LOCALE_URLS, withLocalePrefix } from "@/lib/history/localeUrl";
 
 export const SITE_URL = (
   process.env.NEXT_PUBLIC_APP_URL || "https://rob-roleofbridge.com"
@@ -17,14 +17,23 @@ export function absoluteUrl(path: string): string {
 export function languageAlternates(path: string, localeUrl: HistoryLocale | null) {
   const bare = path.startsWith("/") ? path : `/${path}`;
   const canonicalPath = localeUrl ? withLocalePrefix(bare, localeUrl) : bare;
+  const languages: Record<string, string> = {};
+  for (const locale of LOCALE_URLS) {
+    languages[locale] = absoluteUrl(withLocalePrefix(bare, locale));
+  }
+  languages["x-default"] = absoluteUrl(bare);
   return {
     canonical: absoluteUrl(canonicalPath),
-    languages: {
-      ko: absoluteUrl(withLocalePrefix(bare, "ko")),
-      en: absoluteUrl(withLocalePrefix(bare, "en")),
-      "x-default": absoluteUrl(bare),
-    },
+    languages,
   };
+}
+
+export function openGraphLocale(locale: HistoryLocale | null): string {
+  if (locale === "ko") return "ko_KR";
+  if (locale === "ja") return "ja_JP";
+  if (locale === "zh-Hans") return "zh_CN";
+  if (locale === "zh-Hant") return "zh_TW";
+  return "en_US";
 }
 
 function clamp(text: string | null | undefined, max = 160): string | undefined {
@@ -70,7 +79,7 @@ export function pageMetadata(input: {
       title: input.title,
       description,
       siteName: SITE_NAME,
-      locale: input.localeUrl === "ko" ? "ko_KR" : "en_US",
+      locale: openGraphLocale(input.localeUrl ?? null),
       ...(images ? { images } : {}),
     },
     twitter: {
