@@ -1,3 +1,5 @@
+import { productionLocaleList } from "@/lib/i18n/registry";
+
 type Lang = "en" | "ko" | "ja" | "fr";
 
 type Dictionary = {
@@ -308,18 +310,22 @@ const dictionary: Dictionary = {
   community_cat_exhibition: { en: "Exhibition", ko: "전시", ja: "展覧会", fr: "Exposition" },
   community_cat_inspiration: { en: "Inspiration", ko: "영감", ja: "インスピ", fr: "Inspiration" },
   community_cat_daily: { en: "Daily Chat", ko: "일상 잡담", ja: "日常トーク", fr: "Bavardage" },
+  share_general_link: { en: "Share link", ko: "공유 링크" },
+  share_english_gallery_link: { en: "English link for galleries", ko: "갤러리 제출용 영어 링크" },
+  share_copied: { en: "Copied", ko: "복사됨" },
+  share_copy: { en: "Copy", ko: "복사" },
+  portfolio_view_pdf: { en: "View Portfolio PDF", ko: "포트폴리오 PDF 보기" },
 };
 
 export function t(key: string, lang: string = "en"): string {
   return dictionary[key]?.[lang] || dictionary[key]?.["en"] || key;
 }
 
-// Get all available language codes
+export function dictionaryGaps(locale: "en" | "ko"): string[] {
+  return Object.keys(dictionary).filter((key) => !dictionary[key]?.[locale]);
+}
+
+/** Languages a visitor can select. Incomplete locales stay out of this list. */
 export function getAvailableLanguages(): { code: string; name: string }[] {
-  return [
-    { code: "en", name: "English" },
-    { code: "ko", name: "한국어" },
-    { code: "ja", name: "日本語" },
-    { code: "fr", name: "Français" },
-  ];
+  return productionLocaleList().map((item) => ({ code: item.code, name: item.nativeName }));
 }

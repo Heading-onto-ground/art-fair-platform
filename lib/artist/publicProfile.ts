@@ -19,6 +19,35 @@ export function portfolioArtworks<T extends { isPublic: boolean; inPortfolio: bo
  * A public work that is not in the portfolio can still illustrate its series
  * without being added to the portfolio.
  */
+export function publicArtworkImagePath(id: string): string {
+  return `/api/public-artwork/${encodeURIComponent(id)}/image`;
+}
+
+/** ArtworkImage rows are the full ordered set. A cover-only work has no rows. */
+export function publicImageSources(
+  imageUrl: string | null | undefined,
+  images: Array<{ url?: string | null }>,
+): string[] {
+  const ordered = images.map((item) => String(item.url || "").trim()).filter(Boolean);
+  if (ordered.length > 0) return ordered;
+  const cover = String(imageUrl || "").trim();
+  return cover ? [cover] : [];
+}
+
+export function publicArtworkImagePaths(id: string, count: number): string[] {
+  if (!Number.isInteger(count) || count <= 0) return [];
+  const base = publicArtworkImagePath(id);
+  return Array.from({ length: count }, (_, index) => (index === 0 ? base : `${base}?i=${index}`));
+}
+
+export function seriesCoverArtworkId(
+  seriesId: string,
+  works: Array<{ id: string; seriesId: string | null; isPublic: boolean; inPortfolio: boolean; hasImage: boolean }>,
+): string | null {
+  const linked = works.filter((work) => work.seriesId === seriesId && work.isPublic && work.hasImage);
+  return (linked.find((work) => work.inPortfolio) ?? linked[0])?.id ?? null;
+}
+
 export function seriesCoverImage(seriesId: string, works: PublicArtworkRecord[]): string | null {
   const linked = works.filter(
     (work) => work.seriesId === seriesId && work.isPublic && Boolean(work.imageUrl),

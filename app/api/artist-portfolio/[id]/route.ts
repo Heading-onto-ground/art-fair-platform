@@ -1,14 +1,17 @@
 import { NextResponse } from "next/server";
-import { getProfileByUserId } from "@/lib/auth";
+import { getAdminSession } from "@/lib/adminAuth";
+import { getProfileByUserId, getServerSession } from "@/lib/auth";
 
 export const dynamic = "force-dynamic";
 
 function decodeDataUri(dataUri: string): { mime: string; bytes: Buffer } | null {
-  const m = dataUri.match(/^data:([^;,]+)?(?:;[^,]*)?,(.+)$/i);
-  if (!m?.[2]) return null;
-  const mime = String(m[1] || "application/octet-stream").toLowerCase();
-  const payload = String(m[2] || "");
-  const isBase64 = /;base64,/i.test(dataUri);
+  if (!dataUri.startsWith("data:")) return null;
+  const comma = dataUri.indexOf(",");
+  if (comma < 0) return null;
+  const meta = dataUri.slice(5, comma);
+  const payload = dataUri.slice(comma + 1);
+  const mime = (meta.split(";")[0] || "application/octet-stream").toLowerCase();
+  const isBase64 = meta.toLowerCase().includes("base64");
   try {
     const bytes = isBase64
       ? Buffer.from(payload, "base64")
@@ -35,6 +38,13 @@ export async function GET(
     const portfolioUrl = String(profile.portfolioUrl || "").trim();
     if (!portfolioUrl) {
       return NextResponse.json({ error: "portfolio not found" }, { status: 404 });
+    }
+
+    const publicProfile = (profile as { exhibitions_public?: boolean }).exhibitions_public === true;
+    const session = getServerSession();
+    const owner = session?.role === "artist" && session.userId === id;
+    if (!publicProfile && !owner && !getAdminSession()) {
+      return NextResponse.json({ error: "not found" }, { status: 404 });
     }
 
     if (portfolioUrl.startsWith("data:")) {
