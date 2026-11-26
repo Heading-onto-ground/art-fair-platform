@@ -1,3 +1,5 @@
+import { productionLocaleList } from "@/lib/i18n/registry";
+
 type Lang = "en" | "ko" | "ja" | "fr";
 
 type Dictionary = {
@@ -308,18 +310,71 @@ const dictionary: Dictionary = {
   community_cat_exhibition: { en: "Exhibition", ko: "전시", ja: "展覧会", fr: "Exposition" },
   community_cat_inspiration: { en: "Inspiration", ko: "영감", ja: "インスピ", fr: "Inspiration" },
   community_cat_daily: { en: "Daily Chat", ko: "일상 잡담", ja: "日常トーク", fr: "Bavardage" },
+  share_general_link: { en: "Share link", ko: "공유 링크" },
+  share_english_gallery_link: { en: "English link for galleries", ko: "갤러리 제출용 영어 링크" },
+  share_copied: { en: "Copied", ko: "복사됨" },
+  share_copy: { en: "Copy", ko: "복사" },
+  portfolio_view_pdf: { en: "View Portfolio PDF", ko: "포트폴리오 PDF 보기" },
+  nav_explore: { en: "Explore", ko: "탐색" },
+  nav_opportunities: { en: "Opportunities", ko: "기회" },
+  nav_for_artists: { en: "For Artists", ko: "작가를 위해" },
+  nav_about: { en: "About", ko: "소개" },
+  nav_sign_in: { en: "Sign In", ko: "로그인" },
+  nav_now: { en: "Now", ko: "지금" },
+  nav_guide: { en: "Guide", ko: "가이드" },
+  nav_contact: { en: "Contact", ko: "문의" },
+  nav_more: { en: "More", ko: "더 보기" },
+  home_kicker: { en: "Art · Connections · Opportunities", ko: "미술 · 연결 · 기회" },
+  home_headline: { en: "Discover the art world.", ko: "미술계를 발견하세요." },
+  home_lead: { en: "Find your place in it.", ko: "그 안에서 당신의 자리를 찾으세요." },
+  home_note: {
+    en: "Explore the connections between artists, exhibitions and galleries. Discover opportunities for your own artistic practice.",
+    ko: "작가, 전시, 갤러리 사이의 연결을 살펴보세요. 자신의 작업을 위한 기회도 발견하세요.",
+  },
+  home_explore_art: { en: "Explore the art world", ko: "미술계를 탐색하기" },
+  home_opportunities_kicker: { en: "Opportunities", ko: "기회" },
+  home_opportunities_title: { en: "Open calls.", ko: "오픈콜." },
+  home_opportunities_body: {
+    en: "Public invitations already on ROB. A listing is not a personal match.",
+    ko: "ROB에 공개된 공모입니다. 목록은 개인 맞춤 매칭이 아닙니다.",
+  },
+  home_view_open_calls: { en: "View open calls", ko: "오픈콜 보기" },
+  home_for_artists_kicker: { en: "For artists", ko: "작가를 위해" },
+  home_for_artists_title: { en: "Your art deserves to be discovered.", ko: "당신의 작업은 발견될 가치가 있습니다." },
+  home_for_artists_body: {
+    en: "A portfolio is more than a collection of images. It can be the beginning of your next opportunity. Matching is a private pilot.",
+    ko: "포트폴리오는 이미지 모음 그 이상입니다. 다음 기회의 시작이 될 수 있습니다. 매칭은 비공개 파일럿입니다.",
+  },
+  home_step_portfolio: { en: "Your portfolio", ko: "포트폴리오" },
+  home_step_portfolio_body: { en: "Use the PDF already stored on ROB.", ko: "ROB에 저장된 PDF를 사용합니다." },
+  home_step_practice: { en: "Understand your practice", ko: "작업을 이해하기" },
+  home_step_practice_body: {
+    en: "A reviewer reads an invited artist's portfolio. This is not a public analysis button.",
+    ko: "초대된 작가의 포트폴리오는 리뷰어가 읽습니다. 공개 분석 버튼이 아닙니다.",
+  },
+  home_step_opportunities: { en: "Discover relevant opportunities", ko: "관련 기회를 발견하기" },
+  home_step_opportunities_body: {
+    en: "Public calls stay on the open-call list until a personal match is real.",
+    ko: "개인 매칭이 생기기 전에는 공개 오픈콜 목록을 봅니다.",
+  },
+  home_how_to: { en: "How to use", ko: "사용법" },
+  home_why: { en: "Why ROB", ko: "ROB 소개" },
+  home_write: { en: "Write to ROB", ko: "ROB에 문의하기" },
+  home_pilot_note: {
+    en: "Artist matching is a private pilot. This page does not start one.",
+    ko: "작가 매칭은 비공개 파일럿입니다. 이 화면에서 신청은 시작되지 않습니다.",
+  },
 };
 
 export function t(key: string, lang: string = "en"): string {
   return dictionary[key]?.[lang] || dictionary[key]?.["en"] || key;
 }
 
-// Get all available language codes
+export function dictionaryGaps(locale: "en" | "ko"): string[] {
+  return Object.keys(dictionary).filter((key) => !dictionary[key]?.[locale]);
+}
+
+/** Languages a visitor can select. Incomplete locales stay out of this list. */
 export function getAvailableLanguages(): { code: string; name: string }[] {
-  return [
-    { code: "en", name: "English" },
-    { code: "ko", name: "한국어" },
-    { code: "ja", name: "日本語" },
-    { code: "fr", name: "Français" },
-  ];
+  return productionLocaleList().map((item) => ({ code: item.code, name: item.nativeName }));
 }

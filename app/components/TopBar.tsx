@@ -4,10 +4,9 @@ import { useEffect, useMemo, useState, useRef } from "react";
 import NotificationsBell from "./NotificationsBell";
 import { useRouter, usePathname } from "next/navigation";
 import { useLanguage, type Language } from "@/lib/useLanguage";
-import { useAutoLocale } from "@/lib/useAutoLocale";
 import { t, getAvailableLanguages } from "@/lib/translate";
 import { F, S } from "@/lib/design";
-import { ROB_LOCALE_COOKIE, type HistoryLocale } from "@/lib/history/locale";
+import type { HistoryLocale } from "@/lib/history/locale";
 import { usePublicHref } from "@/app/components/history/LocaleUrl";
 import { useUserSupportAlerts } from "@/lib/useUserSupportAlerts";
 
@@ -99,16 +98,10 @@ export default function TopBar({ hideOnMobile = false, locale }: { hideOnMobile?
   const publicHref = usePublicHref();
   const pathname = usePathname();
   const [me, setMe] = useState<MeResponse | null>(null);
-  const [mounted, setMounted] = useState(false);
   const { lang, setLang } = useLanguage(locale);
   function chooseLanguage(next: string) {
     setLang(next as Language);
-    if (next === "ko" || next === "en") {
-      document.cookie = `${ROB_LOCALE_COOKIE}=${next}; Path=/; Max-Age=31536000; SameSite=Lax`;
-      router.refresh();
-    }
   }
-  const { country, language } = useAutoLocale();
 
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
@@ -122,7 +115,6 @@ export default function TopBar({ hideOnMobile = false, locale }: { hideOnMobile?
   const [dontShowGuideAgain, setDontShowGuideAgain] = useState(true);
 
   useEffect(() => {
-    setMounted(true);
     const cached = readCachedMe();
     if (cached) {
       setMe(cached);
@@ -132,29 +124,6 @@ export default function TopBar({ hideOnMobile = false, locale }: { hideOnMobile?
       if (m) setMe(m);
     })();
   }, []);
-
-  useEffect(() => {
-    if (!mounted) return;
-    if (locale) {
-      document.documentElement.lang = locale;
-      return;
-    }
-    if (language && language !== lang) setLang(language);
-    if (typeof document !== "undefined") document.documentElement.lang = lang;
-  }, [language, lang, setLang, mounted, locale]);
-
-  useEffect(() => {
-    const session = me?.session;
-    const profile = me?.profile;
-    if (!session || !profile || !country) return;
-    if (profile.country) return;
-    const key = `afp_region_applied_${session.userId}`;
-    if (localStorage.getItem(key)) return;
-    const payload = session.role === "artist"
-      ? { artistId: profile.artistId, name: profile.name, startedYear: profile.startedYear, genre: profile.genre, instagram: profile.instagram, country, city: profile.city ?? "", website: profile.website, bio: profile.bio, portfolioUrl: profile.portfolioUrl }
-      : { galleryId: profile.galleryId, name: profile.name, address: profile.address, foundedYear: profile.foundedYear, instagram: profile.instagram, country, city: profile.city ?? "", website: profile.website, bio: profile.bio };
-    fetch("/api/profile/save", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload) }).finally(() => { localStorage.setItem(key, "1"); });
-  }, [me?.session, me?.profile, country]);
 
   async function fetchNotifications() {
     try {
@@ -316,6 +285,20 @@ export default function TopBar({ hideOnMobile = false, locale }: { hideOnMobile?
     [session?.role, artistNav, galleryNav, curatorNav]
   );
 
+  const publicLinks = useMemo(() => [
+    { path: "/", label: t("nav_explore", lang) },
+    { path: "/open-calls", label: t("nav_opportunities", lang) },
+    { path: "/#for-artists", label: t("nav_for_artists", lang) },
+    { path: "/about", label: t("nav_about", lang) },
+  ], [lang]);
+
+  const publicMore = useMemo(() => [
+    { path: "/now", label: t("nav_now", lang) },
+    { path: "/guide", label: t("nav_guide", lang) },
+    { path: "/contact", label: t("nav_contact", lang) },
+    { path: "/community", label: t("nav_community", lang) },
+  ], [lang]);
+
   // All flat nav paths for prefetching
   const allNavPaths = useMemo(() => {
     const paths: string[] = [];
@@ -347,11 +330,6 @@ export default function TopBar({ hideOnMobile = false, locale }: { hideOnMobile?
           <span className="hide-mobile" style={{ fontFamily: F, fontSize: 9, fontWeight: 500, letterSpacing: "0.15em", textTransform: "uppercase", color: "#8A8580" }} suppressHydrationWarning>
             Role of Bridge
           </span>
-          {mounted && country && (
-            <span className="hide-mobile" style={{ fontFamily: F, fontSize: 9, fontWeight: 500, color: "#8B7355", letterSpacing: "0.1em" }}>
-              {country}
-            </span>
-          )}
         </div>
 
         {/* Desktop Nav */}
@@ -454,40 +432,25 @@ export default function TopBar({ hideOnMobile = false, locale }: { hideOnMobile?
                   <option key={l.code} value={l.code}>{l.name}</option>
                 ))}
               </select>
-              <button
-                onClick={() => router.push(publicHref("/now"))}
-                style={{ padding: "8px 12px", border: "1px solid #E8E3DB", background: "transparent", color: "#4A4A4A", fontFamily: F, fontSize: 10, fontWeight: 500, letterSpacing: "0.08em", textTransform: "uppercase", cursor: "pointer", marginRight: 8 }}
-              >
-                {lang === "ko" ? "지금" : "Now"}
-              </button>
-              <button
-                onClick={() => router.push(publicHref("/"))}
-                style={{ padding: "8px 12px", border: "1px solid #E8E3DB", background: "transparent", color: "#4A4A4A", fontFamily: F, fontSize: 10, fontWeight: 500, letterSpacing: "0.08em", textTransform: "uppercase", cursor: "pointer", marginRight: 8 }}
-              >
-                {lang === "ko" ? "검색" : "Search"}
-              </button>
-              <button
-                onClick={() => router.push(publicHref("/about"))}
-                style={{ padding: "8px 12px", border: "1px solid #E8E3DB", background: "transparent", color: "#4A4A4A", fontFamily: F, fontSize: 10, fontWeight: 500, letterSpacing: "0.08em", textTransform: "uppercase", cursor: "pointer", marginRight: 8 }}
-              >
-                {lang === "ko" ? "소개" : "About"}
-              </button>
-              <button
-                onClick={() => router.push(publicHref("/guide"))}
-                style={{ padding: "8px 12px", border: "1px solid #E8E3DB", background: "transparent", color: "#4A4A4A", fontFamily: F, fontSize: 10, fontWeight: 500, letterSpacing: "0.08em", textTransform: "uppercase", cursor: "pointer", marginRight: 8 }}
-              >
-                {lang === "ko" ? "가이드" : lang === "ja" ? "ガイド" : "Guide"}
-              </button>
-              <button
-                onClick={() => router.push(publicHref("/contact"))}
-                style={{ padding: "8px 12px", border: "1px solid #E8E3DB", background: "transparent", color: "#4A4A4A", fontFamily: F, fontSize: 10, fontWeight: 500, letterSpacing: "0.08em", textTransform: "uppercase", cursor: "pointer", marginRight: 8 }}
-              >
-                {lang === "ko" ? "문의" : lang === "ja" ? "お問い合わせ" : "Contact"}
-              </button>
-              <button onClick={() => router.push("/login")} style={{ padding: "10px 28px", border: "1px solid #1A1A1A", background: "transparent", color: "#1A1A1A", fontFamily: F, fontSize: 10, fontWeight: 500, letterSpacing: "0.1em", textTransform: "uppercase", cursor: "pointer" }}
+              {publicLinks.map((item) => (
+                <button
+                  key={item.path}
+                  onClick={() => router.push(publicHref(item.path))}
+                  style={{ padding: "8px 12px", border: "none", background: "transparent", color: "#4A4A4A", fontFamily: F, fontSize: 10, fontWeight: 500, letterSpacing: "0.08em", textTransform: "uppercase", cursor: "pointer" }}
+                >
+                  {item.label}
+                </button>
+              ))}
+              <NavDropdown
+                label={t("nav_more", lang)}
+                items={publicMore}
+                onNavigate={(path) => router.push(publicHref(path))}
+                isActive={publicMore.some((item) => isActive(item.path))}
+              />
+              <button onClick={() => router.push(publicHref("/login"))} style={{ padding: "10px 18px", border: "1px solid #1A1A1A", background: "transparent", color: "#1A1A1A", fontFamily: F, fontSize: 10, fontWeight: 500, letterSpacing: "0.1em", textTransform: "uppercase", cursor: "pointer", marginLeft: 8 }}
                 onMouseEnter={(e) => { e.currentTarget.style.background = "#1A1A1A"; e.currentTarget.style.color = "#FDFBF7"; }}
                 onMouseLeave={(e) => { e.currentTarget.style.background = "transparent"; e.currentTarget.style.color = "#1A1A1A"; }}>
-                {t("enter", lang)}
+                {t("nav_sign_in", lang)}
               </button>
             </>
           )}
@@ -602,7 +565,6 @@ export default function TopBar({ hideOnMobile = false, locale }: { hideOnMobile?
             {/* Role badge */}
             <div style={{ padding: "16px 24px 8px", fontFamily: F, fontSize: 9, fontWeight: 500, letterSpacing: "0.15em", textTransform: "uppercase", color: "#8B7355" }}>
               {session.role === "artist" ? t("artist", lang) : session.role === "curator" ? t("curator", lang) : t("gallery", lang)}
-              {mounted && country && <span style={{ marginLeft: 8, color: "#B0AAA2" }}>{country}</span>}
             </div>
 
             {navEntries.map((entry) =>
@@ -712,41 +674,29 @@ export default function TopBar({ hideOnMobile = false, locale }: { hideOnMobile?
           </div>
         ) : (
           <div style={{ padding: "16px 24px" }}>
-            <button
-              onClick={() => navigate("/now")}
-              style={{ width: "100%", padding: "12px", border: "1px solid #E8E3DB", background: "transparent", color: "#4A4A4A", fontFamily: F, fontSize: 10, fontWeight: 500, letterSpacing: "0.09em", textTransform: "uppercase", cursor: "pointer", marginBottom: 8 }}
-            >
-              {lang === "ko" ? "지금" : "Now"}
-            </button>
-            <button
-              onClick={() => navigate("/")}
-              style={{ width: "100%", padding: "12px", border: "1px solid #E8E3DB", background: "transparent", color: "#4A4A4A", fontFamily: F, fontSize: 10, fontWeight: 500, letterSpacing: "0.09em", textTransform: "uppercase", cursor: "pointer", marginBottom: 8 }}
-            >
-              {lang === "ko" ? "검색" : "Search"}
-            </button>
-            <button
-              onClick={() => navigate("/about")}
-              style={{ width: "100%", padding: "12px", border: "1px solid #E8E3DB", background: "transparent", color: "#4A4A4A", fontFamily: F, fontSize: 10, fontWeight: 500, letterSpacing: "0.09em", textTransform: "uppercase", cursor: "pointer", marginBottom: 8 }}
-            >
-              {lang === "ko" ? "소개" : "About"}
-            </button>
-            <button
-              onClick={() => navigate("/guide")}
-              style={{ width: "100%", padding: "12px", border: "1px solid #E8E3DB", background: "transparent", color: "#4A4A4A", fontFamily: F, fontSize: 10, fontWeight: 500, letterSpacing: "0.09em", textTransform: "uppercase", cursor: "pointer", marginBottom: 8 }}
-            >
-              {lang === "ko" ? "가이드" : lang === "ja" ? "ガイド" : "Guide"}
-            </button>
-            <button
-              onClick={() => navigate("/contact")}
-              style={{ width: "100%", padding: "12px", border: "1px solid #E8E3DB", background: "transparent", color: "#4A4A4A", fontFamily: F, fontSize: 10, fontWeight: 500, letterSpacing: "0.09em", textTransform: "uppercase", cursor: "pointer", marginBottom: 8 }}
-            >
-              {lang === "ko" ? "문의" : lang === "ja" ? "お問い合わせ" : "Contact"}
-            </button>
+            {publicLinks.map((item) => (
+              <button
+                key={item.path}
+                onClick={() => navigate(item.path)}
+                style={{ width: "100%", padding: "12px", border: "1px solid #E8E3DB", background: "transparent", color: "#4A4A4A", fontFamily: F, fontSize: 10, fontWeight: 500, letterSpacing: "0.09em", textTransform: "uppercase", cursor: "pointer", marginBottom: 8 }}
+              >
+                {item.label}
+              </button>
+            ))}
+            {publicMore.map((item) => (
+              <button
+                key={item.path}
+                onClick={() => navigate(item.path)}
+                style={{ width: "100%", padding: "12px", border: "none", background: "transparent", color: "#8A8580", fontFamily: F, fontSize: 10, fontWeight: 500, letterSpacing: "0.09em", textTransform: "uppercase", cursor: "pointer", marginBottom: 4 }}
+              >
+                {item.label}
+              </button>
+            ))}
             <button
               onClick={() => navigate("/login")}
-              style={{ width: "100%", padding: "14px", border: "1px solid #1A1A1A", background: "#1A1A1A", color: "#FDFBF7", fontFamily: F, fontSize: 11, fontWeight: 500, letterSpacing: "0.1em", textTransform: "uppercase", cursor: "pointer" }}
+              style={{ width: "100%", padding: "14px", border: "1px solid #1A1A1A", background: "#1A1A1A", color: "#FDFBF7", fontFamily: F, fontSize: 11, fontWeight: 500, letterSpacing: "0.1em", textTransform: "uppercase", cursor: "pointer", marginTop: 8 }}
             >
-              {t("enter", lang)}
+              {t("nav_sign_in", lang)}
             </button>
           </div>
         )}

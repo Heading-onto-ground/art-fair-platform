@@ -6,6 +6,7 @@ import { historyCopy } from "@/lib/history/locale";
 import { historyLocale, pinnedLocale } from "@/lib/history/requestLocale";
 import GoogleTagManager from "@/app/components/GoogleTagManager";
 import { LocaleUrlProvider } from "@/app/components/history/LocaleUrl";
+import { LocaleProvider } from "@/lib/i18n/LocaleProvider";
 import { gtmContainerId, siteVerification } from "@/lib/publicGrowth/analytics";
 
 // ── Self-hosted fonts via next/font (no render-blocking @import) ──
@@ -75,9 +76,11 @@ export default async function RootLayout({
         <a href="#main-content" className="skip-link">
           {copy.skipToContent}
         </a>
-        <LocaleUrlProvider locale={pinnedLocale()}>
-          <ToastProvider>{children}</ToastProvider>
-        </LocaleUrlProvider>
+        <LocaleProvider locale={locale}>
+          <LocaleUrlProvider locale={locale}>
+            <ToastProvider>{children}</ToastProvider>
+          </LocaleUrlProvider>
+        </LocaleProvider>
       </body>
     </html>
   );

@@ -102,7 +102,9 @@ describe("locale URLs", () => {
     expect(withLocalePrefix("/artists/lee-ufan?j=1", "en")).toBe("/en/artists/lee-ufan?j=1");
     expect(prefixPublicPath("/artists/lee-ufan", null)).toBe("/artists/lee-ufan");
     expect(prefixPublicPath("/artists/lee-ufan", "ko")).toBe("/ko/artists/lee-ufan");
-    expect(prefixPublicPath("/login", "ko")).toBe("/login");
+    expect(prefixPublicPath("/login", null)).toBe("/login");
+    expect(prefixPublicPath("/login", "ko")).toBe("/ko/login");
+    expect(prefixPublicPath("/artist/public/1wh13", "en")).toBe("/en/artist/public/1wh13");
     expect(swapLocalePrefix("/ko/artists/lee-ufan?event=1", "en")).toBe("/en/artists/lee-ufan?event=1");
     expect(swapLocalePrefix("/artists/lee-ufan", "ko")).toBe("/artists/lee-ufan");
   });

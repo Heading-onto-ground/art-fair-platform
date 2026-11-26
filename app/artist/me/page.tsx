@@ -138,7 +138,7 @@ export default function ArtistMePage() {
   const [notifyPost, setNotifyPost] = useState(false);
   const [file, setFile] = useState<File | null>(null); const [uploading, setUploading] = useState(false);
   const [applications, setApplications] = useState<Application[]>([]); const [openCallMap, setOpenCallMap] = useState<Record<string, OpenCall>>({}); const [invites, setInvites] = useState<Invite[]>([]);
-  const [exhibitions, setExhibitions] = useState<any[]>([]); const [exPublic, setExPublic] = useState(false); const [exArtistId, setExArtistId] = useState<string | null>(null); const [exCopied, setExCopied] = useState(false); const [exToggling, setExToggling] = useState(false);
+  const [exhibitions, setExhibitions] = useState<any[]>([]); const [exPublic, setExPublic] = useState(false); const [exArtistId, setExArtistId] = useState<string | null>(null); const [exCopied, setExCopied] = useState<"general" | "english" | null>(null); const [exToggling, setExToggling] = useState(false);
   const [workNote, setWorkNote] = useState(""); const [workNoteSaving, setWorkNoteSaving] = useState(false);
 
   type SelfExhibition = { id: string; title: string; startDate?: string | null; endDate?: string | null; city?: string | null; country?: string | null; description?: string | null; isPublic: boolean; space?: { name: string; type?: string | null; website?: string | null } | null; curator?: { name: string; organization?: string | null } | null; artists: { id: string; artistId: string; status: string; artist: { name: string; artistId: string; country?: string | null } }[] };
@@ -922,13 +922,25 @@ export default function ArtistMePage() {
                   {lang === "ko" ? "전시 이력 공개" : "Make exhibition history public"}
                 </label>
                 {exPublic && exArtistId && (
-                  <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
-                    <span style={{ fontFamily: F, fontSize: 11, color: "#8B7355" }}>
-                      {typeof window !== "undefined" ? `${window.location.origin}/artist/public/${exArtistId}` : `/artist/public/${exArtistId}`}
-                    </span>
-                    <button onClick={() => { navigator.clipboard.writeText(`${window.location.origin}/artist/public/${exArtistId}`); setExCopied(true); setTimeout(() => setExCopied(false), 2000); }} style={{ padding: "5px 12px", border: "1px solid #C8B4A0", background: "#FFFFFF", fontFamily: F, fontSize: 10, fontWeight: 600, color: exCopied ? "#3D6B3D" : "#8B7355", letterSpacing: "0.08em", textTransform: "uppercase", cursor: "pointer" }}>
-                      {exCopied ? (lang === "ko" ? "복사됨 ✓" : "Copied ✓") : (lang === "ko" ? "복사" : "Copy")}
-                    </button>
+                  <div style={{ display: "grid", gap: 8 }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+                      <span style={{ fontFamily: F, fontSize: 10, letterSpacing: "0.06em", textTransform: "uppercase", color: "#8A8580" }}>{t("share_general_link", lang)}</span>
+                      <span style={{ fontFamily: F, fontSize: 11, color: "#8B7355" }}>
+                        {typeof window !== "undefined" ? `${window.location.origin}/artist/public/${exArtistId}` : `/artist/public/${exArtistId}`}
+                      </span>
+                      <button onClick={() => { navigator.clipboard.writeText(`${window.location.origin}/artist/public/${exArtistId}`); setExCopied("general"); setTimeout(() => setExCopied(null), 2000); }} style={{ padding: "5px 12px", border: "1px solid #C8B4A0", background: "#FFFFFF", fontFamily: F, fontSize: 10, fontWeight: 600, color: exCopied === "general" ? "#3D6B3D" : "#8B7355", letterSpacing: "0.08em", textTransform: "uppercase", cursor: "pointer" }}>
+                        {exCopied === "general" ? t("share_copied", lang) : t("share_copy", lang)}
+                      </button>
+                    </div>
+                    <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+                      <span style={{ fontFamily: F, fontSize: 10, letterSpacing: "0.06em", textTransform: "uppercase", color: "#8A8580" }}>{t("share_english_gallery_link", lang)}</span>
+                      <span style={{ fontFamily: F, fontSize: 11, color: "#8B7355" }}>
+                        {typeof window !== "undefined" ? `${window.location.origin}/en/artist/public/${exArtistId}` : `/en/artist/public/${exArtistId}`}
+                      </span>
+                      <button onClick={() => { navigator.clipboard.writeText(`${window.location.origin}/en/artist/public/${exArtistId}`); setExCopied("english"); setTimeout(() => setExCopied(null), 2000); }} style={{ padding: "5px 12px", border: "1px solid #C8B4A0", background: "#FFFFFF", fontFamily: F, fontSize: 10, fontWeight: 600, color: exCopied === "english" ? "#3D6B3D" : "#8B7355", letterSpacing: "0.08em", textTransform: "uppercase", cursor: "pointer" }}>
+                        {exCopied === "english" ? t("share_copied", lang) : t("share_copy", lang)}
+                      </button>
+                    </div>
                     <a href={`/artist/public/${exArtistId}/cv`} target="_blank" rel="noreferrer" style={{ padding: "5px 12px", border: "1px solid #D4C9B8", background: "#FDFBF7", fontFamily: F, fontSize: 10, fontWeight: 600, color: "#8B7355", letterSpacing: "0.08em", textTransform: "uppercase", cursor: "pointer", textDecoration: "none" }}>
                       CV
                     </a>
