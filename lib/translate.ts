@@ -321,6 +321,8 @@ const dictionary: Dictionary = {
   gallery_search_placeholder: { en: "Search by name or city...", ko: "이름 또는 도시로 검색...", ja: "名前または都市で検索...", fr: "Rechercher par nom ou ville..." },
   gallery_more_cities: { en: "More cities", ko: "도시 더보기", ja: "都市をさらに表示", fr: "Plus de villes" },
   gallery_fewer_cities: { en: "Show fewer", ko: "접기", ja: "閉じる", fr: "Réduire" },
+  password_show: { en: "Show password", ko: "비밀번호 표시", ja: "パスワードを表示", fr: "Afficher le mot de passe" },
+  password_hide: { en: "Hide password", ko: "비밀번호 숨기기", ja: "パスワードを隠す", fr: "Masquer le mot de passe" },
 };
 
 for (const [key, value] of Object.entries(zhUi)) {

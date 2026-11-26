@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import TopBar from "@/app/components/TopBar";
 import { GridCardSkeleton } from "@/app/components/Skeleton";
 import { useFetch } from "@/lib/useFetch";
+import { usePublicHref } from "@/app/components/history/LocaleUrl";
 import { useLanguage } from "@/lib/useLanguage";
 import { t } from "@/lib/translate";
 import { F, S } from "@/lib/design";
@@ -94,6 +95,7 @@ function normalizeDirectoryCity(countryInput: string, cityInput: string): string
 export default function GalleriesPage() {
   const router = useRouter();
   const { lang } = useLanguage();
+  const publicHref = usePublicHref();
   const { data, error, isLoading, mutate } = useFetch<{ galleries: Gallery[] }>("/api/public/galleries");
   const galleries = data?.galleries ?? [];
   const [country, setCountry] = useState<string>("ALL");
@@ -363,7 +365,7 @@ export default function GalleriesPage() {
             {filtered.map((g) => (
               <div
                 key={g.userId}
-                onClick={() => router.push(`/galleries/${encodeURIComponent(g.userId)}`)}
+                onClick={() => router.push(publicHref(`/galleries/${encodeURIComponent(g.userId)}`))}
                 style={{
                   background: "#FFFFFF",
                   border: "1px solid #EEEAE5",

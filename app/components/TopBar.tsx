@@ -192,7 +192,7 @@ export default function TopBar({ hideOnMobile = false, locale }: { hideOnMobile?
     await fetch("/api/auth/logout", { method: "POST", credentials: "include" });
     clearCachedMe();
     const m = await fetchMe({ preferCache: false }); setMe(m);
-    router.push("/login"); router.refresh();
+    router.push(publicHref("/login")); router.refresh();
   }
 
   function navigate(path: string) {

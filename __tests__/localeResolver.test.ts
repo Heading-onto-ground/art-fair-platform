@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { dictionaryGaps, getAvailableLanguages } from "@/lib/translate";
+import { dictionaryGaps, getAvailableLanguages, t } from "@/lib/translate";
 import { prefixPublicPath } from "@/lib/history/localeUrl";
 import { productionLocaleList } from "@/lib/i18n/registry";
 import { resolveLocale } from "@/lib/i18n/resolveLocale";
@@ -21,6 +21,19 @@ describe("unified locale resolver", () => {
     expect(resolveLocale({ country: "ZZ", acceptLanguage: "ko-KR,ko;q=0.9" })).toEqual({ locale: "ko", source: "accept-language" });
     expect(resolveLocale({ acceptLanguage: "ja-JP,ja;q=0.9" })).toEqual({ locale: "ja", source: "accept-language" });
     expect(resolveLocale({ acceptLanguage: "zh-TW,zh;q=0.9,en;q=0.8" })).toEqual({ locale: "zh-Hant", source: "accept-language" });
+    expect(resolveLocale({ acceptLanguage: "zh-CN" })).toEqual({ locale: "zh-Hans", source: "accept-language" });
+    expect(resolveLocale({ acceptLanguage: "zh-SG,en;q=0.8" })).toEqual({ locale: "zh-Hans", source: "accept-language" });
+    expect(resolveLocale({ acceptLanguage: "zh-HK" })).toEqual({ locale: "zh-Hant", source: "accept-language" });
+    expect(resolveLocale({ acceptLanguage: "zh-MO" })).toEqual({ locale: "zh-Hant", source: "accept-language" });
+    expect(resolveLocale({ acceptLanguage: "zh-Hans" })).toEqual({ locale: "zh-Hans", source: "accept-language" });
+    expect(resolveLocale({ acceptLanguage: "zh-Hant" })).toEqual({ locale: "zh-Hant", source: "accept-language" });
+    expect(resolveLocale({ acceptLanguage: "zh-Hans-CN,zh;q=0.9,en;q=0.8" })).toEqual({ locale: "zh-Hans", source: "accept-language" });
+    expect(resolveLocale({ acceptLanguage: "zh-Hant-TW" })).toEqual({ locale: "zh-Hant", source: "accept-language" });
+    expect(resolveLocale({ acceptLanguage: "ZH-HANT-HK,en;q=0.5" })).toEqual({ locale: "zh-Hant", source: "accept-language" });
+    expect(resolveLocale({ acceptLanguage: "en;q=0.4,zh-Hant-TW;q=0.9" })).toEqual({ locale: "zh-Hant", source: "accept-language" });
+    expect(resolveLocale({ acceptLanguage: "zh-Hans-CN;q=0,en;q=0.2" })).toEqual({ locale: "en", source: "accept-language" });
+    expect(resolveLocale({ acceptLanguage: "de-DE,de;q=0.9" })).toEqual({ locale: "en", source: "fallback" });
+    expect(resolveLocale({ acceptLanguage: "pt-BR,pt;q=0.9" })).toEqual({ locale: "en", source: "fallback" });
     expect(resolveLocale({ acceptLanguage: "ko;q=0" })).toEqual({ locale: "en", source: "fallback" });
     expect(resolveLocale({})).toEqual({ locale: "en", source: "fallback" });
   });
@@ -66,6 +79,18 @@ describe("unified locale resolver", () => {
     expect(prefixPublicPath("/artist/public/1wh13", "ja")).toBe("/ja/artist/public/1wh13");
     expect(prefixPublicPath("/", "zh-Hans")).toBe("/zh-Hans");
     expect(prefixPublicPath("/open-calls", "zh-Hant")).toBe("/zh-Hant/open-calls");
+    expect(prefixPublicPath("/galleries", "ja")).toBe("/ja/galleries");
+    expect(prefixPublicPath("/galleries/abc", "zh-Hans")).toBe("/zh-Hans/galleries/abc");
+    expect(prefixPublicPath("/login", "zh-Hant")).toBe("/zh-Hant/login");
+    expect(prefixPublicPath("/gallery/me", "ja")).toBe("/ja/gallery/me");
+  });
+
+  it("translates the password visibility control for every production language", () => {
+    expect(t("password_show", "en")).toBe("Show password");
+    expect(t("password_show", "ko")).toBe("비밀번호 표시");
+    expect(t("password_show", "ja")).toBe("パスワードを表示");
+    expect(t("password_show", "zh-Hans")).toBe("显示密码");
+    expect(t("password_hide", "zh-Hant")).toBe("隱藏密碼");
   });
 
   it("ignores country simulation in production even when the flag is on", () => {

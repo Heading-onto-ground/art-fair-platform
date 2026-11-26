@@ -24,6 +24,7 @@ const PUBLIC_ROOTS = [
   "/reset-password",
   "/open-calls",
   "/gallery",
+  "/galleries",
   "/curator",
 ];
 

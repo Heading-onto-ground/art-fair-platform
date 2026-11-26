@@ -416,7 +416,7 @@ export default function LoginPage() {
           {mode === "login" && (
             <div style={{ textAlign: "center", marginTop: 10, marginBottom: 10 }}>
               <Link
-                href="/forgot-password"
+                href={publicHref("/forgot-password")}
                 style={{
                   display: "inline-block",
                   color: "#8B7355",

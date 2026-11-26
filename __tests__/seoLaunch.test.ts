@@ -25,6 +25,14 @@ describe("canonical host", () => {
     expect(home.languages["zh-Hans"]).toBe(`${HOST}/zh-Hans`);
     expect(home.languages["zh-Hant"]).toBe(`${HOST}/zh-Hant`);
     expect(home.languages["x-default"]).toBe(`${HOST}/`);
+    const about = languageAlternates("/ja/about/why-rob", "ja");
+    expect(about.canonical).toBe(`${HOST}/about/why-rob`);
+    expect(about.languages.ja).toBeUndefined();
+    expect(about.languages.ko).toBe(`${HOST}/ko/about/why-rob`);
+    expect(about.languages.en).toBe(`${HOST}/en/about/why-rob`);
+    const artist = languageAlternates("/artists/haegue-yang", "zh-Hant");
+    expect(artist.canonical).toBe(`${HOST}/zh-Hant/artists/haegue-yang`);
+    expect(artist.languages.ja).toBe(`${HOST}/ja/artists/haegue-yang`);
     expect(Object.values(home.languages).some((url) => url.includes("www."))).toBe(false);
   });
 
@@ -84,6 +92,15 @@ describe("sitemap eligibility", () => {
     expect(locs).toContain(`${HOST}/artists/haegue-yang`);
     expect(locs).toContain(`${HOST}/ko/artists/haegue-yang`);
     expect(locs).toContain(`${HOST}/en/artists/haegue-yang`);
+    expect(locs).toContain(`${HOST}/ja/artists/haegue-yang`);
+    expect(locs).toContain(`${HOST}/zh-Hans/artists/haegue-yang`);
+    expect(locs).toContain(`${HOST}/zh-Hant`);
+    expect(locs).toContain(`${HOST}/about/why-rob`);
+    expect(locs).toContain(`${HOST}/en/about/why-rob`);
+    expect(locs).toContain(`${HOST}/ko/about/how-to-use`);
+    expect(locs).not.toContain(`${HOST}/ja/about/why-rob`);
+    expect(locs).not.toContain(`${HOST}/zh-Hans/about/why-rob`);
+    expect(locs).not.toContain(`${HOST}/zh-Hant/about/how-to-use`);
     expect(locs).not.toContain(`${HOST}/artists/lee-u-fan`);
     expect(locs.some((url) => url.includes("/research"))).toBe(false);
     expect(locs.some((url) => url.includes("/open-calls") || url.includes("/galleries") || url.includes("/country/") || url.includes("/city/"))).toBe(false);

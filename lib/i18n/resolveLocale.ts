@@ -2,6 +2,7 @@ import {
   countryLocale,
   isProductionLocale,
   localeDefinition,
+  productionLocaleList,
   type ProductionLocale,
 } from "@/lib/i18n/registry";
 
@@ -22,25 +23,49 @@ export type ResolvedLocale = {
   source: LocaleSource;
 };
 
+const CHINESE_HANT_REGIONS = new Set(["tw", "hk", "mo"]);
+
+/**
+ * Reads a BCP 47 tag without a special case per country.
+ * Chinese is the exception: one language has two production scripts.
+ * Other production locales match their language subtag, so de-DE matches de
+ * once German is enabled. pt-BR and pt-PT both match pt until a regional
+ * dictionary is approved.
+ */
+function parseLanguageTag(tag: string): { language: string; script: string | null; region: string | null } | null {
+  const parts = tag.toLowerCase().split("-").filter(Boolean);
+  if (!parts.length || !/^[a-z]{2,3}$/.test(parts[0])) return null;
+  let script: string | null = null;
+  let region: string | null = null;
+  for (const part of parts.slice(1)) {
+    if (!script && /^[a-z]{4}$/.test(part)) script = part;
+    else if (!region && (/^[a-z]{2}$/.test(part) || /^[0-9]{3}$/.test(part))) region = part;
+  }
+  return { language: parts[0], script, region };
+}
+
+function enabled(code: ProductionLocale): ProductionLocale | null {
+  return isProductionLocale(code) ? code : null;
+}
+
 function tagLocale(tag: string): ProductionLocale | null {
-  const value = tag.toLowerCase();
-  if (value === "zh-hant" || value.startsWith("zh-tw") || value.startsWith("zh-hk") || value.startsWith("zh-mo")) {
-    return isProductionLocale("zh-Hant") ? "zh-Hant" : null;
+  const parsed = parseLanguageTag(tag);
+  if (!parsed) return null;
+  if (parsed.language === "zh") {
+    if (parsed.script === "hant" || (!parsed.script && parsed.region && CHINESE_HANT_REGIONS.has(parsed.region))) {
+      return enabled("zh-Hant");
+    }
+    return enabled("zh-Hans");
   }
-  if (value === "zh-hans" || value.startsWith("zh-cn") || value.startsWith("zh-sg") || value === "zh") {
-    return isProductionLocale("zh-Hans") ? "zh-Hans" : null;
-  }
-  if (value === "ja" || value.startsWith("ja-")) return isProductionLocale("ja") ? "ja" : null;
-  if (value === "ko" || value.startsWith("ko-")) return isProductionLocale("ko") ? "ko" : null;
-  if (value === "en" || value.startsWith("en-")) return isProductionLocale("en") ? "en" : null;
-  return null;
+  const match = productionLocaleList().find((item) => item.code.toLowerCase() === parsed.language);
+  return match && isProductionLocale(match.code) ? match.code : null;
 }
 
 function matchAccept(header: string | null | undefined): ProductionLocale | null {
   if (!header) return null;
   const tags = header.split(",").map((part) => {
     const [tag, ...params] = part.trim().split(";");
-    const qParam = params.find((item) => item.trim().startsWith("q="));
+    const qParam = params.find((item) => item.trim().toLowerCase().startsWith("q="));
     const q = qParam ? Number(qParam.split("=")[1]) : 1;
     return { tag: tag.toLowerCase(), q: Number.isFinite(q) ? q : 0 };
   });

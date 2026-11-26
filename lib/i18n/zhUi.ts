@@ -260,4 +260,6 @@ export const zhUi: Record<string, { "zh-Hans": string; "zh-Hant": string }> = {
   share_copied: { "zh-Hans": "已复制", "zh-Hant": "已複製" },
   share_copy: { "zh-Hans": "复制", "zh-Hant": "複製" },
   portfolio_view_pdf: { "zh-Hans": "查看作品集 PDF", "zh-Hant": "查看作品集 PDF" },
+  password_show: { "zh-Hans": "显示密码", "zh-Hant": "顯示密碼" },
+  password_hide: { "zh-Hans": "隐藏密码", "zh-Hant": "隱藏密碼" },
 };

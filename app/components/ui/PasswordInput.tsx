@@ -1,6 +1,8 @@
 "use client";
 
 import { useState } from "react";
+import { useLanguage } from "@/lib/useLanguage";
+import { t } from "@/lib/translate";
 
 const eyeSvg = (
   <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
@@ -22,6 +24,7 @@ type PasswordInputProps = React.InputHTMLAttributes<HTMLInputElement> & {
 
 export function PasswordInput({ inputStyle, style, ...props }: PasswordInputProps) {
   const [visible, setVisible] = useState(false);
+  const { lang } = useLanguage();
 
   return (
     <div style={{ position: "relative", ...style }}>
@@ -39,7 +42,7 @@ export function PasswordInput({ inputStyle, style, ...props }: PasswordInputProp
         type="button"
         onClick={() => setVisible((v) => !v)}
         tabIndex={-1}
-        aria-label={visible ? "Hide password" : "Show password"}
+        aria-label={visible ? t("password_hide", lang) : t("password_show", lang)}
         style={{
           position: "absolute",
           right: 12,
