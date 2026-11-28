@@ -1,11 +1,12 @@
 import { NextResponse } from "next/server";
 import { ROB_LOCALE_COOKIE } from "@/lib/history/locale";
 import { swapLocalePrefix } from "@/lib/history/localeUrl";
+import { isProductionLocale } from "@/lib/i18n/registry";
 
 export async function POST(request: Request) {
   const form = await request.formData();
   const value = form.get("locale");
-  const locale = value === "ko" || value === "en" ? value : null;
+  const locale = typeof value === "string" && isProductionLocale(value) ? value : null;
   const next = locale ? swapLocalePrefix(safeReturn(request), locale) : safeReturn(request);
   const response = NextResponse.redirect(new URL(next, request.url), 303);
   if (locale) {

@@ -51,8 +51,29 @@ export default function LoginPage() {
   const [resending, setResending] = useState(false);
   const [needsVerification, setNeedsVerification] = useState(false);
 
-  const tr = (en: string, ko: string, ja: string, fr: string) =>
-    lang === "ko" ? ko : lang === "ja" ? ja : lang === "fr" ? fr : en;
+  const zhLine: Record<string, [string, string]> = {
+    "Email verified. You can now sign in.": ["邮箱已验证。现在可以登录。", "電子郵件已驗證。現在可以登入。"],
+    "Verification link expired. Please resend verification email.": ["验证链接已过期。请重新发送验证邮件。", "驗證連結已過期。請重新發送驗證郵件。"],
+    "Invalid verification link.": ["验证链接无效。", "驗證連結無效。"],
+    "Enter your email first.": ["请先输入邮箱。", "請先輸入電子郵件。"],
+    "Curator": ["策展人", "策展人"],
+    "Curator ID": ["策展人 ID", "策展人 ID"],
+    "Curator Type": ["策展人类型", "策展人類型"],
+    "Independent": ["独立策展人", "獨立策展人"],
+    "Institutional": ["机构策展人", "機構策展人"],
+    "Organization": ["所属机构", "所屬機構"],
+    "Resend Verification Email": ["重新发送验证邮件", "重新發送驗證郵件"],
+    "Forgot your password?": ["忘记密码？", "忘記密碼？"],
+  };
+  const tr = (en: string, ko: string, ja: string, fr: string) => {
+    if (lang === "ko") return ko;
+    if (lang === "ja") return ja;
+    if (lang === "fr") return fr;
+    const zh = zhLine[en];
+    if (lang === "zh-Hans") return zh?.[0] ?? en;
+    if (lang === "zh-Hant") return zh?.[1] ?? en;
+    return en;
+  };
 
   useEffect(() => {
     const roleParam = searchParams.get("role");
@@ -315,11 +336,11 @@ export default function LoginPage() {
                   <>
                     <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
                       <Lbl label={`${t("login_artist_id", lang)} *`}><input value={artistId} onChange={(e) => setArtistId(e.target.value)} placeholder="art-0001" style={inp} /></Lbl>
-                      <Lbl label={`${t("name", lang)} *`}><input value={name} onChange={(e) => setName(e.target.value)} placeholder={lang === "ko" ? "이름" : lang === "ja" ? "氏名" : "Full name"} style={inp} /></Lbl>
+                      <Lbl label={`${t("name", lang)} *`}><input value={name} onChange={(e) => setName(e.target.value)} placeholder={lang === "ko" ? "이름" : lang === "ja" ? "氏名" : lang === "zh-Hans" ? "姓名" : lang === "zh-Hant" ? "姓名" : "Full name"} style={inp} /></Lbl>
                     </div>
                     <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
                       <Lbl label={`${t("login_start_year", lang)} *`}><input value={startedYear} onChange={(e) => setStartedYear(e.target.value)} placeholder="2018" style={inp} /></Lbl>
-                      <Lbl label={`${t("login_genre", lang)} *`}><input value={genre} onChange={(e) => setGenre(e.target.value)} placeholder={lang === "ko" ? "회화" : lang === "ja" ? "絵画" : "Painting"} style={inp} /></Lbl>
+                      <Lbl label={`${t("login_genre", lang)} *`}><input value={genre} onChange={(e) => setGenre(e.target.value)} placeholder={lang === "ko" ? "회화" : lang === "ja" ? "絵画" : lang === "zh-Hans" ? "绘画" : lang === "zh-Hant" ? "繪畫" : "Painting"} style={inp} /></Lbl>
                     </div>
                     <Lbl label="Instagram"><input value={instagram} onChange={(e) => setInstagram(e.target.value)} placeholder="@username" style={inp} /></Lbl>
                   </>
@@ -327,9 +348,9 @@ export default function LoginPage() {
                   <>
                     <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
                       <Lbl label={`${t("login_gallery_id", lang)} *`}><input value={galleryId} onChange={(e) => setGalleryId(e.target.value)} placeholder="gal-0001" style={inp} /></Lbl>
-                      <Lbl label={`${t("name", lang)} *`}><input value={name} onChange={(e) => setName(e.target.value)} placeholder={lang === "ko" ? "갤러리 이름" : lang === "ja" ? "ギャラリー名" : "Gallery name"} style={inp} /></Lbl>
+                      <Lbl label={`${t("name", lang)} *`}><input value={name} onChange={(e) => setName(e.target.value)} placeholder={lang === "ko" ? "갤러리 이름" : lang === "ja" ? "ギャラリー名" : lang === "zh-Hans" ? "画廊名称" : lang === "zh-Hant" ? "畫廊名稱" : "Gallery name"} style={inp} /></Lbl>
                     </div>
-                    <Lbl label={`${t("login_address", lang)} *`}><input value={address} onChange={(e) => setAddress(e.target.value)} placeholder={lang === "ko" ? "도시, 국가" : "City, Country"} style={inp} /></Lbl>
+                    <Lbl label={`${t("login_address", lang)} *`}><input value={address} onChange={(e) => setAddress(e.target.value)} placeholder={lang === "ko" ? "도시, 국가" : lang === "ja" ? "都市、国" : lang === "zh-Hans" ? "城市、国家" : lang === "zh-Hant" ? "城市、國家" : "City, Country"} style={inp} /></Lbl>
                     <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
                       <Lbl label={`${t("login_founded_year", lang)} *`}><input value={foundedYear} onChange={(e) => setFoundedYear(e.target.value)} placeholder="2010" style={inp} /></Lbl>
                       <Lbl label="Instagram *"><input value={instagram} onChange={(e) => setInstagram(e.target.value)} placeholder="@gallery" style={inp} /></Lbl>
@@ -339,7 +360,7 @@ export default function LoginPage() {
                   <>
                     <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
                       <Lbl label={`${tr("Curator ID", "큐레이터 ID", "キュレーターID", "ID Curateur")} *`}><input value={curatorId} onChange={(e) => setCuratorId(e.target.value)} placeholder="cur-0001" style={inp} /></Lbl>
-                      <Lbl label={`${t("name", lang)} *`}><input value={name} onChange={(e) => setName(e.target.value)} placeholder={lang === "ko" ? "이름" : lang === "ja" ? "氏名" : "Full name"} style={inp} /></Lbl>
+                      <Lbl label={`${t("name", lang)} *`}><input value={name} onChange={(e) => setName(e.target.value)} placeholder={lang === "ko" ? "이름" : lang === "ja" ? "氏名" : lang === "zh-Hans" ? "姓名" : lang === "zh-Hant" ? "姓名" : "Full name"} style={inp} /></Lbl>
                     </div>
                     <Lbl label={`${tr("Curator Type", "큐레이터 유형", "キュレータータイプ", "Type de curateur")} *`}>
                       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 0 }}>
@@ -353,7 +374,7 @@ export default function LoginPage() {
                       </div>
                     </Lbl>
                     {curatorType === "institutional" && (
-                      <Lbl label={tr("Organization", "소속 기관", "所属機関", "Organisation")}><input value={organization} onChange={(e) => setOrganization(e.target.value)} placeholder={lang === "ko" ? "미술관, 기관명" : "Museum, Institution name"} style={inp} /></Lbl>
+                      <Lbl label={tr("Organization", "소속 기관", "所属機関", "Organisation")}><input value={organization} onChange={(e) => setOrganization(e.target.value)} placeholder={lang === "ko" ? "미술관, 기관명" : lang === "ja" ? "美術館、機関名" : lang === "zh-Hans" ? "美术馆、机构名称" : lang === "zh-Hant" ? "美術館、機構名稱" : "Museum, Institution name"} style={inp} /></Lbl>
                     )}
                     <Lbl label="Instagram"><input value={instagram} onChange={(e) => setInstagram(e.target.value)} placeholder="@username" style={inp} /></Lbl>
                   </>
@@ -395,7 +416,7 @@ export default function LoginPage() {
           {mode === "login" && (
             <div style={{ textAlign: "center", marginTop: 10, marginBottom: 10 }}>
               <Link
-                href="/forgot-password"
+                href={publicHref("/forgot-password")}
                 style={{
                   display: "inline-block",
                   color: "#8B7355",

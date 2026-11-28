@@ -7,8 +7,9 @@ import { useLanguage, type Language } from "@/lib/useLanguage";
 import { useAutoLocale } from "@/lib/useAutoLocale";
 import { t, getAvailableLanguages } from "@/lib/translate";
 import { F, S } from "@/lib/design";
-import { ROB_LOCALE_COOKIE, type HistoryLocale } from "@/lib/history/locale";
+import type { HistoryLocale } from "@/lib/history/locale";
 import { homeCopy } from "@/lib/locale/homeCopy";
+import { isProductionLocale } from "@/lib/i18n/registry";
 import { usePublicHref } from "@/app/components/history/LocaleUrl";
 import { useUserSupportAlerts } from "@/lib/useUserSupportAlerts";
 
@@ -102,7 +103,9 @@ export default function TopBar({ hideOnMobile = false, locale }: { hideOnMobile?
   const [me, setMe] = useState<MeResponse | null>(null);
   const [mounted, setMounted] = useState(false);
   const { lang, setLang } = useLanguage(locale);
-  const navCopy = homeCopy(lang === "ko" ? "ko" : "en");
+  const navCopy = homeCopy(isProductionLocale(lang) ? lang : "en");
+  const navText = (en: string, ko: string, ja = en, hans = en, hant = en) =>
+    lang === "ko" ? ko : lang === "ja" ? ja : lang === "zh-Hans" ? hans : lang === "zh-Hant" ? hant : en;
   const legacyLinks = [
     { path: "/now", label: navCopy.navNow },
     { path: "/guide", label: navCopy.navGuide },
@@ -111,10 +114,6 @@ export default function TopBar({ hideOnMobile = false, locale }: { hideOnMobile?
   ];
   function chooseLanguage(next: string) {
     setLang(next as Language);
-    if (next === "ko" || next === "en") {
-      document.cookie = `${ROB_LOCALE_COOKIE}=${next}; Path=/; Max-Age=31536000; SameSite=Lax`;
-      router.refresh();
-    }
   }
   const { country } = useAutoLocale();
 
@@ -193,7 +192,7 @@ export default function TopBar({ hideOnMobile = false, locale }: { hideOnMobile?
     await fetch("/api/auth/logout", { method: "POST", credentials: "include" });
     clearCachedMe();
     const m = await fetchMe({ preferCache: false }); setMe(m);
-    router.push("/login"); router.refresh();
+    router.push(publicHref("/login")); router.refresh();
   }
 
   function navigate(path: string) {
@@ -239,66 +238,66 @@ export default function TopBar({ hideOnMobile = false, locale }: { hideOnMobile?
 
   // ── Grouped nav entries ──────────────────────────────────────────────────
   const artistNav = useMemo((): NavEntry[] => [
-    { path: "/", label: lang === "ko" ? "검색" : lang === "ja" ? "検索" : "SEARCH" },
-    { path: "/now", label: lang === "ko" ? "지금" : lang === "ja" ? "NOW" : "NOW" },
-    { path: "/explore", label: lang === "ko" ? "탐색" : lang === "ja" ? "探索" : "EXPLORE" },
-    { path: "/discover", label: lang === "ko" ? "발견" : lang === "ja" ? "発見" : "DISCOVER" },
-    { path: "/artist/me", label: lang === "ko" ? "프로필" : lang === "ja" ? "プロフィール" : "PROFILE" },
+    { path: "/", label: navText("Search", "검색", "検索", "搜索", "搜尋") },
+    { path: "/now", label: navText("Now", "지금", "いま", "现在", "現在") },
+    { path: "/explore", label: navText("Explore", "탐색", "探索", "探索", "探索") },
+    { path: "/discover", label: navText("Discover", "발견", "発見", "发现", "發現") },
+    { path: "/artist/me", label: navText("Profile", "프로필", "プロフィール", "资料", "資料") },
     {
-      label: lang === "ko" ? "더 보기" : lang === "ja" ? "もっと見る" : "MORE",
+      label: navText("More", "더 보기", "もっと見る", "更多", "更多"),
       items: [
-        { path: "/exhibitions/new", label: lang === "ko" ? "활동 기록" : "ADD ACTIVITY" },
-        { path: "/artist/ritual", label: lang === "ko" ? "리추얼" : lang === "ja" ? "リチュアル" : "RITUAL" },
+        { path: "/exhibitions/new", label: navText("Add activity", "활동 기록", "活動を記録", "添加活动", "新增活動") },
+        { path: "/artist/ritual", label: navText("Ritual", "리추얼", "リチュアル", "仪式", "儀式") },
         { path: "/open-calls", label: t("nav_open_calls", lang) },
         { path: "/artists", label: t("nav_artists", lang) },
         { path: "/galleries", label: t("nav_galleries", lang) },
-        { path: "/curators", label: lang === "ko" ? "큐레이터" : lang === "ja" ? "キュレーター" : "CURATORS" },
-        { path: "/guide?role=artist", label: lang === "ko" ? "가이드" : lang === "ja" ? "ガイド" : "GUIDE" },
-        { path: "/support", label: lang === "ko" ? "고객 지원" : lang === "ja" ? "サポート" : "SUPPORT" },
+        { path: "/curators", label: navText("Curators", "큐레이터", "キュレーター", "策展人", "策展人") },
+        { path: "/guide?role=artist", label: navText("Guide", "가이드", "ガイド", "指南", "指南") },
+        { path: "/support", label: navText("Support", "고객 지원", "サポート", "支持", "支援") },
         { path: "/community", label: t("nav_community", lang) },
-        { path: "/contact", label: lang === "ko" ? "문의" : lang === "ja" ? "お問い合わせ" : "CONTACT" },
+        { path: "/contact", label: navText("Contact", "문의", "お問い合わせ", "联系", "聯絡") },
       ],
     },
-    { path: "/about", label: lang === "ko" ? "소개" : "ABOUT" },
+    { path: "/about", label: navText("About", "소개", "紹介", "关于", "關於") },
   ], [lang]);
 
   const galleryNav = useMemo((): NavEntry[] => [
     { path: "/gallery/me", label: t("nav_my_page", lang) },
     { path: "/gallery", label: t("nav_my_calls", lang) },
-    { path: "/guide?role=gallery", label: lang === "ko" ? "가이드" : lang === "ja" ? "ガイド" : "GUIDE" },
+    { path: "/guide?role=gallery", label: navText("Guide", "가이드", "ガイド", "指南", "指南") },
     { path: "/artists", label: t("nav_artists", lang) },
-    { path: "/support", label: lang === "ko" ? "고객 지원" : lang === "ja" ? "サポート" : "SUPPORT" },
+    { path: "/support", label: navText("Support", "고객 지원", "サポート", "支持", "支援") },
     {
-      label: lang === "ko" ? "더 보기" : lang === "ja" ? "もっと見る" : "MORE",
+      label: navText("More", "더 보기", "もっと見る", "更多", "更多"),
       items: [
         { path: "/open-calls", label: t("nav_open_calls", lang) },
-        { path: "/explore", label: lang === "ko" ? "해시태그" : "HASHTAGS" },
+        { path: "/explore", label: navText("Hashtags", "해시태그", "ハッシュタグ", "话题", "話題") },
         { path: "/galleries", label: t("nav_galleries", lang) },
         { path: "/community", label: t("nav_community", lang) },
         { path: "/admin/outreach", label: t("nav_growth", lang) },
-        { path: "/contact", label: lang === "ko" ? "문의" : lang === "ja" ? "お問い合わせ" : "CONTACT" },
+        { path: "/contact", label: navText("Contact", "문의", "お問い合わせ", "联系", "聯絡") },
       ],
     },
-    { path: "/about", label: lang === "ko" ? "소개" : "ABOUT" },
+    { path: "/about", label: navText("About", "소개", "紹介", "关于", "關於") },
   ], [lang]);
 
   const curatorNav = useMemo((): NavEntry[] => [
     { path: "/curator", label: t("nav_my_page", lang) },
-    { path: "/guide?role=curator", label: lang === "ko" ? "가이드" : lang === "ja" ? "ガイド" : "GUIDE" },
+    { path: "/guide?role=curator", label: navText("Guide", "가이드", "ガイド", "指南", "指南") },
     { path: "/artists", label: t("nav_artists", lang) },
-    { path: "/explore", label: lang === "ko" ? "해시태그" : "HASHTAGS" },
+    { path: "/explore", label: navText("Hashtags", "해시태그", "ハッシュタグ", "话题", "話題") },
     { path: "/open-calls", label: t("nav_open_calls", lang) },
-    { path: "/support", label: lang === "ko" ? "고객 지원" : lang === "ja" ? "サポート" : "SUPPORT" },
+    { path: "/support", label: navText("Support", "고객 지원", "サポート", "支持", "支援") },
     {
-      label: lang === "ko" ? "더 보기" : lang === "ja" ? "もっと見る" : "MORE",
+      label: navText("More", "더 보기", "もっと見る", "更多", "更多"),
       items: [
         { path: "/galleries", label: t("nav_galleries", lang) },
-        { path: "/curators", label: lang === "ko" ? "큐레이터" : "CURATORS" },
+        { path: "/curators", label: navText("Curators", "큐레이터", "キュレーター", "策展人", "策展人") },
         { path: "/community", label: t("nav_community", lang) },
-        { path: "/contact", label: lang === "ko" ? "문의" : lang === "ja" ? "お問い合わせ" : "CONTACT" },
+        { path: "/contact", label: navText("Contact", "문의", "お問い合わせ", "联系", "聯絡") },
       ],
     },
-    { path: "/about", label: lang === "ko" ? "소개" : "ABOUT" },
+    { path: "/about", label: navText("About", "소개", "紹介", "关于", "關於") },
   ], [lang]);
 
   const navEntries = useMemo(
@@ -417,7 +416,7 @@ export default function TopBar({ hideOnMobile = false, locale }: { hideOnMobile?
                 <select
                   value={lang}
                   onChange={(e) => chooseLanguage(e.target.value)}
-                  style={{ padding: "4px 8px", border: "1px solid #E8E3DB", background: "transparent", color: "#8A8580", fontFamily: F, fontSize: 9, fontWeight: 500, cursor: "pointer", outline: "none", minWidth: 84 }}
+                  style={{ padding: "4px 8px", border: "1px solid #E8E3DB", background: "transparent", color: "#8A8580", fontFamily: F, fontSize: 9, fontWeight: 500, cursor: "pointer", outline: "none", minWidth: 108 }}
                 >
                   {getAvailableLanguages().map((l) => (
                     <option key={l.code} value={l.code}>{l.name}</option>
@@ -438,7 +437,7 @@ export default function TopBar({ hideOnMobile = false, locale }: { hideOnMobile?
               <select
                 value={lang}
                 onChange={(e) => chooseLanguage(e.target.value)}
-                style={{ padding: "4px 8px", border: "1px solid #E8E3DB", background: "transparent", color: "#8A8580", fontFamily: F, fontSize: 9, fontWeight: 500, cursor: "pointer", outline: "none", marginRight: 12, minWidth: 84 }}
+                style={{ padding: "4px 8px", border: "1px solid #E8E3DB", background: "transparent", color: "#8A8580", fontFamily: F, fontSize: 9, fontWeight: 500, cursor: "pointer", outline: "none", marginRight: 12, minWidth: 108 }}
               >
                 {getAvailableLanguages().map((l) => (
                   <option key={l.code} value={l.code}>{l.name}</option>
@@ -476,7 +475,7 @@ export default function TopBar({ hideOnMobile = false, locale }: { hideOnMobile?
           <select
             value={lang}
             onChange={(e) => chooseLanguage(e.target.value)}
-            style={{ padding: "4px 6px", border: "1px solid #E8E3DB", background: "transparent", color: "#8A8580", fontFamily: F, fontSize: 9, fontWeight: 500, cursor: "pointer", outline: "none", minWidth: 84 }}
+            style={{ padding: "4px 6px", border: "1px solid #E8E3DB", background: "transparent", color: "#8A8580", fontFamily: F, fontSize: 9, fontWeight: 500, cursor: "pointer", outline: "none", minWidth: 108 }}
           >
             {getAvailableLanguages().map((l) => (
               <option key={l.code} value={l.code}>{l.name}</option>
@@ -807,15 +806,19 @@ export default function TopBar({ hideOnMobile = false, locale }: { hideOnMobile?
             onClick={(e) => e.stopPropagation()}
           >
             <div style={{ fontFamily: F, fontSize: 10, letterSpacing: "0.14em", textTransform: "uppercase", color: "#8B7355" }}>
-              {lang === "ko" ? "첫 사용 안내" : "Quick Start Guide"}
+              {navText("Quick start guide", "첫 사용 안내", "はじめに", "快速开始", "快速開始")}
             </div>
             <h3 style={{ margin: "8px 0 10px", fontFamily: S, fontSize: 27, fontWeight: 400, color: "#1A1A1A" }}>
-              {lang === "ko" ? "역할별 사용 가이드를 확인해보세요" : "Open your role-based guide"}
+              {navText("Open your role-based guide", "역할별 사용 가이드를 확인해보세요", "役割別ガイドを開く", "打开你的角色指南", "打開你的角色指南")}
             </h3>
             <p style={{ margin: "0 0 14px", fontFamily: F, fontSize: 12, color: "#6A6660", lineHeight: 1.6 }}>
-              {lang === "ko"
-                ? "플랫폼을 더 빠르게 사용하려면 2분 가이드를 먼저 보는 것을 추천해요."
-                : "A 2-minute role guide helps you get started quickly."}
+              {navText(
+                "A 2-minute role guide helps you get started quickly.",
+                "플랫폼을 더 빠르게 사용하려면 2분 가이드를 먼저 보는 것을 추천해요.",
+                "2分の役割別ガイドを先に見ると、すぐに使い始められます。",
+                "先看两分钟的角色指南，可以更快开始使用。",
+                "先看兩分鐘的角色指南，可以更快開始使用。",
+              )}
             </p>
             <label style={{ display: "flex", alignItems: "center", gap: 8, fontFamily: F, fontSize: 11, color: "#8A8580", marginBottom: 16 }}>
               <input
@@ -823,7 +826,7 @@ export default function TopBar({ hideOnMobile = false, locale }: { hideOnMobile?
                 checked={dontShowGuideAgain}
                 onChange={(e) => setDontShowGuideAgain(e.target.checked)}
               />
-              {lang === "ko" ? "다시 보지 않기" : "Don't show this again"}
+              {navText("Don't show this again", "다시 보지 않기", "次回から表示しない", "不再显示", "不再顯示")}
             </label>
             <div style={{ display: "flex", gap: 8, justifyContent: "flex-end", flexWrap: "wrap" }}>
               <button
@@ -831,7 +834,7 @@ export default function TopBar({ hideOnMobile = false, locale }: { hideOnMobile?
                 onClick={() => closeGuidePrompt(dontShowGuideAgain)}
                 style={{ padding: "8px 14px", border: "1px solid #E8E3DB", background: "transparent", color: "#6A6660", fontFamily: F, fontSize: 10, letterSpacing: "0.08em", textTransform: "uppercase", cursor: "pointer" }}
               >
-                {lang === "ko" ? "나중에" : "Later"}
+                {navText("Later", "나중에", "あとで", "稍后", "稍後")}
               </button>
               <button
                 type="button"
@@ -841,7 +844,7 @@ export default function TopBar({ hideOnMobile = false, locale }: { hideOnMobile?
                 }}
                 style={{ padding: "8px 14px", border: "1px solid #1A1A1A", background: "#1A1A1A", color: "#FDFBF7", fontFamily: F, fontSize: 10, letterSpacing: "0.08em", textTransform: "uppercase", cursor: "pointer" }}
               >
-                {lang === "ko" ? "가이드 보기" : "Open Guide"}
+                {navText("Open guide", "가이드 보기", "ガイドを見る", "查看指南", "查看指南")}
               </button>
             </div>
           </div>

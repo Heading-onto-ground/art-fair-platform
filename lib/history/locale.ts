@@ -1,6 +1,9 @@
+import type { ProductionLocale } from "@/lib/i18n/registry";
+import { phaseAHistory } from "@/lib/history/localePhaseA";
+
 export const ROB_LOCALE_COOKIE = "rob_locale";
 
-export type HistoryLocale = "ko" | "en";
+export type HistoryLocale = ProductionLocale;
 
 export function resolveHistoryLocale(cookie: string | undefined, acceptLanguage: string | null | undefined): HistoryLocale {
   if (cookie === "ko" || cookie === "en") return cookie;
@@ -510,7 +513,9 @@ const ko: HistoryCopy = {
 };
 
 export function historyCopy(locale: HistoryLocale): HistoryCopy {
-  return locale === "ko" ? ko : en;
+  if (locale === "ko") return ko;
+  const extra = phaseAHistory[locale];
+  return extra ? { ...en, ...extra } : en;
 }
 
 export function historyOriginLabel(locale: HistoryLocale, origin: string): string {
@@ -525,7 +530,7 @@ export function historyOriginLabel(locale: HistoryLocale, origin: string): strin
 
 export function countNoun(locale: HistoryLocale, count: number, kind: "record" | "exhibition"): string {
   const copy = historyCopy(locale);
-  if (locale === "ko") return kind === "record" ? copy.recordsDocumented : copy.exhibitionsDocumented;
+  if (locale !== "en") return kind === "record" ? copy.recordsDocumented : copy.exhibitionsDocumented;
   const word = kind === "record" ? (count === 1 ? "record" : "records") : (count === 1 ? "exhibition" : "exhibitions");
   return `${word} currently documented in ROB`;
 }

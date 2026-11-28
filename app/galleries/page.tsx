@@ -5,6 +5,9 @@ import { useRouter } from "next/navigation";
 import TopBar from "@/app/components/TopBar";
 import { GridCardSkeleton } from "@/app/components/Skeleton";
 import { useFetch } from "@/lib/useFetch";
+import { usePublicHref } from "@/app/components/history/LocaleUrl";
+import { useLanguage } from "@/lib/useLanguage";
+import { t } from "@/lib/translate";
 import { F, S } from "@/lib/design";
 
 type Gallery = {
@@ -91,6 +94,8 @@ function normalizeDirectoryCity(countryInput: string, cityInput: string): string
 
 export default function GalleriesPage() {
   const router = useRouter();
+  const { lang } = useLanguage();
+  const publicHref = usePublicHref();
   const { data, error, isLoading, mutate } = useFetch<{ galleries: Gallery[] }>("/api/public/galleries");
   const galleries = data?.galleries ?? [];
   const [country, setCountry] = useState<string>("ALL");
@@ -213,13 +218,13 @@ export default function GalleriesPage() {
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 48 }}>
           <div>
             <span style={{ fontFamily: F, fontSize: 10, letterSpacing: "0.2em", textTransform: "uppercase", color: "#8A8A8A" }}>
-              Directory
+              {t("gallery_directory_kicker", lang)}
             </span>
             <h1 style={{ fontFamily: S, fontSize: "clamp(32px, 6vw, 42px)", fontWeight: 300, color: "#1A1A1A", marginTop: 8, letterSpacing: "-0.01em" }}>
-              Galleries
+              {t("nav_galleries", lang)}
             </h1>
             <p style={{ fontFamily: F, fontSize: 12, color: "#8A8A8A", marginTop: 8, letterSpacing: "0.02em" }}>
-              Browse galleries by country
+              {t("gallery_directory_lead", lang)}
             </p>
           </div>
           <button
@@ -237,7 +242,7 @@ export default function GalleriesPage() {
               transition: "all 0.3s ease",
             }}
           >
-            Refresh
+            {t("refresh", lang)}
           </button>
         </div>
 
@@ -266,7 +271,7 @@ export default function GalleriesPage() {
                 gap: 8,
               }}
             >
-              {c}
+              {c === "ALL" ? t("all", lang) : c}
               <span style={{ fontSize: 9, opacity: 0.7, padding: "2px 6px", background: c === country ? "rgba(255,255,255,0.2)" : "#F5F0EB" }}>
                 {countryCounts[c] || 0}
               </span>
@@ -296,7 +301,7 @@ export default function GalleriesPage() {
                 gap: 8,
               }}
             >
-              {c}
+              {c === "ALL" ? t("all", lang) : c}
               <span style={{ fontSize: 9, opacity: 0.7, padding: "2px 6px", background: c === city ? "rgba(139,115,85,0.15)" : "#F7F3ED" }}>
                 {cityCounts[c] || 0}
               </span>
@@ -319,7 +324,7 @@ export default function GalleriesPage() {
                 cursor: "pointer",
               }}
             >
-              {showAllCityTabs ? "접기" : "도시 더보기"}
+              {showAllCityTabs ? t("gallery_fewer_cities", lang) : t("gallery_more_cities", lang)}
             </button>
           </div>
         )}
@@ -329,7 +334,7 @@ export default function GalleriesPage() {
           <input
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            placeholder="Search by name or city..."
+            placeholder={t("gallery_search_placeholder", lang)}
             style={{
               width: "100%",
               maxWidth: 400,
@@ -360,7 +365,7 @@ export default function GalleriesPage() {
             {filtered.map((g) => (
               <div
                 key={g.userId}
-                onClick={() => router.push(`/galleries/${encodeURIComponent(g.userId)}`)}
+                onClick={() => router.push(publicHref(`/galleries/${encodeURIComponent(g.userId)}`))}
                 style={{
                   background: "#FFFFFF",
                   border: "1px solid #EEEAE5",

@@ -1,6 +1,11 @@
 import type { HistoryLocale } from "@/lib/history/locale";
+import { PRODUCTION_LOCALES } from "@/lib/i18n/registry";
 
-export const LOCALE_URLS = ["ko", "en"] as const;
+export const LOCALE_URLS = PRODUCTION_LOCALES;
+
+const LOCALE_PATTERN = new RegExp(
+  `^\\/(${[...LOCALE_URLS].sort((a, b) => b.length - a.length).join("|")})(?=\\/|$)`,
+);
 
 const PUBLIC_ROOTS = [
   "/now",
@@ -19,11 +24,12 @@ const PUBLIC_ROOTS = [
   "/reset-password",
   "/open-calls",
   "/gallery",
+  "/galleries",
   "/curator",
 ];
 
 export function splitLocalePath(pathname: string): { locale: HistoryLocale | null; path: string } {
-  const match = pathname.match(/^\/(ko|en)(?=\/|$)/);
+  const match = pathname.match(LOCALE_PATTERN);
   if (!match) return { locale: null, path: pathname || "/" };
   const rest = pathname.slice(match[0].length);
   return { locale: match[1] as HistoryLocale, path: rest.startsWith("/") ? rest || "/" : `/${rest}` };

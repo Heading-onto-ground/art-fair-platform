@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import type { HistoryLocale } from "@/lib/history/locale";
-import { withLocalePrefix } from "@/lib/history/localeUrl";
+import { splitLocalePath, withLocalePrefix } from "@/lib/history/localeUrl";
+import { indexLocalesForPath } from "@/lib/i18n/coverage";
 
 export const SITE_URL = (
   process.env.NEXT_PUBLIC_APP_URL || "https://rob-roleofbridge.com"
@@ -15,16 +16,28 @@ export function absoluteUrl(path: string): string {
 }
 
 export function languageAlternates(path: string, localeUrl: HistoryLocale | null) {
-  const bare = path.startsWith("/") ? path : `/${path}`;
-  const canonicalPath = localeUrl ? withLocalePrefix(bare, localeUrl) : bare;
+  const raw = path.startsWith("/") ? path : `/${path}`;
+  const { path: bare } = splitLocalePath(raw);
+  const indexed = indexLocalesForPath(bare);
+  const canonicalLocale = localeUrl && indexed.includes(localeUrl) ? localeUrl : null;
+  const canonicalPath = canonicalLocale ? withLocalePrefix(bare, canonicalLocale) : bare;
+  const languages: Record<string, string> = {};
+  for (const locale of indexed) {
+    languages[locale] = absoluteUrl(withLocalePrefix(bare, locale));
+  }
+  languages["x-default"] = absoluteUrl(bare);
   return {
     canonical: absoluteUrl(canonicalPath),
-    languages: {
-      ko: absoluteUrl(withLocalePrefix(bare, "ko")),
-      en: absoluteUrl(withLocalePrefix(bare, "en")),
-      "x-default": absoluteUrl(bare),
-    },
+    languages,
   };
+}
+
+export function openGraphLocale(locale: HistoryLocale | null): string {
+  if (locale === "ko") return "ko_KR";
+  if (locale === "ja") return "ja_JP";
+  if (locale === "zh-Hans") return "zh_CN";
+  if (locale === "zh-Hant") return "zh_TW";
+  return "en_US";
 }
 
 function clamp(text: string | null | undefined, max = 160): string | undefined {
@@ -52,6 +65,8 @@ export function pageMetadata(input: {
   const description = clamp(input.description);
   const alternates = languageAlternates(input.path, input.localeUrl ?? null);
   const url = alternates.canonical;
+  const indexed = indexLocalesForPath(input.path);
+  const indexedLocale = input.localeUrl && indexed.includes(input.localeUrl) ? input.localeUrl : null;
   // Data-URI images (base64) are not valid OG images; only pass real URLs.
   const image =
     input.image && /^https?:\/\//.test(input.image) ? input.image : undefined;
@@ -70,7 +85,7 @@ export function pageMetadata(input: {
       title: input.title,
       description,
       siteName: SITE_NAME,
-      locale: input.localeUrl === "ko" ? "ko_KR" : "en_US",
+      locale: openGraphLocale(indexedLocale),
       ...(images ? { images } : {}),
     },
     twitter: {

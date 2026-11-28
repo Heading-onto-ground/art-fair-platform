@@ -18,12 +18,23 @@ export const runtime = "nodejs";
 
 export function generateMetadata() {
   const locale = historyLocale();
-  const ko = locale === "ko";
+  const title = {
+    en: "Explore the art world | ROB",
+    ko: "예술 세계 둘러보기 | ROB",
+    ja: "美術の世界を探索する | ROB",
+    "zh-Hans": "探索美术世界 | ROB",
+    "zh-Hant": "探索美術世界 | ROB",
+  }[locale];
+  const description = {
+    en: "Browse documented artists, exhibitions, spaces, and the connections between them.",
+    ko: "기록된 작가, 전시, 공간과 그 접점을 둘러봅니다.",
+    ja: "記録された作家、展示、空間と、その接点を見ます。",
+    "zh-Hans": "浏览已记录的艺术家、展览、空间，以及它们之间的连接。",
+    "zh-Hant": "瀏覽已記錄的藝術家、展覽、空間，以及它們之間的連結。",
+  }[locale];
   return pageMetadata({
-    title: ko ? "예술 세계 둘러보기 | ROB" : "Explore the art world | ROB",
-    description: ko
-      ? "기록된 작가, 전시, 공간과 그 접점을 둘러봅니다."
-      : "Browse documented artists, exhibitions, spaces, and the connections between them.",
+    title,
+    description,
     path: "/history/explore",
     localeUrl: pinnedLocale(),
   });

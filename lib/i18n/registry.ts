@@ -5,16 +5,16 @@
  * to a gallery uses that gallery's working language, and artwork titles and
  * historical records stay in their original wording.
  *
- * Only English and Korean are production-enabled. Other codes exist so a
- * country can fall back predictably. They are not public URLs and not SEO
- * targets until their dictionary and core journeys are verified.
+ * English, Korean, Japanese, and both Chinese scripts are production-enabled.
+ * Later European codes stay in the registry so a country can fall back
+ * predictably. They are not public URLs until their own dictionary is ready.
  *
  * Mobile (mobile/lib/i18n.ts, mobile/lib/useLanguage.ts) is unchanged in this
  * phase. A later mobile pass should consume these same production codes and
  * the same resolution order instead of adding another resolver.
  */
 
-export const PRODUCTION_LOCALES = ["en", "ko"] as const;
+export const PRODUCTION_LOCALES = ["en", "ko", "ja", "zh-Hans", "zh-Hant"] as const;
 
 export type ProductionLocale = (typeof PRODUCTION_LOCALES)[number];
 
@@ -53,9 +53,9 @@ export type LocaleDefinition = {
 export const LOCALE_REGISTRY: readonly LocaleDefinition[] = [
   { code: "en", nativeName: "English", dir: "ltr", fallback: "en", countries: ["US", "GB", "AU", "IE", "NZ"], dictionary: true, publicUrl: true, seo: true, productionEnabled: true },
   { code: "ko", nativeName: "한국어", dir: "ltr", fallback: "en", countries: ["KR"], dictionary: true, publicUrl: true, seo: true, productionEnabled: true },
-  { code: "ja", nativeName: "日本語", dir: "ltr", fallback: "en", countries: ["JP"], dictionary: true, publicUrl: false, seo: false, productionEnabled: false },
-  { code: "zh-Hans", nativeName: "简体中文", dir: "ltr", fallback: "en", countries: ["CN"], dictionary: false, publicUrl: false, seo: false, productionEnabled: false },
-  { code: "zh-Hant", nativeName: "繁體中文", dir: "ltr", fallback: "en", countries: ["TW", "MO"], dictionary: false, publicUrl: false, seo: false, productionEnabled: false },
+  { code: "ja", nativeName: "日本語", dir: "ltr", fallback: "en", countries: ["JP"], dictionary: true, publicUrl: true, seo: true, productionEnabled: true },
+  { code: "zh-Hans", nativeName: "简体中文", dir: "ltr", fallback: "en", countries: ["CN"], dictionary: true, publicUrl: true, seo: true, productionEnabled: true },
+  { code: "zh-Hant", nativeName: "繁體中文", dir: "ltr", fallback: "en", countries: ["TW", "MO"], dictionary: true, publicUrl: true, seo: true, productionEnabled: true },
   { code: "de", nativeName: "Deutsch", dir: "ltr", fallback: "en", countries: ["DE", "AT"], dictionary: false, publicUrl: false, seo: false, productionEnabled: false },
   { code: "fr", nativeName: "Français", dir: "ltr", fallback: "en", countries: ["FR"], dictionary: true, publicUrl: false, seo: false, productionEnabled: false },
   { code: "es", nativeName: "Español", dir: "ltr", fallback: "en", countries: ["ES", "MX"], dictionary: false, publicUrl: false, seo: false, productionEnabled: false },
@@ -87,7 +87,7 @@ export function localeDefinition(code: string | null | undefined): LocaleDefinit
 }
 
 export function isProductionLocale(code: string | null | undefined): code is ProductionLocale {
-  return code === "en" || code === "ko";
+  return !!code && (PRODUCTION_LOCALES as readonly string[]).includes(code);
 }
 
 export function productionLocaleList(): LocaleDefinition[] {
