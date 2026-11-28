@@ -1,6 +1,6 @@
 import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
-import robots from "@/app/robots";
+import robots, { crawlerDisallow } from "@/app/robots";
 import { aliasSlugRedirect } from "@/lib/history/identity";
 import { prefixPublicPath, splitLocalePath, swapLocalePrefix, withLocalePrefix } from "@/lib/history/localeUrl";
 import { artistPageDescription, artistPageTitle, schemaDate } from "@/lib/history/seo";
@@ -51,7 +51,30 @@ describe("index policy", () => {
     expect(source).toContain("robots: { index: false, follow: false }");
     const rules = robots().rules;
     const disallow = Array.isArray(rules) ? rules.flatMap((rule) => rule.disallow ?? []) : [];
-    expect(disallow).toEqual(expect.arrayContaining(["/research", "/ko/research", "/en/research"]));
+    expect(disallow).toEqual(expect.arrayContaining([
+      ...crawlerDisallow("/research"),
+      ...crawlerDisallow("/ko/research"),
+      ...crawlerDisallow("/en/research"),
+    ]));
+  });
+
+  it("blocks the exhibition editor without blocking a public slug that starts with new", () => {
+    const rules = robots().rules;
+    const disallow = Array.isArray(rules) ? rules.flatMap((rule) => rule.disallow ?? []) : [];
+    const blocked = (pathname: string) => disallow.some((rule) => {
+      if (rule.endsWith("$")) return pathname === rule.slice(0, -1);
+      return pathname.startsWith(rule);
+    });
+    expect(blocked("/exhibitions/new")).toBe(true);
+    expect(blocked("/ko/exhibitions/new")).toBe(true);
+    expect(blocked("/en/exhibitions/new/draft")).toBe(true);
+    expect(blocked("/exhibitions/new-works-2025")).toBe(false);
+    expect(blocked("/ko/exhibitions/new-works-2025")).toBe(false);
+    expect(blocked("/en/exhibitions/new-works-2025")).toBe(false);
+    expect(blocked("/artist/me")).toBe(true);
+    expect(blocked("/artists/lee-ufan")).toBe(false);
+    expect(blocked("/login")).toBe(true);
+    expect(blocked("/")).toBe(false);
   });
 
   it("marks legacy product routes noindex without hiding the current about pages", () => {
@@ -69,7 +92,10 @@ describe("index policy", () => {
 describe("sitemap eligibility", () => {
   const entries = publicSitemapEntries({
     artists: [{ slug: "haegue-yang", updatedAt: new Date("2026-11-05T08:48:00.000Z") }, { slug: "lee-ufan" }],
-    exhibitions: [{ slug: "when-process-becomes-form", updatedAt: new Date("2026-11-01T00:00:00.000Z") }],
+    exhibitions: [
+      { slug: "when-process-becomes-form", updatedAt: new Date("2026-11-01T00:00:00.000Z") },
+      { slug: "new-works-2025" },
+    ],
     spaces: [{ slug: "kukje-gallery" }],
   });
   const locs = entries.map((entry) => entry.url);
@@ -84,6 +110,14 @@ describe("sitemap eligibility", () => {
     expect(locs).not.toContain(`${HOST}/artists/lee-u-fan`);
     expect(locs.some((url) => url.includes("/research"))).toBe(false);
     expect(locs.some((url) => url.includes("/open-calls") || url.includes("/galleries") || url.includes("/country/") || url.includes("/city/"))).toBe(false);
+    const rules = robots().rules;
+    const disallow = Array.isArray(rules) ? rules.flatMap((rule) => rule.disallow ?? []) : [];
+    for (const url of locs) {
+      const pathname = new URL(url).pathname;
+      const robotsBlocked = disallow.some((rule) => rule.endsWith("$") ? pathname === rule.slice(0, -1) : pathname.startsWith(rule));
+      expect(robotsBlocked, url).toBe(false);
+      expect(legacyNoindexPath(pathname), url).toBe(false);
+    }
   });
 
   it("omits lastModified when no real date exists", () => {
