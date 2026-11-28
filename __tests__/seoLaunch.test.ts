@@ -78,6 +78,12 @@ describe("index policy", () => {
     expect(blocked("/exhibitions/new/draft")).toBe(true);
     expect(blocked("/ko/exhibitions/new?draft=1")).toBe(true);
     expect(blocked("/en/exhibitions/new?draft=1")).toBe(true);
+    expect(blocked("/ja/exhibitions/new?draft=1")).toBe(true);
+    expect(blocked("/zh-Hans/exhibitions/new?draft=1")).toBe(true);
+    expect(blocked("/zh-Hant/exhibitions/new?draft=1")).toBe(true);
+    expect(blocked("/ja/exhibitions/new-works-2025")).toBe(false);
+    expect(blocked("/zh-Hans/exhibitions/new-works-2025")).toBe(false);
+    expect(blocked("/zh-Hant/exhibitions/new-works-2025")).toBe(false);
     expect(blocked("/research?job=1")).toBe(true);
     expect(blocked("/exhibitions/new-works-2025")).toBe(false);
     expect(blocked("/ko/exhibitions/new-works-2025")).toBe(false);
